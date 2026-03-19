@@ -1,0 +1,1401 @@
+{% extends "base.html" %}
+
+{% block title %}Users | Happyness{% endblock %}
+
+{% block extra_head %}
+<style>
+    .users-page {
+        display: grid;
+        gap: 1.25rem;
+    }
+
+    .users-card {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(15, 118, 110, 0.15);
+        border-radius: 1rem;
+        box-shadow: 0 8px 18px rgba(8, 83, 76, 0.08);
+    }
+
+    .users-focus:focus-visible {
+        outline: 2px solid var(--teal-500);
+        outline-offset: 2px;
+    }
+
+    .users-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+        gap: 0.9rem;
+    }
+
+    .users-kpi {
+        padding: 1rem;
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .users-kpi-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .users-kpi-icon {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        color: var(--teal-700);
+        background: rgba(16, 185, 129, 0.14);
+    }
+
+    .users-kpi-spark {
+        height: 2.4rem;
+    }
+
+    .users-tab {
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        background: rgba(236, 253, 245, 0.35);
+        color: var(--ink-700);
+    }
+
+    .users-tab[aria-selected="true"] {
+        background: rgba(16, 185, 129, 0.18);
+        border-color: rgba(16, 185, 129, 0.4);
+        color: var(--teal-700);
+    }
+
+    .users-table-wrap {
+        overflow-x: auto;
+    }
+
+    .users-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 860px;
+    }
+
+    .users-table th,
+    .users-table td {
+        padding: 0.7rem 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .users-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: rgba(236, 253, 245, 0.85);
+        border-bottom: 1px solid rgba(15, 118, 110, 0.16);
+        color: var(--ink-700);
+        text-align: left;
+        font-weight: 700;
+    }
+
+    .users-table tbody tr {
+        border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+    }
+
+    .users-table tbody tr:hover {
+        background: rgba(236, 253, 245, 0.4);
+    }
+
+    .users-table-sort {
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        font-weight: inherit;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0;
+    }
+
+    .users-status {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        border: 1px solid transparent;
+    }
+
+    .users-status-active {
+        color: #0c6b5f;
+        background: rgba(16, 185, 129, 0.18);
+        border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .users-status-inactive {
+        color: #51616d;
+        background: rgba(148, 163, 184, 0.2);
+        border-color: rgba(148, 163, 184, 0.32);
+    }
+
+    .users-status-pending {
+        color: #0f766e;
+        background: rgba(20, 184, 166, 0.14);
+        border-color: rgba(20, 184, 166, 0.25);
+    }
+
+    .users-avatar {
+        width: 2.15rem;
+        height: 2.15rem;
+        border-radius: 999px;
+        background: linear-gradient(145deg, rgba(16, 185, 129, 0.22), rgba(20, 184, 166, 0.28));
+        color: var(--teal-700);
+        display: grid;
+        place-items: center;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .users-actions-menu {
+        position: fixed;
+        min-width: 9.5rem;
+        border-radius: 0.8rem;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        background: #ffffff;
+        box-shadow: 0 18px 30px rgba(8, 83, 76, 0.16);
+        padding: 0.4rem;
+        display: none;
+        z-index: 90;
+    }
+
+    .users-actions-menu[data-open="true"] {
+        display: grid;
+    }
+
+    .users-menu-item {
+        border: 0;
+        background: transparent;
+        text-align: left;
+        width: 100%;
+        padding: 0.45rem 0.55rem;
+        border-radius: 0.55rem;
+        color: var(--ink-700);
+        font-size: 0.84rem;
+        cursor: pointer;
+    }
+
+    .users-menu-item:hover {
+        background: rgba(236, 253, 245, 0.9);
+        color: var(--teal-700);
+    }
+
+    .users-popover {
+        position: fixed;
+        z-index: 90;
+        min-width: 14rem;
+        max-width: min(92vw, 24rem);
+        border-radius: 0.9rem;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        background: #ffffff;
+        box-shadow: 0 20px 36px rgba(8, 83, 76, 0.2);
+        padding: 0.65rem;
+        display: none;
+    }
+
+    .users-popover[data-open="true"] {
+        display: block;
+    }
+
+    .users-activity-list {
+        max-height: 27rem;
+        overflow: auto;
+    }
+
+    .users-row-actions-inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+    }
+
+    @media (min-width: 768px) {
+        .users-kpi-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .users-kpi-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 767px) {
+        .users-row-actions-inline {
+            display: none;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .users-row-actions-trigger {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="users-page" class="users-page">
+    <section aria-label="User KPIs" class="users-kpi-grid">
+        <article class="users-card users-kpi" aria-labelledby="kpi-total-users">
+            <div class="users-kpi-head">
+                <p id="kpi-total-users" class="text-xs uppercase tracking-wide text-ink-500">Total Users</p>
+                <span class="users-kpi-icon" aria-hidden="true"><i data-lucide="users"></i></span>
+            </div>
+            <p id="kpi-total-value" class="text-3xl font-bold text-ink-900">0</p>
+            <p id="kpi-total-change" class="text-xs text-brand-700">+0%</p>
+            <div class="users-kpi-spark"><canvas id="kpi-spark-total" aria-label="Total users trend" role="img"></canvas></div>
+        </article>
+
+        <article class="users-card users-kpi" aria-labelledby="kpi-active-users">
+            <div class="users-kpi-head">
+                <p id="kpi-active-users" class="text-xs uppercase tracking-wide text-ink-500">Active Users</p>
+                <span class="users-kpi-icon" aria-hidden="true"><i data-lucide="user-check"></i></span>
+            </div>
+            <p id="kpi-active-value" class="text-3xl font-bold text-ink-900">0</p>
+            <p class="text-xs text-brand-700">Healthy engagement</p>
+            <div class="users-kpi-spark"><canvas id="kpi-spark-active" aria-label="Active users trend" role="img"></canvas></div>
+        </article>
+
+        <article class="users-card users-kpi" aria-labelledby="kpi-new-users">
+            <div class="users-kpi-head">
+                <p id="kpi-new-users" class="text-xs uppercase tracking-wide text-ink-500">New Users</p>
+                <span class="users-kpi-icon" aria-hidden="true"><i data-lucide="user-plus"></i></span>
+            </div>
+            <p id="kpi-new-value" class="text-3xl font-bold text-ink-900">0</p>
+            <p class="text-xs text-brand-700">Joined in current period</p>
+            <div class="users-kpi-spark"><canvas id="kpi-spark-new" aria-label="New users trend" role="img"></canvas></div>
+        </article>
+
+        <article class="users-card users-kpi" aria-labelledby="kpi-inactive-users">
+            <div class="users-kpi-head">
+                <p id="kpi-inactive-users" class="text-xs uppercase tracking-wide text-ink-500">Inactive Users</p>
+                <span class="users-kpi-icon" aria-hidden="true"><i data-lucide="user-x"></i></span>
+            </div>
+            <p id="kpi-inactive-value" class="text-3xl font-bold text-ink-900">0</p>
+            <p class="text-xs text-ink-500">Needs attention</p>
+            <div class="users-kpi-spark"><canvas id="kpi-spark-inactive" aria-label="Inactive users trend" role="img"></canvas></div>
+        </article>
+    </section>
+
+    <section class="grid grid-cols-1 gap-4 lg:grid-cols-12" aria-label="User analytics charts">
+        <article class="users-card p-4 lg:col-span-8" aria-labelledby="user-growth-title">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 id="user-growth-title" class="text-lg font-semibold text-ink-900">User Growth</h2>
+                <div role="tablist" aria-label="Growth chart range" class="inline-flex gap-2 rounded-full border border-brand-100 bg-brand-50/70 p-1">
+                    <button type="button" class="users-tab users-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" id="range-weekly" aria-selected="true" aria-controls="users-growth-chart" data-range="weekly">Weekly</button>
+                    <button type="button" class="users-tab users-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" id="range-monthly" aria-selected="false" aria-controls="users-growth-chart" data-range="monthly">Monthly</button>
+                    <button type="button" class="users-tab users-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" id="range-yearly" aria-selected="false" aria-controls="users-growth-chart" data-range="yearly">Yearly</button>
+                </div>
+            </div>
+            <div class="h-72">
+                <canvas id="users-growth-chart" role="img" aria-label="User growth chart"></canvas>
+            </div>
+        </article>
+
+        <article class="users-card p-4 lg:col-span-4" aria-label="Secondary analytics">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                <div>
+                    <h3 class="mb-2 text-sm font-semibold text-ink-900">Role Distribution</h3>
+                    <div class="h-44"><canvas id="users-role-chart" role="img" aria-label="Role distribution chart"></canvas></div>
+                </div>
+                <div>
+                    <h3 class="mb-2 text-sm font-semibold text-ink-900">Active vs Inactive</h3>
+                    <div class="h-40"><canvas id="users-status-chart" role="img" aria-label="Active versus inactive chart"></canvas></div>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <section class="users-card p-4" aria-label="Search filters and actions">
+        <div class="grid grid-cols-1 gap-3 xl:grid-cols-12 xl:items-end">
+            <div class="xl:col-span-4">
+                <label for="users-search" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Search</label>
+                <input id="users-search" class="users-focus w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-900" type="search" placeholder="Search by name or email" aria-label="Search users by name or email" />
+            </div>
+
+            <div class="hidden xl:col-span-5 xl:grid xl:grid-cols-3 xl:gap-2" id="users-filters-inline" aria-label="Filters">
+                <div>
+                    <label for="users-role-filter" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Role</label>
+                    <select id="users-role-filter" class="users-focus w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-900" aria-label="Filter by role">
+                        <option value="">All roles</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Member">Member</option>
+                        <option value="Volunteer">Volunteer</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="users-status-filter" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Status</label>
+                    <select id="users-status-filter" class="users-focus w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-900" aria-label="Filter by status">
+                        <option value="">All status</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Pending">Pending</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="users-joined-from" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Date Joined</label>
+                    <div class="grid grid-cols-2 gap-1">
+                        <input id="users-joined-from" type="date" class="users-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Joined from date" />
+                        <input id="users-joined-to" type="date" class="users-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Joined to date" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="xl:col-span-3">
+                <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-500">Quick Actions</p>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" class="users-focus inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-2 text-sm font-semibold text-white shadow-sm" aria-label="Add user">
+                        <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                        Add User
+                    </button>
+                    <button type="button" class="users-focus rounded-full border border-brand-100 bg-brand-50/70 px-3 py-2 text-xs font-semibold text-brand-700" aria-label="Import users">Import</button>
+                    <button type="button" class="users-focus rounded-full border border-brand-100 bg-brand-50/70 px-3 py-2 text-xs font-semibold text-brand-700" aria-label="Export users CSV">Export CSV</button>
+                    <button id="bulk-actions-btn" type="button" class="users-focus rounded-full border border-brand-100 bg-brand-50/70 px-3 py-2 text-xs font-semibold text-brand-700" aria-haspopup="menu" aria-expanded="false" aria-controls="bulk-actions-menu">Bulk Actions</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3 flex items-center justify-between gap-2 border-t border-brand-100 pt-3">
+            <div role="tablist" aria-label="Quick user filters" class="inline-flex flex-wrap gap-2">
+                <button type="button" class="users-tab users-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="true" data-quick-filter="All">All</button>
+                <button type="button" class="users-tab users-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="false" data-quick-filter="Active">Active</button>
+                <button type="button" class="users-tab users-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="false" data-quick-filter="Inactive">Inactive</button>
+                <button type="button" class="users-tab users-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="false" data-quick-filter="New">New</button>
+            </div>
+            <button id="open-mobile-filters" type="button" class="users-focus rounded-full border border-brand-100 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 xl:hidden" aria-haspopup="dialog" aria-controls="mobile-filters-popover" aria-expanded="false">Filters</button>
+        </div>
+    </section>
+
+    <section class="grid grid-cols-1 gap-4 lg:grid-cols-12" aria-label="Users table and activity">
+        <article class="users-card p-0 lg:col-span-8" aria-labelledby="users-table-title">
+            <div class="flex items-center justify-between gap-2 border-b border-brand-100 px-4 py-3">
+                <h2 id="users-table-title" class="text-base font-semibold text-ink-900">Users Directory</h2>
+                <p id="users-count" class="text-xs text-ink-500" aria-live="polite">0 users</p>
+            </div>
+
+            <div class="users-table-wrap">
+                <table class="users-table" aria-describedby="users-count">
+                    <thead>
+                        <tr>
+                            <th scope="col"><input id="select-all-users" class="users-focus" type="checkbox" aria-label="Select all users on page" /></th>
+                            <th scope="col"><button class="users-table-sort users-focus" type="button" data-sort-key="id" aria-label="Sort by ID">ID <i data-lucide="arrow-up-down" class="h-3.5 w-3.5"></i></button></th>
+                            <th scope="col"><button class="users-table-sort users-focus" type="button" data-sort-key="name" aria-label="Sort by user">User <i data-lucide="arrow-up-down" class="h-3.5 w-3.5"></i></button></th>
+                            <th scope="col"><button class="users-table-sort users-focus" type="button" data-sort-key="role" aria-label="Sort by role">Role <i data-lucide="arrow-up-down" class="h-3.5 w-3.5"></i></button></th>
+                            <th scope="col"><button class="users-table-sort users-focus" type="button" data-sort-key="email" aria-label="Sort by email">Email <i data-lucide="arrow-up-down" class="h-3.5 w-3.5"></i></button></th>
+                            <th scope="col"><button class="users-table-sort users-focus" type="button" data-sort-key="status" aria-label="Sort by status">Status <i data-lucide="arrow-up-down" class="h-3.5 w-3.5"></i></button></th>
+                            <th scope="col"><button class="users-table-sort users-focus" type="button" data-sort-key="joined" aria-label="Sort by date joined">Date Joined <i data-lucide="arrow-up-down" class="h-3.5 w-3.5"></i></button></th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body"></tbody>
+                </table>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-brand-100 px-4 py-3">
+                <div class="flex items-center gap-2">
+                    <label for="users-page-size" class="text-xs font-semibold text-ink-500">Rows</label>
+                    <select id="users-page-size" class="users-focus rounded-full border border-brand-100 bg-white px-2 py-1 text-xs text-ink-700" aria-label="Rows per page">
+                        <option value="5" selected>5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                    </select>
+                </div>
+                <div id="users-pagination" class="inline-flex items-center gap-2" aria-label="Table pagination"></div>
+            </div>
+        </article>
+
+        <aside class="users-card p-4 lg:col-span-4" aria-labelledby="user-activity-title">
+            <div class="mb-3 flex items-center justify-between gap-2">
+                <h2 id="user-activity-title" class="text-base font-semibold text-ink-900">Recent User Activity</h2>
+                <button type="button" class="users-focus rounded-full border border-brand-100 bg-brand-50/70 px-2 py-1 text-xs font-semibold text-brand-700" aria-label="Refresh activity">Refresh</button>
+            </div>
+            <ul id="users-activity-list" class="users-activity-list grid gap-2" aria-live="polite"></ul>
+        </aside>
+    </section>
+</div>
+
+<div id="bulk-actions-menu" class="users-popover" role="menu" aria-label="Bulk actions menu">
+    <button type="button" class="users-focus users-menu-item" role="menuitem" data-bulk-action="activate">Mark selected as Active</button>
+    <button type="button" class="users-focus users-menu-item" role="menuitem" data-bulk-action="inactive">Mark selected as Inactive</button>
+    <button type="button" class="users-focus users-menu-item" role="menuitem" data-bulk-action="delete">Bulk Delete (UI only)</button>
+</div>
+
+<div id="mobile-filters-popover" class="users-popover" role="dialog" aria-modal="false" aria-label="Mobile filters">
+    <h3 class="mb-2 text-sm font-semibold text-ink-900">Filters</h3>
+    <div class="grid grid-cols-1 gap-2">
+        <div>
+            <label for="users-role-filter-mobile" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Role</label>
+            <select id="users-role-filter-mobile" class="users-focus w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-900" aria-label="Filter by role mobile">
+                <option value="">All roles</option>
+                <option value="Admin">Admin</option>
+                <option value="Member">Member</option>
+                <option value="Volunteer">Volunteer</option>
+            </select>
+        </div>
+        <div>
+            <label for="users-status-filter-mobile" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Status</label>
+            <select id="users-status-filter-mobile" class="users-focus w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-900" aria-label="Filter by status mobile">
+                <option value="">All status</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Pending">Pending</option>
+            </select>
+        </div>
+        <div class="grid grid-cols-2 gap-1">
+            <input id="users-joined-from-mobile" type="date" class="users-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Joined from date mobile" />
+            <input id="users-joined-to-mobile" type="date" class="users-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Joined to date mobile" />
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    "use strict";
+
+    // Sample JSON dataset for charts and table rendering.
+    var SAMPLE_DATA = {
+        stats: {
+            total: 301,
+            active: 200,
+            new: 24,
+            inactive: 101,
+            totalChange: "+6% this month"
+        },
+        roles: {
+            Admin: 12,
+            Member: 220,
+            Volunteer: 69
+        },
+        growth: {
+            weekly: {
+                labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+                active: [182, 184, 188, 191, 195, 198, 200],
+                total: [270, 273, 279, 284, 291, 296, 301]
+            },
+            monthly: {
+                labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+                active: [176, 185, 193, 200],
+                total: [258, 272, 288, 301]
+            },
+            yearly: {
+                labels: ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
+                active: [109, 118, 127, 138, 147, 156, 164, 171, 179, 188, 194, 200],
+                total: [182, 194, 207, 220, 236, 249, 262, 274, 283, 291, 296, 301]
+            }
+        },
+        users: [
+            { id: 1, name: "Mario R", email: "mario@example.com", role: "Member", status: "Active", joined: "2026-02-12" },
+            { id: 2, name: "Jake P", email: "jake@example.com", role: "Volunteer", status: "Active", joined: "2026-03-01" },
+            { id: 3, name: "Alyssa C", email: "alyssa@example.com", role: "Admin", status: "Active", joined: "2025-11-18" },
+            { id: 4, name: "Noel B", email: "noel@example.com", role: "Member", status: "Inactive", joined: "2025-10-08" },
+            { id: 5, name: "Trish L", email: "trish@example.com", role: "Volunteer", status: "Pending", joined: "2026-03-15" },
+            { id: 6, name: "Kevin D", email: "kevin@example.com", role: "Member", status: "Inactive", joined: "2025-12-03" },
+            { id: 7, name: "Rhea T", email: "rhea@example.com", role: "Member", status: "Active", joined: "2026-01-24" },
+            { id: 8, name: "Pam V", email: "pam@example.com", role: "Volunteer", status: "Active", joined: "2026-03-09" },
+            { id: 9, name: "Jon E", email: "jon@example.com", role: "Member", status: "Pending", joined: "2026-03-14" },
+            { id: 10, name: "Harvey K", email: "harvey@example.com", role: "Admin", status: "Active", joined: "2025-09-26" },
+            { id: 11, name: "Mia O", email: "mia@example.com", role: "Member", status: "Inactive", joined: "2025-12-30" },
+            { id: 12, name: "Giselle M", email: "giselle@example.com", role: "Volunteer", status: "Active", joined: "2026-02-28" }
+        ],
+        activity: [
+            { name: "Trish L", action: "joined as Volunteer", time: "2 minutes ago" },
+            { name: "Alyssa C", action: "updated profile details", time: "17 minutes ago" },
+            { name: "Jon E", action: "role changed to Member", time: "42 minutes ago" },
+            { name: "Noel B", action: "account deactivated", time: "1 hour ago" },
+            { name: "Pam V", action: "joined as Volunteer", time: "3 hours ago" },
+            { name: "Mario R", action: "verified email address", time: "6 hours ago" }
+        ]
+    };
+
+    var state = {
+        users: SAMPLE_DATA.users.slice(),
+        filtered: SAMPLE_DATA.users.slice(),
+        selected: new Set(),
+        page: 1,
+        pageSize: 5,
+        sortKey: "id",
+        sortDir: "asc",
+        quickFilter: "All",
+        range: "weekly",
+        chartsReady: false,
+        charts: {
+            growth: null,
+            role: null,
+            status: null
+        }
+    };
+
+    function byId(id) {
+        return document.getElementById(id);
+    }
+
+    function initials(name) {
+        return name.split(" ").slice(0, 2).map(function (part) {
+            return part.charAt(0).toUpperCase();
+        }).join("");
+    }
+
+    function parseDate(value) {
+        return value ? new Date(value + "T00:00:00") : null;
+    }
+
+    function statusClass(status) {
+        if (status === "Active") {
+            return "users-status users-status-active";
+        }
+
+        if (status === "Inactive") {
+            return "users-status users-status-inactive";
+        }
+
+        return "users-status users-status-pending";
+    }
+
+    function compareValues(a, b, key) {
+        if (key === "joined") {
+            return parseDate(a.joined) - parseDate(b.joined);
+        }
+
+        if (key === "id") {
+            return a.id - b.id;
+        }
+
+        return String(a[key]).localeCompare(String(b[key]));
+    }
+
+    function formatJoined(value) {
+        var date = parseDate(value);
+        if (!date) {
+            return "-";
+        }
+
+        return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    }
+
+    function statusCounts(users) {
+        return users.reduce(function (acc, user) {
+            acc[user.status] = (acc[user.status] || 0) + 1;
+            return acc;
+        }, { Active: 0, Inactive: 0, Pending: 0 });
+    }
+
+    function getFilterValues() {
+        var desktopRole = byId("users-role-filter");
+        var mobileRole = byId("users-role-filter-mobile");
+        var desktopStatus = byId("users-status-filter");
+        var mobileStatus = byId("users-status-filter-mobile");
+        var joinedFromDesktop = byId("users-joined-from");
+        var joinedToDesktop = byId("users-joined-to");
+        var joinedFromMobile = byId("users-joined-from-mobile");
+        var joinedToMobile = byId("users-joined-to-mobile");
+
+        var desktopVisible = window.matchMedia("(min-width: 1280px)").matches;
+
+        return {
+            search: byId("users-search") ? byId("users-search").value.trim().toLowerCase() : "",
+            role: desktopVisible ? (desktopRole ? desktopRole.value : "") : (mobileRole ? mobileRole.value : ""),
+            status: desktopVisible ? (desktopStatus ? desktopStatus.value : "") : (mobileStatus ? mobileStatus.value : ""),
+            joinedFrom: desktopVisible ? (joinedFromDesktop ? joinedFromDesktop.value : "") : (joinedFromMobile ? joinedFromMobile.value : ""),
+            joinedTo: desktopVisible ? (joinedToDesktop ? joinedToDesktop.value : "") : (joinedToMobile ? joinedToMobile.value : "")
+        };
+    }
+
+    // Hook for API integration later.
+    window.fetchUsers = function fetchUsers(params) {
+        return Promise.resolve({
+            params: params || {},
+            users: SAMPLE_DATA.users.slice()
+        });
+    };
+
+    // Hook for API integration later.
+    window.fetchUserStats = function fetchUserStats(range) {
+        var selectedRange = range || "weekly";
+        return Promise.resolve({
+            range: selectedRange,
+            stats: SAMPLE_DATA.stats,
+            roles: SAMPLE_DATA.roles,
+            growth: SAMPLE_DATA.growth[selectedRange]
+        });
+    };
+
+    // Hook for API integration later.
+    window.applyFilters = function applyFiltersHook() {
+        applyFiltersAndRender();
+    };
+
+    function applyFiltersAndRender() {
+        var filters = getFilterValues();
+        var fromDate = parseDate(filters.joinedFrom);
+        var toDate = parseDate(filters.joinedTo);
+        var now = new Date();
+        var thirtyDaysAgo = new Date(now);
+        thirtyDaysAgo.setDate(now.getDate() - 30);
+
+        state.filtered = state.users.filter(function (user) {
+            var joinedDate = parseDate(user.joined);
+            var matchesSearch = !filters.search || user.name.toLowerCase().includes(filters.search) || user.email.toLowerCase().includes(filters.search);
+            var matchesRole = !filters.role || user.role === filters.role;
+            var matchesStatus = !filters.status || user.status === filters.status;
+            var matchesFrom = !fromDate || (joinedDate && joinedDate >= fromDate);
+            var matchesTo = !toDate || (joinedDate && joinedDate <= toDate);
+
+            var matchesQuick = state.quickFilter === "All" ||
+                (state.quickFilter === "New" && joinedDate && joinedDate >= thirtyDaysAgo) ||
+                (state.quickFilter !== "New" && user.status === state.quickFilter);
+
+            return matchesSearch && matchesRole && matchesStatus && matchesFrom && matchesTo && matchesQuick;
+        });
+
+        state.page = 1;
+        renderTable();
+        refreshStatusChartFromFiltered();
+    }
+
+    function sortedFilteredUsers() {
+        var copy = state.filtered.slice();
+
+        copy.sort(function (a, b) {
+            var result = compareValues(a, b, state.sortKey);
+            return state.sortDir === "asc" ? result : -result;
+        });
+
+        return copy;
+    }
+
+    function paginate(users) {
+        var start = (state.page - 1) * state.pageSize;
+        return users.slice(start, start + state.pageSize);
+    }
+
+    function renderTable() {
+        var tbody = byId("users-table-body");
+        var count = byId("users-count");
+        var selectAll = byId("select-all-users");
+
+        if (!tbody) {
+            return;
+        }
+
+        var sorted = sortedFilteredUsers();
+        var paginated = paginate(sorted);
+        tbody.innerHTML = "";
+
+        paginated.forEach(function (user) {
+            var tr = document.createElement("tr");
+
+            tr.innerHTML = ""
+                + "<td><input class=\"users-focus users-row-check\" type=\"checkbox\" data-row-id=\"" + user.id + "\" aria-label=\"Select user " + user.name + "\" " + (state.selected.has(user.id) ? "checked" : "") + " /></td>"
+                + "<td>" + user.id + "</td>"
+                + "<td><div class=\"flex items-center gap-2\"><span class=\"users-avatar\" aria-hidden=\"true\">" + initials(user.name) + "</span><div><p class=\"text-sm font-semibold text-ink-900\">" + user.name + "</p><p class=\"text-xs text-ink-500\">ID #" + user.id + "</p></div></div></td>"
+                + "<td>" + user.role + "</td>"
+                + "<td><a href=\"mailto:" + user.email + "\" class=\"text-brand-700 hover:underline\">" + user.email + "</a></td>"
+                + "<td><span class=\"" + statusClass(user.status) + "\">" + user.status + "</span></td>"
+                + "<td>" + formatJoined(user.joined) + "</td>"
+                + "<td>"
+                    + "<span class=\"users-row-actions-inline\">"
+                        + "<button type=\"button\" class=\"users-focus rounded-lg p-1.5 text-brand-700 hover:bg-brand-50\" data-tooltip=\"View\" aria-label=\"View " + user.name + "\"><i data-lucide=\"eye\" class=\"h-4 w-4\"></i></button>"
+                        + "<button type=\"button\" class=\"users-focus rounded-lg p-1.5 text-brand-700 hover:bg-brand-50\" data-tooltip=\"Edit\" aria-label=\"Edit " + user.name + "\"><i data-lucide=\"square-pen\" class=\"h-4 w-4\"></i></button>"
+                        + "<button type=\"button\" class=\"users-focus rounded-lg p-1.5 text-red-600 hover:bg-red-50\" data-tooltip=\"Delete\" aria-label=\"Delete " + user.name + "\"><i data-lucide=\"trash-2\" class=\"h-4 w-4\"></i></button>"
+                    + "</span>"
+                    + "<button type=\"button\" class=\"users-focus users-row-actions-trigger rounded-lg border border-brand-100 bg-white p-1.5 text-brand-700\" data-row-menu-btn=\"" + user.id + "\" aria-expanded=\"false\" aria-controls=\"row-menu-" + user.id + "\" aria-label=\"Open row actions for " + user.name + "\"><i data-lucide=\"ellipsis\" class=\"h-4 w-4\"></i></button>"
+                + "</td>";
+
+            tbody.appendChild(tr);
+        });
+
+        if (count) {
+            count.textContent = state.filtered.length + " users";
+        }
+
+        if (selectAll) {
+            selectAll.checked = paginated.length > 0 && paginated.every(function (user) { return state.selected.has(user.id); });
+        }
+
+        renderPagination(sorted.length);
+        renderRowMenus(paginated);
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    }
+
+    function renderPagination(total) {
+        var container = byId("users-pagination");
+        if (!container) {
+            return;
+        }
+
+        var pages = Math.max(1, Math.ceil(total / state.pageSize));
+        if (state.page > pages) {
+            state.page = pages;
+        }
+
+        container.innerHTML = "";
+
+        var prev = document.createElement("button");
+        prev.type = "button";
+        prev.className = "users-focus rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-semibold text-ink-700 disabled:opacity-40";
+        prev.textContent = "Prev";
+        prev.disabled = state.page <= 1;
+        prev.addEventListener("click", function () {
+            if (state.page > 1) {
+                state.page -= 1;
+                renderTable();
+            }
+        });
+
+        var label = document.createElement("span");
+        label.className = "text-xs text-ink-500";
+        label.textContent = "Page " + state.page + " of " + pages;
+
+        var next = document.createElement("button");
+        next.type = "button";
+        next.className = "users-focus rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-semibold text-ink-700 disabled:opacity-40";
+        next.textContent = "Next";
+        next.disabled = state.page >= pages;
+        next.addEventListener("click", function () {
+            if (state.page < pages) {
+                state.page += 1;
+                renderTable();
+            }
+        });
+
+        container.appendChild(prev);
+        container.appendChild(label);
+        container.appendChild(next);
+    }
+
+    function renderRowMenus(usersInPage) {
+        closeOpenPopover();
+        document.querySelectorAll("[id^='row-menu-']").forEach(function (menu) {
+            menu.remove();
+        });
+
+        usersInPage.forEach(function (user) {
+            var btn = document.querySelector("[data-row-menu-btn='" + user.id + "']");
+            if (!btn) {
+                return;
+            }
+
+            var menu = document.createElement("div");
+            menu.id = "row-menu-" + user.id;
+            menu.className = "users-actions-menu";
+            menu.setAttribute("role", "menu");
+            menu.setAttribute("data-open", "false");
+            menu.innerHTML = ""
+                + "<button type=\"button\" class=\"users-focus users-menu-item\" role=\"menuitem\">View</button>"
+                + "<button type=\"button\" class=\"users-focus users-menu-item\" role=\"menuitem\">Edit</button>"
+                + "<button type=\"button\" class=\"users-focus users-menu-item\" role=\"menuitem\">Delete</button>";
+
+            document.body.appendChild(menu);
+
+            btn.addEventListener("click", function () {
+                togglePopover(btn, menu, "bottom-start");
+            });
+        });
+    }
+
+    function renderActivity() {
+        var list = byId("users-activity-list");
+
+        if (!list) {
+            return;
+        }
+
+        list.innerHTML = "";
+        SAMPLE_DATA.activity.forEach(function (item) {
+            var li = document.createElement("li");
+            li.className = "rounded-xl border border-brand-100 bg-white p-2.5";
+            li.innerHTML = ""
+                + "<div class=\"flex items-start gap-2\">"
+                    + "<span class=\"users-avatar\" aria-hidden=\"true\">" + initials(item.name) + "</span>"
+                    + "<div>"
+                        + "<p class=\"text-sm font-medium text-ink-900\">" + item.name + " " + item.action + "</p>"
+                        + "<p class=\"text-xs text-ink-500\">" + item.time + "</p>"
+                    + "</div>"
+                + "</div>";
+            list.appendChild(li);
+        });
+    }
+
+    function initializeSparkline(id, points) {
+        var canvas = byId(id);
+        if (!canvas || typeof Chart === "undefined") {
+            return;
+        }
+
+        new Chart(canvas, {
+            type: "line",
+            data: {
+                labels: ["1", "2", "3", "4", "5", "6"],
+                datasets: [{
+                    data: points,
+                    borderColor: "#0f766e",
+                    backgroundColor: "rgba(15, 118, 110, 0.14)",
+                    fill: true,
+                    pointRadius: 0,
+                    tension: 0.38,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                scales: { x: { display: false }, y: { display: false } }
+            }
+        });
+    }
+
+    function buildGrowthChartData(range) {
+        var series = SAMPLE_DATA.growth[range] || SAMPLE_DATA.growth.weekly;
+        return {
+            labels: series.labels,
+            datasets: [
+                {
+                    label: "Total Users",
+                    data: series.total,
+                    borderColor: "#0f766e",
+                    backgroundColor: "rgba(15, 118, 110, 0.14)",
+                    fill: true,
+                    pointRadius: 2,
+                    tension: 0.35
+                },
+                {
+                    label: "Active Users",
+                    data: series.active,
+                    borderColor: "#14b8a6",
+                    backgroundColor: "rgba(20, 184, 166, 0.10)",
+                    fill: true,
+                    pointRadius: 2,
+                    tension: 0.35
+                }
+            ]
+        };
+    }
+
+    function initCharts() {
+        if (state.chartsReady || typeof Chart === "undefined") {
+            return;
+        }
+
+        var growthCanvas = byId("users-growth-chart");
+        var roleCanvas = byId("users-role-chart");
+        var statusCanvas = byId("users-status-chart");
+
+        if (!growthCanvas || !roleCanvas || !statusCanvas) {
+            return;
+        }
+
+        var growthData = buildGrowthChartData(state.range);
+        state.charts.growth = new Chart(growthCanvas, {
+            type: "line",
+            data: growthData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: "top", align: "start", labels: { color: "#0f4e48" } },
+                    tooltip: {
+                        backgroundColor: "rgba(5, 46, 43, 0.92)",
+                        titleColor: "#ecfdf5",
+                        bodyColor: "#d1fae5"
+                    }
+                },
+                scales: {
+                    x: { ticks: { color: "#236e67" }, grid: { color: "rgba(35, 110, 103, 0.12)" } },
+                    y: { beginAtZero: true, ticks: { color: "#236e67" }, grid: { color: "rgba(35, 110, 103, 0.12)" } }
+                }
+            }
+        });
+
+        state.charts.role = new Chart(roleCanvas, {
+            type: "doughnut",
+            data: {
+                labels: Object.keys(SAMPLE_DATA.roles),
+                datasets: [{
+                    data: Object.values(SAMPLE_DATA.roles),
+                    backgroundColor: ["rgba(15, 118, 110, 0.88)", "rgba(16, 185, 129, 0.82)", "rgba(20, 184, 166, 0.78)"],
+                    borderColor: "#ffffff",
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: "bottom", labels: { color: "#0f4e48", boxWidth: 12 } },
+                    tooltip: {
+                        backgroundColor: "rgba(5, 46, 43, 0.92)",
+                        titleColor: "#ecfdf5",
+                        bodyColor: "#d1fae5"
+                    }
+                }
+            }
+        });
+
+        var counts = statusCounts(state.filtered);
+        state.charts.status = new Chart(statusCanvas, {
+            type: "bar",
+            data: {
+                labels: ["Active", "Inactive", "Pending"],
+                datasets: [{
+                    data: [counts.Active, counts.Inactive, counts.Pending],
+                    backgroundColor: ["rgba(16, 185, 129, 0.82)", "rgba(148, 163, 184, 0.62)", "rgba(20, 184, 166, 0.76)"],
+                    borderRadius: 10,
+                    maxBarThickness: 26
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: "rgba(5, 46, 43, 0.92)",
+                        titleColor: "#ecfdf5",
+                        bodyColor: "#d1fae5"
+                    }
+                },
+                scales: {
+                    x: { ticks: { color: "#236e67" }, grid: { display: false } },
+                    y: { beginAtZero: true, ticks: { color: "#236e67" }, grid: { color: "rgba(35, 110, 103, 0.12)" } }
+                }
+            }
+        });
+
+        state.chartsReady = true;
+    }
+
+    function refreshStatusChartFromFiltered() {
+        if (!state.charts.status) {
+            return;
+        }
+
+        var counts = statusCounts(state.filtered);
+        state.charts.status.data.datasets[0].data = [counts.Active, counts.Inactive, counts.Pending];
+        state.charts.status.update();
+    }
+
+    function updateGrowthChart(range) {
+        state.range = range;
+        if (!state.charts.growth) {
+            return;
+        }
+
+        var next = buildGrowthChartData(range);
+        state.charts.growth.data.labels = next.labels;
+        state.charts.growth.data.datasets[0].data = next.datasets[0].data;
+        state.charts.growth.data.datasets[1].data = next.datasets[1].data;
+        state.charts.growth.update();
+    }
+
+    function setAriaSortIndicators() {
+        document.querySelectorAll(".users-table th").forEach(function (th) {
+            th.setAttribute("aria-sort", "none");
+        });
+
+        var active = document.querySelector("[data-sort-key='" + state.sortKey + "']");
+        if (active) {
+            var th = active.closest("th");
+            if (th) {
+                th.setAttribute("aria-sort", state.sortDir === "asc" ? "ascending" : "descending");
+            }
+        }
+    }
+
+    function wireSorters() {
+        document.querySelectorAll("[data-sort-key]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var key = btn.getAttribute("data-sort-key");
+                if (!key) {
+                    return;
+                }
+
+                if (state.sortKey === key) {
+                    state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+                } else {
+                    state.sortKey = key;
+                    state.sortDir = "asc";
+                }
+
+                setAriaSortIndicators();
+                renderTable();
+            });
+        });
+    }
+
+    function wireFilters() {
+        [
+            "users-search", "users-role-filter", "users-status-filter", "users-joined-from", "users-joined-to",
+            "users-role-filter-mobile", "users-status-filter-mobile", "users-joined-from-mobile", "users-joined-to-mobile"
+        ].forEach(function (id) {
+            var input = byId(id);
+            if (!input) {
+                return;
+            }
+
+            var eventName = input.tagName === "INPUT" && input.type === "search" ? "input" : "change";
+            input.addEventListener(eventName, applyFiltersAndRender);
+        });
+
+        var pageSize = byId("users-page-size");
+        if (pageSize) {
+            pageSize.addEventListener("change", function () {
+                state.pageSize = Number(pageSize.value) || 5;
+                state.page = 1;
+                renderTable();
+            });
+        }
+
+        document.querySelectorAll("[data-quick-filter]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var quick = btn.getAttribute("data-quick-filter") || "All";
+                state.quickFilter = quick;
+
+                document.querySelectorAll("[data-quick-filter]").forEach(function (tab) {
+                    var isActive = tab === btn;
+                    tab.setAttribute("aria-selected", isActive ? "true" : "false");
+                });
+
+                applyFiltersAndRender();
+            });
+        });
+    }
+
+    function updateKpis() {
+        byId("kpi-total-value").textContent = SAMPLE_DATA.stats.total;
+        byId("kpi-total-change").textContent = SAMPLE_DATA.stats.totalChange;
+        byId("kpi-active-value").textContent = SAMPLE_DATA.stats.active;
+        byId("kpi-new-value").textContent = SAMPLE_DATA.stats.new;
+        byId("kpi-inactive-value").textContent = SAMPLE_DATA.stats.inactive;
+
+        initializeSparkline("kpi-spark-total", [256, 267, 274, 281, 289, 301]);
+        initializeSparkline("kpi-spark-active", [160, 171, 178, 186, 194, 200]);
+        initializeSparkline("kpi-spark-new", [8, 12, 15, 19, 20, 24]);
+        initializeSparkline("kpi-spark-inactive", [116, 113, 110, 108, 105, 101]);
+    }
+
+    function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    function placePopover(anchor, panel, preferredPlacement) {
+        if (!anchor || !panel) {
+            return;
+        }
+
+        panel.style.visibility = "hidden";
+        panel.style.display = "block";
+
+        var anchorRect = anchor.getBoundingClientRect();
+        var panelRect = panel.getBoundingClientRect();
+        var viewportWidth = window.innerWidth;
+        var viewportHeight = window.innerHeight;
+        var gap = 8;
+
+        var placements = preferredPlacement === "bottom-start"
+            ? ["bottom-start", "top-start", "bottom-end", "top-end"]
+            : ["bottom-end", "top-end", "bottom-start", "top-start"];
+
+        var best = { top: gap, left: gap, visibleArea: -1 };
+
+        placements.forEach(function (placement) {
+            var top;
+            var left;
+
+            if (placement.indexOf("bottom") === 0) {
+                top = anchorRect.bottom + gap;
+            } else {
+                top = anchorRect.top - panelRect.height - gap;
+            }
+
+            if (placement.indexOf("start") > -1) {
+                left = anchorRect.left;
+            } else {
+                left = anchorRect.right - panelRect.width;
+            }
+
+            var clampedLeft = clamp(left, gap, viewportWidth - panelRect.width - gap);
+            var clampedTop = clamp(top, gap, viewportHeight - panelRect.height - gap);
+
+            var visibleWidth = Math.max(0, Math.min(clampedLeft + panelRect.width, viewportWidth) - Math.max(clampedLeft, 0));
+            var visibleHeight = Math.max(0, Math.min(clampedTop + panelRect.height, viewportHeight) - Math.max(clampedTop, 0));
+            var visibleArea = visibleWidth * visibleHeight;
+
+            if (visibleArea > best.visibleArea) {
+                best = {
+                    top: clampedTop,
+                    left: clampedLeft,
+                    visibleArea: visibleArea
+                };
+            }
+        });
+
+        panel.style.top = best.top + "px";
+        panel.style.left = best.left + "px";
+        panel.style.visibility = "visible";
+    }
+
+    var openPopoverState = { anchor: null, panel: null };
+
+    function closeOpenPopover() {
+        if (!openPopoverState.panel) {
+            return;
+        }
+
+        openPopoverState.panel.setAttribute("data-open", "false");
+        openPopoverState.panel.style.display = "none";
+
+        if (openPopoverState.anchor) {
+            openPopoverState.anchor.setAttribute("aria-expanded", "false");
+        }
+
+        openPopoverState.anchor = null;
+        openPopoverState.panel = null;
+    }
+
+    function togglePopover(anchor, panel, placement) {
+        if (!anchor || !panel) {
+            return;
+        }
+
+        var same = openPopoverState.panel === panel && panel.getAttribute("data-open") === "true";
+        closeOpenPopover();
+
+        if (same) {
+            return;
+        }
+
+        panel.setAttribute("data-open", "true");
+        panel.style.display = "block";
+        anchor.setAttribute("aria-expanded", "true");
+        placePopover(anchor, panel, placement || "bottom-end");
+
+        openPopoverState.anchor = anchor;
+        openPopoverState.panel = panel;
+    }
+
+    function wirePopoverEvents() {
+        document.addEventListener("click", function (event) {
+            var target = event.target;
+            if (openPopoverState.panel && openPopoverState.panel.contains(target)) {
+                return;
+            }
+
+            if (openPopoverState.anchor && openPopoverState.anchor.contains(target)) {
+                return;
+            }
+
+            closeOpenPopover();
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                closeOpenPopover();
+            }
+        });
+
+        window.addEventListener("resize", function () {
+            if (openPopoverState.anchor && openPopoverState.panel) {
+                placePopover(openPopoverState.anchor, openPopoverState.panel, "bottom-end");
+            }
+        });
+
+        window.addEventListener("scroll", function () {
+            if (openPopoverState.anchor && openPopoverState.panel) {
+                placePopover(openPopoverState.anchor, openPopoverState.panel, "bottom-end");
+            }
+        }, { passive: true });
+    }
+
+    function wireSelection() {
+        var tbody = byId("users-table-body");
+        var selectAll = byId("select-all-users");
+
+        if (tbody) {
+            tbody.addEventListener("change", function (event) {
+                var checkbox = event.target.closest(".users-row-check");
+                if (!checkbox) {
+                    return;
+                }
+
+                var id = Number(checkbox.getAttribute("data-row-id"));
+                if (checkbox.checked) {
+                    state.selected.add(id);
+                } else {
+                    state.selected.delete(id);
+                }
+            });
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener("change", function () {
+                var sorted = sortedFilteredUsers();
+                var paginated = paginate(sorted);
+
+                paginated.forEach(function (user) {
+                    if (selectAll.checked) {
+                        state.selected.add(user.id);
+                    } else {
+                        state.selected.delete(user.id);
+                    }
+                });
+
+                renderTable();
+            });
+        }
+    }
+
+    function wireBulkActions() {
+        var bulkBtn = byId("bulk-actions-btn");
+        var bulkMenu = byId("bulk-actions-menu");
+        if (!bulkBtn || !bulkMenu) {
+            return;
+        }
+
+        bulkBtn.addEventListener("click", function () {
+            togglePopover(bulkBtn, bulkMenu, "bottom-end");
+        });
+
+        bulkMenu.addEventListener("click", function (event) {
+            var actionButton = event.target.closest("[data-bulk-action]");
+            if (!actionButton) {
+                return;
+            }
+
+            var action = actionButton.getAttribute("data-bulk-action");
+            if (!action) {
+                return;
+            }
+
+            if (state.selected.size === 0) {
+                closeOpenPopover();
+                return;
+            }
+
+            if (action === "delete") {
+                state.users = state.users.filter(function (user) {
+                    return !state.selected.has(user.id);
+                });
+            }
+
+            if (action === "activate" || action === "inactive") {
+                var nextStatus = action === "activate" ? "Active" : "Inactive";
+                state.users = state.users.map(function (user) {
+                    if (state.selected.has(user.id)) {
+                        return {
+                            id: user.id,
+                            name: user.name,
+                            email: user.email,
+                            role: user.role,
+                            status: nextStatus,
+                            joined: user.joined
+                        };
+                    }
+
+                    return user;
+                });
+            }
+
+            state.selected.clear();
+            applyFiltersAndRender();
+            closeOpenPopover();
+        });
+    }
+
+    function wireRangeTabs() {
+        document.querySelectorAll("[data-range]").forEach(function (tab) {
+            tab.addEventListener("click", function () {
+                var nextRange = tab.getAttribute("data-range") || "weekly";
+                document.querySelectorAll("[data-range]").forEach(function (btn) {
+                    btn.setAttribute("aria-selected", btn === tab ? "true" : "false");
+                });
+
+                window.fetchUserStats(nextRange).then(function () {
+                    updateGrowthChart(nextRange);
+                });
+            });
+        });
+    }
+
+    function wireMobileFiltersPopover() {
+        var btn = byId("open-mobile-filters");
+        var pop = byId("mobile-filters-popover");
+
+        if (!btn || !pop) {
+            return;
+        }
+
+        btn.addEventListener("click", function () {
+            togglePopover(btn, pop, "bottom-end");
+        });
+    }
+
+    function lazyInitCharts() {
+        var section = byId("users-growth-chart");
+        if (!section) {
+            return;
+        }
+
+        if (!("IntersectionObserver" in window)) {
+            initCharts();
+            return;
+        }
+
+        var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    initCharts();
+                    observer.disconnect();
+                }
+            });
+        }, {
+            rootMargin: "200px 0px"
+        });
+
+        observer.observe(section);
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        updateKpis();
+        renderActivity();
+        lazyInitCharts();
+        wireFilters();
+        wireSorters();
+        wireSelection();
+        wireBulkActions();
+        wireRangeTabs();
+        wireMobileFiltersPopover();
+        wirePopoverEvents();
+        setAriaSortIndicators();
+        renderTable();
+
+        window.fetchUsers({ page: 1 }).then(function (response) {
+            if (response && Array.isArray(response.users)) {
+                state.users = response.users.slice();
+                applyFiltersAndRender();
+            }
+        });
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    });
+})();
+</script>
+{% endblock %}

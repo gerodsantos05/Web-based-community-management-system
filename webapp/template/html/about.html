@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About | Happyness Project</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+</head>
+<body>
+    <header class="header" id="home">
+        <div class="container header-row">
+            <a class="brand" href="{% url 'home' %}" aria-label="Happyness Project home">
+                <span class="brand-dot" aria-hidden="true"></span>
+                <span>Happyness Project</span>
+            </a>
+
+            <nav class="header-nav" id="mobileNav" aria-label="Primary navigation">
+                <ul class="nav-list">
+                    <li><a class="nav-link" href="{% url 'home' %}">Home</a></li>
+                    <li><a class="nav-link active" href="{% url 'about' %}">About</a></li>
+                    <li><a class="nav-link" href="{% url 'products' %}">Products</a></li>
+                    <li><a class="nav-link" href="{% url 'contact' %}">Contacts</a></li>
+                </ul>
+            </nav>
+
+            <div class="header-actions">
+                <button class="btn btn-signin" id="openSignInModal" type="button">Sign In</button>
+                <button class="menu-btn" id="menuBtn" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobileNav">
+                    <i data-lucide="menu"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="about-page">
+        <section class="about-section">
+            <div class="container">
+                <div class="about-heading-wrap">
+                    <h1 class="about-heading">About Us</h1>
+                    <span class="about-underline" aria-hidden="true"></span>
+                </div>
+
+                <div class="about-grid">
+                    <div class="about-image-card">
+                        <div class="about-image-glow"></div>
+                        <img
+                            src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80"
+                            alt="Team collaboration in office"
+                            class="about-image"
+                        >
+                    </div>
+                    <div class="about-copy">
+                        <h2>Our Vision</h2>
+                        <p>
+                            At Happyness Project, we imagine a world where everyone has access to practical tools,
+                            trusted guidance, and a supportive community to build meaningful happiness.
+                        </p>
+                        <p>
+                            We blend science-backed strategies, mindful routines, and human connection to help people
+                            create lasting positive change in daily life.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="about-grid about-grid-reverse">
+                    <div class="about-copy">
+                        <h2>Our Mission</h2>
+                        <p>
+                            Our mission is to make personal growth simple, actionable, and consistent through structured
+                            programs, daily support, and measurable progress.
+                        </p>
+                        <p>
+                            Whether you are just beginning or continuing your wellness journey, we provide a clear path
+                            toward confidence, balance, and fulfillment.
+                        </p>
+
+                        <div class="about-callout">
+                            <span class="about-callout-icon"><i data-lucide="target"></i></span>
+                            <div>
+                                <h3>Goal-Oriented Approach</h3>
+                                <p>Set meaningful goals and move forward with personalized support and accountability.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="about-image-card">
+                        <div class="about-image-glow about-image-glow-alt"></div>
+                        <img
+                            src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=1200&q=80"
+                            alt="Mindfulness meditation in nature"
+                            class="about-image"
+                        >
+                    </div>
+                </div>
+
+                <section class="programs" id="programs">
+                    <div class="programs-header">
+                        <h2>Core Programs</h2>
+                        <p>
+                            Discover our signature programs designed to support your journey to emotional well-being,
+                            growth, and purposeful living.
+                        </p>
+                    </div>
+
+                    <div class="program-grid">
+                        <article class="program-card">
+                            <div class="program-image-wrap">
+                                <div class="program-image-ring">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1506126279646-a697353d3166?auto=format&fit=crop&w=900&q=80"
+                                        alt="Mindful living program"
+                                        class="program-image"
+                                    >
+                                </div>
+                                <span class="program-icon"><i data-lucide="heart"></i></span>
+                            </div>
+                            <h3>Mindful Living</h3>
+                            <p>Learn to stay present and balanced through practical mindfulness and emotional regulation.</p>
+                        </article>
+
+                        <article class="program-card">
+                            <div class="program-image-wrap">
+                                <div class="program-image-ring program-image-ring-teal">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=80"
+                                        alt="Community circles program"
+                                        class="program-image"
+                                    >
+                                </div>
+                                <span class="program-icon"><i data-lucide="users"></i></span>
+                            </div>
+                            <h3>Community Circles</h3>
+                            <p>Grow with like-minded people in a safe, uplifting environment focused on shared progress.</p>
+                        </article>
+
+                        <article class="program-card">
+                            <div class="program-image-wrap">
+                                <div class="program-image-ring">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=900&q=80"
+                                        alt="Personal coaching program"
+                                        class="program-image"
+                                    >
+                                </div>
+                                <span class="program-icon"><i data-lucide="lightbulb"></i></span>
+                            </div>
+                            <h3>Personal Coaching</h3>
+                            <p>Work one-on-one with expert guides to build habits and strategies that match your goals.</p>
+                        </article>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer" id="contacts">
+        <div class="container">
+            <div class="footer-grid">
+                <section>
+                    <a class="brand" href="{% url 'home' %}" aria-label="Happyness Project home">
+                        <span class="brand-dot" aria-hidden="true"></span>
+                        <span>Happyness Project</span>
+                    </a>
+                    <p class="brand-copy">
+                        Empowering happier and more fulfilled lives through practical habits, community care, and trusted guidance.
+                    </p>
+                </section>
+
+                <section>
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="{% url 'home' %}">Home</a></li>
+                        <li><a href="{% url 'about' %}">About Us</a></li>
+                        <li><a href="{% url 'products' %}">Products</a></li>
+                        <li><a href="#">Blog</a></li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">Guides</a></li>
+                        <li><a href="#">Community</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><i data-lucide="mail" class="icon-sm"></i> hello@happyness.com</li>
+                        <li><i data-lucide="phone" class="icon-sm"></i> +1 (555) 123-4567</li>
+                        <li><i data-lucide="map-pin" class="icon-sm"></i> 123 Joy Street</li>
+                        <li>San Francisco, CA</li>
+                    </ul>
+                </section>
+            </div>
+
+            <p class="copyright">&copy; 2026 Happyness Project. Made with <i data-lucide="heart" class="icon-sm"></i> for better living.</p>
+        </div>
+    </footer>
+
+    <div
+        id="signinModal"
+        class="modal-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="signinDialogTitle"
+        aria-describedby="signinDialogDescription"
+        aria-hidden="true"
+    >
+        <section class="modal-card">
+            <button class="modal-close" id="closeSignInModal" type="button" aria-label="Close sign in dialog">
+                <i data-lucide="x"></i>
+            </button>
+
+            <article class="modal-left">
+                <h2 id="signinDialogTitle" class="dialog-title">Welcome Back!</h2>
+                <p id="signinDialogDescription" class="dialog-description">
+                    Sign in to continue your happiness journey with guided practices and community support.
+                </p>
+                <div class="modal-lines" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <p class="social-title">Continue with social media</p>
+                <div class="social-login-row" aria-label="Social sign in options">
+                    <button class="social-login-btn social-facebook" type="button" aria-label="Continue with Facebook">
+                        <i data-lucide="facebook"></i>
+                    </button>
+                    <button class="social-login-btn social-google" type="button" aria-label="Continue with Google">
+                        <i data-lucide="chrome"></i>
+                    </button>
+                    <button class="social-login-btn social-youtube" type="button" aria-label="Continue with YouTube">
+                        <i data-lucide="youtube"></i>
+                    </button>
+                </div>
+            </article>
+
+            <article class="modal-right">
+                <h3>Sign In</h3>
+                <form class="modal-form" method="post" action="#">
+                    {% csrf_token %}
+                    <label class="sr-only" for="modalEmail">Email Address</label>
+                    <input id="modalEmail" name="email" type="email" placeholder="Email Address" required>
+
+                    <label class="sr-only" for="modalPassword">Password</label>
+                    <input id="modalPassword" name="password" type="password" placeholder="Password" required>
+
+                    <button class="btn modal-login-btn" type="submit">LOGIN</button>
+                </form>
+                <p class="modal-signup">new? <a href="#" id="switchToSignUpFromSignIn">Sign up</a></p>
+            </article>
+        </section>
+    </div>
+
+    <div
+        id="signupModal"
+        class="modal-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="signupDialogTitle"
+        aria-describedby="signupDialogDescription"
+        aria-hidden="true"
+    >
+        <section class="modal-card">
+            <button class="modal-close" id="closeSignUpModal" type="button" aria-label="Close sign up dialog">
+                <i data-lucide="x"></i>
+            </button>
+
+            <article class="modal-left modal-left-signup">
+                <h2 id="signupDialogTitle" class="dialog-title">Welcome New User!</h2>
+                <p id="signupDialogDescription" class="dialog-description">
+                    Create your account and begin your guided growth path today.
+                </p>
+                <div class="modal-lines" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <p class="social-title">Continue with social media</p>
+                <div class="social-login-row" aria-label="Social sign up options">
+                    <button class="social-login-btn social-facebook" type="button" aria-label="Continue with Facebook">
+                        <i data-lucide="facebook"></i>
+                    </button>
+                    <button class="social-login-btn social-x" type="button" aria-label="Continue with X">
+                        <svg class="x-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+                        </svg>
+                    </button>
+                    <button class="social-login-btn social-youtube" type="button" aria-label="Continue with YouTube">
+                        <i data-lucide="youtube"></i>
+                    </button>
+                </div>
+            </article>
+
+            <article class="modal-right">
+                <h3>Sign Up</h3>
+                <form class="modal-form" method="post" action="#">
+                    {% csrf_token %}
+                    <label class="sr-only" for="signupModalEmail">Email Address</label>
+                    <input id="signupModalEmail" name="email" type="email" placeholder="Email Address" required>
+
+                    <label class="sr-only" for="signupModalPassword">Password</label>
+                    <input id="signupModalPassword" name="password" type="password" placeholder="Password" required>
+
+                    <label class="sr-only" for="signupModalConfirmPassword">Confirm Password</label>
+                    <input id="signupModalConfirmPassword" name="confirm_password" type="password" placeholder="Confirm Password" required>
+
+                    <button class="btn modal-login-btn" type="submit">REGISTER</button>
+                </form>
+                <p class="modal-signup">Already have? <a href="#" id="switchToSignInFromSignUp">Sign in</a></p>
+            </article>
+        </section>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="{% static 'js/index.js' %}"></script>
+</body>
+</html>

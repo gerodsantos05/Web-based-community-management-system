@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happyness Project</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+</head>
+<body {% if open_modal %}class="modal-open"{% endif %}>
+    <header class="header" id="home">
+        <div class="container header-row">
+            <a class="brand" href="{% url 'home' %}" aria-label="Happyness Project home">
+                <span class="brand-dot" aria-hidden="true"></span>
+                <span>Happyness Project</span>
+            </a>
+
+            <nav class="header-nav" id="mobileNav" aria-label="Primary navigation">
+                <ul class="nav-list">
+                    <li><a class="nav-link" href="{% url 'home' %}">Home</a></li>
+                    <li><a class="nav-link" href="{% url 'about' %}">About</a></li>
+                    <li><a class="nav-link" href="{% url 'products' %}">Products</a></li>
+                    <li><a class="nav-link" href="{% url 'contact' %}">Contacts</a></li>
+                </ul>
+            </nav>
+
+            <div class="header-actions">
+                <button class="btn btn-signin" id="openSignInModal" type="button">Sign In</button>
+          
+                <button class="menu-btn" id="menuBtn" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobileNav">
+                    <i data-lucide="menu"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero" id="about">
+            <div class="container hero-grid">
+                <div>
+                    <span class="pill">
+                        <i data-lucide="sparkles" class="icon-sm"></i>
+                        Discover Joy &amp; Fulfillment
+                    </span>
+                    <h1>
+                        Welcome to
+                        <span class="gradient-text">Happyness Project</span>
+                    </h1>
+                    <p class="hero-copy">
+                        Build lasting happiness through mindful habits, expert-backed guidance, and a warm community that helps you thrive every day. Start small, stay consistent, and watch meaningful change unfold.
+                    </p>
+
+                    <div class="actions">
+                        <button class="btn btn-primary" type="button">
+                            Get Started
+                            <i data-lucide="arrow-right" class="icon-sm"></i>
+                        </button>
+                        <button class="btn btn-secondary" type="button">Learn More</button>
+                    </div>
+
+                    <div class="stats">
+                        <article class="stat-card">
+                            <span class="stat-icon"><i data-lucide="users"></i></span>
+                            <p class="stat-value">10k+</p>
+                            <p class="stat-label">Happy Members</p>
+                        </article>
+                        <article class="stat-card">
+                            <span class="stat-icon"><i data-lucide="award"></i></span>
+                            <p class="stat-value">95%</p>
+                            <p class="stat-label">Success Rate</p>
+                        </article>
+                        <article class="stat-card">
+                            <span class="stat-icon"><i data-lucide="book-open"></i></span>
+                            <p class="stat-value">50+</p>
+                            <p class="stat-label">Expert Guides</p>
+                        </article>
+                    </div>
+                </div>
+
+                <div class="hero-image-wrap">
+                    <img
+                        class="hero-image"
+                        src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1080&q=80"
+                        alt="Happy people smiling together outdoors"
+                    >
+                </div>
+            </div>
+        </section>
+
+        <section class="features" id="products">
+            <div class="container">
+                <div class="section-title">
+                    <h2>Why Choose <span class="gradient-text">Happyness Project</span></h2>
+                    <p>
+                        The Happyness Project brings practical tools, supportive connection, and expert coaching into one experience designed to elevate your mental wellness and personal growth.
+                    </p>
+                </div>
+
+                <div class="feature-grid">
+                    <article class="feature-card feature-emerald-500">
+                        <span class="feature-icon"><i data-lucide="heart"></i></span>
+                        <h3>Mindful Living</h3>
+                        <p>Build calming routines through guided breathing, journaling prompts, and mindful awareness practices.</p>
+                    </article>
+
+                    <article class="feature-card feature-teal-500">
+                        <span class="feature-icon"><i data-lucide="users"></i></span>
+                        <h3>Community Support</h3>
+                        <p>Share wins, challenges, and encouragement with a positive network growing together every day.</p>
+                    </article>
+
+                    <article class="feature-card feature-emerald-600">
+                        <span class="feature-icon"><i data-lucide="trending-up"></i></span>
+                        <h3>Personal Growth</h3>
+                        <p>Track your progress using clear milestones and celebrate momentum as your habits improve.</p>
+                    </article>
+
+                    <article class="feature-card feature-teal-600">
+                        <span class="feature-icon"><i data-lucide="award"></i></span>
+                        <h3>Expert Guidance</h3>
+                        <p>Learn from skilled wellness mentors who translate science-backed methods into daily action.</p>
+                    </article>
+
+                    <article class="feature-card feature-emerald-400">
+                        <span class="feature-icon"><i data-lucide="message-circle"></i></span>
+                        <h3>Daily Inspiration</h3>
+                        <p>Start every day with uplifting messages and practical ideas that keep your mindset strong.</p>
+                    </article>
+
+                    <article class="feature-card feature-teal-400">
+                        <span class="feature-icon"><i data-lucide="zap"></i></span>
+                        <h3>Quick Wins</h3>
+                        <p>Use simple actions you can complete in minutes to boost mood, clarity, and confidence fast.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer" id="contacts">
+        <div class="container">
+            <div class="footer-grid">
+                <section>
+                    <a class="brand" href="#home" aria-label="Happyness Project home">
+                        <span class="brand-dot" aria-hidden="true"></span>
+                        <span>Happyness Project</span>
+                    </a>
+                    <p class="brand-copy">
+                        Empowering happier and more fulfilled lives through practical habits, community care, and trusted guidance.
+                    </p>
+                </section>
+
+                <section>
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#about">About Us</a></li>
+                        <li><a href="{% url 'products' %}">Products</a></li>
+                        <li><a href="#">Blog</a></li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">Guides</a></li>
+                        <li><a href="#">Community</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><i data-lucide="mail" class="icon-sm"></i> hello@happyness.com</li>
+                        <li><i data-lucide="phone" class="icon-sm"></i> +1 (555) 123-4567</li>
+                        <li><i data-lucide="map-pin" class="icon-sm"></i> 123 Joy Street</li>
+                        <li>San Francisco, CA</li>
+                    </ul>
+                </section>
+            </div>
+
+            <p class="copyright">&copy; 2026 Happyness Project. Made with <i data-lucide="heart" class="icon-sm"></i> for better living.</p>
+        </div>
+    </footer>
+
+    <div
+        id="signinModal"
+        class="modal-overlay{% if open_modal == 'signin' %} open{% endif %}"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="signinDialogTitle"
+        aria-describedby="signinDialogDescription"
+        aria-hidden="true"
+    >
+        <section class="modal-card">
+            <button class="modal-close" id="closeSignInModal" type="button" aria-label="Close sign in dialog">
+                <i data-lucide="x"></i>
+            </button>
+
+            <article class="modal-left">
+                <h2 id="signinDialogTitle" class="dialog-title">Welcome Back!</h2>
+                <p id="signinDialogDescription" class="dialog-description">
+                    Sign in to continue your happiness journey with guided practices and community support.
+                </p>
+                <div class="modal-lines" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <p class="social-title">Continue with social media</p>
+                <div class="social-login-row" aria-label="Social sign in options">
+                    <button class="social-login-btn social-facebook" type="button" aria-label="Continue with Facebook">
+                        <i data-lucide="facebook"></i>
+                    </button>
+                    <button class="social-login-btn social-google" type="button" aria-label="Continue with Google">
+                        <i data-lucide="chrome"></i>
+                    </button>
+                    <button class="social-login-btn social-youtube" type="button" aria-label="Continue with YouTube">
+                        <i data-lucide="youtube"></i>
+                    </button>
+                </div>
+            </article>
+
+            <article class="modal-right">
+                <h3>Sign In</h3>
+                <form class="modal-form" method="post" action="{% url 'signin' %}">
+                    {% csrf_token %}
+
+                    {% if signin_form.non_field_errors %}
+                        <div class="form-errors" style="margin-bottom: 1rem;">
+                            {% for error in signin_form.non_field_errors %}
+                                <p class="form-error" style="margin:0.25rem 0; color:#b91c1c; font-size:0.92rem;">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <label class="sr-only" for="id_username_or_email">Username or Email</label>
+                    <input id="id_username_or_email" class="auth-input" type="text" name="username_or_email" value="{{ signin_form.username_or_email.value|default:'' }}" placeholder="Username or Email" required>
+                    {% if signin_form.username_or_email.errors %}
+                        <p class="form-error" style="margin:0.25rem 0; color:#b91c1c; font-size:0.92rem;">{{ signin_form.username_or_email.errors.0 }}</p>
+                    {% endif %}
+
+                    <label class="sr-only" for="id_password">Password</label>
+                    <input id="id_password" class="auth-input" type="password" name="password" placeholder="Password" required>
+                    {% if signin_form.password.errors %}
+                        <p class="form-error" style="margin:0.25rem 0; color:#b91c1c; font-size:0.92rem;">{{ signin_form.password.errors.0 }}</p>
+                    {% endif %}
+
+                    <button class="btn modal-login-btn" type="submit">LOGIN</button>
+                </form>
+                <p class="modal-signup">new? <a href="#" id="switchToSignUpFromSignIn">Sign up</a></p>
+            </article>
+        </section>
+    </div>
+
+    <div
+        id="signupModal"
+        class="modal-overlay{% if open_modal == 'signup' %} open{% endif %}"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="signupDialogTitle"
+        aria-describedby="signupDialogDescription"
+        aria-hidden="true"
+    >
+        <section class="modal-card">
+            <button class="modal-close" id="closeSignUpModal" type="button" aria-label="Close sign up dialog">
+                <i data-lucide="x"></i>
+            </button>
+
+            <article class="modal-left modal-left-signup">
+                <h2 id="signupDialogTitle" class="dialog-title">Welcome New User!</h2>
+                <p id="signupDialogDescription" class="dialog-description">
+                    Create your account and begin your guided growth path today.
+                </p>
+                <div class="modal-lines" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <p class="social-title">Continue with social media</p>
+                <div class="social-login-row" aria-label="Social sign up options">
+                    <button class="social-login-btn social-facebook" type="button" aria-label="Continue with Facebook">
+                        <i data-lucide="facebook"></i>
+                    </button>
+                    <button class="social-login-btn social-x" type="button" aria-label="Continue with X">
+                        <svg class="x-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+                        </svg>
+                    </button>
+                    <button class="social-login-btn social-youtube" type="button" aria-label="Continue with YouTube">
+                        <i data-lucide="youtube"></i>
+                    </button>
+                </div>
+            </article>
+
+            <article class="modal-right">
+                <h3>Sign Up</h3>
+                <form class="modal-form" method="post" action="{% url 'signup' %}">
+                    {% csrf_token %}
+
+                    {% if signup_form.non_field_errors %}
+                        <div class="form-errors" style="margin-bottom: 1rem;">
+                            {% for error in signup_form.non_field_errors %}
+                                <p class="form-error" style="margin:0.25rem 0; color:#b91c1c; font-size:0.92rem;">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <label class="sr-only" for="id_username">Username</label>
+                    <input id="id_username" class="auth-input" type="text" name="username" value="{{ signup_form.username.value|default:'' }}" placeholder="Username" required>
+                    {% if signup_form.username.errors %}
+                        <p class="form-error" style="margin:0.25rem 0; color:#b91c1c; font-size:0.92rem;">{{ signup_form.username.errors.0 }}</p>
+                    {% endif %}
+
+                    <label class="sr-only" for="id_email">Email</label>
+                    <input id="id_email" class="auth-input" type="email" name="email" value="{{ signup_form.email.value|default:'' }}" placeholder="Email Address" required>
+                    {% if signup_form.email.errors %}
+                        <p class="form-error" style="margin:0.25rem 0; color:#b91c1c; font-size:0.92rem;">{{ signup_form.email.errors.0 }}</p>
+                    {% endif %}
+
+                    <label class="sr-only" for="id_password1">Password</label>
+                    <input id="id_password1" class="auth-input" type="password" name="password1" placeholder="Password" required>
+                    {% if signup_form.password1.errors %}
+                        <p class="form-error" style="margin:0.25rem 0; color:#b91c1c; font-size:0.92rem;">{{ signup_form.password1.errors.0 }}</p>
+                    {% endif %}
+
+                    <label class="sr-only" for="id_password2">Confirm Password</label>
+                    <input id="id_password2" class="auth-input" type="password" name="password2" placeholder="Confirm Password" required>
+                    {% if signup_form.password2.errors %}
+                        <p class="form-error" style="margin:0.25rem 0; color:#b91c1c; font-size:0.92rem;">{{ signup_form.password2.errors.0 }}</p>
+                    {% endif %}
+
+                    <button class="btn modal-login-btn" type="submit">REGISTER</button>
+                </form>
+                <p class="modal-signup">Already have? <a href="#" id="switchToSignInFromSignUp">Sign in</a></p>
+            </article>
+        </section>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="{% static 'js/index.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,1087 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Settings | Happyness{% endblock %}
+
+{% block extra_head %}
+<style>
+    .settings-page {
+        display: grid;
+        gap: 1.5rem;
+    }
+
+    .settings-header {
+        display: grid;
+        gap: 0.5rem;
+    }
+
+    .settings-header-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--ink-900);
+    }
+
+    .settings-header-subtitle {
+        font-size: 0.95rem;
+        color: var(--ink-500);
+    }
+
+    .settings-container {
+        display: grid;
+        grid-template-columns: 16rem 1fr;
+        gap: 1.5rem;
+    }
+
+    .settings-nav {
+        display: grid;
+        gap: 0.5rem;
+    }
+
+    .settings-nav-item {
+        display: grid;
+        grid-template-columns: 1.5rem 1fr;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.7rem 0.8rem;
+        border-radius: 0.7rem;
+        border: 1px solid transparent;
+        background: transparent;
+        font: inherit;
+        color: var(--ink-700);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .settings-nav-item:hover:not(.active) {
+        background: rgba(236, 253, 245, 0.6);
+        color: var(--ink-900);
+    }
+
+    .settings-nav-item.active {
+        background: rgba(16, 185, 129, 0.15);
+        border-color: rgba(16, 185, 129, 0.3);
+        color: var(--teal-700);
+        font-weight: 600;
+    }
+
+    .settings-nav-item:focus-visible {
+        outline: 2px solid var(--teal-500);
+        outline-offset: 2px;
+    }
+
+    .settings-nav-icon {
+        width: 1.5rem;
+        height: 1.5rem;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+    }
+
+    .settings-panel {
+        display: grid;
+        gap: 1.5rem;
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(15, 118, 110, 0.14);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 2rem;
+    }
+
+    .settings-section:not(.active) {
+        display: none;
+    }
+
+    .settings-section-header {
+        display: grid;
+        gap: 0.3rem;
+        border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+        padding-bottom: 1rem;
+    }
+
+    .settings-section-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--ink-900);
+    }
+
+    .settings-section-description {
+        font-size: 0.9rem;
+        color: var(--ink-500);
+    }
+
+    .settings-form {
+        display: grid;
+        gap: 1.5rem;
+    }
+
+    .settings-form-group {
+        display: grid;
+        gap: 0.5rem;
+    }
+
+    .settings-form-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--ink-900);
+    }
+
+    .settings-form-help {
+        font-size: 0.8rem;
+        color: var(--ink-500);
+        margin-top: -0.2rem;
+    }
+
+    .settings-form-input,
+    .settings-form-select,
+    .settings-form-textarea {
+        padding: 0.6rem 0.8rem;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        border-radius: 0.6rem;
+        background: #ffffff;
+        font: inherit;
+        color: var(--ink-900);
+        transition: all 0.2s ease;
+    }
+
+    .settings-form-input:focus,
+    .settings-form-select:focus,
+    .settings-form-textarea:focus {
+        outline: none;
+        border-color: rgba(16, 185, 129, 0.5);
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+
+    .settings-form-textarea {
+        resize: vertical;
+        min-height: 5rem;
+    }
+
+    .settings-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .settings-toggle-switch {
+        position: relative;
+        width: 2.25rem;
+        height: 1.3rem;
+        border-radius: 999px;
+        border: none;
+        background: rgba(148, 163, 184, 0.3);
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+    .settings-toggle-switch.on {
+        background: rgba(16, 185, 129, 0.8);
+    }
+
+    .settings-toggle-switch::after {
+        content: '';
+        position: absolute;
+        top: 0.15rem;
+        left: 0.15rem;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 999px;
+        background: #ffffff;
+        transition: left 0.2s ease;
+    }
+
+    .settings-toggle-switch.on::after {
+        left: 1.1rem;
+    }
+
+    .settings-toggle-label {
+        font-size: 0.9rem;
+        color: var(--ink-700);
+    }
+
+    .settings-matrix {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .settings-matrix-row {
+        display: grid;
+        grid-template-columns: 8rem 1fr;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.8rem;
+        border-radius: 0.6rem;
+        background: rgba(236, 253, 245, 0.3);
+    }
+
+    .settings-matrix-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--ink-900);
+    }
+
+    .settings-matrix-controls {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+
+    .settings-matrix-check {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .settings-matrix-check input {
+        cursor: pointer;
+        accent-color: var(--teal-700);
+    }
+
+    .settings-matrix-check label {
+        font-size: 0.8rem;
+        color: var(--ink-600);
+        cursor: pointer;
+    }
+
+    .settings-status-item {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.8rem;
+        border-radius: 0.6rem;
+        background: rgba(236, 253, 245, 0.3);
+    }
+
+    .settings-status-label {
+        display: grid;
+        gap: 0.2rem;
+    }
+
+    .settings-status-label-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--ink-900);
+    }
+
+    .settings-status-label-meta {
+        font-size: 0.8rem;
+        color: var(--ink-500);
+    }
+
+    .settings-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.3rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        background: rgba(16, 185, 129, 0.15);
+        color: #0c6b5f;
+    }
+
+    .settings-button-group {
+        display: flex;
+        gap: 0.8rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(15, 118, 110, 0.1);
+    }
+
+    .settings-btn {
+        padding: 0.65rem 1.2rem;
+        border-radius: 0.65rem;
+        border: none;
+        font: 0.9rem 600 sans-serif;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .settings-btn-primary {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(15, 118, 110, 0.8));
+        color: #ffffff;
+    }
+
+    .settings-btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .settings-btn-secondary {
+        background: rgba(236, 253, 245, 0.7);
+        color: var(--teal-700);
+        border: 1px solid rgba(15, 118, 110, 0.2);
+    }
+
+    .settings-btn-secondary:hover {
+        background: rgba(236, 253, 245, 0.95);
+    }
+
+    .settings-btn-danger {
+        background: rgba(239, 68, 68, 0.1);
+        color: #b91c1c;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .settings-btn-danger:hover {
+        background: rgba(239, 68, 68, 0.15);
+    }
+
+    .settings-btn:focus-visible {
+        outline: 2px solid var(--teal-500);
+        outline-offset: 2px;
+    }
+
+    .settings-empty {
+        text-align: center;
+        padding: 2rem;
+        color: var(--ink-500);
+    }
+
+    .settings-toast {
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        padding: 1rem 1.5rem;
+        border-radius: 0.6rem;
+        background: rgba(16, 185, 129, 0.9);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        font-size: 0.9rem;
+        z-index: 50;
+        animation: slideIn 0.3s ease;
+    }
+
+    .settings-toast.error {
+        background: rgba(239, 68, 68, 0.9);
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @media (max-width: 1279px) {
+        .settings-container {
+            grid-template-columns: 1fr;
+        }
+
+        .settings-nav {
+            display: flex;
+            gap: 0.3rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+
+        .settings-nav-item {
+            white-space: nowrap;
+            padding: 0.5rem 0.6rem;
+            font-size: 0.85rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .settings-panel {
+            padding: 1.5rem;
+        }
+
+        .settings-btn-group {
+            flex-direction: column-reverse;
+        }
+
+        .settings-btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <div class="settings-header">
+        <h1 class="settings-header-title">Settings</h1>
+        <p class="settings-header-subtitle">Manage organization, users, security, and system preferences.</p>
+    </div>
+
+    <div class="settings-container">
+        <nav class="settings-nav" role="tablist" aria-label="Settings sections">
+            <button type="button" class="settings-nav-item active" data-section="general" role="tab" aria-selected="true" aria-controls="general">
+                <i data-lucide="cog" class="settings-nav-icon"></i>
+                <span>General</span>
+            </button>
+            <button type="button" class="settings-nav-item" data-section="organization" role="tab" aria-selected="false" aria-controls="organization">
+                <i data-lucide="building" class="settings-nav-icon"></i>
+                <span>Organization</span>
+            </button>
+            <button type="button" class="settings-nav-item" data-section="roles" role="tab" aria-selected="false" aria-controls="roles">
+                <i data-lucide="users" class="settings-nav-icon"></i>
+                <span>Roles & Perms</span>
+            </button>
+            <button type="button" class="settings-nav-item" data-section="notifications" role="tab" aria-selected="false" aria-controls="notifications">
+                <i data-lucide="bell" class="settings-nav-icon"></i>
+                <span>Notifications</span>
+            </button>
+            <button type="button" class="settings-nav-item" data-section="security" role="tab" aria-selected="false" aria-controls="security">
+                <i data-lucide="shield" class="settings-nav-icon"></i>
+                <span>Security</span>
+            </button>
+            <button type="button" class="settings-nav-item" data-section="system" role="tab" aria-selected="false" aria-controls="system">
+                <i data-lucide="sliders" class="settings-nav-icon"></i>
+                <span>System</span>
+            </button>
+            <button type="button" class="settings-nav-item" data-section="payments" role="tab" aria-selected="false" aria-controls="payments">
+                <i data-lucide="credit-card" class="settings-nav-icon"></i>
+                <span>Payments</span>
+            </button>
+            <button type="button" class="settings-nav-item" data-section="inventory" role="tab" aria-selected="false" aria-controls="inventory">
+                <i data-lucide="package" class="settings-nav-icon"></i>
+                <span>Inventory</span>
+            </button>
+            <button type="button" class="settings-nav-item" data-section="reports" role="tab" aria-selected="false" aria-controls="reports">
+                <i data-lucide="file-text" class="settings-nav-icon"></i>
+                <span>Reports</span>
+            </button>
+            <button type="button" class="settings-nav-item" data-section="audit" role="tab" aria-selected="false" aria-controls="audit">
+                <i data-lucide="log" class="settings-nav-icon"></i>
+                <span>Audit Logs</span>
+            </button>
+            <button type="button" class="settings-nav-item" data-section="backup" role="tab" aria-selected="false" aria-controls="backup">
+                <i data-lucide="save" class="settings-nav-icon"></i>
+                <span>Backup</span>
+            </button>
+            <button type="button" class="settings-nav-item" data-section="integrations" role="tab" aria-selected="false" aria-controls="integrations">
+                <i data-lucide="zap" class="settings-nav-icon"></i>
+                <span>Integrations</span>
+            </button>
+        </nav>
+
+        <div class="settings-panel">
+            <!-- General -->
+            <section id="general" class="settings-section active" role="tabpanel" aria-labelledby="general">
+                <div class="settings-section-header">
+                    <h2 class="settings-section-title">General Settings</h2>
+                    <p class="settings-section-description">Configure core system settings and preferences.</p>
+                </div>
+                <form class="settings-form" id="general-form">
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Organization Code</label>
+                        <input type="text" class="settings-form-input" value="ORG-001-HPS" readonly />
+                        <p class="settings-form-help">Unique identifier for your organization.</p>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">System URL</label>
+                        <input type="text" class="settings-form-input" value="https://happyness.local" />
+                        <p class="settings-form-help">Base URL for system emails and links.</p>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Support Email</label>
+                        <input type="email" class="settings-form-input" value="support@happyness.org" />
+                    </div>
+                    <div class="settings-button-group">
+                        <button type="submit" class="settings-btn settings-btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Organization Profile -->
+            <section id="organization" class="settings-section" role="tabpanel" aria-labelledby="organization">
+                <div class="settings-section-header">
+                    <h2 class="settings-section-title">Organization Profile</h2>
+                    <p class="settings-section-description">Edit your organization details and branding.</p>
+                </div>
+                <form class="settings-form" id="organization-form">
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Organization Logo</label>
+                        <input type="file" class="settings-form-input" accept="image/*" />
+                        <p class="settings-form-help">PNG, JPG, or SVG. Max 2 MB.</p>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Organization Name</label>
+                        <input type="text" class="settings-form-input" value="Happyness Project" />
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Contact Email</label>
+                        <input type="email" class="settings-form-input" value="contact@happyness.org" />
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Phone Number</label>
+                        <input type="tel" class="settings-form-input" value="+63 2 123 4567" />
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Address</label>
+                        <input type="text" class="settings-form-input" value="Metro Manila, Philippines" />
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Description</label>
+                        <textarea class="settings-form-textarea">Community-focused organization dedicated to improving lives through voluntary service and donations.</textarea>
+                    </div>
+                    <div class="settings-button-group">
+                        <button type="submit" class="settings-btn settings-btn-primary">Save Profile</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Roles & Permissions -->
+            <section id="roles" class="settings-section" role="tabpanel" aria-labelledby="roles">
+                <div class="settings-section-header">
+                    <h2 class="settings-section-title">User Roles & Permissions</h2>
+                    <p class="settings-section-description">Manage roles and assign permissions to users.</p>
+                </div>
+                <form class="settings-form" id="roles-form">
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Role Permissions Matrix</label>
+                        <div class="settings-matrix">
+                            <div class="settings-matrix-row">
+                                <div class="settings-matrix-label">Admin</div>
+                                <div class="settings-matrix-controls">
+                                    <div class="settings-matrix-check">
+                                        <input type="checkbox" id="admin-users" checked />
+                                        <label for="admin-users">Manage Users</label>
+                                    </div>
+                                    <div class="settings-matrix-check">
+                                        <input type="checkbox" id="admin-reports" checked />
+                                        <label for="admin-reports">View Reports</label>
+                                    </div>
+                                    <div class="settings-matrix-check">
+                                        <input type="checkbox" id="admin-settings" checked />
+                                        <label for="admin-settings">Edit Settings</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="settings-matrix-row">
+                                <div class="settings-matrix-label">Staff</div>
+                                <div class="settings-matrix-controls">
+                                    <div class="settings-matrix-check">
+                                        <input type="checkbox" id="staff-users" />
+                                        <label for="staff-users">Manage Users</label>
+                                    </div>
+                                    <div class="settings-matrix-check">
+                                        <input type="checkbox" id="staff-reports" checked />
+                                        <label for="staff-reports">View Reports</label>
+                                    </div>
+                                    <div class="settings-matrix-check">
+                                        <input type="checkbox" id="staff-settings" />
+                                        <label for="staff-settings">Edit Settings</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="settings-matrix-row">
+                                <div class="settings-matrix-label">Member</div>
+                                <div class="settings-matrix-controls">
+                                    <div class="settings-matrix-check">
+                                        <input type="checkbox" id="member-users" />
+                                        <label for="member-users">Manage Users</label>
+                                    </div>
+                                    <div class="settings-matrix-check">
+                                        <input type="checkbox" id="member-reports" />
+                                        <label for="member-reports">View Reports</label>
+                                    </div>
+                                    <div class="settings-matrix-check">
+                                        <input type="checkbox" id="member-settings" />
+                                        <label for="member-settings">Edit Settings</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-button-group">
+                        <button type="submit" class="settings-btn settings-btn-primary">Save Permissions</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Notifications -->
+            <section id="notifications" class="settings-section" role="tabpanel" aria-labelledby="notifications">
+                <div class="settings-section-header">
+                    <h2 class="settings-section-title">Notification Preferences</h2>
+                    <p class="settings-section-description">Configure how you receive alerts and updates.</p>
+                </div>
+                <form class="settings-form" id="notifications-form">
+                    <div class="settings-form-group">
+                        <div class="settings-toggle">
+                            <button type="button" class="settings-toggle-switch on" data-toggle="email-alerts" aria-label="Toggle email alerts"></button>
+                            <label class="settings-toggle-label">Email Alerts</label>
+                        </div>
+                        <p class="settings-form-help">Receive important updates via email.</p>
+                    </div>
+                    <div class="settings-form-group">
+                        <div class="settings-toggle">
+                            <button type="button" class="settings-toggle-switch on" data-toggle="donation-alerts" aria-label="Toggle donation alerts"></button>
+                            <label class="settings-toggle-label">Donation Alerts</label>
+                        </div>
+                        <p class="settings-form-help">Notify when new donations are received.</p>
+                    </div>
+                    <div class="settings-form-group">
+                        <div class="settings-toggle">
+                            <button type="button" class="settings-toggle-switch on" data-toggle="low-stock" aria-label="Toggle low stock alerts"></button>
+                            <label class="settings-toggle-label">Low Stock Alerts</label>
+                        </div>
+                        <p class="settings-form-help">Alert when inventory items reach minimum levels.</p>
+                    </div>
+                    <div class="settings-form-group">
+                        <div class="settings-toggle">
+                            <button type="button" class="settings-toggle-switch" data-toggle="weekly-summary" aria-label="Toggle weekly summary"></button>
+                            <label class="settings-toggle-label">Weekly Summary</label>
+                        </div>
+                        <p class="settings-form-help">Receive weekly digest of all activities.</p>
+                    </div>
+                    <div class="settings-button-group">
+                        <button type="submit" class="settings-btn settings-btn-primary">Save Preferences</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Security -->
+            <section id="security" class="settings-section" role="tabpanel" aria-labelledby="security">
+                <div class="settings-section-header">
+                    <h2 class="settings-section-title">Security Settings</h2>
+                    <p class="settings-section-description">Manage account security and access control.</p>
+                </div>
+                <form class="settings-form" id="security-form">
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Change Password</label>
+                        <input type="password" class="settings-form-input" placeholder="Current password" />
+                        <input type="password" class="settings-form-input" placeholder="New password" style="margin-top: 0.5rem;" />
+                        <input type="password" class="settings-form-input" placeholder="Confirm password" style="margin-top: 0.5rem;" />
+                    </div>
+                    <div class="settings-form-group">
+                        <div class="settings-toggle">
+                            <button type="button" class="settings-toggle-switch" data-toggle="2fa" aria-label="Toggle two-factor authentication"></button>
+                            <label class="settings-toggle-label">Two-Factor Authentication</label>
+                        </div>
+                        <p class="settings-form-help">Require a second verification method to sign in.</p>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Session Timeout</label>
+                        <select class="settings-form-select">
+                            <option>15 minutes</option>
+                            <option selected>30 minutes</option>
+                            <option>1 hour</option>
+                            <option>2 hours</option>
+                        </select>
+                        <p class="settings-form-help">Automatically logout after inactivity.</p>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Active Sessions</label>
+                        <div class="settings-status-item">
+                            <div class="settings-status-label">
+                                <div class="settings-status-label-title">Current Browser</div>
+                                <div class="settings-status-label-meta">Chrome on Windows • Today</div>
+                            </div>
+                            <span class="settings-status-badge">Current</span>
+                        </div>
+                        <div class="settings-status-item">
+                            <div class="settings-status-label">
+                                <div class="settings-status-label-title">Previous Session</div>
+                                <div class="settings-status-label-meta">Firefox on macOS • Yesterday</div>
+                            </div>
+                            <button type="button" class="settings-btn settings-btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Revoke</button>
+                        </div>
+                    </div>
+                    <div class="settings-button-group">
+                        <button type="submit" class="settings-btn settings-btn-primary">Update Security</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- System Preferences -->
+            <section id="system" class="settings-section" role="tabpanel" aria-labelledby="system">
+                <div class="settings-section-header">
+                    <h2 class="settings-section-title">System Preferences</h2>
+                    <p class="settings-section-description">Customize system behavior and display options.</p>
+                </div>
+                <form class="settings-form" id="system-form">
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Language</label>
+                        <select class="settings-form-select">
+                            <option selected>English</option>
+                            <option>Filipino</option>
+                            <option>Spanish</option>
+                        </select>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Timezone</label>
+                        <select class="settings-form-select">
+                            <option selected>Asia/Manila (UTC+8)</option>
+                            <option>Asia/Bangkok (UTC+7)</option>
+                            <option>Asia/Jakarta (UTC+7)</option>
+                        </select>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Date Format</label>
+                        <select class="settings-form-select">
+                            <option selected>MM/DD/YYYY</option>
+                            <option>DD/MM/YYYY</option>
+                            <option>YYYY-MM-DD</option>
+                        </select>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Currency</label>
+                        <select class="settings-form-select">
+                            <option selected>Philippine Peso (PHP)</option>
+                            <option>US Dollar (USD)</option>
+                            <option>Euro (EUR)</option>
+                        </select>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Theme</label>
+                        <select class="settings-form-select">
+                            <option selected>Auto (System)</option>
+                            <option>Light</option>
+                            <option>Dark</option>
+                        </select>
+                    </div>
+                    <div class="settings-button-group">
+                        <button type="submit" class="settings-btn settings-btn-primary">Save Preferences</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Payments & Billing -->
+            <section id="payments" class="settings-section" role="tabpanel" aria-labelledby="payments">
+                <div class="settings-section-header">
+                    <h2 class="settings-section-title">Payments & Billing</h2>
+                    <p class="settings-section-description">Configure payment methods and billing preferences.</p>
+                </div>
+                <form class="settings-form" id="payments-form">
+                    <div class="settings-form-group">
+                        <div class="settings-toggle">
+                            <button type="button" class="settings-toggle-switch on" data-toggle="accept-payments" aria-label="Toggle payment acceptance"></button>
+                            <label class="settings-toggle-label">Accept Payments</label>
+                        </div>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Bank Account</label>
+                        <input type="text" class="settings-form-input" placeholder="Account holder name" />
+                        <input type="text" class="settings-form-input" placeholder="Account number" style="margin-top: 0.5rem;" />
+                        <input type="text" class="settings-form-input" placeholder="Bank name" style="margin-top: 0.5rem;" />
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Transaction Fee (%)</label>
+                        <input type="number" class="settings-form-input" value="2.5" step="0.01" />
+                        <p class="settings-form-help">Percentage fee charged per transaction.</p>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Billing History</label>
+                        <div class="settings-empty">
+                            <p>View your <a href="#" style="color: var(--teal-700); text-decoration: underline;">complete billing history</a></p>
+                        </div>
+                    </div>
+                    <div class="settings-button-group">
+                        <button type="submit" class="settings-btn settings-btn-primary">Save Payment Info</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Inventory Preferences -->
+            <section id="inventory" class="settings-section" role="tabpanel" aria-labelledby="inventory">
+                <div class="settings-section-header">
+                    <h2 class="settings-section-title">Inventory Preferences</h2>
+                    <p class="settings-section-description">Configure inventory management settings.</p>
+                </div>
+                <form class="settings-form" id="inventory-form">
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Low Stock Threshold</label>
+                        <input type="number" class="settings-form-input" value="10" />
+                        <p class="settings-form-help">Minimum quantity before low-stock alert.</p>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Default Categories</label>
+                        <input type="text" class="settings-form-input" value="Supplies, Equipment, Services" />
+                        <p class="settings-form-help">Comma-separated list of default categories.</p>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Default Unit Type</label>
+                        <select class="settings-form-select">
+                            <option selected>Pieces</option>
+                            <option>Kilograms</option>
+                            <option>Liters</option>
+                            <option>Boxes</option>
+                        </select>
+                    </div>
+                    <div class="settings-form-group">
+                        <div class="settings-toggle">
+                            <button type="button" class="settings-toggle-switch on" data-toggle="restock-alerts" aria-label="Toggle restock alerts"></button>
+                            <label class="settings-toggle-label">Restock Alerts</label>
+                        </div>
+                        <p class="settings-form-help">Notify when items need restocking.</p>
+                    </div>
+                    <div class="settings-button-group">
+                        <button type="submit" class="settings-btn settings-btn-primary">Save Preferences</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Reports & Export -->
+            <section id="reports" class="settings-section" role="tabpanel" aria-labelledby="reports">
+                <div class="settings-section-header">
+                    <h2 class="settings-section-title">Reports & Export</h2>
+                    <p class="settings-section-description">Configure report generation and export options.</p>
+                </div>
+                <form class="settings-form" id="reports-form">
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Default Export Format</label>
+                        <select class="settings-form-select">
+                            <option selected>CSV</option>
+                            <option>PDF</option>
+                            <option>Excel</option>
+                        </select>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Scheduled Reports</label>
+                        <div class="settings-status-item">
+                            <div class="settings-status-label">
+                                <div class="settings-status-label-title">Weekly Donation Report</div>
+                                <div class="settings-status-label-meta">Every Monday at 8:00 AM</div>
+                            </div>
+                            <span class="settings-status-badge">Active</span>
+                        </div>
+                    </div>
+                    <div class="settings-form-group">
+                        <div class="settings-toggle">
+                            <button type="button" class="settings-toggle-switch on" data-toggle="report-branding" aria-label="Toggle report branding"></button>
+                            <label class="settings-toggle-label">Include Branding in Reports</label>
+                        </div>
+                    </div>
+                    <div class="settings-button-group">
+                        <button type="submit" class="settings-btn settings-btn-primary">Save Report Settings</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Audit Logs -->
+            <section id="audit" class="settings-section" role="tabpanel" aria-labelledby="audit">
+                <div class="settings-section-header">
+                    <h2 class="settings-section-title">Audit Logs</h2>
+                    <p class="settings-section-description">View system activity and user actions.</p>
+                </div>
+                <form class="settings-form" id="audit-form">
+                    <div class="settings-form-group">
+                        <input type="text" class="settings-form-input" placeholder="Search logs..." />
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Recent Activity</label>
+                        <div class="settings-status-item">
+                            <div class="settings-status-label">
+                                <div class="settings-status-label-title">Admin created user account</div>
+                                <div class="settings-status-label-meta">2 hours ago by Maria Santos</div>
+                            </div>
+                        </div>
+                        <div class="settings-status-item">
+                            <div class="settings-status-label">
+                                <div class="settings-status-label-title">Settings updated</div>
+                                <div class="settings-status-label-meta">5 hours ago by John Doe</div>
+                            </div>
+                        </div>
+                        <div class="settings-status-item">
+                            <div class="settings-status-label">
+                                <div class="settings-status-label-title">Report exported to CSV</div>
+                                <div class="settings-status-label-meta">1 day ago by System</div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Backup & Recovery -->
+            <section id="backup" class="settings-section" role="tabpanel" aria-labelledby="backup">
+                <div class="settings-section-header">
+                    <h2 class="settings-section-title">Backup & Recovery</h2>
+                    <p class="settings-section-description">Manage system backups and data recovery.</p>
+                </div>
+                <form class="settings-form" id="backup-form">
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Manual Backup</label>
+                        <button type="button" class="settings-btn settings-btn-primary" style="width: auto;">Create Backup Now</button>
+                        <p class="settings-form-help">Last backup: 2 hours ago</p>
+                    </div>
+                    <div class="settings-form-group">
+                        <div class="settings-toggle">
+                            <button type="button" class="settings-toggle-switch on" data-toggle="auto-backup" aria-label="Toggle automatic backups"></button>
+                            <label class="settings-toggle-label">Automatic Backups</label>
+                        </div>
+                        <p class="settings-form-help">Backup schedule: Daily at 2:00 AM</p>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Restore from Backup</label>
+                        <select class="settings-form-select">
+                            <option>Select a backup point...</option>
+                            <option>2 hours ago</option>
+                            <option>1 day ago</option>
+                            <option>7 days ago</option>
+                        </select>
+                        <p class="settings-form-help">Select a backup to restore from.</p>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Integrations -->
+            <section id="integrations" class="settings-section" role="tabpanel" aria-labelledby="integrations">
+                <div class="settings-section-header">
+                    <h2 class="settings-section-title">Integrations</h2>
+                    <p class="settings-section-description">Connect third-party services and APIs.</p>
+                </div>
+                <form class="settings-form" id="integrations-form">
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">Connected Services</label>
+                        <div class="settings-status-item">
+                            <div class="settings-status-label">
+                                <div class="settings-status-label-title">Google Drive</div>
+                                <div class="settings-status-label-meta">Connected • Last synced 1 hour ago</div>
+                            </div>
+                            <span class="settings-status-badge">Connected</span>
+                        </div>
+                        <div class="settings-status-item">
+                            <div class="settings-status-label">
+                                <div class="settings-status-label-title">Slack</div>
+                                <div class="settings-status-label-meta">Not connected</div>
+                            </div>
+                            <button type="button" class="settings-btn settings-btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Connect</button>
+                        </div>
+                    </div>
+                    <div class="settings-form-group">
+                        <label class="settings-form-label">API Key</label>
+                        <input type="text" class="settings-form-input" value="sk_live_••••••••••••••••" readonly />
+                        <p class="settings-form-help">Use this key for API authentication.</p>
+                    </div>
+                    <div class="settings-button-group">
+                        <button type="submit" class="settings-btn settings-btn-primary">Save Integrations</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </div>
+</div>
+
+<div id="settings-toast" class="settings-toast" style="display: none;"></div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    "use strict";
+
+    var state = {
+        currentSection: "general",
+        unsavedChanges: false
+    };
+
+    function byId(id) {
+        return document.getElementById(id);
+    }
+
+    function showToast(message, isError) {
+        var toast = byId("settings-toast");
+        if (!toast) {
+            return;
+        }
+
+        toast.textContent = message;
+        toast.className = "settings-toast" + (isError ? " error" : "");
+        toast.style.display = "block";
+
+        setTimeout(function () {
+            toast.style.display = "none";
+        }, 3000);
+    }
+
+    function switchSection(sectionId) {
+        document.querySelectorAll(".settings-section").forEach(function (section) {
+            section.classList.remove("active");
+        });
+        byId(sectionId).classList.add("active");
+
+        document.querySelectorAll(".settings-nav-item").forEach(function (item) {
+            item.classList.remove("active");
+            item.setAttribute("aria-selected", "false");
+        });
+
+        var activeBtn = document.querySelector("[data-section='" + sectionId + "']");
+        if (activeBtn) {
+            activeBtn.classList.add("active");
+            activeBtn.setAttribute("aria-selected", "true");
+        }
+
+        state.currentSection = sectionId;
+    }
+
+    function wireNavigation() {
+        document.querySelectorAll(".settings-nav-item").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var sectionId = btn.getAttribute("data-section");
+                if (sectionId) {
+                    switchSection(sectionId);
+                }
+            });
+
+            btn.addEventListener("keydown", function (event) {
+                if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                    event.preventDefault();
+                    var items = Array.from(document.querySelectorAll(".settings-nav-item"));
+                    var index = items.indexOf(btn);
+                    var nextIndex = event.key === "ArrowUp" ? index - 1 : index + 1;
+                    if (nextIndex >= 0 && nextIndex < items.length) {
+                        items[nextIndex].focus();
+                        items[nextIndex].click();
+                    }
+                }
+            });
+        });
+    }
+
+    function wireToggles() {
+        document.querySelectorAll(".settings-toggle-switch").forEach(function (toggle) {
+            toggle.addEventListener("click", function () {
+                toggle.classList.toggle("on");
+            });
+        });
+    }
+
+    function wireFormSubmits() {
+        document.querySelectorAll(".settings-form").forEach(function (form) {
+            form.addEventListener("submit", function (event) {
+                event.preventDefault();
+                showToast("Settings saved successfully!");
+                state.unsavedChanges = false;
+            });
+        });
+    }
+
+    function wireInputChanges() {
+        document.querySelectorAll(".settings-form-input, .settings-form-select, .settings-form-textarea").forEach(function (input) {
+            input.addEventListener("change", function () {
+                state.unsavedChanges = true;
+            });
+        });
+    }
+
+    function initialize() {
+        wireNavigation();
+        wireToggles();
+        wireFormSubmits();
+        wireInputChanges();
+
+        window.addEventListener("beforeunload", function (event) {
+            if (state.unsavedChanges) {
+                event.preventDefault();
+                event.returnValue = "";
+            }
+        });
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    }
+
+    window.switchSection = switchSection;
+
+    document.addEventListener("DOMContentLoaded", initialize);
+})();
+</script>
+{% endblock %}

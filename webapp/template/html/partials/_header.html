@@ -1,0 +1,113 @@
+<header id="app-header" data-scrolled="false" class="sticky top-0 z-40 border-b border-brand-100 bg-white/85 backdrop-blur-sm" role="banner">
+    <div class="h-20 px-4 md:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-[1.1fr_1.4fr_1fr] items-center gap-3">
+        <div class="flex items-center gap-2 min-w-0">
+            <button id="header-sidebar-toggle" type="button" aria-label="Toggle sidebar" aria-expanded="true" class="header-toggle focus-ring">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/>
+                </svg>
+            </button>
+            <button id="sidebar-toggle-mobile" type="button" class="focus-ring inline-flex lg:hidden h-9 w-9 items-center justify-center rounded-lg border border-brand-100 bg-white text-ink-700 hover:bg-brand-50" aria-label="Open sidebar navigation">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/></svg>
+            </button>
+            <div class="min-w-0">
+                <h1 class="truncate text-lg font-semibold text-ink-900">
+                    {% if request.resolver_match.url_name == 'users' %}Users
+                    {% elif request.resolver_match.url_name == 'donations' %}Donations
+                    {% elif request.resolver_match.url_name == 'inventory' %}Inventory
+                    {% elif request.resolver_match.url_name == 'reports' %}Reports
+                    {% elif request.resolver_match.url_name == 'settings' %}Settings
+                    {% elif request.resolver_match.url_name == 'payment' %}Payments
+                    {% else %}Dashboard{% endif %}
+                </h1>
+                <p class="truncate text-xs text-ink-500">
+                    {% if request.resolver_match.url_name == 'users' %}Manage members and access roles
+                    {% elif request.resolver_match.url_name == 'donations' %}Track incoming contributions and statuses
+                    {% elif request.resolver_match.url_name == 'inventory' %}Monitor stock and replenishment health
+                    {% elif request.resolver_match.url_name == 'reports' %}Analyze activity and outcomes
+                    {% elif request.resolver_match.url_name == 'settings' %}Configure organization and system options
+                    {% elif request.resolver_match.url_name == 'payment' %}Review transactions and settlements
+                    {% else %}Community operations snapshot{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="hidden md:block">
+            <label for="dashboard-search" class="sr-only">Search members, donations, reports</label>
+            <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                </span>
+                <input id="dashboard-search" type="search" aria-label="Search members, donations, reports" placeholder="Search members, donations, reports" class="focus-ring w-full rounded-full border border-brand-100 bg-brand-50/70 py-2.5 pl-10 pr-4 text-sm text-ink-900 placeholder:text-ink-500" />
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2">
+            <button id="header-notifications" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="dropdown-notifications" data-notifications="3" class="focus-ring relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-brand-100 bg-white text-ink-700 hover:bg-brand-50" aria-label="Notifications">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5"/><path d="M9 17a3 3 0 0 0 6 0"/></svg>
+                <span class="absolute -right-0.5 -top-0.5 h-4.5 min-w-[18px] rounded-full bg-brand-700 px-1 text-[10px] font-semibold text-white">3</span>
+            </button>
+
+            <div id="dropdown-notifications" role="dialog" aria-label="Notifications" class="dropdown-card" hidden>
+                <header class="dropdown-card-header">
+                    <h3 class="text-sm font-semibold text-ink-900">Notifications <span class="badge" id="notif-count">3</span></h3>
+                </header>
+                <div class="dropdown-card-body" role="list" id="notif-list">
+                    <div class="notif-item unread" role="listitem">
+                        <span class="notif-dot mt-1.5 inline-block h-2.5 w-2.5 rounded-full bg-brand-700" aria-hidden="true"></span>
+                        <div class="notif-text">
+                            <div class="notif-title text-sm font-medium text-ink-900">Donation received from Alyssa C.</div>
+                            <div class="notif-meta text-xs text-ink-500">2 minutes ago</div>
+                        </div>
+                    </div>
+                    <div class="notif-item unread" role="listitem">
+                        <span class="notif-dot mt-1.5 inline-block h-2.5 w-2.5 rounded-full bg-brand-600" aria-hidden="true"></span>
+                        <div class="notif-text">
+                            <div class="notif-title text-sm font-medium text-ink-900">Low stock alert on Hygiene Kits</div>
+                            <div class="notif-meta text-xs text-ink-500">18 minutes ago</div>
+                        </div>
+                    </div>
+                    <div class="notif-item" role="listitem">
+                        <span class="notif-dot mt-1.5 inline-block h-2.5 w-2.5 rounded-full bg-brand-500" aria-hidden="true"></span>
+                        <div class="notif-text">
+                            <div class="notif-title text-sm font-medium text-ink-900">Community report generated</div>
+                            <div class="notif-meta text-xs text-ink-500">1 hour ago</div>
+                        </div>
+                    </div>
+                </div>
+                <footer class="dropdown-card-footer">
+                    <a href="{% url 'reports' %}" class="dropdown-link text-sm font-medium text-brand-700 hover:text-brand-600">View all notifications</a>
+                    <button id="mark-all-read" type="button" class="btn-link text-sm font-medium text-ink-700 hover:text-brand-700">Mark all as read</button>
+                </footer>
+            </div>
+
+            <button id="header-profile" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="dropdown-profile" class="focus-ring inline-flex items-center gap-2 rounded-full border border-brand-100 bg-white px-2.5 py-1.5 text-sm text-ink-700 hover:bg-brand-50" aria-label="Profile dropdown">
+                <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-xs font-semibold text-white">MB</span>
+                <span class="hidden sm:inline font-medium">Mario B.</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="hidden sm:inline h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+            </button>
+
+            <div id="dropdown-profile" role="menu" aria-label="Account" class="dropdown-card" hidden>
+                <div class="profile-top flex items-center gap-3 border-b border-brand-100/70 px-3.5 py-3">
+                    <div class="avatar-lg inline-flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-semibold text-white">MB</div>
+                    <div class="profile-meta">
+                        <div class="name text-sm font-semibold text-ink-900">Mario B.</div>
+                        <div class="role text-xs text-ink-500">Administrator</div>
+                    </div>
+                </div>
+                <div class="dropdown-card-body">
+                    <a role="menuitem" href="{% url 'users' %}" class="dropdown-item"><i class="icon inline-flex h-2 w-2 rounded-full bg-brand-500" aria-hidden="true"></i>My Profile</a>
+                    <a role="menuitem" href="{% url 'settings' %}" class="dropdown-item"><i class="icon inline-flex h-2 w-2 rounded-full bg-brand-600" aria-hidden="true"></i>Account Settings</a>
+                    <a role="menuitem" href="{% url 'settings' %}" class="dropdown-item"><i class="icon inline-flex h-2 w-2 rounded-full bg-brand-700" aria-hidden="true"></i>Organization Settings</a>
+                </div>
+                <footer class="dropdown-card-footer">
+                    <form method="post" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-logout rounded-md border border-brand-100 px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-brand-50">Sign out</button>
+                    </form>
+                </footer>
+            </div>
+
+            {% block header_buttons %}{% endblock %}
+        </div>
+    </div>
+</header>

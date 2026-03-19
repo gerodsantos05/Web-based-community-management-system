@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Happyness{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-4 md:grid-cols-3" role="region" aria-label="Key performance indicators">
+    <article class="rounded-2xl border border-brand-100 bg-white p-4 shadow-sm">
+        <p class="text-xs uppercase tracking-wide text-ink-500">Total Members</p>
+        <p class="mt-2 text-3xl font-bold text-ink-900">{{ total_members|default:"301" }}</p>
+        <p class="mt-1 text-xs text-brand-700">+6.2% from last month</p>
+        <div class="mt-3 h-16"><canvas id="kpi-members" aria-label="Total members mini chart" role="img"></canvas></div>
+    </article>
+
+    <article class="rounded-2xl border border-brand-100 bg-white p-4 shadow-sm">
+        <p class="text-xs uppercase tracking-wide text-ink-500">Active Volunteers</p>
+        <p class="mt-2 text-3xl font-bold text-ink-900">{{ active_volunteers|default:"200" }}</p>
+        <p class="mt-1 text-xs text-brand-700">+2.7% from last week</p>
+        <div class="mt-3 h-16"><canvas id="kpi-volunteers" aria-label="Active volunteers mini chart" role="img"></canvas></div>
+    </article>
+
+    <article class="rounded-2xl border border-brand-100 bg-white p-4 shadow-sm">
+        <p class="text-xs uppercase tracking-wide text-ink-500">Total Donations</p>
+        <p class="mt-2 text-3xl font-bold text-ink-900">{{ total_donations|default:"P 12,523" }}</p>
+        <p class="mt-1 text-xs text-brand-700">+11.1% from last month</p>
+        <div class="mt-3 h-16"><canvas id="kpi-donations" aria-label="Total donations mini chart" role="img"></canvas></div>
+    </article>
+</div>
+
+<div class="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-12">
+    <article class="xl:col-span-8 rounded-2xl border border-brand-100 bg-white p-4 shadow-sm" aria-labelledby="community-activity-title">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 id="community-activity-title" class="text-lg font-semibold text-ink-900">Community Activity</h2>
+            <label for="activity-range" class="text-sm text-ink-700">Range
+                <select id="activity-range" class="focus-ring ml-2 rounded-full border border-brand-100 bg-brand-50/70 px-3 py-1.5 text-sm text-ink-700" aria-label="Community activity range selector">
+                    <option value="daily">Daily</option>
+                    <option value="weekly" selected>Weekly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </label>
+        </div>
+        <div class="h-80"><canvas id="community-activity-chart" aria-label="Community activity chart" role="img"></canvas></div>
+    </article>
+
+    <aside class="xl:col-span-4 rounded-2xl border border-brand-100 bg-white p-4 shadow-sm" aria-labelledby="recent-activity-title">
+        <div class="mb-3 flex items-center justify-between">
+            <h2 id="recent-activity-title" class="text-lg font-semibold text-ink-900">Recent Activity</h2>
+            <a href="{% url 'reports' %}" class="focus-ring rounded-md px-2 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-50">View all</a>
+        </div>
+        <ul class="space-y-3">
+            <li class="flex items-start gap-3 rounded-xl bg-brand-50 p-3"><span class="mt-1 inline-block h-2.5 w-2.5 rounded-full bg-brand-700" aria-hidden="true"></span><div><p class="text-sm font-medium text-ink-900">Donation received from Alyssa C.</p><p class="text-xs text-ink-500">2 minutes ago</p></div></li>
+            <li class="flex items-start gap-3 rounded-xl bg-brand-50 p-3"><span class="mt-1 inline-block h-2.5 w-2.5 rounded-full bg-brand-600" aria-hidden="true"></span><div><p class="text-sm font-medium text-ink-900">Inventory low stock alert: Hygiene Kits</p><p class="text-xs text-ink-500">18 minutes ago</p></div></li>
+            <li class="flex items-start gap-3 rounded-xl bg-brand-50 p-3"><span class="mt-1 inline-block h-2.5 w-2.5 rounded-full bg-brand-500" aria-hidden="true"></span><div><p class="text-sm font-medium text-ink-900">Community post approved by moderator</p><p class="text-xs text-ink-500">1 hour ago</p></div></li>
+        </ul>
+    </aside>
+</div>
+
+<div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3" aria-label="Operational panels">
+    <article class="rounded-2xl border border-brand-100 bg-white p-4 shadow-sm"><h3 class="text-base font-semibold text-ink-900">Inventory Overview</h3><p class="mt-2 text-sm text-ink-500">12 items are under restock threshold. 4 deliveries pending.</p><a href="{% url 'inventory' %}" class="focus-ring mt-3 inline-flex rounded-md px-2 py-1 text-sm font-semibold text-brand-700 hover:bg-brand-50">Open inventory details</a></article>
+    <article class="rounded-2xl border border-brand-100 bg-white p-4 shadow-sm"><h3 class="text-base font-semibold text-ink-900">Transactions</h3><p class="mt-2 text-sm text-ink-500">34 completed this week, 3 pending settlement checks.</p><a href="{% url 'payment' %}" class="focus-ring mt-3 inline-flex rounded-md px-2 py-1 text-sm font-semibold text-brand-700 hover:bg-brand-50">Review transactions</a></article>
+    <article class="rounded-2xl border border-brand-100 bg-white p-4 shadow-sm"><h3 class="text-base font-semibold text-ink-900">Community Posts</h3><p class="mt-2 text-sm text-ink-500">15 posts live. 3 comments are flagged for moderation.</p><a href="{% url 'users' %}" class="focus-ring mt-3 inline-flex rounded-md px-2 py-1 text-sm font-semibold text-brand-700 hover:bg-brand-50">Open moderation queue</a></article>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    "use strict";
+
+    function initializeMiniChart(id, points, color) {
+        var canvas = document.getElementById(id);
+        if (!canvas || typeof Chart === "undefined") {
+            return;
+        }
+
+        new Chart(canvas, {
+            type: "line",
+            data: {
+                labels: ["W1", "W2", "W3", "W4", "W5", "W6"],
+                datasets: [{
+                    data: points,
+                    borderColor: color,
+                    backgroundColor: color.replace(")", ", 0.12)").replace("rgb", "rgba"),
+                    fill: true,
+                    tension: 0.35,
+                    borderWidth: 2,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                scales: { x: { display: false }, y: { display: false } }
+            }
+        });
+    }
+
+    function getActivitySeries(range) {
+        if (range === "daily") {
+            return { labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], donations: [420, 390, 470, 510, 495, 540, 590], volunteers: [18, 21, 19, 23, 25, 24, 28] };
+        }
+
+        if (range === "monthly") {
+            return { labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"], donations: [1200, 1320, 1380, 1490, 1430, 1580, 1660, 1710], volunteers: [72, 77, 80, 84, 82, 88, 92, 95] };
+        }
+
+        return { labels: ["W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8"], donations: [880, 910, 990, 1040, 1120, 1180, 1270, 1360], volunteers: [54, 56, 60, 63, 67, 70, 72, 76] };
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var header = document.getElementById("app-header");
+        var rangeSelect = document.getElementById("activity-range");
+        var activityCanvas = document.getElementById("community-activity-chart");
+
+        if (header) {
+            window.addEventListener("scroll", function () {
+                header.setAttribute("data-scrolled", window.scrollY > 6 ? "true" : "false");
+            }, { passive: true });
+        }
+
+        initializeMiniChart("kpi-members", [9, 10, 12, 11, 13, 14], "rgb(15, 118, 110)");
+        initializeMiniChart("kpi-volunteers", [7, 9, 8, 10, 9, 11], "rgb(16, 185, 129)");
+        initializeMiniChart("kpi-donations", [12, 14, 13, 16, 18, 17], "rgb(20, 184, 166)");
+
+        if (!activityCanvas || typeof Chart === "undefined") {
+            return;
+        }
+
+        var current = getActivitySeries("weekly");
+        var activityChart = new Chart(activityCanvas, {
+            type: "line",
+            data: {
+                labels: current.labels,
+                datasets: [
+                    {
+                        label: "Donations",
+                        data: current.donations,
+                        borderColor: "#0f766e",
+                        backgroundColor: "rgba(15, 118, 110, 0.10)",
+                        fill: true,
+                        pointRadius: 2,
+                        tension: 0.35
+                    },
+                    {
+                        label: "Volunteers",
+                        data: current.volunteers,
+                        borderColor: "#14b8a6",
+                        backgroundColor: "rgba(20, 184, 166, 0.08)",
+                        fill: true,
+                        pointRadius: 2,
+                        tension: 0.35
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: { enabled: true },
+                    legend: { position: "top", align: "start" }
+                },
+                scales: {
+                    x: { grid: { color: "rgba(35, 110, 103, 0.14)" } },
+                    y: { beginAtZero: true, grid: { color: "rgba(35, 110, 103, 0.14)" } }
+                }
+            }
+        });
+
+        if (rangeSelect) {
+            rangeSelect.addEventListener("change", function () {
+                var next = getActivitySeries(rangeSelect.value);
+                activityChart.data.labels = next.labels;
+                activityChart.data.datasets[0].data = next.donations;
+                activityChart.data.datasets[1].data = next.volunteers;
+                activityChart.update();
+            });
+        }
+    });
+})();
+</script>
+{% endblock %}

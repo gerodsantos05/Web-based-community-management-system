@@ -1,0 +1,478 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Inventory Dashboard | Happyness{% endblock %}
+
+{% block extra_head %}
+<style>
+    .inventory-page {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .inventory-card {
+        border-radius: 1rem;
+        border: 1px solid rgba(15, 118, 110, 0.14);
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .inventory-focus:focus-visible {
+        outline: 2px solid var(--teal-500);
+        outline-offset: 2px;
+    }
+
+    .inventory-kpi {
+        padding: 1rem;
+        display: grid;
+        gap: 0.55rem;
+    }
+
+    .inventory-kpi-icon {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        color: var(--teal-700);
+        background: rgba(16, 185, 129, 0.14);
+    }
+
+    .inventory-kpi-spark {
+        height: 2.1rem;
+    }
+
+    .inventory-tab {
+        border: 1px solid rgba(15, 118, 110, 0.22);
+        background: rgba(236, 253, 245, 0.36);
+        color: var(--ink-700);
+    }
+
+    .inventory-tab[aria-selected="true"] {
+        color: var(--teal-700);
+        border-color: rgba(16, 185, 129, 0.4);
+        background: rgba(16, 185, 129, 0.18);
+    }
+
+    .inventory-scroll {
+        max-height: 17rem;
+        overflow: auto;
+    }
+
+    .inventory-progress {
+        height: 0.48rem;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.2);
+        overflow: hidden;
+    }
+
+    .inventory-progress-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #10b981, #14b8a6);
+    }
+
+    .inventory-table-wrap {
+        overflow-x: auto;
+    }
+
+    .inventory-table {
+        width: 100%;
+        min-width: 1040px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .inventory-table th,
+    .inventory-table td {
+        padding: 0.72rem 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .inventory-table thead th {
+        background: rgba(236, 253, 245, 0.85);
+        color: var(--ink-700);
+        border-bottom: 1px solid rgba(15, 118, 110, 0.16);
+        text-align: left;
+        font-weight: 700;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    .inventory-table tbody tr:hover {
+        background: rgba(236, 253, 245, 0.44);
+    }
+
+    .inventory-status {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0.2rem 0.55rem;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+
+    .inventory-status-in-stock {
+        background: rgba(16, 185, 129, 0.16);
+        color: #0c6b5f;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .inventory-status-low-stock {
+        background: rgba(245, 158, 11, 0.2);
+        color: #b45309;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+
+    .inventory-status-out-of-stock {
+        background: rgba(239, 68, 68, 0.16);
+        color: #b91c1c;
+        border: 1px solid rgba(239, 68, 68, 0.34);
+    }
+
+    .inventory-sort {
+        border: 0;
+        background: transparent;
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        padding: 0;
+    }
+
+    .inventory-icon-chip {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        color: var(--teal-700);
+        background: linear-gradient(145deg, rgba(16, 185, 129, 0.2), rgba(20, 184, 166, 0.26));
+    }
+
+    .inventory-row-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+    }
+
+    .inventory-popover {
+        position: fixed;
+        z-index: 90;
+        display: none;
+        min-width: 14rem;
+        max-width: min(92vw, 24rem);
+        border-radius: 0.9rem;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        background: #ffffff;
+        box-shadow: 0 18px 34px rgba(8, 83, 76, 0.18);
+        padding: 0.75rem;
+    }
+
+    .inventory-popover[data-open="true"] {
+        display: block;
+    }
+
+    @media (max-width: 1279px) {
+        .inventory-desktop-filters {
+            display: none;
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .inventory-mobile-filter-btn {
+            display: none;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .inventory-row-actions {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="inventory-page" class="inventory-page">
+    <section class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4" aria-label="Inventory KPI summary">
+        <article class="inventory-card inventory-kpi" aria-labelledby="kpi-value-label">
+            <div class="flex items-center justify-between gap-2">
+                <p id="kpi-value-label" class="text-xs uppercase tracking-wide text-ink-500">Total Inventory Value</p>
+                <span class="inventory-kpi-icon" aria-hidden="true"><i data-lucide="wallet"></i></span>
+            </div>
+            <p id="kpi-value" class="text-3xl font-bold text-ink-900">P 0</p>
+            <p class="text-xs text-brand-700">Current valuation across all categories</p>
+            <div class="inventory-kpi-spark"><canvas id="spark-value" role="img" aria-label="Inventory value trend"></canvas></div>
+        </article>
+
+        <article class="inventory-card inventory-kpi" aria-labelledby="kpi-items-label">
+            <div class="flex items-center justify-between gap-2">
+                <p id="kpi-items-label" class="text-xs uppercase tracking-wide text-ink-500">Total Items</p>
+                <span class="inventory-kpi-icon" aria-hidden="true"><i data-lucide="boxes"></i></span>
+            </div>
+            <p id="kpi-items" class="text-3xl font-bold text-ink-900">0</p>
+            <p class="text-xs text-ink-500">Active catalog units tracked</p>
+            <div class="inventory-kpi-spark"><canvas id="spark-items" role="img" aria-label="Total items trend"></canvas></div>
+        </article>
+
+        <article class="inventory-card inventory-kpi" aria-labelledby="kpi-low-label">
+            <div class="flex items-center justify-between gap-2">
+                <p id="kpi-low-label" class="text-xs uppercase tracking-wide text-ink-500">Low Stock Items</p>
+                <span class="inventory-kpi-icon" aria-hidden="true"><i data-lucide="triangle-alert"></i></span>
+            </div>
+            <p id="kpi-low-stock" class="text-3xl font-bold text-ink-900">0</p>
+            <p class="text-xs text-brand-700">Items below reorder threshold</p>
+            <div class="inventory-kpi-spark"><canvas id="spark-low" role="img" aria-label="Low stock trend"></canvas></div>
+        </article>
+
+        <article class="inventory-card inventory-kpi" aria-labelledby="kpi-out-label">
+            <div class="flex items-center justify-between gap-2">
+                <p id="kpi-out-label" class="text-xs uppercase tracking-wide text-ink-500">Out of Stock Items</p>
+                <span class="inventory-kpi-icon" aria-hidden="true"><i data-lucide="x-circle"></i></span>
+            </div>
+            <p id="kpi-out-stock" class="text-3xl font-bold text-ink-900">0</p>
+            <p class="text-xs text-ink-500">Requires immediate replenishment</p>
+            <div class="inventory-kpi-spark"><canvas id="spark-out" role="img" aria-label="Out-of-stock trend"></canvas></div>
+        </article>
+    </section>
+
+    <section class="inventory-card p-4" aria-label="Inventory filters and actions">
+        <div class="grid grid-cols-1 gap-3 xl:grid-cols-12 xl:items-end">
+            <div class="xl:col-span-3">
+                <label for="inventory-search" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Search</label>
+                <input id="inventory-search" type="search" class="inventory-focus w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-900" placeholder="Search item name or SKU" aria-label="Search inventory" />
+            </div>
+
+            <div class="inventory-desktop-filters xl:col-span-6 grid grid-cols-5 gap-2" aria-label="Inventory filter controls">
+                <div>
+                    <label for="inventory-status" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Status</label>
+                    <select id="inventory-status" class="inventory-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Status filter">
+                        <option value="All">All</option>
+                        <option value="In Stock">In Stock</option>
+                        <option value="Low Stock">Low Stock</option>
+                        <option value="Out of Stock">Out of Stock</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="inventory-category" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Category</label>
+                    <select id="inventory-category" class="inventory-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Category filter">
+                        <option value="All">All</option>
+                        <option value="Food">Food</option>
+                        <option value="Water">Water</option>
+                        <option value="Hygiene">Hygiene</option>
+                        <option value="Education">Education</option>
+                        <option value="Medical">Medical</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="inventory-sort" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Sort</label>
+                    <select id="inventory-sort" class="inventory-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Sort inventory">
+                        <option value="updated-desc">Latest updated</option>
+                        <option value="updated-asc">Oldest updated</option>
+                        <option value="qty-desc">Quantity high-low</option>
+                        <option value="qty-asc">Quantity low-high</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="inventory-updated-from" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Updated From</label>
+                    <input id="inventory-updated-from" type="date" class="inventory-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Updated from" />
+                </div>
+                <div>
+                    <label for="inventory-updated-to" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Updated To</label>
+                    <input id="inventory-updated-to" type="date" class="inventory-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Updated to" />
+                </div>
+            </div>
+
+            <div class="xl:col-span-3">
+                <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-500">Quick Actions</p>
+                <div class="flex flex-wrap gap-2">
+                    <button id="inventory-apply-filters" type="button" class="inventory-focus rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-2 text-sm font-semibold text-white" aria-label="Apply inventory filters">Apply Filters</button>
+                    <button type="button" class="inventory-focus rounded-full border border-brand-100 bg-brand-50/70 px-3 py-2 text-xs font-semibold text-brand-700" aria-label="Add inventory item">Add Item</button>
+                    <button type="button" class="inventory-focus rounded-full border border-brand-100 bg-brand-50/70 px-3 py-2 text-xs font-semibold text-brand-700" aria-label="Stock in action">Stock In</button>
+                    <button type="button" class="inventory-focus rounded-full border border-brand-100 bg-brand-50/70 px-3 py-2 text-xs font-semibold text-brand-700" aria-label="Stock out action">Stock Out</button>
+                    <button id="inventory-export-csv" type="button" class="inventory-focus rounded-full border border-brand-100 bg-brand-50/70 px-3 py-2 text-xs font-semibold text-brand-700" aria-label="Export inventory CSV">Export CSV</button>
+                    <button id="open-mobile-inventory-filters" type="button" class="inventory-mobile-filter-btn inventory-focus rounded-full border border-brand-100 bg-white px-3 py-2 text-xs font-semibold text-brand-700" aria-haspopup="dialog" aria-expanded="false" aria-controls="inventory-mobile-filters">Filters</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-brand-100 pt-3">
+            <div role="tablist" aria-label="Quick inventory filter tabs" class="inline-flex flex-wrap gap-2">
+                <button type="button" class="inventory-tab inventory-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="true" data-quick="All">All</button>
+                <button type="button" class="inventory-tab inventory-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="false" data-quick="In Stock">In Stock</button>
+                <button type="button" class="inventory-tab inventory-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="false" data-quick="Low Stock">Low Stock</button>
+                <button type="button" class="inventory-tab inventory-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="false" data-quick="Out of Stock">Out of Stock</button>
+            </div>
+            <p id="inventory-filter-summary" class="text-xs text-ink-500" aria-live="polite">No filters applied</p>
+        </div>
+    </section>
+
+    <section class="grid grid-cols-1 gap-4 xl:grid-cols-12" aria-label="Inventory analytics grid">
+        <article class="inventory-card p-4 xl:col-span-7" aria-labelledby="movement-chart-title">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 id="movement-chart-title" class="text-lg font-semibold text-ink-900">Inventory Movement</h2>
+                <div role="tablist" aria-label="Inventory movement range" class="inline-flex gap-2 rounded-full border border-brand-100 bg-brand-50/70 p-1">
+                    <button type="button" class="inventory-tab inventory-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="true" data-range="weekly">Weekly</button>
+                    <button type="button" class="inventory-tab inventory-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="false" data-range="monthly">Monthly</button>
+                    <button type="button" class="inventory-tab inventory-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="false" data-range="yearly">Yearly</button>
+                </div>
+            </div>
+            <div class="h-72"><canvas id="inventory-movement-chart" role="img" aria-label="Inventory stock-in and stock-out movement"></canvas></div>
+        </article>
+
+        <article class="inventory-card p-4 xl:col-span-5" aria-labelledby="status-chart-title">
+            <h2 id="status-chart-title" class="mb-3 text-base font-semibold text-ink-900">Stock Status Overview</h2>
+            <div class="h-64"><canvas id="stock-status-chart" role="img" aria-label="Inventory stock status overview"></canvas></div>
+        </article>
+
+        <article class="inventory-card p-4 xl:col-span-5" aria-labelledby="category-chart-title">
+            <h2 id="category-chart-title" class="mb-3 text-base font-semibold text-ink-900">Items by Category</h2>
+            <div class="h-64"><canvas id="category-chart" role="img" aria-label="Inventory categories chart"></canvas></div>
+        </article>
+
+        <article class="inventory-card p-4 xl:col-span-4" aria-labelledby="alerts-title">
+            <h2 id="alerts-title" class="mb-3 text-base font-semibold text-ink-900">Low Stock Alerts</h2>
+            <ul id="low-alerts-list" class="inventory-scroll grid gap-2" aria-live="polite"></ul>
+        </article>
+
+        <article class="inventory-card p-4 xl:col-span-3" aria-labelledby="restock-title">
+            <h2 id="restock-title" class="mb-3 text-base font-semibold text-ink-900">Restock Recommendations</h2>
+            <ul id="restock-list" class="inventory-scroll grid gap-2" aria-live="polite"></ul>
+        </article>
+
+        <article class="inventory-card p-4 xl:col-span-4" aria-labelledby="top-consumed-title">
+            <h2 id="top-consumed-title" class="mb-3 text-base font-semibold text-ink-900">Top Consumed Items</h2>
+            <ul id="top-consumed-list" class="inventory-scroll grid gap-2" aria-live="polite"></ul>
+        </article>
+    </section>
+
+    <section class="grid grid-cols-1 gap-4 xl:grid-cols-12" aria-label="Inventory table and recent activity">
+        <article class="inventory-card xl:col-span-9" aria-labelledby="inventory-table-title">
+            <div class="flex items-center justify-between gap-2 border-b border-brand-100 px-4 py-3">
+                <h2 id="inventory-table-title" class="text-base font-semibold text-ink-900">Inventory Table</h2>
+                <p id="inventory-table-count" class="text-xs text-ink-500" aria-live="polite">0 items</p>
+            </div>
+
+            <div class="inventory-table-wrap">
+                <table class="inventory-table" aria-describedby="inventory-table-count">
+                    <thead>
+                        <tr>
+                            <th scope="col"><input id="inventory-select-all" class="inventory-focus" type="checkbox" aria-label="Select all visible inventory rows" /></th>
+                            <th scope="col">SKU</th>
+                            <th scope="col">Item Name</th>
+                            <th scope="col">Category</th>
+                            <th scope="col"><button type="button" class="inventory-sort inventory-focus" data-sort="qty" aria-label="Sort by quantity">Quantity <i data-lucide="arrow-up-down" class="h-3.5 w-3.5"></i></button></th>
+                            <th scope="col">Unit</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Reorder Level</th>
+                            <th scope="col"><button type="button" class="inventory-sort inventory-focus" data-sort="updated" aria-label="Sort by last updated">Last Updated <i data-lucide="arrow-up-down" class="h-3.5 w-3.5"></i></button></th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-table-body"></tbody>
+                </table>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 border-t border-brand-100 px-4 py-3">
+                <div class="flex items-center gap-2">
+                    <label for="inventory-page-size" class="text-xs font-semibold text-ink-500">Rows</label>
+                    <select id="inventory-page-size" class="inventory-focus rounded-full border border-brand-100 bg-white px-2 py-1 text-xs text-ink-700" aria-label="Rows per page">
+                        <option value="5" selected>5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                    </select>
+                    <button id="inventory-bulk-stock-in" type="button" class="inventory-focus rounded-full border border-brand-100 bg-brand-50/70 px-2.5 py-1 text-xs font-semibold text-brand-700" aria-label="Bulk stock in selected items">Bulk Stock In</button>
+                    <button id="inventory-bulk-stock-out" type="button" class="inventory-focus rounded-full border border-brand-100 bg-brand-50/70 px-2.5 py-1 text-xs font-semibold text-brand-700" aria-label="Bulk stock out selected items">Bulk Stock Out</button>
+                </div>
+                <div id="inventory-pagination" class="inline-flex items-center gap-2" aria-label="Inventory pagination"></div>
+            </div>
+        </article>
+
+        <aside class="inventory-card p-4 xl:col-span-3" aria-labelledby="inventory-activity-title">
+            <h2 id="inventory-activity-title" class="mb-3 text-base font-semibold text-ink-900">Recent Stock Activity</h2>
+            <ul id="inventory-activity-list" class="inventory-scroll grid gap-2" aria-live="polite"></ul>
+        </aside>
+    </section>
+</div>
+
+<div id="inventory-mobile-filters" class="inventory-popover" role="dialog" aria-modal="false" aria-label="Inventory mobile filters">
+    <h3 class="mb-2 text-sm font-semibold text-ink-900">Filters</h3>
+    <div class="grid grid-cols-1 gap-2">
+        <div>
+            <label for="inventory-status-mobile" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Status</label>
+            <select id="inventory-status-mobile" class="inventory-focus w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-900" aria-label="Status filter mobile">
+                <option value="All">All</option>
+                <option value="In Stock">In Stock</option>
+                <option value="Low Stock">Low Stock</option>
+                <option value="Out of Stock">Out of Stock</option>
+            </select>
+        </div>
+        <div>
+            <label for="inventory-category-mobile" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Category</label>
+            <select id="inventory-category-mobile" class="inventory-focus w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-900" aria-label="Category filter mobile">
+                <option value="All">All</option>
+                <option value="Food">Food</option>
+                <option value="Water">Water</option>
+                <option value="Hygiene">Hygiene</option>
+                <option value="Education">Education</option>
+                <option value="Medical">Medical</option>
+            </select>
+        </div>
+        <div class="grid grid-cols-2 gap-1">
+            <input id="inventory-updated-from-mobile" type="date" class="inventory-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Updated from mobile" />
+            <input id="inventory-updated-to-mobile" type="date" class="inventory-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Updated to mobile" />
+        </div>
+        <button id="inventory-apply-mobile" type="button" class="inventory-focus rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-2 text-sm font-semibold text-white">Apply</button>
+    </div>
+</div>
+
+<script id="inventory-sample-data" type="application/json">
+{
+  "summary": {"value": 5000, "items": 1500, "lowStock": 18, "outOfStock": 4},
+  "movement": {
+    "weekly": {"labels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], "in": [44, 60, 52, 70, 66, 74, 84], "out": [48, 54, 58, 72, 79, 88, 121]},
+    "monthly": {"labels": ["W1", "W2", "W3", "W4"], "in": [110, 138, 122, 146], "out": [124, 130, 141, 155]},
+    "yearly": {"labels": ["Q1", "Q2", "Q3", "Q4"], "in": [420, 460, 430, 488], "out": [440, 472, 451, 520]}
+  },
+  "categories": {"Food": 600, "Water": 200, "Hygiene": 250, "Education": 150, "Medical": 300},
+  "lowAlerts": [
+    {"sku": "SKU-001", "name": "Canned Goods", "qty": 90, "threshold": 100, "category": "Food"},
+    {"sku": "SKU-123", "name": "Notebooks", "qty": 41, "threshold": 60, "category": "Education"},
+    {"sku": "SKU-287", "name": "Soap Bars", "qty": 33, "threshold": 80, "category": "Hygiene"}
+  ],
+  "topConsumed": [
+    {"name": "Bottled Water", "issued": 120},
+    {"name": "Canned Goods", "issued": 85},
+    {"name": "Bandages", "issued": 62},
+    {"name": "Notebooks", "issued": 57}
+  ],
+  "items": [
+    {"sku": "SKU-001", "name": "Canned Goods", "category": "Food", "qty": 90, "unit": "packs", "status": "Low Stock", "reorder": 100, "updated": "2026-03-16"},
+    {"sku": "SKU-002", "name": "Bottled Water", "category": "Water", "qty": 450, "unit": "bottles", "status": "In Stock", "reorder": 120, "updated": "2026-03-18"},
+    {"sku": "SKU-003", "name": "Soap Bars", "category": "Hygiene", "qty": 33, "unit": "pcs", "status": "Low Stock", "reorder": 80, "updated": "2026-03-17"},
+    {"sku": "SKU-004", "name": "Bandages", "category": "Medical", "qty": 240, "unit": "boxes", "status": "In Stock", "reorder": 90, "updated": "2026-03-15"},
+    {"sku": "SKU-005", "name": "Notebooks", "category": "Education", "qty": 41, "unit": "pcs", "status": "Out of Stock", "reorder": 60, "updated": "2026-03-14"},
+    {"sku": "SKU-006", "name": "First Aid Kits", "category": "Medical", "qty": 110, "unit": "kits", "status": "In Stock", "reorder": 40, "updated": "2026-03-13"},
+    {"sku": "SKU-007", "name": "Rice Packs", "category": "Food", "qty": 300, "unit": "packs", "status": "In Stock", "reorder": 120, "updated": "2026-03-12"},
+    {"sku": "SKU-008", "name": "Toothbrushes", "category": "Hygiene", "qty": 58, "unit": "pcs", "status": "Low Stock", "reorder": 70, "updated": "2026-03-11"},
+    {"sku": "SKU-009", "name": "Workbooks", "category": "Education", "qty": 0, "unit": "pcs", "status": "Out of Stock", "reorder": 80, "updated": "2026-03-10"},
+    {"sku": "SKU-010", "name": "Pain Relievers", "category": "Medical", "qty": 74, "unit": "boxes", "status": "Low Stock", "reorder": 90, "updated": "2026-03-09"}
+  ],
+  "activity": [
+    {"item": "Bottled Water", "action": "stock in", "qty": 75, "actor": "Ana", "time": "5 minutes ago"},
+    {"item": "Notebooks", "action": "stock out", "qty": 22, "actor": "Mario", "time": "19 minutes ago"},
+    {"item": "Bandages", "action": "updated reorder level", "qty": 90, "actor": "Liza", "time": "48 minutes ago"},
+    {"item": "Soap Bars", "action": "marked low stock", "qty": 33, "actor": "System", "time": "1 hour ago"}
+  ]
+}
+</script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/inventory.js' %}"></script>
+{% endblock %}

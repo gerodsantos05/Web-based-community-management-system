@@ -1,0 +1,585 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Payments & Orders | Happyness{% endblock %}
+
+{% block extra_head %}
+<style>
+    .payops-page {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .payops-card {
+        border-radius: 1rem;
+        border: 1px solid rgba(15, 118, 110, 0.14);
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .payops-focus:focus-visible {
+        outline: 2px solid var(--teal-500);
+        outline-offset: 2px;
+    }
+
+    .payops-kpi {
+        padding: 1rem;
+        display: grid;
+        gap: 0.5rem;
+    }
+
+    .payops-icon {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        color: var(--teal-700);
+        background: rgba(16, 185, 129, 0.14);
+    }
+
+    .payops-spark {
+        height: 2.1rem;
+    }
+
+    .payops-tab {
+        border: 1px solid rgba(15, 118, 110, 0.22);
+        background: rgba(236, 253, 245, 0.36);
+        color: var(--ink-700);
+    }
+
+    .payops-tab[aria-selected="true"] {
+        color: var(--teal-700);
+        border-color: rgba(16, 185, 129, 0.4);
+        background: rgba(16, 185, 129, 0.18);
+    }
+
+    .payops-status {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0.2rem 0.55rem;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+
+    .payops-status-completed {
+        background: rgba(16, 185, 129, 0.16);
+        color: #0c6b5f;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .payops-status-pending {
+        background: rgba(245, 158, 11, 0.2);
+        color: #b45309;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+
+    .payops-status-failed,
+    .payops-status-canceled {
+        background: rgba(239, 68, 68, 0.16);
+        color: #b91c1c;
+        border: 1px solid rgba(239, 68, 68, 0.34);
+    }
+
+    .payops-status-refunded {
+        background: rgba(148, 163, 184, 0.2);
+        color: #52606d;
+        border: 1px solid rgba(148, 163, 184, 0.36);
+    }
+
+    .payops-table-wrap {
+        overflow-x: auto;
+    }
+
+    .payops-table {
+        width: 100%;
+        min-width: 1140px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .payops-table th,
+    .payops-table td {
+        padding: 0.72rem 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .payops-table thead th {
+        background: rgba(236, 253, 245, 0.85);
+        color: var(--ink-700);
+        border-bottom: 1px solid rgba(15, 118, 110, 0.16);
+        text-align: left;
+        font-weight: 700;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    .payops-table tbody tr:hover {
+        background: rgba(236, 253, 245, 0.44);
+    }
+
+    .payops-sort {
+        border: 0;
+        background: transparent;
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        padding: 0;
+    }
+
+    .payops-avatar {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        font-size: 0.76rem;
+        font-weight: 700;
+        color: var(--teal-700);
+        background: linear-gradient(145deg, rgba(16, 185, 129, 0.2), rgba(20, 184, 166, 0.26));
+    }
+
+    .payops-scroll {
+        max-height: 16.5rem;
+        overflow: auto;
+    }
+
+    .payops-progress {
+        height: 0.5rem;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.22);
+        overflow: hidden;
+    }
+
+    .payops-progress-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #10b981, #14b8a6);
+    }
+
+    .payops-skeleton {
+        position: relative;
+        overflow: hidden;
+        background: rgba(148, 163, 184, 0.16);
+    }
+
+    .payops-skeleton::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+        animation: payops-shimmer 1.3s infinite;
+    }
+
+    @keyframes payops-shimmer {
+        100% {
+            transform: translateX(100%);
+        }
+    }
+
+    .payops-popover {
+        position: fixed;
+        z-index: 90;
+        display: none;
+        min-width: 16rem;
+        max-width: min(92vw, 30rem);
+        border-radius: 0.9rem;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        background: #ffffff;
+        box-shadow: 0 18px 34px rgba(8, 83, 76, 0.18);
+        padding: 0.75rem;
+    }
+
+    .payops-popover[data-open="true"] {
+        display: block;
+    }
+
+    @media (max-width: 1279px) {
+        .payops-desktop-filters {
+            display: none;
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .payops-mobile-filter-btn {
+            display: none;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .payops-row-actions {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="payops-page" class="payops-page">
+    <section class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4" aria-label="Payments KPI summary">
+        <article class="payops-card payops-kpi" aria-labelledby="kpi-revenue-label">
+            <div class="flex items-center justify-between gap-2">
+                <p id="kpi-revenue-label" class="text-xs uppercase tracking-wide text-ink-500">Total Revenue</p>
+                <span class="payops-icon" aria-hidden="true"><i data-lucide="wallet"></i></span>
+            </div>
+            <p id="kpi-revenue" class="text-3xl font-bold text-ink-900">P 0</p>
+            <p class="text-xs text-brand-700">+0% vs last week</p>
+            <div class="payops-spark"><canvas id="kpi-spark-revenue" role="img" aria-label="Revenue trend sparkline"></canvas></div>
+        </article>
+
+        <article class="payops-card payops-kpi" aria-labelledby="kpi-completed-label">
+            <div class="flex items-center justify-between gap-2">
+                <p id="kpi-completed-label" class="text-xs uppercase tracking-wide text-ink-500">Completed Orders</p>
+                <span class="payops-icon" aria-hidden="true"><i data-lucide="badge-check"></i></span>
+            </div>
+            <p id="kpi-completed" class="text-3xl font-bold text-ink-900">0</p>
+            <p class="text-xs text-brand-700">Successfully paid</p>
+            <div class="payops-spark"><canvas id="kpi-spark-completed" role="img" aria-label="Completed orders trend"></canvas></div>
+        </article>
+
+        <article class="payops-card payops-kpi" aria-labelledby="kpi-pending-label">
+            <div class="flex items-center justify-between gap-2">
+                <p id="kpi-pending-label" class="text-xs uppercase tracking-wide text-ink-500">Pending Payments</p>
+                <span class="payops-icon" aria-hidden="true"><i data-lucide="clock-3"></i></span>
+            </div>
+            <p id="kpi-pending" class="text-3xl font-bold text-ink-900">0</p>
+            <p class="text-xs text-ink-500">Awaiting confirmation</p>
+            <div class="payops-spark"><canvas id="kpi-spark-pending" role="img" aria-label="Pending payments trend"></canvas></div>
+        </article>
+
+        <article class="payops-card payops-kpi" aria-labelledby="kpi-cancel-label">
+            <div class="flex items-center justify-between gap-2">
+                <p id="kpi-cancel-label" class="text-xs uppercase tracking-wide text-ink-500">Canceled / Refunded</p>
+                <span class="payops-icon" aria-hidden="true"><i data-lucide="rotate-ccw"></i></span>
+            </div>
+            <p id="kpi-canceled" class="text-3xl font-bold text-ink-900">0</p>
+            <p class="text-xs text-ink-500">Requires review</p>
+            <div class="payops-spark"><canvas id="kpi-spark-canceled" role="img" aria-label="Canceled and refunded trend"></canvas></div>
+        </article>
+    </section>
+
+    <section class="payops-card p-4" aria-label="Global filters and exports">
+        <div class="grid grid-cols-1 gap-3 xl:grid-cols-12 xl:items-end">
+            <div class="xl:col-span-3">
+                <label for="payops-search" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Search</label>
+                <input id="payops-search" type="search" class="payops-focus w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-900" placeholder="Customer, order ID, email" aria-label="Search orders and payments" />
+            </div>
+
+            <div class="payops-desktop-filters xl:col-span-6 grid grid-cols-5 gap-2" aria-label="Filters">
+                <div>
+                    <label for="payops-status" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Status</label>
+                    <select id="payops-status" class="payops-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Order status filter">
+                        <option value="All">All</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Canceled">Canceled</option>
+                        <option value="Refunded">Refunded</option>
+                        <option value="Failed">Failed</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="payops-method" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Payment</label>
+                    <select id="payops-method" class="payops-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Payment method filter">
+                        <option value="All">All</option>
+                        <option value="Credit Card">Credit Card</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Cash">Cash</option>
+                        <option value="E-wallet">E-wallet</option>
+                        <option value="COD">COD</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="payops-date-from" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Date From</label>
+                    <input id="payops-date-from" type="date" class="payops-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Date from" />
+                </div>
+                <div>
+                    <label for="payops-date-to" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Date To</label>
+                    <input id="payops-date-to" type="date" class="payops-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Date to" />
+                </div>
+                <div>
+                    <label for="payops-sort" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Sort</label>
+                    <select id="payops-sort" class="payops-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Sort orders">
+                        <option value="date-desc">Latest date</option>
+                        <option value="date-asc">Oldest date</option>
+                        <option value="amount-desc">Amount high-low</option>
+                        <option value="amount-asc">Amount low-high</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="xl:col-span-3">
+                <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-500">Actions</p>
+                <div class="flex flex-wrap gap-2">
+                    <button id="payops-apply" type="button" class="payops-focus rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-2 text-sm font-semibold text-white" aria-label="Apply filters">Apply Filters</button>
+                    <button id="payops-export-csv" type="button" class="payops-focus rounded-full border border-brand-100 bg-brand-50/70 px-3 py-2 text-xs font-semibold text-brand-700" aria-label="Export filtered CSV">Export CSV</button>
+                    <button id="payops-export-pdf" type="button" class="payops-focus rounded-full border border-brand-100 bg-brand-50/70 px-3 py-2 text-xs font-semibold text-brand-700" aria-label="Export filtered PDF">Export PDF</button>
+                    <button id="payops-sales-report" type="button" class="payops-focus rounded-full border border-brand-100 bg-brand-50/70 px-3 py-2 text-xs font-semibold text-brand-700" aria-label="Download sales report">Download Sales Report</button>
+                    <button id="payops-view-refunds" type="button" class="payops-focus rounded-full border border-brand-100 bg-brand-50/70 px-3 py-2 text-xs font-semibold text-brand-700" aria-label="View refunds">View Refunds</button>
+                    <button id="payops-open-mobile-filters" type="button" class="payops-mobile-filter-btn payops-focus rounded-full border border-brand-100 bg-white px-3 py-2 text-xs font-semibold text-brand-700" aria-haspopup="dialog" aria-expanded="false" aria-controls="payops-mobile-filters">Filters</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-brand-100 pt-3">
+            <div role="tablist" aria-label="Quick status filters" class="inline-flex flex-wrap gap-2">
+                <button type="button" class="payops-tab payops-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="true" data-quick="All">All</button>
+                <button type="button" class="payops-tab payops-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="false" data-quick="Completed">Completed</button>
+                <button type="button" class="payops-tab payops-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="false" data-quick="Pending">Pending</button>
+                <button type="button" class="payops-tab payops-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="false" data-quick="Refunded">Refunded</button>
+            </div>
+            <p id="payops-filter-summary" class="text-xs text-ink-500" aria-live="polite">No filters applied</p>
+        </div>
+    </section>
+
+    <section class="grid grid-cols-1 gap-4 xl:grid-cols-12" aria-label="Main analytics">
+        <article class="payops-card p-4 xl:col-span-7" aria-labelledby="payops-sales-trend-title">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 id="payops-sales-trend-title" class="text-lg font-semibold text-ink-900">Sales Trend</h2>
+                <div role="tablist" aria-label="Trend range" class="inline-flex gap-2 rounded-full border border-brand-100 bg-brand-50/70 p-1">
+                    <button type="button" class="payops-tab payops-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="true" data-range="daily">Daily</button>
+                    <button type="button" class="payops-tab payops-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="false" data-range="weekly">Weekly</button>
+                    <button type="button" class="payops-tab payops-focus rounded-full px-3 py-1 text-xs font-semibold" role="tab" aria-selected="false" data-range="monthly">Monthly</button>
+                </div>
+            </div>
+            <div class="h-72"><canvas id="payops-sales-trend-chart" role="img" aria-label="Sales trend chart"></canvas></div>
+        </article>
+
+        <article class="payops-card p-4 xl:col-span-5" aria-labelledby="payops-order-status-title">
+            <h2 id="payops-order-status-title" class="mb-3 text-base font-semibold text-ink-900">Order Status Overview</h2>
+            <div class="h-64"><canvas id="payops-order-status-chart" role="img" aria-label="Order status overview chart"></canvas></div>
+        </article>
+
+        <article class="payops-card p-4 xl:col-span-5" aria-labelledby="payops-payment-method-title">
+            <h2 id="payops-payment-method-title" class="mb-3 text-base font-semibold text-ink-900">Payment Method Breakdown</h2>
+            <div class="h-64"><canvas id="payops-method-chart" role="img" aria-label="Payment method breakdown chart"></canvas></div>
+        </article>
+
+        <article class="payops-card p-4 xl:col-span-3" aria-labelledby="payops-success-rate-title">
+            <h2 id="payops-success-rate-title" class="mb-2 text-base font-semibold text-ink-900">Payment Success Rate</h2>
+            <p id="payops-success-headline" class="text-2xl font-bold text-ink-900">0%</p>
+            <p class="mt-1 text-xs text-ink-500">Completed vs pending and failed transactions</p>
+            <div class="mt-3 grid gap-2">
+                <div>
+                    <div class="mb-1 flex justify-between text-xs text-ink-500"><span>Success</span><span id="payops-success-share">0%</span></div>
+                    <div class="payops-progress"><div id="payops-success-bar" class="payops-progress-fill" style="width: 0%"></div></div>
+                </div>
+                <div>
+                    <div class="mb-1 flex justify-between text-xs text-ink-500"><span>Pending</span><span id="payops-pending-share">0%</span></div>
+                    <div class="payops-progress"><div id="payops-pending-bar" class="payops-progress-fill" style="width: 0%; background: linear-gradient(90deg, #f59e0b, #fbbf24);"></div></div>
+                </div>
+                <div>
+                    <div class="mb-1 flex justify-between text-xs text-ink-500"><span>Failed</span><span id="payops-failed-share">0%</span></div>
+                    <div class="payops-progress"><div id="payops-failed-bar" class="payops-progress-fill" style="width: 0%; background: linear-gradient(90deg, #ef4444, #f87171);"></div></div>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <section class="grid grid-cols-1 gap-4 xl:grid-cols-12" aria-label="Customer and product insights">
+        <article class="payops-card p-4 xl:col-span-4" aria-labelledby="payops-top-customers-title">
+            <h2 id="payops-top-customers-title" class="mb-3 text-base font-semibold text-ink-900">Top Customers</h2>
+            <ul id="payops-top-customers" class="payops-scroll grid gap-2" aria-live="polite"></ul>
+        </article>
+
+        <article class="payops-card p-4 xl:col-span-4" aria-labelledby="payops-best-products-title">
+            <h2 id="payops-best-products-title" class="mb-3 text-base font-semibold text-ink-900">Best-Selling Products</h2>
+            <ul id="payops-best-products" class="payops-scroll grid gap-2" aria-live="polite"></ul>
+        </article>
+
+        <article class="payops-card p-4 xl:col-span-4" aria-labelledby="payops-secondary-title">
+            <h2 id="payops-secondary-title" class="mb-3 text-base font-semibold text-ink-900">Operational Summary</h2>
+            <ul class="grid gap-2">
+                <li class="rounded-xl border border-brand-100 bg-white p-2.5"><p class="text-sm font-semibold text-ink-900">Average Order Value</p><p id="payops-aov" class="text-xs text-ink-500">P 0</p></li>
+                <li class="rounded-xl border border-brand-100 bg-white p-2.5"><p class="text-sm font-semibold text-ink-900">Refund & Cancellation</p><p id="payops-refund-summary" class="text-xs text-ink-500">0 orders</p></li>
+                <li class="rounded-xl border border-brand-100 bg-white p-2.5"><p class="text-sm font-semibold text-ink-900">Daily Order Volume</p><p id="payops-daily-volume" class="text-xs text-ink-500">0 orders / day</p></li>
+            </ul>
+        </article>
+    </section>
+
+    <section class="grid grid-cols-1 gap-4 xl:grid-cols-12" aria-label="Orders and payments table">
+        <article class="payops-card xl:col-span-9" aria-labelledby="payops-table-title">
+            <div class="flex items-center justify-between gap-2 border-b border-brand-100 px-4 py-3">
+                <h2 id="payops-table-title" class="text-base font-semibold text-ink-900">Orders / Payments</h2>
+                <p id="payops-table-count" class="text-xs text-ink-500" aria-live="polite">0 records</p>
+            </div>
+
+            <div id="payops-table-skeleton" class="px-4 py-4" aria-hidden="true">
+                <div class="payops-skeleton h-9 rounded-lg"></div>
+                <div class="mt-2 payops-skeleton h-9 rounded-lg"></div>
+                <div class="mt-2 payops-skeleton h-9 rounded-lg"></div>
+            </div>
+
+            <div id="payops-empty-state" class="hidden px-4 py-8 text-center" aria-live="polite">
+                <p class="text-sm font-semibold text-ink-900">No matching orders found</p>
+                <p class="mt-1 text-xs text-ink-500">Adjust filters or search keywords to see results.</p>
+            </div>
+
+            <div id="payops-table-shell" class="hidden">
+                <div class="payops-table-wrap">
+                    <table class="payops-table" aria-describedby="payops-table-count">
+                        <thead>
+                            <tr>
+                                <th scope="col"><input id="payops-select-all" class="payops-focus" type="checkbox" aria-label="Select all rows on current page" /></th>
+                                <th scope="col">Order ID</th>
+                                <th scope="col">Customer</th>
+                                <th scope="col">Email</th>
+                                <th scope="col"><button type="button" class="payops-sort payops-focus" data-sort="amount" aria-label="Sort by amount">Amount <i data-lucide="arrow-up-down" class="h-3.5 w-3.5"></i></button></th>
+                                <th scope="col">Payment Method</th>
+                                <th scope="col">Status</th>
+                                <th scope="col"><button type="button" class="payops-sort payops-focus" data-sort="date" aria-label="Sort by date">Date <i data-lucide="arrow-up-down" class="h-3.5 w-3.5"></i></button></th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payops-table-body"></tbody>
+                    </table>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 border-t border-brand-100 px-4 py-3">
+                    <div class="flex items-center gap-2">
+                        <label for="payops-page-size" class="text-xs font-semibold text-ink-500">Rows</label>
+                        <select id="payops-page-size" class="payops-focus rounded-full border border-brand-100 bg-white px-2 py-1 text-xs text-ink-700" aria-label="Rows per page">
+                            <option value="5" selected>5</option>
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                        </select>
+                        <button id="payops-bulk-actions" type="button" class="payops-focus rounded-full border border-brand-100 bg-brand-50/70 px-2.5 py-1 text-xs font-semibold text-brand-700" aria-haspopup="menu" aria-expanded="false" aria-controls="payops-bulk-popover">Bulk Actions</button>
+                    </div>
+                    <div id="payops-pagination" class="inline-flex items-center gap-2" aria-label="Orders pagination"></div>
+                </div>
+            </div>
+        </article>
+
+        <aside class="payops-card p-4 xl:col-span-3" aria-labelledby="payops-activity-title">
+            <h2 id="payops-activity-title" class="mb-3 text-base font-semibold text-ink-900">Recent Payment Activity</h2>
+            <ul id="payops-activity-list" class="payops-scroll grid gap-2" aria-live="polite"></ul>
+        </aside>
+    </section>
+</div>
+
+<div id="payops-bulk-popover" class="payops-popover" role="menu" aria-label="Bulk actions menu">
+    <button type="button" class="payops-focus w-full rounded-lg px-2 py-2 text-left text-sm text-ink-700 hover:bg-brand-50" data-bulk-action="export">Export Selected</button>
+    <button type="button" class="payops-focus mt-1 w-full rounded-lg px-2 py-2 text-left text-sm text-ink-700 hover:bg-brand-50" data-bulk-action="refund">Refund Selected</button>
+    <button type="button" class="payops-focus mt-1 w-full rounded-lg px-2 py-2 text-left text-sm text-ink-700 hover:bg-brand-50" data-bulk-action="mark-paid">Mark Selected Paid</button>
+</div>
+
+<div id="payops-mobile-filters" class="payops-popover" role="dialog" aria-modal="false" aria-label="Mobile filters panel">
+    <h3 class="mb-2 text-sm font-semibold text-ink-900">Filters</h3>
+    <div class="grid grid-cols-1 gap-2">
+        <div>
+            <label for="payops-status-mobile" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Status</label>
+            <select id="payops-status-mobile" class="payops-focus w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-900" aria-label="Status filter mobile">
+                <option value="All">All</option>
+                <option value="Completed">Completed</option>
+                <option value="Pending">Pending</option>
+                <option value="Canceled">Canceled</option>
+                <option value="Refunded">Refunded</option>
+                <option value="Failed">Failed</option>
+            </select>
+        </div>
+        <div>
+            <label for="payops-method-mobile" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Payment</label>
+            <select id="payops-method-mobile" class="payops-focus w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-900" aria-label="Payment method filter mobile">
+                <option value="All">All</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Cash">Cash</option>
+                <option value="E-wallet">E-wallet</option>
+                <option value="COD">COD</option>
+            </select>
+        </div>
+        <div class="grid grid-cols-2 gap-1">
+            <input id="payops-date-from-mobile" type="date" class="payops-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Date from mobile" />
+            <input id="payops-date-to-mobile" type="date" class="payops-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Date to mobile" />
+        </div>
+        <button id="payops-apply-mobile" type="button" class="payops-focus rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-2 text-sm font-semibold text-white">Apply</button>
+    </div>
+</div>
+
+<script id="payops-sample-data" type="application/json">
+{
+  "summary": {
+    "revenue": 12300,
+    "completedOrders": 10,
+    "pendingPayments": 8,
+    "canceledRefunded": 5,
+    "revenueChange": 12,
+    "aov": 615,
+    "dailyVolume": 13
+  },
+  "statusOverview": {
+    "Completed": 10,
+    "Pending": 8,
+    "Canceled": 3,
+    "Refunded": 2,
+    "Failed": 1
+  },
+  "paymentMethods": {
+    "Credit Card": 4200,
+    "Bank Transfer": 2100,
+    "Cash": 1800,
+    "E-wallet": 2600,
+    "COD": 1600
+  },
+  "trend": {
+    "daily": {
+      "labels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      "revenue": [980, 1120, 1250, 1380, 1540, 1660, 1720],
+      "orders": [8, 10, 11, 12, 13, 15, 16]
+    },
+    "weekly": {
+      "labels": ["W1", "W2", "W3", "W4"],
+      "revenue": [2600, 2980, 3210, 3510],
+      "orders": [31, 37, 42, 46]
+    },
+    "monthly": {
+      "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+      "revenue": [7800, 8900, 12300, 0, 0, 0],
+      "orders": [98, 112, 143, 0, 0, 0]
+    }
+  },
+  "topCustomers": [
+    {"name": "Mario Bullecer", "orders": 5, "spent": 1250},
+    {"name": "Alyssa Chen", "orders": 4, "spent": 1120},
+    {"name": "Samuel Rivera", "orders": 3, "spent": 980},
+    {"name": "Jasmine Park", "orders": 3, "spent": 910}
+  ],
+  "topProducts": [
+    {"name": "Hygiene Kit", "units": 35, "revenue": 3500},
+    {"name": "Food Pack", "units": 26, "revenue": 2600},
+    {"name": "School Bundle", "units": 19, "revenue": 1900},
+    {"name": "Medical Kit", "units": 14, "revenue": 2100}
+  ],
+  "transactions": [
+    {"orderId": "ORD-1001", "customer": "Mario Bullecer", "email": "mario@example.com", "amount": 450, "method": "Credit Card", "status": "Completed", "date": "2026-03-18"},
+    {"orderId": "ORD-1002", "customer": "Jake Villain", "email": "jake@example.com", "amount": 320, "method": "E-wallet", "status": "Pending", "date": "2026-03-18"},
+    {"orderId": "ORD-1003", "customer": "Gerod Gae", "email": "gerod@example.com", "amount": 640, "method": "Bank Transfer", "status": "Completed", "date": "2026-03-17"},
+    {"orderId": "ORD-1004", "customer": "Andrei", "email": "andrei@example.com", "amount": 220, "method": "COD", "status": "Canceled", "date": "2026-03-17"},
+    {"orderId": "ORD-1005", "customer": "Alyssa Chen", "email": "alyssa@example.com", "amount": 890, "method": "Credit Card", "status": "Completed", "date": "2026-03-16"},
+    {"orderId": "ORD-1006", "customer": "Liza Anne", "email": "liza@example.com", "amount": 120, "method": "Cash", "status": "Refunded", "date": "2026-03-16"},
+    {"orderId": "ORD-1007", "customer": "Pam Velasquez", "email": "pam@example.com", "amount": 520, "method": "E-wallet", "status": "Failed", "date": "2026-03-15"},
+    {"orderId": "ORD-1008", "customer": "Samuel Rivera", "email": "samuel@example.com", "amount": 770, "method": "Bank Transfer", "status": "Completed", "date": "2026-03-15"},
+    {"orderId": "ORD-1009", "customer": "Rhea Torres", "email": "rhea@example.com", "amount": 305, "method": "COD", "status": "Pending", "date": "2026-03-14"},
+    {"orderId": "ORD-1010", "customer": "Nina Cruz", "email": "nina@example.com", "amount": 660, "method": "Credit Card", "status": "Completed", "date": "2026-03-13"},
+    {"orderId": "ORD-1011", "customer": "Mario Bullecer", "email": "mario@example.com", "amount": 800, "method": "Credit Card", "status": "Completed", "date": "2026-03-12"},
+    {"orderId": "ORD-1012", "customer": "Jasmine Park", "email": "jasmine@example.com", "amount": 450, "method": "E-wallet", "status": "Pending", "date": "2026-03-12"}
+  ],
+  "activity": [
+    {"customer": "Mario Bullecer", "action": "completed payment", "amount": 450, "time": "3 min ago"},
+    {"customer": "Jake Villain", "action": "payment pending", "amount": 320, "time": "16 min ago"},
+    {"customer": "Alyssa Chen", "action": "invoice downloaded", "amount": 890, "time": "39 min ago"},
+    {"customer": "Liza Anne", "action": "refund processed", "amount": 120, "time": "1 hour ago"}
+  ]
+}
+</script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/payment_dashboard.js' %}"></script>
+{% endblock %}

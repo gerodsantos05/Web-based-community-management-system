@@ -1,0 +1,1432 @@
+{% extends "base.html" %}
+
+{% block title %}Donations Dashboard | Happyness{% endblock %}
+
+{% block extra_head %}
+<style>
+    .donations-page {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .donations-card {
+        border-radius: 1rem;
+        border: 1px solid rgba(15, 118, 110, 0.14);
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .donations-focus:focus-visible {
+        outline: 2px solid var(--teal-500);
+        outline-offset: 2px;
+    }
+
+    .donations-kpi {
+        padding: 1rem;
+        display: grid;
+        gap: 0.55rem;
+    }
+
+    .donations-kpi-icon {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        color: var(--teal-700);
+        background: rgba(16, 185, 129, 0.14);
+    }
+
+    .donations-kpi-spark {
+        height: 2.15rem;
+    }
+
+    .donations-tab {
+        border: 1px solid rgba(15, 118, 110, 0.22);
+        background: rgba(236, 253, 245, 0.36);
+        color: var(--ink-700);
+    }
+
+    .donations-tab[aria-selected="true"] {
+        color: var(--teal-700);
+        border-color: rgba(16, 185, 129, 0.4);
+        background: rgba(16, 185, 129, 0.18);
+    }
+
+    .donations-table-wrap {
+        overflow-x: auto;
+    }
+
+    .donations-table {
+        width: 100%;
+        min-width: 980px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .donations-table th,
+    .donations-table td {
+        padding: 0.72rem 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .donations-table thead th {
+        background: rgba(236, 253, 245, 0.85);
+        color: var(--ink-700);
+        border-bottom: 1px solid rgba(15, 118, 110, 0.16);
+        text-align: left;
+        font-weight: 700;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    .donations-table tbody tr:hover {
+        background: rgba(236, 253, 245, 0.44);
+    }
+
+    .donations-sort {
+        border: 0;
+        background: transparent;
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        padding: 0;
+    }
+
+    .donations-status {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0.2rem 0.55rem;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+
+    .donations-status-completed {
+        background: rgba(16, 185, 129, 0.17);
+        color: #0c6b5f;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .donations-status-pending {
+        background: rgba(245, 158, 11, 0.2);
+        color: #b45309;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+
+    .donations-status-failed {
+        background: rgba(239, 68, 68, 0.16);
+        color: #b91c1c;
+        border: 1px solid rgba(239, 68, 68, 0.34);
+    }
+
+    .donations-status-cancelled {
+        background: rgba(148, 163, 184, 0.2);
+        color: #52606d;
+        border: 1px solid rgba(148, 163, 184, 0.36);
+    }
+
+    .donor-avatar {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        font-size: 0.76rem;
+        font-weight: 700;
+        color: var(--teal-700);
+        background: linear-gradient(145deg, rgba(16, 185, 129, 0.2), rgba(20, 184, 166, 0.26));
+    }
+
+    .donations-row-actions {
+        display: inline-flex;
+        gap: 0.2rem;
+        align-items: center;
+    }
+
+    .donations-progress {
+        height: 0.5rem;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.22);
+        overflow: hidden;
+    }
+
+    .donations-progress-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #10b981, #14b8a6);
+    }
+
+    .donations-feed,
+    .donations-list {
+        max-height: 16rem;
+        overflow: auto;
+    }
+
+    .donations-popover {
+        position: fixed;
+        z-index: 90;
+        display: none;
+        min-width: 16rem;
+        max-width: min(92vw, 28rem);
+        border-radius: 0.9rem;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        background: #ffffff;
+        box-shadow: 0 18px 34px rgba(8, 83, 76, 0.18);
+        padding: 0.75rem;
+    }
+
+    .donations-popover[data-open="true"] {
+        display: block;
+    }
+
+    @media (max-width: 1279px) {
+        .donations-desktop-filters {
+            display: none;
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .donations-mobile-filter-btn {
+            display: none;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .donations-row-actions {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="donations-page" class="donations-page">
+    <section class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4" aria-label="Donations KPI summary">
+        <article class="donations-card donations-kpi" aria-labelledby="kpi-total-label">
+            <div class="flex items-center justify-between gap-2">
+                <p id="kpi-total-label" class="text-xs uppercase tracking-wide text-ink-500">Total Donations</p>
+                <span class="donations-kpi-icon" aria-hidden="true"><i data-lucide="hand-coins"></i></span>
+            </div>
+            <p id="kpi-total-value" class="text-3xl font-bold text-ink-900">P 0</p>
+            <p class="text-xs text-brand-700">All campaigns this period</p>
+            <div class="donations-kpi-spark"><canvas id="spark-total" role="img" aria-label="Total donations trend"></canvas></div>
+        </article>
+
+        <article class="donations-card donations-kpi" aria-labelledby="kpi-pending-label">
+            <div class="flex items-center justify-between gap-2">
+                <p id="kpi-pending-label" class="text-xs uppercase tracking-wide text-ink-500">Pending Donations</p>
+                <span class="donations-kpi-icon" aria-hidden="true"><i data-lucide="clock-3"></i></span>
+            </div>
+            <p id="kpi-pending-value" class="text-3xl font-bold text-ink-900">P 0</p>
+            <p class="text-xs text-ink-500">Needs payment confirmation</p>
+            <div class="donations-kpi-spark"><canvas id="spark-pending" role="img" aria-label="Pending donations trend"></canvas></div>
+        </article>
+
+        <article class="donations-card donations-kpi" aria-labelledby="kpi-completed-label">
+            <div class="flex items-center justify-between gap-2">
+                <p id="kpi-completed-label" class="text-xs uppercase tracking-wide text-ink-500">Completed Donations</p>
+                <span class="donations-kpi-icon" aria-hidden="true"><i data-lucide="badge-check"></i></span>
+            </div>
+            <p id="kpi-completed-value" class="text-3xl font-bold text-ink-900">P 0</p>
+            <p class="text-xs text-brand-700">Settled transactions</p>
+            <div class="donations-kpi-spark"><canvas id="spark-completed" role="img" aria-label="Completed donations trend"></canvas></div>
+        </article>
+
+        <article class="donations-card donations-kpi" aria-labelledby="kpi-average-label">
+            <div class="flex items-center justify-between gap-2">
+                <p id="kpi-average-label" class="text-xs uppercase tracking-wide text-ink-500">Average Donation</p>
+                <span class="donations-kpi-icon" aria-hidden="true"><i data-lucide="wallet"></i></span>
+            </div>
+            <p id="kpi-average-value" class="text-3xl font-bold text-ink-900">P 0</p>
+            <p class="text-xs text-ink-500">Average amount per transaction</p>
+            <div class="donations-kpi-spark"><canvas id="spark-average" role="img" aria-label="Average donation trend"></canvas></div>
+        </article>
+    </section>
+
+    <section class="donations-card p-4" aria-label="Filters and export controls">
+        <div class="grid grid-cols-1 gap-3 xl:grid-cols-12 xl:items-end">
+            <div class="xl:col-span-3">
+                <label for="donations-search" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Search</label>
+                <input id="donations-search" type="search" class="donations-focus w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-900" placeholder="Search donor, reference, campaign" aria-label="Search donations" />
+            </div>
+
+            <div class="donations-desktop-filters xl:col-span-6 grid grid-cols-5 gap-2" aria-label="Desktop filters">
+                <div>
+                    <label for="donations-from" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">From</label>
+                    <input id="donations-from" type="date" class="donations-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Date from" />
+                </div>
+                <div>
+                    <label for="donations-to" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">To</label>
+                    <input id="donations-to" type="date" class="donations-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Date to" />
+                </div>
+                <div>
+                    <label for="donations-status" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Status</label>
+                    <select id="donations-status" class="donations-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Donation status filter">
+                        <option value="All">All</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Failed">Failed</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="donations-method" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Payment Method</label>
+                    <select id="donations-method" class="donations-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Payment method filter">
+                        <option value="All">All</option>
+                        <option value="Credit Card">Credit Card</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Cash">Cash</option>
+                        <option value="E-wallet">E-wallet</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="donations-sort" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Sort</label>
+                    <select id="donations-sort" class="donations-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Sort donations">
+                        <option value="date-desc">Newest first</option>
+                        <option value="date-asc">Oldest first</option>
+                        <option value="amount-desc">Amount high to low</option>
+                        <option value="amount-asc">Amount low to high</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="xl:col-span-3">
+                <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-500">Actions</p>
+                <div class="flex flex-wrap gap-2">
+                    <button id="apply-donations-filters" type="button" class="donations-focus rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-2 text-sm font-semibold text-white" aria-label="Apply donation filters">Apply Filters</button>
+                    <button id="export-donations-pdf" type="button" class="donations-focus rounded-full border border-brand-100 bg-brand-50/70 px-3 py-2 text-xs font-semibold text-brand-700" aria-label="Export donations PDF">Export PDF</button>
+                    <button id="export-donations-csv" type="button" class="donations-focus rounded-full border border-brand-100 bg-brand-50/70 px-3 py-2 text-xs font-semibold text-brand-700" aria-label="Export donations CSV">Export CSV</button>
+                    <button id="open-mobile-donation-filters" type="button" class="donations-mobile-filter-btn donations-focus rounded-full border border-brand-100 bg-white px-3 py-2 text-xs font-semibold text-brand-700" aria-haspopup="dialog" aria-expanded="false" aria-controls="mobile-donation-filters">Filters</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-brand-100 pt-3">
+            <div role="tablist" aria-label="Quick donation filters" class="inline-flex flex-wrap gap-2">
+                <button type="button" class="donations-tab donations-focus rounded-full px-3 py-1 text-xs font-semibold" data-quick="All" role="tab" aria-selected="true">All</button>
+                <button type="button" class="donations-tab donations-focus rounded-full px-3 py-1 text-xs font-semibold" data-quick="Completed" role="tab" aria-selected="false">Completed</button>
+                <button type="button" class="donations-tab donations-focus rounded-full px-3 py-1 text-xs font-semibold" data-quick="Pending" role="tab" aria-selected="false">Pending</button>
+                <button type="button" class="donations-tab donations-focus rounded-full px-3 py-1 text-xs font-semibold" data-quick="This Month" role="tab" aria-selected="false">This Month</button>
+            </div>
+            <p id="donations-filter-summary" class="text-xs text-ink-500" aria-live="polite">No filters applied</p>
+        </div>
+    </section>
+
+    <section class="grid grid-cols-1 gap-4 xl:grid-cols-12" aria-label="Donations analytics">
+        <article class="donations-card p-4 xl:col-span-7" aria-labelledby="donations-over-time-title">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 id="donations-over-time-title" class="text-lg font-semibold text-ink-900">Donations Over Time</h2>
+                <div role="tablist" aria-label="Donations chart range" class="inline-flex gap-2 rounded-full border border-brand-100 bg-brand-50/70 p-1">
+                    <button type="button" class="donations-tab donations-focus rounded-full px-3 py-1 text-xs font-semibold" data-range="daily" role="tab" aria-selected="true">Daily</button>
+                    <button type="button" class="donations-tab donations-focus rounded-full px-3 py-1 text-xs font-semibold" data-range="weekly" role="tab" aria-selected="false">Weekly</button>
+                    <button type="button" class="donations-tab donations-focus rounded-full px-3 py-1 text-xs font-semibold" data-range="monthly" role="tab" aria-selected="false">Monthly</button>
+                </div>
+            </div>
+            <div class="h-72"><canvas id="donations-over-time-chart" role="img" aria-label="Donations over time"></canvas></div>
+        </article>
+
+        <article class="donations-card p-4 xl:col-span-5" aria-labelledby="payment-breakdown-title">
+            <h2 id="payment-breakdown-title" class="mb-3 text-base font-semibold text-ink-900">Payment Method Breakdown</h2>
+            <div class="h-64"><canvas id="payment-method-chart" role="img" aria-label="Payment method breakdown"></canvas></div>
+        </article>
+
+        <article class="donations-card p-4 xl:col-span-5" aria-labelledby="status-overview-title">
+            <h2 id="status-overview-title" class="mb-3 text-base font-semibold text-ink-900">Donation Status Overview</h2>
+            <div class="h-64"><canvas id="donation-status-chart" role="img" aria-label="Donation status overview"></canvas></div>
+        </article>
+
+        <article class="donations-card p-4 xl:col-span-4" aria-labelledby="top-donors-title">
+            <h2 id="top-donors-title" class="mb-3 text-base font-semibold text-ink-900">Top Donors</h2>
+            <ul id="top-donors-list" class="donations-list grid gap-2" aria-live="polite"></ul>
+        </article>
+
+        <article class="donations-card p-4 xl:col-span-3" aria-labelledby="goal-progress-title">
+            <h2 id="goal-progress-title" class="mb-2 text-base font-semibold text-ink-900">Fundraising Goal</h2>
+            <p class="text-xs text-ink-500">Raised versus monthly goal</p>
+            <p id="goal-raised" class="mt-3 text-2xl font-bold text-ink-900">P 0</p>
+            <p id="goal-target" class="text-xs text-ink-500">of P 0 target</p>
+            <div class="mt-3 donations-progress" aria-label="Fundraising goal progress">
+                <div id="goal-progress-fill" class="donations-progress-fill" style="width: 0%"></div>
+            </div>
+            <p id="goal-progress-text" class="mt-2 text-sm font-semibold text-brand-700">0% complete</p>
+        </article>
+
+        <article class="donations-card p-4 xl:col-span-3" aria-labelledby="retention-title">
+            <h2 id="retention-title" class="mb-3 text-base font-semibold text-ink-900">Donor Retention</h2>
+            <div class="h-52"><canvas id="retention-chart" role="img" aria-label="New versus returning donors"></canvas></div>
+        </article>
+    </section>
+
+    <section class="grid grid-cols-1 gap-4 xl:grid-cols-12" aria-label="Donations table and recent activity">
+        <article class="donations-card xl:col-span-9" aria-labelledby="transactions-title">
+            <div class="flex items-center justify-between gap-2 border-b border-brand-100 px-4 py-3">
+                <h2 id="transactions-title" class="text-base font-semibold text-ink-900">Donation Transactions</h2>
+                <p id="donations-table-count" class="text-xs text-ink-500" aria-live="polite">0 transactions</p>
+            </div>
+
+            <div class="donations-table-wrap">
+                <table class="donations-table" aria-describedby="donations-table-count">
+                    <thead>
+                        <tr>
+                            <th scope="col"><input id="donations-select-all" class="donations-focus" type="checkbox" aria-label="Select all visible donations" /></th>
+                            <th scope="col"><button type="button" class="donations-sort donations-focus" data-sort="date" aria-label="Sort by date">Date <i data-lucide="arrow-up-down" class="h-3.5 w-3.5"></i></button></th>
+                            <th scope="col">Donor</th>
+                            <th scope="col"><button type="button" class="donations-sort donations-focus" data-sort="amount" aria-label="Sort by amount">Amount <i data-lucide="arrow-up-down" class="h-3.5 w-3.5"></i></button></th>
+                            <th scope="col">Method</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Reference No.</th>
+                            <th scope="col">Campaign</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="donations-table-body"></tbody>
+                </table>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 border-t border-brand-100 px-4 py-3">
+                <div class="flex items-center gap-2">
+                    <label for="donations-page-size" class="text-xs font-semibold text-ink-500">Rows</label>
+                    <select id="donations-page-size" class="donations-focus rounded-full border border-brand-100 bg-white px-2 py-1 text-xs text-ink-700" aria-label="Rows per page">
+                        <option value="5" selected>5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                    </select>
+                    <button id="bulk-mark-complete" type="button" class="donations-focus rounded-full border border-brand-100 bg-brand-50/70 px-2.5 py-1 text-xs font-semibold text-brand-700" aria-label="Mark selected as complete">Bulk Complete</button>
+                </div>
+                <div id="donations-pagination" class="inline-flex items-center gap-2" aria-label="Donations pagination"></div>
+            </div>
+        </article>
+
+        <aside class="donations-card p-4 xl:col-span-3" aria-labelledby="recent-donation-activity-title">
+            <h2 id="recent-donation-activity-title" class="mb-3 text-base font-semibold text-ink-900">Recent Donation Activity</h2>
+            <ul id="recent-donation-feed" class="donations-feed grid gap-2" aria-live="polite"></ul>
+        </aside>
+    </section>
+
+    <form id="donations-export-form" method="post" class="hidden" aria-hidden="true">
+        <input type="hidden" name="filters" id="donations-export-filters" value="{}" />
+    </form>
+</div>
+
+<div id="mobile-donation-filters" class="donations-popover" role="dialog" aria-modal="false" aria-label="Mobile donation filters">
+    <h3 class="mb-2 text-sm font-semibold text-ink-900">Filters</h3>
+    <div class="grid grid-cols-1 gap-2">
+        <div>
+            <label for="donations-status-mobile" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Status</label>
+            <select id="donations-status-mobile" class="donations-focus w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-900" aria-label="Status filter mobile">
+                <option value="All">All</option>
+                <option value="Completed">Completed</option>
+                <option value="Pending">Pending</option>
+                <option value="Failed">Failed</option>
+                <option value="Cancelled">Cancelled</option>
+            </select>
+        </div>
+        <div>
+            <label for="donations-method-mobile" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Payment Method</label>
+            <select id="donations-method-mobile" class="donations-focus w-full rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-ink-900" aria-label="Method filter mobile">
+                <option value="All">All</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Cash">Cash</option>
+                <option value="E-wallet">E-wallet</option>
+            </select>
+        </div>
+        <div class="grid grid-cols-2 gap-1">
+            <input id="donations-from-mobile" type="date" class="donations-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Date from mobile" />
+            <input id="donations-to-mobile" type="date" class="donations-focus w-full rounded-xl border border-brand-100 bg-white px-2 py-2 text-sm text-ink-900" aria-label="Date to mobile" />
+        </div>
+        <button id="apply-mobile-donation-filters" type="button" class="donations-focus rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-2 text-sm font-semibold text-white">Apply</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    "use strict";
+
+    // Sample JSON for immediate donations dashboard rendering.
+    var DONATIONS_SAMPLE = {
+        summary: {
+            total: 12523,
+            pending: 1120,
+            completed: 11403,
+            average: 1540,
+            goal: 18000,
+            raised: 12523,
+            retention: { New: 38, Returning: 62 }
+        },
+        methods: {
+            "Credit Card": 5200,
+            "Bank Transfer": 3100,
+            Cash: 1200,
+            "E-wallet": 2923
+        },
+        status: {
+            Completed: 73,
+            Pending: 8,
+            Failed: 3,
+            Cancelled: 1
+        },
+        top_donors: [
+            { name: "Alyssa Chen", amount: 5200, count: 4 },
+            { name: "Jasmine Park", amount: 3000, count: 2 },
+            { name: "Samuel Rivera", amount: 2450, count: 3 },
+            { name: "Mario Bull", amount: 1750, count: 2 },
+            { name: "Gerod Gae", amount: 1320, count: 2 }
+        ],
+        transactions: [
+            { date: "2026-03-10", donor: "Alyssa Chen", amount: 2000, method: "Credit Card", status: "Completed", ref: "D-1024", campaign: "Medical Aid" },
+            { date: "2026-03-11", donor: "Samuel Rivera", amount: 1250, method: "Bank Transfer", status: "Pending", ref: "D-1025", campaign: "Shelter Kits" },
+            { date: "2026-03-12", donor: "Jasmine Park", amount: 3000, method: "Cash", status: "Completed", ref: "D-1026", campaign: "Food Drive" },
+            { date: "2026-03-13", donor: "Alyssa Chen", amount: 1700, method: "Credit Card", status: "Completed", ref: "D-1027", campaign: "Medical Aid" },
+            { date: "2026-03-14", donor: "Pam Velasquez", amount: 400, method: "E-wallet", status: "Failed", ref: "D-1028", campaign: "Community Pantry" },
+            { date: "2026-03-14", donor: "Mario Bull", amount: 650, method: "Bank Transfer", status: "Completed", ref: "D-1029", campaign: "Food Drive" },
+            { date: "2026-03-15", donor: "Gerod Gae", amount: 500, method: "E-wallet", status: "Cancelled", ref: "D-1030", campaign: "Education Support" },
+            { date: "2026-03-15", donor: "Rhea Torres", amount: 860, method: "Credit Card", status: "Pending", ref: "D-1031", campaign: "Medical Aid" },
+            { date: "2026-03-16", donor: "Nina Cruz", amount: 1500, method: "Cash", status: "Completed", ref: "D-1032", campaign: "Housing Support" },
+            { date: "2026-03-16", donor: "Jake Porter", amount: 420, method: "E-wallet", status: "Completed", ref: "D-1033", campaign: "Community Pantry" },
+            { date: "2026-03-17", donor: "Liza Anne", amount: 980, method: "Bank Transfer", status: "Completed", ref: "D-1034", campaign: "Education Support" },
+            { date: "2026-03-18", donor: "Alyssa Chen", amount: 1500, method: "Credit Card", status: "Completed", ref: "D-1035", campaign: "Shelter Kits" }
+        ],
+        activity: [
+            { donor: "Alyssa Chen", action: "donated", amount: 1500, time: "2 minutes ago" },
+            { donor: "Samuel Rivera", action: "marked pending", amount: 1250, time: "15 minutes ago" },
+            { donor: "Jasmine Park", action: "receipt downloaded", amount: 3000, time: "32 minutes ago" },
+            { donor: "Nina Cruz", action: "donated", amount: 1500, time: "1 hour ago" },
+            { donor: "Gerod Gae", action: "transaction cancelled", amount: 500, time: "2 hours ago" }
+        ],
+        trend: {
+            daily: {
+                labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+                amount: [840, 980, 1220, 1100, 1370, 1490, 1620],
+                count: [5, 6, 8, 7, 9, 10, 11]
+            },
+            weekly: {
+                labels: ["W1", "W2", "W3", "W4"],
+                amount: [2800, 3400, 3000, 3323],
+                count: [18, 24, 21, 27]
+            },
+            monthly: {
+                labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+                amount: [7200, 8600, 12523, 0, 0, 0],
+                count: [41, 48, 76, 0, 0, 0]
+            }
+        }
+    };
+
+    var state = {
+        raw: DONATIONS_SAMPLE,
+        filteredTransactions: DONATIONS_SAMPLE.transactions.slice(),
+        selected: new Set(),
+        page: 1,
+        pageSize: 5,
+        sortKey: "date",
+        sortDir: "desc",
+        quickFilter: "All",
+        range: "daily",
+        filters: {
+            search: "",
+            from: "",
+            to: "",
+            status: "All",
+            method: "All",
+            sort: "date-desc"
+        },
+        charts: {
+            overTime: null,
+            methods: null,
+            status: null,
+            retention: null
+        },
+        chartsReady: false
+    };
+
+    function byId(id) {
+        return document.getElementById(id);
+    }
+
+    function parseDate(value) {
+        return value ? new Date(value + "T00:00:00") : null;
+    }
+
+    function initials(name) {
+        return String(name || "").split(" ").slice(0, 2).map(function (part) {
+            return part.charAt(0).toUpperCase();
+        }).join("") || "NA";
+    }
+
+    function currency(value) {
+        return "P " + Number(value || 0).toLocaleString();
+    }
+
+    function statusClass(status) {
+        if (status === "Completed") {
+            return "donations-status donations-status-completed";
+        }
+        if (status === "Pending") {
+            return "donations-status donations-status-pending";
+        }
+        if (status === "Failed") {
+            return "donations-status donations-status-failed";
+        }
+        return "donations-status donations-status-cancelled";
+    }
+
+    function chartTheme() {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    backgroundColor: "rgba(5, 46, 43, 0.92)",
+                    titleColor: "#ecfdf5",
+                    bodyColor: "#d1fae5"
+                },
+                legend: { labels: { color: "#0f4e48" } }
+            }
+        };
+    }
+
+    function initSparkline(id, points) {
+        var canvas = byId(id);
+        if (!canvas || typeof Chart === "undefined") {
+            return;
+        }
+
+        new Chart(canvas, {
+            type: "line",
+            data: {
+                labels: ["1", "2", "3", "4", "5", "6"],
+                datasets: [{
+                    data: points,
+                    borderColor: "#0f766e",
+                    backgroundColor: "rgba(15, 118, 110, 0.12)",
+                    fill: true,
+                    pointRadius: 0,
+                    tension: 0.35,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                scales: { x: { display: false }, y: { display: false } }
+            }
+        });
+    }
+
+    function setKpis(summary) {
+        byId("kpi-total-value").textContent = currency(summary.total);
+        byId("kpi-pending-value").textContent = currency(summary.pending);
+        byId("kpi-completed-value").textContent = currency(summary.completed);
+        byId("kpi-average-value").textContent = currency(summary.average);
+
+        initSparkline("spark-total", [9000, 9800, 10200, 11200, 11800, 12523]);
+        initSparkline("spark-pending", [1500, 1450, 1380, 1290, 1210, 1120]);
+        initSparkline("spark-completed", [7300, 8100, 8750, 9400, 10320, 11403]);
+        initSparkline("spark-average", [1200, 1260, 1340, 1420, 1490, 1540]);
+    }
+
+    function getRangeData() {
+        return state.raw.trend[state.range] || state.raw.trend.daily;
+    }
+
+    function renderCharts(data) {
+        if (typeof Chart === "undefined") {
+            return;
+        }
+
+        var rangeData = getRangeData();
+
+        if (!state.chartsReady) {
+            state.charts.overTime = new Chart(byId("donations-over-time-chart"), {
+                type: "line",
+                data: {
+                    labels: rangeData.labels,
+                    datasets: [
+                        {
+                            label: "Donation Amount",
+                            data: rangeData.amount,
+                            borderColor: "#0f766e",
+                            backgroundColor: "rgba(15, 118, 110, 0.14)",
+                            fill: true,
+                            pointRadius: 2,
+                            tension: 0.35
+                        },
+                        {
+                            label: "Transactions",
+                            data: rangeData.count,
+                            borderColor: "#14b8a6",
+                            backgroundColor: "rgba(20, 184, 166, 0.10)",
+                            fill: true,
+                            pointRadius: 2,
+                            tension: 0.3,
+                            yAxisID: "y1"
+                        }
+                    ]
+                },
+                options: Object.assign(chartTheme(), {
+                    scales: {
+                        x: { ticks: { color: "#236e67" }, grid: { color: "rgba(35, 110, 103, 0.12)" } },
+                        y: { beginAtZero: true, ticks: { color: "#236e67" }, grid: { color: "rgba(35, 110, 103, 0.12)" } },
+                        y1: { beginAtZero: true, position: "right", ticks: { color: "#236e67" }, grid: { drawOnChartArea: false } }
+                    }
+                })
+            });
+
+            state.charts.methods = new Chart(byId("payment-method-chart"), {
+                type: "doughnut",
+                data: {
+                    labels: Object.keys(data.methods),
+                    datasets: [{
+                        data: Object.values(data.methods),
+                        backgroundColor: ["rgba(15, 118, 110, 0.9)", "rgba(16, 185, 129, 0.85)", "rgba(110, 231, 183, 0.82)", "rgba(20, 184, 166, 0.78)"],
+                        borderColor: "#ffffff",
+                        borderWidth: 2
+                    }]
+                },
+                options: Object.assign(chartTheme(), {
+                    cutout: "62%",
+                    plugins: {
+                        legend: { position: "bottom", labels: { color: "#0f4e48", boxWidth: 12 } },
+                        tooltip: chartTheme().plugins.tooltip
+                    }
+                })
+            });
+
+            state.charts.status = new Chart(byId("donation-status-chart"), {
+                type: "bar",
+                data: {
+                    labels: Object.keys(data.status),
+                    datasets: [{
+                        label: "Status",
+                        data: Object.values(data.status),
+                        backgroundColor: ["rgba(16, 185, 129, 0.82)", "rgba(245, 158, 11, 0.72)", "rgba(239, 68, 68, 0.72)", "rgba(148, 163, 184, 0.72)"],
+                        borderRadius: 10,
+                        maxBarThickness: 32
+                    }]
+                },
+                options: Object.assign(chartTheme(), {
+                    plugins: { legend: { display: false }, tooltip: chartTheme().plugins.tooltip },
+                    scales: {
+                        x: { ticks: { color: "#236e67" }, grid: { display: false } },
+                        y: { beginAtZero: true, ticks: { color: "#236e67" }, grid: { color: "rgba(35, 110, 103, 0.12)" } }
+                    }
+                })
+            });
+
+            state.charts.retention = new Chart(byId("retention-chart"), {
+                type: "doughnut",
+                data: {
+                    labels: Object.keys(data.summary.retention),
+                    datasets: [{
+                        data: Object.values(data.summary.retention),
+                        backgroundColor: ["rgba(20, 184, 166, 0.84)", "rgba(16, 185, 129, 0.84)"],
+                        borderColor: "#ffffff",
+                        borderWidth: 2
+                    }]
+                },
+                options: Object.assign(chartTheme(), {
+                    cutout: "64%",
+                    plugins: {
+                        legend: { position: "bottom", labels: { color: "#0f4e48", boxWidth: 12 } },
+                        tooltip: chartTheme().plugins.tooltip
+                    }
+                })
+            });
+
+            state.chartsReady = true;
+            return;
+        }
+
+        state.charts.overTime.data.labels = rangeData.labels;
+        state.charts.overTime.data.datasets[0].data = rangeData.amount;
+        state.charts.overTime.data.datasets[1].data = rangeData.count;
+        state.charts.overTime.update();
+
+        state.charts.methods.data.labels = Object.keys(data.methods);
+        state.charts.methods.data.datasets[0].data = Object.values(data.methods);
+        state.charts.methods.update();
+
+        state.charts.status.data.labels = Object.keys(data.status);
+        state.charts.status.data.datasets[0].data = Object.values(data.status);
+        state.charts.status.update();
+
+        state.charts.retention.data.labels = Object.keys(data.summary.retention);
+        state.charts.retention.data.datasets[0].data = Object.values(data.summary.retention);
+        state.charts.retention.update();
+    }
+
+    function updateCharts(filters) {
+        renderCharts(buildDerivedData(filters));
+    }
+
+    function renderTopDonors(data) {
+        var list = byId("top-donors-list");
+        if (!list) {
+            return;
+        }
+
+        var maxAmount = data.top_donors.reduce(function (max, donor) {
+            return Math.max(max, donor.amount);
+        }, 1);
+
+        list.innerHTML = "";
+        data.top_donors.forEach(function (donor, idx) {
+            var width = Math.round((donor.amount / maxAmount) * 100);
+            var li = document.createElement("li");
+            li.className = "rounded-xl border border-brand-100 bg-white p-2.5";
+            li.innerHTML = ""
+                + "<div class=\"mb-1 flex items-center justify-between gap-2\">"
+                    + "<div class=\"flex items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-700\">" + (idx + 1) + "</span><div><p class=\"text-sm font-semibold text-ink-900\">" + donor.name + "</p><p class=\"text-xs text-ink-500\">" + donor.count + " transactions</p></div></div>"
+                    + "<span class=\"text-sm font-semibold text-brand-700\">" + currency(donor.amount) + "</span>"
+                + "</div>"
+                + "<div class=\"donations-progress\"><div class=\"donations-progress-fill\" style=\"width:" + width + "%\"></div></div>";
+            list.appendChild(li);
+        });
+    }
+
+    function renderGoal(summary) {
+        var raised = summary.raised;
+        var goal = summary.goal;
+        var pct = goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0;
+        byId("goal-raised").textContent = currency(raised);
+        byId("goal-target").textContent = "of " + currency(goal) + " target";
+        byId("goal-progress-fill").style.width = pct + "%";
+        byId("goal-progress-text").textContent = pct + "% complete";
+    }
+
+    function renderActivity(feed) {
+        var list = byId("recent-donation-feed");
+        if (!list) {
+            return;
+        }
+
+        list.innerHTML = "";
+        feed.forEach(function (entry) {
+            var li = document.createElement("li");
+            li.className = "rounded-xl border border-brand-100 bg-white p-2.5";
+            li.innerHTML = ""
+                + "<div class=\"flex items-start gap-2\">"
+                    + "<span class=\"donor-avatar\" aria-hidden=\"true\">" + initials(entry.donor) + "</span>"
+                    + "<div><p class=\"text-sm text-ink-900\"><span class=\"font-semibold\">" + entry.donor + "</span> " + entry.action + " <span class=\"font-semibold text-brand-700\">" + currency(entry.amount) + "</span></p><p class=\"text-xs text-ink-500\">" + entry.time + "</p></div>"
+                + "</div>";
+            list.appendChild(li);
+        });
+    }
+
+    function activeDesktop() {
+        return window.matchMedia("(min-width: 1280px)").matches;
+    }
+
+    function getFiltersFromUI() {
+        var desktop = activeDesktop();
+        return {
+            search: (byId("donations-search") ? byId("donations-search").value : "").trim().toLowerCase(),
+            from: desktop ? (byId("donations-from") ? byId("donations-from").value : "") : (byId("donations-from-mobile") ? byId("donations-from-mobile").value : ""),
+            to: desktop ? (byId("donations-to") ? byId("donations-to").value : "") : (byId("donations-to-mobile") ? byId("donations-to-mobile").value : ""),
+            status: desktop ? (byId("donations-status") ? byId("donations-status").value : "All") : (byId("donations-status-mobile") ? byId("donations-status-mobile").value : "All"),
+            method: desktop ? (byId("donations-method") ? byId("donations-method").value : "All") : (byId("donations-method-mobile") ? byId("donations-method-mobile").value : "All"),
+            sort: byId("donations-sort") ? byId("donations-sort").value : "date-desc"
+        };
+    }
+
+    function passesQuick(transaction) {
+        if (state.quickFilter === "All") {
+            return true;
+        }
+
+        if (state.quickFilter === "Completed" || state.quickFilter === "Pending") {
+            return transaction.status === state.quickFilter;
+        }
+
+        if (state.quickFilter === "This Month") {
+            var d = parseDate(transaction.date);
+            var now = new Date();
+            return d && d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+        }
+
+        return true;
+    }
+
+    function compareTransaction(a, b) {
+        if (state.sortKey === "amount") {
+            return state.sortDir === "asc" ? a.amount - b.amount : b.amount - a.amount;
+        }
+
+        var da = parseDate(a.date);
+        var db = parseDate(b.date);
+        return state.sortDir === "asc" ? da - db : db - da;
+    }
+
+    function paginate(items) {
+        var start = (state.page - 1) * state.pageSize;
+        return items.slice(start, start + state.pageSize);
+    }
+
+    function setAriaSort() {
+        document.querySelectorAll(".donations-table th").forEach(function (th) {
+            th.setAttribute("aria-sort", "none");
+        });
+
+        var sortBtn = document.querySelector("[data-sort='" + state.sortKey + "']");
+        if (sortBtn) {
+            var parent = sortBtn.closest("th");
+            if (parent) {
+                parent.setAttribute("aria-sort", state.sortDir === "asc" ? "ascending" : "descending");
+            }
+        }
+    }
+
+    function renderPagination(total) {
+        var container = byId("donations-pagination");
+        if (!container) {
+            return;
+        }
+
+        var pages = Math.max(1, Math.ceil(total / state.pageSize));
+        if (state.page > pages) {
+            state.page = pages;
+        }
+
+        container.innerHTML = "";
+
+        var prev = document.createElement("button");
+        prev.type = "button";
+        prev.className = "donations-focus rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-semibold text-ink-700 disabled:opacity-40";
+        prev.textContent = "Prev";
+        prev.disabled = state.page <= 1;
+        prev.addEventListener("click", function () {
+            if (state.page > 1) {
+                state.page -= 1;
+                renderTable();
+            }
+        });
+
+        var label = document.createElement("span");
+        label.className = "text-xs text-ink-500";
+        label.textContent = "Page " + state.page + " of " + pages;
+
+        var next = document.createElement("button");
+        next.type = "button";
+        next.className = "donations-focus rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-semibold text-ink-700 disabled:opacity-40";
+        next.textContent = "Next";
+        next.disabled = state.page >= pages;
+        next.addEventListener("click", function () {
+            if (state.page < pages) {
+                state.page += 1;
+                renderTable();
+            }
+        });
+
+        container.appendChild(prev);
+        container.appendChild(label);
+        container.appendChild(next);
+    }
+
+    function renderTable() {
+        var body = byId("donations-table-body");
+        var count = byId("donations-table-count");
+        var selectAll = byId("donations-select-all");
+        if (!body || !count || !selectAll) {
+            return;
+        }
+
+        var sorted = state.filteredTransactions.slice().sort(compareTransaction);
+        var pageItems = paginate(sorted);
+
+        body.innerHTML = "";
+
+        pageItems.forEach(function (tx) {
+            var tr = document.createElement("tr");
+            tr.innerHTML = ""
+                + "<td><input type=\"checkbox\" class=\"donations-focus donation-row-check\" data-ref=\"" + tx.ref + "\" aria-label=\"Select transaction " + tx.ref + "\" " + (state.selected.has(tx.ref) ? "checked" : "") + " /></td>"
+                + "<td>" + tx.date + "</td>"
+                + "<td><div class=\"flex items-center gap-2\"><span class=\"donor-avatar\" aria-hidden=\"true\">" + initials(tx.donor) + "</span><p class=\"text-sm font-semibold text-ink-900\">" + tx.donor + "</p></div></td>"
+                + "<td class=\"font-semibold text-brand-700\">" + currency(tx.amount) + "</td>"
+                + "<td>" + tx.method + "</td>"
+                + "<td><span class=\"" + statusClass(tx.status) + "\">" + tx.status + "</span></td>"
+                + "<td>" + tx.ref + "</td>"
+                + "<td>" + tx.campaign + "</td>"
+                + "<td><span class=\"donations-row-actions\">"
+                    + "<button type=\"button\" class=\"donations-focus rounded-lg p-1.5 text-brand-700 hover:bg-brand-50\" aria-label=\"View transaction " + tx.ref + "\"><i data-lucide=\"eye\" class=\"h-4 w-4\"></i></button>"
+                    + "<button type=\"button\" class=\"donations-focus rounded-lg p-1.5 text-brand-700 hover:bg-brand-50\" aria-label=\"Download receipt for " + tx.ref + "\"><i data-lucide=\"download\" class=\"h-4 w-4\"></i></button>"
+                    + "<button type=\"button\" class=\"donations-focus rounded-lg p-1.5 text-brand-700 hover:bg-brand-50\" aria-label=\"Mark transaction " + tx.ref + " as complete\"><i data-lucide=\"check\" class=\"h-4 w-4\"></i></button>"
+                    + "<button type=\"button\" class=\"donations-focus rounded-lg p-1.5 text-red-600 hover:bg-red-50\" aria-label=\"Refund or cancel transaction " + tx.ref + "\"><i data-lucide=\"undo-2\" class=\"h-4 w-4\"></i></button>"
+                + "</span></td>";
+            body.appendChild(tr);
+        });
+
+        count.textContent = state.filteredTransactions.length + " transactions";
+        selectAll.checked = pageItems.length > 0 && pageItems.every(function (tx) { return state.selected.has(tx.ref); });
+
+        renderPagination(sorted.length);
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    }
+
+    function deriveSummary(transactions) {
+        var total = transactions.reduce(function (sum, tx) { return sum + tx.amount; }, 0);
+        var pending = transactions.filter(function (tx) { return tx.status === "Pending"; }).reduce(function (sum, tx) { return sum + tx.amount; }, 0);
+        var completed = transactions.filter(function (tx) { return tx.status === "Completed"; }).reduce(function (sum, tx) { return sum + tx.amount; }, 0);
+        var average = transactions.length ? Math.round(total / transactions.length) : 0;
+        return {
+            total: total,
+            pending: pending,
+            completed: completed,
+            average: average,
+            goal: state.raw.summary.goal,
+            raised: total,
+            retention: state.raw.summary.retention
+        };
+    }
+
+    function deriveMethods(transactions) {
+        return transactions.reduce(function (acc, tx) {
+            acc[tx.method] = (acc[tx.method] || 0) + tx.amount;
+            return acc;
+        }, {});
+    }
+
+    function deriveStatus(transactions) {
+        return transactions.reduce(function (acc, tx) {
+            acc[tx.status] = (acc[tx.status] || 0) + 1;
+            return acc;
+        }, { Completed: 0, Pending: 0, Failed: 0, Cancelled: 0 });
+    }
+
+    function buildDerivedData(filters) {
+        var search = filters.search || "";
+        var from = parseDate(filters.from);
+        var to = parseDate(filters.to);
+
+        var txs = state.raw.transactions.filter(function (tx) {
+            var txDate = parseDate(tx.date);
+            var matchesSearch = !search || tx.donor.toLowerCase().includes(search) || tx.ref.toLowerCase().includes(search) || tx.campaign.toLowerCase().includes(search);
+            var matchesDate = (!from || (txDate && txDate >= from)) && (!to || (txDate && txDate <= to));
+            var matchesStatus = filters.status === "All" || tx.status === filters.status;
+            var matchesMethod = filters.method === "All" || tx.method === filters.method;
+            var matchesQuick = passesQuick(tx);
+            return matchesSearch && matchesDate && matchesStatus && matchesMethod && matchesQuick;
+        });
+
+        var summary = deriveSummary(txs);
+        var methods = deriveMethods(txs);
+        var status = deriveStatus(txs);
+
+        return {
+            summary: summary,
+            methods: methods,
+            status: status,
+            transactions: txs,
+            top_donors: state.raw.top_donors,
+            activity: state.raw.activity,
+            trend: state.raw.trend
+        };
+    }
+
+    function syncDesktopMobileFilters() {
+        var desktop = activeDesktop();
+        var pairs = [
+            ["donations-status", "donations-status-mobile"],
+            ["donations-method", "donations-method-mobile"],
+            ["donations-from", "donations-from-mobile"],
+            ["donations-to", "donations-to-mobile"]
+        ];
+
+        pairs.forEach(function (pair) {
+            var d = byId(pair[0]);
+            var m = byId(pair[1]);
+            if (!d || !m) {
+                return;
+            }
+            if (desktop) {
+                m.value = d.value;
+            } else {
+                d.value = m.value;
+            }
+        });
+    }
+
+    function summarizeFilters(filters) {
+        var bits = [];
+        if (filters.search) { bits.push("search: " + filters.search); }
+        if (filters.status !== "All") { bits.push("status: " + filters.status); }
+        if (filters.method !== "All") { bits.push("method: " + filters.method); }
+        if (filters.from || filters.to) { bits.push("date: " + (filters.from || "?") + " to " + (filters.to || "?")); }
+        bits.push("quick: " + state.quickFilter);
+        return bits.join(" | ");
+    }
+
+    function setQueryParams(filters) {
+        var params = new URLSearchParams();
+        Object.keys(filters).forEach(function (key) {
+            if (filters[key]) {
+                params.set(key, filters[key]);
+            }
+        });
+        params.set("quick", state.quickFilter);
+        params.set("range", state.range);
+        window.history.replaceState({}, "", window.location.pathname + "?" + params.toString());
+    }
+
+    function applyFilters() {
+        syncDesktopMobileFilters();
+        state.filters = getFiltersFromUI();
+
+        var sortVal = state.filters.sort;
+        if (sortVal === "date-desc") { state.sortKey = "date"; state.sortDir = "desc"; }
+        if (sortVal === "date-asc") { state.sortKey = "date"; state.sortDir = "asc"; }
+        if (sortVal === "amount-desc") { state.sortKey = "amount"; state.sortDir = "desc"; }
+        if (sortVal === "amount-asc") { state.sortKey = "amount"; state.sortDir = "asc"; }
+
+        var data = buildDerivedData(state.filters);
+        state.filteredTransactions = data.transactions.slice();
+        state.page = 1;
+
+        setKpis(data.summary);
+        renderGoal(data.summary);
+        renderTopDonors(data);
+        renderActivity(data.activity);
+        updateCharts(state.filters);
+        renderTable();
+        setAriaSort();
+        byId("donations-filter-summary").textContent = summarizeFilters(state.filters);
+        setQueryParams(state.filters);
+    }
+
+    function debounce(fn, wait) {
+        var timer;
+        return function () {
+            var args = arguments;
+            clearTimeout(timer);
+            timer = setTimeout(function () {
+                fn.apply(null, args);
+            }, wait);
+        };
+    }
+
+    function fetchDonations(params) {
+        return Promise.resolve({ params: params || {}, transactions: DONATIONS_SAMPLE.transactions.slice() });
+    }
+
+    function fetchDonationsSummary(params) {
+        return Promise.resolve({ params: params || {}, summary: DONATIONS_SAMPLE.summary, methods: DONATIONS_SAMPLE.methods, status: DONATIONS_SAMPLE.status });
+    }
+
+    function exportDonations(format, params) {
+        var form = byId("donations-export-form");
+        var endpoint = format === "pdf" ? "/reports/donations/export/pdf" : "/reports/donations/export/csv";
+        if (!form) {
+            return;
+        }
+
+        form.action = endpoint;
+        byId("donations-export-filters").value = JSON.stringify(params || state.filters);
+        form.requestSubmit();
+    }
+
+    function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    function placePopover(anchor, panel) {
+        panel.style.visibility = "hidden";
+        panel.style.display = "block";
+
+        var a = anchor.getBoundingClientRect();
+        var p = panel.getBoundingClientRect();
+        var gap = 8;
+        var vw = window.innerWidth;
+        var vh = window.innerHeight;
+
+        var candidates = [
+            { top: a.bottom + gap, left: a.right - p.width },
+            { top: a.top - p.height - gap, left: a.right - p.width },
+            { top: a.bottom + gap, left: a.left },
+            { top: a.top - p.height - gap, left: a.left }
+        ];
+
+        var best = { top: gap, left: gap, score: -1 };
+
+        candidates.forEach(function (candidate) {
+            var top = clamp(candidate.top, gap, vh - p.height - gap);
+            var left = clamp(candidate.left, gap, vw - p.width - gap);
+            var visibleW = Math.max(0, Math.min(left + p.width, vw) - Math.max(left, 0));
+            var visibleH = Math.max(0, Math.min(top + p.height, vh) - Math.max(top, 0));
+            var score = visibleW * visibleH;
+            if (score > best.score) {
+                best = { top: top, left: left, score: score };
+            }
+        });
+
+        panel.style.top = best.top + "px";
+        panel.style.left = best.left + "px";
+        panel.style.visibility = "visible";
+    }
+
+    var openOverlay = { anchor: null, panel: null };
+
+    function closeOverlay() {
+        if (!openOverlay.panel) {
+            return;
+        }
+        openOverlay.panel.setAttribute("data-open", "false");
+        openOverlay.panel.style.display = "none";
+        if (openOverlay.anchor) {
+            openOverlay.anchor.setAttribute("aria-expanded", "false");
+        }
+        openOverlay = { anchor: null, panel: null };
+    }
+
+    function toggleOverlay(anchor, panel) {
+        var isSame = openOverlay.panel === panel && panel.getAttribute("data-open") === "true";
+        closeOverlay();
+        if (isSame) {
+            return;
+        }
+        panel.setAttribute("data-open", "true");
+        panel.style.display = "block";
+        anchor.setAttribute("aria-expanded", "true");
+        placePopover(anchor, panel);
+        openOverlay = { anchor: anchor, panel: panel };
+    }
+
+    function wireOverlayClose() {
+        document.addEventListener("click", function (event) {
+            var t = event.target;
+            if (openOverlay.panel && openOverlay.panel.contains(t)) {
+                return;
+            }
+            if (openOverlay.anchor && openOverlay.anchor.contains(t)) {
+                return;
+            }
+            closeOverlay();
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                closeOverlay();
+            }
+        });
+
+        window.addEventListener("resize", function () {
+            if (openOverlay.anchor && openOverlay.panel) {
+                placePopover(openOverlay.anchor, openOverlay.panel);
+            }
+        });
+
+        window.addEventListener("scroll", function () {
+            if (openOverlay.anchor && openOverlay.panel) {
+                placePopover(openOverlay.anchor, openOverlay.panel);
+            }
+        }, { passive: true });
+    }
+
+    function wireControls() {
+        var applyBtn = byId("apply-donations-filters");
+        if (applyBtn) {
+            applyBtn.addEventListener("click", applyFilters);
+        }
+
+        var mobileApply = byId("apply-mobile-donation-filters");
+        if (mobileApply) {
+            mobileApply.addEventListener("click", function () {
+                applyFilters();
+                closeOverlay();
+            });
+        }
+
+        var search = byId("donations-search");
+        if (search) {
+            search.addEventListener("input", debounce(applyFilters, 280));
+        }
+
+        ["donations-from", "donations-to", "donations-status", "donations-method", "donations-sort", "donations-from-mobile", "donations-to-mobile", "donations-status-mobile", "donations-method-mobile"].forEach(function (id) {
+            var el = byId(id);
+            if (!el) {
+                return;
+            }
+            el.addEventListener("change", function () {
+                syncDesktopMobileFilters();
+            });
+        });
+
+        document.querySelectorAll("[data-quick]").forEach(function (tab) {
+            tab.addEventListener("click", function () {
+                state.quickFilter = tab.getAttribute("data-quick") || "All";
+                document.querySelectorAll("[data-quick]").forEach(function (btn) {
+                    btn.setAttribute("aria-selected", btn === tab ? "true" : "false");
+                });
+                applyFilters();
+            });
+        });
+
+        document.querySelectorAll("[data-range]").forEach(function (tab) {
+            tab.addEventListener("click", function () {
+                state.range = tab.getAttribute("data-range") || "daily";
+                document.querySelectorAll("[data-range]").forEach(function (btn) {
+                    btn.setAttribute("aria-selected", btn === tab ? "true" : "false");
+                });
+                applyFilters();
+            });
+        });
+
+        var openMobile = byId("open-mobile-donation-filters");
+        var mobilePanel = byId("mobile-donation-filters");
+        if (openMobile && mobilePanel) {
+            openMobile.addEventListener("click", function () {
+                toggleOverlay(openMobile, mobilePanel);
+            });
+        }
+
+        var exportCsv = byId("export-donations-csv");
+        if (exportCsv) {
+            exportCsv.addEventListener("click", function () {
+                exportDonations("csv", state.filters);
+            });
+        }
+
+        var exportPdf = byId("export-donations-pdf");
+        if (exportPdf) {
+            exportPdf.addEventListener("click", function () {
+                exportDonations("pdf", state.filters);
+            });
+        }
+
+        byId("donations-page-size").addEventListener("change", function () {
+            state.pageSize = Number(byId("donations-page-size").value) || 5;
+            state.page = 1;
+            renderTable();
+        });
+
+        byId("donations-select-all").addEventListener("change", function () {
+            var pageRows = paginate(state.filteredTransactions.slice().sort(compareTransaction));
+            pageRows.forEach(function (tx) {
+                if (byId("donations-select-all").checked) {
+                    state.selected.add(tx.ref);
+                } else {
+                    state.selected.delete(tx.ref);
+                }
+            });
+            renderTable();
+        });
+
+        byId("donations-table-body").addEventListener("change", function (event) {
+            var rowCheck = event.target.closest(".donation-row-check");
+            if (!rowCheck) {
+                return;
+            }
+            var ref = rowCheck.getAttribute("data-ref");
+            if (!ref) {
+                return;
+            }
+            if (rowCheck.checked) {
+                state.selected.add(ref);
+            } else {
+                state.selected.delete(ref);
+            }
+        });
+
+        byId("bulk-mark-complete").addEventListener("click", function () {
+            if (!state.selected.size) {
+                return;
+            }
+
+            state.raw.transactions = state.raw.transactions.map(function (tx) {
+                if (state.selected.has(tx.ref)) {
+                    return {
+                        date: tx.date,
+                        donor: tx.donor,
+                        amount: tx.amount,
+                        method: tx.method,
+                        status: "Completed",
+                        ref: tx.ref,
+                        campaign: tx.campaign
+                    };
+                }
+                return tx;
+            });
+
+            state.selected.clear();
+            applyFilters();
+        });
+
+        document.querySelectorAll("[data-sort]").forEach(function (sortBtn) {
+            sortBtn.addEventListener("click", function () {
+                var key = sortBtn.getAttribute("data-sort");
+                if (!key) {
+                    return;
+                }
+                if (state.sortKey === key) {
+                    state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+                } else {
+                    state.sortKey = key;
+                    state.sortDir = "asc";
+                }
+                setAriaSort();
+                renderTable();
+            });
+        });
+    }
+
+    function lazyInitCharts() {
+        var marker = byId("donations-over-time-chart");
+        if (!marker || !("IntersectionObserver" in window)) {
+            renderCharts(state.raw);
+            return;
+        }
+
+        var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    renderCharts(state.raw);
+                    observer.disconnect();
+                }
+            });
+        }, { rootMargin: "180px 0px" });
+
+        observer.observe(marker);
+    }
+
+    function init() {
+        fetchDonationsSummary({}).then(function () {
+            setKpis(state.raw.summary);
+            renderGoal(state.raw.summary);
+            renderTopDonors(state.raw);
+            renderActivity(state.raw.activity);
+            lazyInitCharts();
+            wireControls();
+            wireOverlayClose();
+            applyFilters();
+
+            if (window.lucide && typeof window.lucide.createIcons === "function") {
+                window.lucide.createIcons();
+            }
+        });
+
+        fetchDonations({});
+    }
+
+    window.fetchDonations = fetchDonations;
+    window.fetchDonationsSummary = fetchDonationsSummary;
+    window.exportDonations = exportDonations;
+    window.renderCharts = renderCharts;
+    window.updateCharts = updateCharts;
+    window.applyFilters = applyFilters;
+
+    document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+{% endblock %}
