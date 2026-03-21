@@ -71,7 +71,7 @@ def dashboard(request):
     if not request.user.is_superuser:
         return redirect("signin")
 
-    return render(request, "dashboard.html", {
+    return render(request, "admin_dashboard/dashboard.html", {
         "active_page": "dashboard",
     })
 
@@ -81,7 +81,7 @@ def users(request):
     if not request.user.is_superuser:
         return redirect("signin")
 
-    return render(request, "users.html", {
+    return render(request, "admin_dashboard/users.html", {
         "active_page": "users",
     })
 
@@ -91,7 +91,7 @@ def donations(request):
     if not request.user.is_superuser:
         return redirect("signin")
 
-    return render(request, "donation.html", {
+    return render(request, "admin_dashboard/donation.html", {
         "active_page": "donations",
     })
 
@@ -101,7 +101,7 @@ def payment(request):
     if not request.user.is_superuser:
         return redirect("signin")
 
-    return render(request, "payment.html", {
+    return render(request, "admin_dashboard/payment.html", {
         "active_page": "payment",
     })
 
@@ -111,7 +111,7 @@ def inventory(request):
     if not request.user.is_superuser:
         return redirect("signin")
 
-    return render(request, "inventory.html", {
+    return render(request, "admin_dashboard/inventory.html", {
         "active_page": "inventory",
     })
 
@@ -121,7 +121,7 @@ def reports(request):
     if not request.user.is_superuser:
         return redirect("signin")
 
-    return render(request, "reports.html", {
+    return render(request, "admin_dashboard/reports.html", {
         "active_page": "reports",
     })
 
@@ -131,7 +131,7 @@ def settings(request):
     if not request.user.is_superuser:
         return redirect("signin")
 
-    return render(request, "settings.html", {
+    return render(request, "admin_dashboard/settings.html", {
         "active_page": "settings",
     })
 
