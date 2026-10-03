@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-label="Braided Doormat">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f1f7ef"/>
+      <stop offset="100%" stop-color="#d7e6cf"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" rx="40" fill="url(#g)"/>
+  <circle cx="400" cy="400" r="230" fill="#8cbf7a" opacity="0.92"/>
+  <circle cx="400" cy="400" r="175" fill="#f8fbf4"/>
+  <path d="M270 400c65-110 195-110 260 0-65 110-195 110-260 0Z" fill="#7b9f67" opacity="0.8"/>
+  <path d="M400 230v340M230 400h340" stroke="#7b9f67" stroke-width="18" stroke-linecap="round" opacity="0.7"/>
+  <text x="400" y="690" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-size="34" font-weight="700" fill="#36533c">Braided Doormat</text>
+</svg>

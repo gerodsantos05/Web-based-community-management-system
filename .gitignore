@@ -4,7 +4,7 @@ db.sqlite3*
 .env
 venv/
 node_modules/
-media/
+/media/
 .sixth/
 docs/backups/
 get-pip.py
