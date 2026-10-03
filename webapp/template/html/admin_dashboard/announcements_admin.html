@@ -1,0 +1,781 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Engagement - Announcements | HappYness{% endblock %}
+
+{% block extra_head %}
+<style data-admin-panel-style="admin-announcements">
+    .eng-page {
+        --eng-green-50: #f0fdf4;
+        --eng-green-100: #dcfce7;
+        --eng-green-500: #22c55e;
+        --eng-green-700: #15803d;
+        --eng-teal-500: #14b8a6;
+        --eng-border: rgba(21, 128, 61, 0.14);
+        --eng-shadow: 0 10px 24px rgba(2, 44, 34, 0.06);
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .eng-panel {
+        background: #ffffff;
+        border: 1px solid var(--eng-border);
+        border-radius: 1rem;
+        box-shadow: var(--eng-shadow);
+    }
+
+    .eng-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.7rem;
+        padding: 0.85rem 0.95rem;
+    }
+
+    .eng-title {
+        margin: 0;
+        color: var(--ink-900);
+        font-size: 1rem;
+        font-weight: 800;
+    }
+
+    .eng-subtitle {
+        margin: 0.25rem 0 0;
+        color: var(--ink-500);
+        font-size: 0.78rem;
+    }
+
+    .eng-actions {
+        padding: 0.82rem 0.95rem;
+        border-top: 1px solid rgba(15, 118, 110, 0.1);
+        border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+        display: grid;
+        gap: 0.55rem;
+    }
+
+    .eng-compose {
+        width: 100%;
+        min-height: 84px;
+        resize: vertical;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        border-radius: 0.75rem;
+        padding: 0.62rem 0.7rem;
+        font-size: 0.84rem;
+        font-family: inherit;
+        color: var(--ink-900);
+        line-height: 1.45;
+    }
+
+    .eng-compose-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 0.45rem;
+        align-items: center;
+    }
+
+    .eng-input,
+    .eng-select {
+        width: 100%;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        border-radius: 0.68rem;
+        padding: 0.48rem 0.56rem;
+        font-size: 0.79rem;
+        color: var(--ink-800);
+        background: #ffffff;
+    }
+
+    .eng-primary-btn,
+    .eng-ghost-btn {
+        border: 0;
+        border-radius: 0.68rem;
+        font-size: 0.79rem;
+        padding: 0.44rem 0.66rem;
+        cursor: pointer;
+    }
+
+    .eng-primary-btn {
+        background: linear-gradient(135deg, #22c55e, #14b8a6);
+        color: #ffffff;
+        font-weight: 700;
+    }
+
+    .eng-primary-btn:hover {
+        box-shadow: 0 9px 18px rgba(34, 197, 94, 0.28);
+    }
+
+    .eng-ghost-btn {
+        background: #f8fafc;
+        color: #334155;
+    }
+
+    .eng-ghost-btn:hover {
+        background: #f1f5f9;
+    }
+
+    .eng-tabs {
+        display: flex;
+        gap: 0.3rem;
+        flex-wrap: wrap;
+        padding: 0.62rem 0.95rem;
+        border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+    }
+
+    .eng-tab {
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--ink-700);
+        border-radius: 0.66rem;
+        padding: 0.38rem 0.56rem;
+        font-size: 0.77rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        cursor: pointer;
+    }
+
+    .eng-tab:hover {
+        background: var(--eng-green-50);
+        border-color: rgba(34, 197, 94, 0.22);
+    }
+
+    .eng-tab.is-active {
+        color: var(--eng-green-700);
+        font-weight: 700;
+        border-color: rgba(34, 197, 94, 0.36);
+        background: linear-gradient(180deg, var(--eng-green-50), #ffffff);
+    }
+
+    .eng-count {
+        border-radius: 999px;
+        border: 1px solid rgba(100, 116, 139, 0.2);
+        background: #f8fafc;
+        min-width: 1.4rem;
+        text-align: center;
+        font-size: 0.67rem;
+        padding: 0.12rem 0.32rem;
+    }
+
+    .ann-feed {
+        list-style: none;
+        margin: 0;
+        padding: 0.7rem;
+        display: grid;
+        gap: 0.65rem;
+    }
+
+    .ann-card {
+        border: 1px solid rgba(15, 118, 110, 0.11);
+        border-radius: 0.82rem;
+        padding: 0.7rem;
+        display: grid;
+        gap: 0.5rem;
+        background: #ffffff;
+    }
+
+    .ann-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .ann-title {
+        margin: 0;
+        color: var(--ink-900);
+        font-size: 0.88rem;
+        font-weight: 700;
+    }
+
+    .ann-preview {
+        margin: 0;
+        color: var(--ink-700);
+        font-size: 0.8rem;
+        line-height: 1.46;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ann-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.34rem;
+    }
+
+    .eng-badge {
+        border-radius: 999px;
+        border: 1px solid transparent;
+        padding: 0.14rem 0.4rem;
+        font-size: 0.67rem;
+        font-weight: 700;
+    }
+
+    .ann-audience {
+        background: rgba(16, 185, 129, 0.12);
+        color: #0f766e;
+        border-color: rgba(16, 185, 129, 0.24);
+    }
+
+    .ann-status-published {
+        background: rgba(34, 197, 94, 0.13);
+        color: #166534;
+        border-color: rgba(34, 197, 94, 0.25);
+    }
+
+    .ann-status-scheduled {
+        background: rgba(6, 182, 212, 0.12);
+        color: #155e75;
+        border-color: rgba(6, 182, 212, 0.24);
+    }
+
+    .ann-status-draft {
+        background: rgba(148, 163, 184, 0.16);
+        color: #475569;
+        border-color: rgba(148, 163, 184, 0.28);
+    }
+
+    .ann-date {
+        color: var(--ink-500);
+        font-size: 0.72rem;
+    }
+
+    .ann-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.4rem;
+    }
+
+    .ann-engage {
+        color: var(--ink-600);
+        font-size: 0.74rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.28rem;
+    }
+
+    .ann-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.24rem;
+        position: relative;
+    }
+
+    .ann-action {
+        border: 0;
+        background: transparent;
+        color: #0f766e;
+        border-radius: 0.56rem;
+        padding: 0.28rem 0.46rem;
+        font-size: 0.73rem;
+        cursor: pointer;
+    }
+
+    .ann-action:hover {
+        background: rgba(20, 184, 166, 0.1);
+    }
+
+    .ann-action.is-danger {
+        color: #b91c1c;
+    }
+
+    .ann-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 0.3rem);
+        min-width: 126px;
+        border: 1px solid var(--eng-border);
+        border-radius: 0.66rem;
+        box-shadow: 0 12px 22px rgba(2, 6, 23, 0.14);
+        background: #ffffff;
+        padding: 0.34rem;
+        display: none;
+        z-index: 9;
+    }
+
+    .ann-menu[data-open="true"] {
+        display: block;
+    }
+
+    .ann-menu-item {
+        width: 100%;
+        border: 0;
+        border-radius: 0.5rem;
+        background: transparent;
+        text-align: left;
+        color: var(--ink-700);
+        font-size: 0.75rem;
+        padding: 0.38rem 0.44rem;
+        cursor: pointer;
+    }
+
+    .ann-menu-item:hover {
+        background: rgba(15, 118, 110, 0.1);
+    }
+
+    .eng-empty {
+        margin: 0.74rem;
+        border: 1px dashed rgba(15, 118, 110, 0.2);
+        border-radius: 0.72rem;
+        color: var(--ink-500);
+        font-size: 0.8rem;
+        text-align: center;
+        padding: 0.75rem;
+    }
+
+    .ann-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.45);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .ann-modal[data-open="true"] {
+        display: flex;
+    }
+
+    .ann-modal-content {
+        width: min(660px, 100%);
+        border-radius: 0.95rem;
+        border: 1px solid rgba(15, 118, 110, 0.18);
+        background: #ffffff;
+        box-shadow: 0 24px 44px rgba(2, 6, 23, 0.2);
+        overflow: hidden;
+    }
+
+    .ann-modal-head {
+        padding: 0.78rem 0.9rem;
+        border-bottom: 1px solid rgba(15, 118, 110, 0.12);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .ann-modal-title {
+        margin: 0;
+        color: var(--ink-900);
+        font-size: 0.92rem;
+        font-weight: 700;
+    }
+
+    .ann-close {
+        border: 0;
+        background: transparent;
+        color: var(--ink-500);
+        font-size: 1.25rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .ann-modal-body {
+        padding: 0.86rem 0.92rem;
+        display: grid;
+        gap: 0.66rem;
+    }
+
+    .ann-label {
+        margin: 0;
+        color: var(--ink-500);
+        font-size: 0.69rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .ann-value {
+        margin: 0.26rem 0 0;
+        color: var(--ink-800);
+        font-size: 0.82rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+
+    .eng-focus:focus-visible {
+        outline: 2px solid var(--eng-teal-500);
+        outline-offset: 2px;
+    }
+
+    @media (max-width: 820px) {
+        .eng-compose-controls {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="eng-page" id="ann-page">
+    <section class="eng-panel">
+        <header class="eng-header">
+            <div>
+                <h1 class="eng-title">Announcements</h1>
+                <p class="eng-subtitle">Publish updates in a compact feed-style workflow.</p>
+            </div>
+            <button type="button" class="eng-ghost-btn eng-focus" id="ann-new-draft">New Draft</button>
+        </header>
+
+        <div class="eng-actions">
+            <textarea id="ann-compose" class="eng-compose eng-focus" placeholder="Write an announcement..." aria-label="Announcement content"></textarea>
+            <div class="eng-compose-controls">
+                <select id="ann-audience" class="eng-select eng-focus" aria-label="Target audience">
+                    <option value="All Users">All Users</option>
+                    <option value="Volunteers">Volunteers</option>
+                    <option value="Beneficiaries">Beneficiaries</option>
+                </select>
+                <input type="date" id="ann-schedule" class="eng-input eng-focus" aria-label="Schedule date" />
+                <button type="button" class="eng-primary-btn eng-focus" id="ann-post-btn">Post</button>
+            </div>
+        </div>
+
+        <div class="eng-tabs" role="tablist" aria-label="Announcement tabs">
+            <button type="button" class="eng-tab eng-focus is-active" data-tab="all" role="tab" aria-selected="true">All <span class="eng-count" data-count="all">0</span></button>
+            <button type="button" class="eng-tab eng-focus" data-tab="published" role="tab" aria-selected="false">Published <span class="eng-count" data-count="published">0</span></button>
+            <button type="button" class="eng-tab eng-focus" data-tab="scheduled" role="tab" aria-selected="false">Scheduled <span class="eng-count" data-count="scheduled">0</span></button>
+            <button type="button" class="eng-tab eng-focus" data-tab="draft" role="tab" aria-selected="false">Drafts <span class="eng-count" data-count="draft">0</span></button>
+        </div>
+
+        <ul class="ann-feed" id="ann-feed"></ul>
+        <div class="eng-empty" id="ann-empty" style="display:none;">No announcements in this tab.</div>
+    </section>
+</div>
+
+<template id="ann-card-template">
+    <li class="ann-card" data-id="">
+        <div class="ann-head">
+            <h3 class="ann-title"></h3>
+            <span class="eng-badge ann-status"></span>
+        </div>
+        <p class="ann-preview"></p>
+        <div class="ann-meta">
+            <span class="eng-badge ann-audience"></span>
+            <span class="ann-date"></span>
+        </div>
+        <div class="ann-footer">
+            <span class="ann-engage"><i data-lucide="eye" style="width:0.88rem;height:0.88rem;"></i><span class="ann-views"></span></span>
+            <div class="ann-actions">
+                <button type="button" class="ann-action eng-focus" data-action="view">View</button>
+                <button type="button" class="ann-action eng-focus" data-action="edit">Edit</button>
+                <button type="button" class="ann-action eng-focus" data-action="more">More</button>
+                <div class="ann-menu" data-open="false">
+                    <button type="button" class="ann-menu-item eng-focus" data-menu-action="toggle"></button>
+                    <button type="button" class="ann-menu-item eng-focus" data-menu-action="delete">Delete</button>
+                </div>
+            </div>
+        </div>
+    </li>
+</template>
+
+<div class="ann-modal" id="ann-detail-modal" data-open="false" role="dialog" aria-modal="true" aria-labelledby="ann-detail-title">
+    <div class="ann-modal-content">
+        <div class="ann-modal-head">
+            <h2 class="ann-modal-title" id="ann-detail-title">Announcement Detail</h2>
+            <button type="button" class="ann-close eng-focus" data-close-ann>&times;</button>
+        </div>
+        <div class="ann-modal-body">
+            <div>
+                <p class="ann-label">Title</p>
+                <p class="ann-value" id="ann-detail-title-val"></p>
+            </div>
+            <div>
+                <p class="ann-label">Content</p>
+                <p class="ann-value" id="ann-detail-content"></p>
+            </div>
+            <div>
+                <p class="ann-label">Meta</p>
+                <p class="ann-value" id="ann-detail-meta"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="ann-modal" id="ann-edit-modal" data-open="false" role="dialog" aria-modal="true" aria-labelledby="ann-edit-title">
+    <div class="ann-modal-content">
+        <div class="ann-modal-head">
+            <h2 class="ann-modal-title" id="ann-edit-title">Edit Announcement</h2>
+            <button type="button" class="ann-close eng-focus" data-close-ann>&times;</button>
+        </div>
+        <div class="ann-modal-body">
+            <input type="text" id="ann-edit-title-input" class="eng-input eng-focus" aria-label="Edit announcement title" />
+            <textarea id="ann-edit-content-input" class="eng-compose eng-focus" aria-label="Edit announcement content"></textarea>
+            <button type="button" class="eng-primary-btn eng-focus" id="ann-save-edit">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<script id="ann-data" type="application/json">
+{
+  "items": [
+    {"id": 1, "title": "System Maintenance Notice", "content": "Our platform will be under maintenance on Sunday from 10 PM to 2 AM.", "audience": "All Users", "status": "Published", "publishDate": "2026-04-11", "views": 214},
+    {"id": 2, "title": "Volunteer Orientation", "content": "New volunteer orientation starts next week with two available schedules.", "audience": "Volunteers", "status": "Scheduled", "publishDate": "2026-04-15", "views": 0},
+    {"id": 3, "title": "Draft: Community Workshop", "content": "Initial details for the community workshop announcement are being finalized.", "audience": "All Users", "status": "Draft", "publishDate": null, "views": 0},
+    {"id": 4, "title": "Donation Campaign Update", "content": "We have reached 62 percent of our monthly campaign target. Thank you for your support.", "audience": "Beneficiaries", "status": "Published", "publishDate": "2026-04-10", "views": 122}
+  ]
+}
+</script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function initAnnouncementTabs() {
+    "use strict";
+
+    var state = {
+        items: [],
+        tab: "all",
+        selectedId: null,
+        editingId: null
+    };
+
+    function slug(value) {
+        return String(value || "").toLowerCase().replace(/\s+/g, "-");
+    }
+
+    function formatDate(value) {
+        if (!value) return "Not scheduled";
+        var date = new Date(value + "T00:00:00");
+        return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function findItem(id) {
+        return state.items.find(function(item) { return item.id === id; });
+    }
+
+    function filteredItems() {
+        if (state.tab === "all") return state.items.slice();
+        return state.items.filter(function(item) {
+            return slug(item.status) === state.tab;
+        });
+    }
+
+    function updateCounts() {
+        var counts = {
+            all: state.items.length,
+            published: state.items.filter(function(item) { return slug(item.status) === "published"; }).length,
+            scheduled: state.items.filter(function(item) { return slug(item.status) === "scheduled"; }).length,
+            draft: state.items.filter(function(item) { return slug(item.status) === "draft"; }).length
+        };
+
+        Object.keys(counts).forEach(function(key) {
+            var node = document.querySelector('[data-count="' + key + '"]');
+            if (node) node.textContent = String(counts[key]);
+        });
+    }
+
+    function closeMenus() {
+        document.querySelectorAll(".ann-menu").forEach(function(menu) {
+            menu.setAttribute("data-open", "false");
+        });
+    }
+
+    function renderFeed() {
+        var root = document.getElementById("ann-feed");
+        var empty = document.getElementById("ann-empty");
+        var template = document.getElementById("ann-card-template");
+        var items = filteredItems();
+
+        root.innerHTML = "";
+
+        if (!items.length) {
+            empty.style.display = "block";
+            return;
+        }
+
+        empty.style.display = "none";
+
+        items.forEach(function(item) {
+            var frag = template.content.cloneNode(true);
+            var card = frag.querySelector(".ann-card");
+            var status = frag.querySelector(".ann-status");
+            var menu = frag.querySelector(".ann-menu");
+            var toggleMenu = frag.querySelector('[data-menu-action="toggle"]');
+
+            card.setAttribute("data-id", String(item.id));
+            frag.querySelector(".ann-title").textContent = item.title;
+            frag.querySelector(".ann-preview").textContent = item.content;
+            frag.querySelector(".ann-audience").textContent = item.audience;
+            frag.querySelector(".ann-date").textContent = formatDate(item.publishDate);
+            frag.querySelector(".ann-views").textContent = String(item.views || 0) + " views";
+
+            status.textContent = item.status;
+            status.className = "eng-badge ann-status ann-status-" + slug(item.status);
+
+            toggleMenu.textContent = item.status === "Published" ? "Move to Draft" : "Mark Published";
+
+            frag.querySelector('[data-action="view"]').addEventListener("click", function() {
+                openDetail(item.id);
+            });
+
+            frag.querySelector('[data-action="edit"]').addEventListener("click", function() {
+                openEdit(item.id);
+            });
+
+            frag.querySelector('[data-action="more"]').addEventListener("click", function(event) {
+                event.stopPropagation();
+                closeMenus();
+                menu.setAttribute("data-open", "true");
+            });
+
+            toggleMenu.addEventListener("click", function() {
+                item.status = item.status === "Published" ? "Draft" : "Published";
+                closeMenus();
+                renderAll();
+            });
+
+            frag.querySelector('[data-menu-action="delete"]').addEventListener("click", function() {
+                state.items = state.items.filter(function(entry) { return entry.id !== item.id; });
+                closeMenus();
+                renderAll();
+            });
+
+            root.appendChild(frag);
+        });
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    }
+
+    function openDetail(id) {
+        var item = findItem(id);
+        if (!item) return;
+        state.selectedId = id;
+        document.getElementById("ann-detail-title-val").textContent = item.title;
+        document.getElementById("ann-detail-content").textContent = item.content;
+        document.getElementById("ann-detail-meta").textContent = item.audience + " · " + item.status + " · " + formatDate(item.publishDate);
+        document.getElementById("ann-detail-modal").setAttribute("data-open", "true");
+    }
+
+    function openEdit(id) {
+        var item = findItem(id);
+        if (!item) return;
+        state.editingId = id;
+        document.getElementById("ann-edit-title-input").value = item.title;
+        document.getElementById("ann-edit-content-input").value = item.content;
+        document.getElementById("ann-edit-modal").setAttribute("data-open", "true");
+    }
+
+    function closeModals() {
+        document.getElementById("ann-detail-modal").setAttribute("data-open", "false");
+        document.getElementById("ann-edit-modal").setAttribute("data-open", "false");
+        state.editingId = null;
+    }
+
+    function bindTabs() {
+        var tabs = document.querySelectorAll(".eng-tab");
+        tabs.forEach(function(tab) {
+            tab.addEventListener("click", function() {
+                tabs.forEach(function(btn) {
+                    btn.classList.remove("is-active");
+                    btn.setAttribute("aria-selected", "false");
+                });
+                tab.classList.add("is-active");
+                tab.setAttribute("aria-selected", "true");
+                state.tab = tab.getAttribute("data-tab");
+                renderFeed();
+            });
+        });
+    }
+
+    function bindComposer() {
+        document.getElementById("ann-post-btn").addEventListener("click", function() {
+            var content = document.getElementById("ann-compose").value.trim();
+            if (!content) return;
+
+            var audience = document.getElementById("ann-audience").value;
+            var schedule = document.getElementById("ann-schedule").value;
+            var today = new Date().toISOString().slice(0, 10);
+            var status = schedule && schedule > today ? "Scheduled" : "Published";
+
+            state.items.unshift({
+                id: Date.now(),
+                title: content.slice(0, 58) || "Announcement",
+                content: content,
+                audience: audience,
+                status: status,
+                publishDate: schedule || today,
+                views: 0
+            });
+
+            document.getElementById("ann-compose").value = "";
+            document.getElementById("ann-schedule").value = "";
+            renderAll();
+        });
+
+        document.getElementById("ann-new-draft").addEventListener("click", function() {
+            state.items.unshift({
+                id: Date.now(),
+                title: "Untitled Draft",
+                content: "",
+                audience: "All Users",
+                status: "Draft",
+                publishDate: null,
+                views: 0
+            });
+            renderAll();
+        });
+    }
+
+    function bindEdit() {
+        document.getElementById("ann-save-edit").addEventListener("click", function() {
+            var item = findItem(state.editingId);
+            if (!item) return;
+            item.title = document.getElementById("ann-edit-title-input").value.trim() || item.title;
+            item.content = document.getElementById("ann-edit-content-input").value.trim() || item.content;
+            closeModals();
+            renderAll();
+        });
+    }
+
+    function bindGlobal() {
+        document.querySelectorAll("[data-close-ann]").forEach(function(btn) {
+            btn.addEventListener("click", closeModals);
+        });
+
+        document.addEventListener("click", function(event) {
+            if (!event.target.closest(".ann-actions")) {
+                closeMenus();
+            }
+        });
+
+        document.addEventListener("keydown", function(event) {
+            if (event.key === "Escape") {
+                closeModals();
+                closeMenus();
+            }
+        });
+    }
+
+    function renderAll() {
+        updateCounts();
+        renderFeed();
+    }
+
+    function init() {
+        var data = JSON.parse(document.getElementById("ann-data").textContent);
+        state.items = Array.isArray(data.items) ? data.items : [];
+
+        bindTabs();
+        bindComposer();
+        bindEdit();
+        bindGlobal();
+        renderAll();
+
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
+})();
+</script>
+{% endblock %}

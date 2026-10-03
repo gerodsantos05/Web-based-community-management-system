@@ -1,0 +1,77 @@
+{% load static %}
+<link href="https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital@1&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+.vol-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:94;display:none}.vol-modal-backdrop[data-open="true"]{display:block}.vol-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(94vw,920px);max-height:92vh;overflow:auto;background:#fff;border:1px solid rgba(15,118,110,.22);border-radius:14px;box-shadow:0 24px 34px rgba(8,83,76,.25);display:none;z-index:95}.vol-modal[data-open="true"]{display:block}.vol-cert-gen-modal{top:104px;bottom:16px;width:min(88vw,920px)!important;max-height:calc(100vh - 120px)!important;overflow-y:auto;overflow-x:hidden;transform:translateX(-50%);display:none!important;flex-direction:column}.vol-cert-gen-modal[data-open="true"]{display:flex!important}.vol-cert-gen-modal .vol-head{position:relative;padding:1rem 4rem 1rem 1.2rem}.vol-cert-gen-modal .vol-modal-header-actions{position:absolute;top:.75rem;right:.95rem}.vol-head{display:flex;align-items:center;justify-content:space-between;gap:1rem}.vol-profile-eyebrow{margin:0;color:#0f766e;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em}.vol-title{margin:.2rem 0 0;color:#14352d;font-size:1.05rem;font-weight:800}.vol-modal-header-actions{display:flex}.vol-modal-close-icon{width:2rem;height:2rem;border-radius:999px;border:1px solid #d4e9e1;background:#fff;color:#48665d;display:grid;place-items:center;padding:0;line-height:1;cursor:pointer}.vol-profile-body{padding:1rem}.vol-cert-body{display:grid!important;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr)!important;gap:20px!important;padding:20px!important;align-items:start!important}.vol-cert-preview{display:flex;align-items:center;justify-content:center;width:100%;padding:.35rem;overflow:hidden;background:linear-gradient(135deg,#f9f7f0 0%,#f2f7f4 100%);border-radius:16px;border:1px solid #e7e0cf}.vol-cert-preview-content{width:min(100%,720px);aspect-ratio:1.414/1;border-radius:16px;border:1px solid #dcb458;box-shadow:0 10px 24px rgba(0,0,0,.12);position:relative;background:#fffdf7;overflow:hidden}.vol-cert-bg-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1;pointer-events:none}.vol-cert-name{font-family:'Alex Brush',cursive;font-size:2.2rem;font-weight:400;color:#dcb458;text-align:center}.vol-cert-reason{font-family:'Cormorant Garamond',serif;font-size:.85rem;font-style:italic;color:#555;text-align:center;line-height:1.6}#vol-cert-preview-name{position:absolute!important;top:45.5%!important;left:50%!important;transform:translate(-50%,-50%)!important;font-family:'Alex Brush',cursive!important;font-size:clamp(2.15rem,3.5vw,4rem)!important;font-weight:400!important;color:#c48f19!important;text-align:center!important;white-space:nowrap!important;width:min(78%,560px)!important;line-height:1.05!important;z-index:3!important;overflow:hidden!important;text-overflow:ellipsis!important;text-shadow:0 1px 0 rgba(255,255,255,.45),0 0 8px rgba(255,255,255,.28),0 1px 1px rgba(120,86,10,.28)!important}#vol-cert-preview-reason{position:absolute!important;top:68%!important;left:50%!important;transform:translate(-50%,-50%)!important;font-family:'Cormorant Garamond',serif!important;font-size:clamp(.65rem,.9vw,.9rem)!important;font-style:italic!important;color:#444!important;text-align:center!important;padding:0 1.25rem!important;line-height:1.3!important;width:min(86%,640px)!important;z-index:2!important;overflow-wrap:anywhere!important;hyphens:auto!important}.vol-cert-form{display:flex;flex-direction:column;gap:16px;width:100%}.vol-cert-field{display:grid;gap:.3rem;width:100%}.vol-field-label{font-size:.72rem;font-weight:700;color:#1a4f43;letter-spacing:.03em}.vol-cert-field input,.vol-cert-field textarea{width:100%;box-sizing:border-box;border:1px solid #d4e9e1;border-radius:9px;background:#fff;color:#173a31;font-size:.8rem;padding:.58rem .7rem}.vol-cert-field textarea{min-height:120px;resize:vertical;font-family:'Georgia',serif}.vol-form-actions{display:flex;justify-content:flex-end;gap:.7rem;padding:1rem 1.2rem;border-top:1px solid #deefe8}.vol-form-btn{border:1px solid #d4e9e1;border-radius:9px;background:#fff;color:#1b4f43;font-size:.76rem;font-weight:700;padding:.55rem .85rem;cursor:pointer}.vol-save-btn{border-color:rgba(13,148,136,.28);background:linear-gradient(135deg,#0f766e,#14b8a6);color:#fff;box-shadow:0 10px 18px rgba(15,118,110,.16)}
+</style>
+<style>
+.vol-cert-gen-modal .vol-profile-eyebrow{color:#14352d}
+#vol-cert-preview-name{top:50%!important;overflow:visible!important;text-overflow:clip!important;font-size:clamp(1.95rem,3.1vw,3.6rem)!important;}
+</style>
+<style>
+@media (min-width: 768px) {
+	.vol-cert-gen-modal {
+		top: calc(50% + 52px);
+		bottom: auto;
+		height: auto;
+		max-height: calc(100vh - 120px) !important;
+		transform: translate(-50%, -50%);
+	}
+
+	.vol-cert-body {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+	}
+
+	.vol-cert-preview {
+		order: 1;
+		min-height: 0;
+	}
+
+	.vol-cert-form {
+		order: 2;
+	}
+}
+
+@media (max-width: 767px) {
+	.vol-cert-gen-modal {
+		top: 100px;
+		bottom: 16px;
+		height: calc(100vh - 116px);
+		max-height: none !important;
+		overflow: hidden;
+	}
+
+	.vol-cert-gen-modal .vol-cert-body {
+		display: grid !important;
+		grid-template-columns: minmax(0, 1fr) !important;
+		gap: 1rem !important;
+		padding: 1rem !important;
+		min-height: 0;
+		overflow-y: auto;
+	}
+
+	.vol-cert-gen-modal .vol-cert-form {
+		order: 1;
+		width: 100%;
+	}
+
+	.vol-cert-gen-modal .vol-cert-preview {
+		order: 2;
+		min-height: 240px;
+		width: 100%;
+	}
+
+	.vol-cert-gen-modal > .vol-form-actions {
+		flex: 0 0 auto;
+	}
+}
+</style>
+<div id="vol-modal-backdrop" class="vol-modal-backdrop" data-open="false"></div>
+<div id="vol-cert-modal" class="vol-modal vol-cert-gen-modal" role="dialog" aria-modal="true" aria-labelledby="vol-cert-title" data-open="false" data-create-url="{% url 'admin_certificate_create' %}">
+<header class="vol-head"><div><p class="vol-profile-eyebrow">CERTIFICATE</p><h3 id="vol-cert-title" class="vol-title">Generate Certificate of Appreciation</h3></div><div class="vol-modal-header-actions"><button type="button" class="vol-modal-close-icon" data-close-cert="true" aria-label="Close certificate modal">×</button></div></header>
+<div class="vol-profile-body vol-cert-body"><div id="vol-cert-preview" class="vol-cert-preview"><div class="vol-cert-preview-content"><img id="vol-cert-bg-img" class="vol-cert-bg-img" alt="Certificate of Appreciation"><div id="vol-cert-preview-name" class="vol-cert-name"></div><div id="vol-cert-preview-reason" class="vol-cert-reason"></div></div></div><form id="vol-cert-form" class="vol-cert-form"><div class="vol-cert-field"><label class="vol-field-label" for="vol-cert-volunteer">Send to volunteer <span style="color:#E24B4A">*</span></label><select id="vol-cert-volunteer" required><option value="">Choose a volunteer</option>{% for volunteer in volunteer_options %}<option value="{{ volunteer.id }}" data-volunteer-name="{{ volunteer.name|escape }}">{{ volunteer.name }}</option>{% endfor %}</select></div><div class="vol-cert-field"><label class="vol-field-label" for="vol-cert-name">Volunteer name <span style="color:#E24B4A">*</span></label><input type="text" id="vol-cert-name" placeholder="Enter volunteer name" required></div><div class="vol-cert-field"><label class="vol-field-label" for="vol-cert-reason">Reason / Body text <span style="color:#E24B4A">*</span></label><textarea id="vol-cert-reason" rows="6" required>In recognition of your exceptional dedication, heartfelt compassion, and outstanding service rendered as an On-the-Job Trainee volunteer of the HappYness Project. Your unwavering commitment to uplifting the community reflects the true spirit of excellence and selfless giving.</textarea></div></form></div>
+<footer class="vol-form-actions"><button type="button" class="vol-form-btn" data-close-cert="true">Cancel</button><button type="button" id="vol-cert-download-btn" class="vol-form-btn vol-save-btn">Download PDF</button></footer>
+</div>
+<script src="{% static 'js/certificate-generator.js' %}"></script>

@@ -1,0 +1,1041 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reports - Analytics | HappYness{% endblock %}
+
+{% block extra_head %}
+<style data-admin-panel-style="admin-reports">
+    .ra-page {
+        --ra-border: rgba(15, 118, 110, 0.15);
+        --ra-shadow: 0 10px 24px rgba(2, 44, 34, 0.06);
+        --ra-green: #16a34a;
+        --ra-red: #dc2626;
+        display: grid;
+        gap: 0.95rem;
+    }
+
+    .ra-card {
+        background: #ffffff;
+        border: 1px solid var(--ra-border);
+        border-radius: 1rem;
+        box-shadow: var(--ra-shadow);
+    }
+
+    .ra-focus:focus-visible {
+        outline: 2px solid #14b8a6;
+        outline-offset: 2px;
+    }
+
+    .ra-header {
+        padding: 0.95rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.7rem;
+    }
+
+    .ra-title {
+        margin: 0;
+        color: var(--ink-900);
+        font-size: 1.06rem;
+        font-weight: 800;
+    }
+
+    .ra-subtitle {
+        margin: 0.25rem 0 0;
+        color: var(--ink-500);
+        font-size: 0.8rem;
+    }
+
+    .ra-meta {
+        color: var(--ink-500);
+        font-size: 0.75rem;
+        white-space: nowrap;
+    }
+
+    .ra-kpi-source {
+        margin: 0;
+        color: var(--ink-500);
+        font-size: 0.7rem;
+        line-height: 1.4;
+    }
+
+    .ra-chart-empty {
+        height: 100%;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        color: var(--ink-500);
+        font-size: 0.8rem;
+        text-align: center;
+    }
+
+    .ra-chart-empty[hidden] {
+        display: none;
+    }
+
+    .ra-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .ra-kpi {
+        padding: 0.8rem;
+        display: grid;
+        gap: 0.45rem;
+        border: 1px solid rgba(15, 118, 110, 0.1);
+        border-radius: 0.85rem;
+        background: #ffffff;
+    }
+
+    .ra-kpi-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.4rem;
+    }
+
+    .ra-kpi-label {
+        margin: 0;
+        color: var(--ink-500);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.67rem;
+        font-weight: 700;
+    }
+
+    .ra-kpi-icon {
+        width: 1.7rem;
+        height: 1.7rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        color: #0f766e;
+        background: rgba(16, 185, 129, 0.1);
+    }
+
+    .ra-kpi-value {
+        margin: 0;
+        color: var(--ink-900);
+        font-size: 1.65rem;
+        font-weight: 800;
+        line-height: 1.05;
+    }
+
+    .ra-filters {
+        padding: 0.8rem 0.95rem;
+        display: grid;
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+        gap: 0.55rem;
+        align-items: end;
+    }
+
+    .ra-filter-field {
+        display: grid;
+        gap: 0.24rem;
+    }
+
+    .ra-filter-label {
+        margin: 0;
+        color: var(--ink-500);
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .ra-filter-input {
+        width: 100%;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        border-radius: 0.68rem;
+        background: #ffffff;
+        color: var(--ink-800);
+        padding: 0.47rem 0.55rem;
+        font-size: 0.79rem;
+    }
+
+    .ra-filter-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+
+    .ra-btn {
+        border-radius: 0.68rem;
+        border: 1px solid rgba(15, 118, 110, 0.22);
+        background: #ffffff;
+        color: var(--ink-700);
+        font-size: 0.76rem;
+        font-weight: 600;
+        padding: 0.4rem 0.62rem;
+        cursor: pointer;
+    }
+
+    .ra-btn:hover {
+        background: #f8fffb;
+    }
+
+    .ra-btn-primary {
+        border: 0;
+        background: linear-gradient(135deg, #22c55e, #14b8a6);
+        color: #ffffff;
+        font-weight: 700;
+    }
+
+    .ra-btn-primary:hover {
+        box-shadow: 0 8px 16px rgba(34, 197, 94, 0.28);
+    }
+
+    .ra-charts-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
+    }
+
+    .ra-chart-card {
+        padding: 0.85rem;
+        display: grid;
+        gap: 0.65rem;
+    }
+
+    .ra-chart-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.4rem;
+    }
+
+    .ra-chart-card.is-side .ra-chart-head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .ra-chart-title {
+        margin: 0;
+        color: var(--ink-900);
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
+
+    .ra-chart-sub {
+        color: var(--ink-500);
+        font-size: 0.73rem;
+    }
+
+    .ra-chart-wrap {
+        height: 265px;
+    }
+
+    @media (max-width: 520px) {
+        .ra-chart-head {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .ra-chart-sub {
+            text-align: left;
+        }
+    }
+
+    .ra-insights-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
+    }
+
+    .ra-insight {
+        padding: 0.85rem;
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .ra-insight-label {
+        margin: 0;
+        color: var(--ink-500);
+        font-size: 0.69rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .ra-insight-main {
+        margin: 0;
+        color: var(--ink-900);
+        font-size: 0.95rem;
+        font-weight: 800;
+    }
+
+    .ra-insight-sub {
+        margin: 0;
+        color: var(--ink-600);
+        font-size: 0.78rem;
+    }
+
+    .ra-table-card {
+        padding: 0.85rem;
+        display: grid;
+        gap: 0.65rem;
+    }
+
+    .ra-table-wrap {
+        border: 1px solid rgba(15, 118, 110, 0.12);
+        border-radius: 0.82rem;
+        overflow: auto;
+    }
+
+    .ra-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 640px;
+        font-size: 0.79rem;
+    }
+
+    .ra-table th,
+    .ra-table td {
+        padding: 0.55rem 0.65rem;
+        border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+        text-align: left;
+    }
+
+    .ra-table th {
+        color: var(--ink-500);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: 0.66rem;
+        font-weight: 700;
+        background: #f8fffb;
+    }
+
+    .ra-table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .ra-chip {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        padding: 0.14rem 0.45rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+    }
+
+    .ra-chip-donation {
+        background: rgba(34, 197, 94, 0.12);
+        color: #166534;
+        border-color: rgba(34, 197, 94, 0.24);
+    }
+
+    .ra-chip-volunteer {
+        background: rgba(6, 182, 212, 0.12);
+        color: #155e75;
+        border-color: rgba(6, 182, 212, 0.24);
+    }
+
+    .ra-chip-activity {
+        background: rgba(245, 158, 11, 0.14);
+        color: #92400e;
+        border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .ra-chip-beneficiary {
+        background: rgba(168, 85, 247, 0.12);
+        color: #6d28d9;
+        border-color: rgba(168, 85, 247, 0.24);
+    }
+
+    .ra-chip-assistance {
+        background: rgba(20, 130, 165, 0.1);
+        color: #155e75;
+        border-color: rgba(20, 130, 165, 0.22);
+    }
+
+    @media (min-width: 720px) {
+        .ra-kpi-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .ra-filters {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1080px) {
+        .ra-kpi-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .ra-filters {
+            grid-template-columns: 1.1fr 1fr 1fr auto;
+        }
+
+        .ra-charts-grid {
+            grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+        }
+
+        .ra-chart-card.is-wide {
+            grid-column: 1 / 2;
+        }
+
+        .ra-chart-card.is-side {
+            grid-column: 2 / 3;
+        }
+
+        .ra-chart-card.is-full {
+            grid-column: 1 / -1;
+        }
+
+        .ra-insights-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="analytics-page" class="ra-page">
+    <p id="analytics-error" class="ra-meta" role="status" hidden></p>
+
+    <section class="ra-kpi-grid" aria-label="Key performance indicators">
+        <article class="ra-card ra-kpi">
+            <div class="ra-kpi-head">
+                <p class="ra-kpi-label">Finalized donations</p>
+                <span class="ra-kpi-icon" aria-hidden="true"><i data-lucide="hand-coins"></i></span>
+            </div>
+            <p class="ra-kpi-value" id="kpi-total-donations">₱0</p>
+            <p class="ra-kpi-source" id="kpi-total-donations-source">Verified and completed records</p>
+        </article>
+
+        <article class="ra-card ra-kpi">
+            <div class="ra-kpi-head">
+                <p class="ra-kpi-label">Volunteer hours</p>
+                <span class="ra-kpi-icon" aria-hidden="true"><i data-lucide="users"></i></span>
+            </div>
+            <p class="ra-kpi-value" id="kpi-volunteer-hours">0.0h</p>
+            <p class="ra-kpi-source" id="kpi-volunteer-hours-source">0 volunteers with confirmed attendance</p>
+        </article>
+
+        <article class="ra-card ra-kpi">
+            <div class="ra-kpi-head">
+                <p class="ra-kpi-label">Completed activities</p>
+                <span class="ra-kpi-icon" aria-hidden="true"><i data-lucide="calendar-check-2"></i></span>
+            </div>
+            <p class="ra-kpi-value" id="kpi-total-activities">0</p>
+            <p class="ra-kpi-source">Completed in selected period</p>
+        </article>
+
+        <article class="ra-card ra-kpi">
+            <div class="ra-kpi-head">
+                <p class="ra-kpi-label">Assistance records</p>
+                <span class="ra-kpi-icon" aria-hidden="true"><i data-lucide="heart-handshake"></i></span>
+            </div>
+            <p class="ra-kpi-value" id="kpi-beneficiaries-assisted">0</p>
+            <p class="ra-kpi-source">Recorded in selected period</p>
+        </article>
+    </section>
+
+    <section class="ra-card ra-filters" aria-label="Analytics filters">
+        <div class="ra-filter-field">
+                <label class="ra-filter-label" for="analytics-date-range">Reporting period</label>
+            <select id="analytics-date-range" class="ra-filter-input ra-focus">
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+                <option value="12m">Last 12 months</option>
+            </select>
+        </div>
+
+        <div class="ra-filter-field">
+                <label class="ra-filter-label" for="analytics-campaign">Donation campaign</label>
+            <select id="analytics-campaign" class="ra-filter-input ra-focus">
+                <option value="">All campaigns</option>
+            </select>
+        </div>
+
+        <div class="ra-filter-field">
+                <label class="ra-filter-label" for="analytics-category">Record type</label>
+            <select id="analytics-category" class="ra-filter-input ra-focus">
+                <option value="all">Loading categories...</option>
+            </select>
+        </div>
+
+        <div class="ra-filter-actions">
+            <button type="button" id="analytics-apply" class="ra-btn ra-btn-primary ra-focus">Apply filters</button>
+            <button type="button" id="analytics-reset" class="ra-btn ra-focus">Reset</button>
+            <button type="button" id="analytics-export-csv" class="ra-btn ra-focus">Export CSV</button>
+            <button type="button" id="analytics-export-pdf" class="ra-btn ra-focus">Export PDF</button>
+        </div>
+    </section>
+
+    <section class="ra-charts-grid" aria-label="Main analytics charts">
+        <article class="ra-card ra-chart-card is-wide">
+            <div class="ra-chart-head">
+                <h2 class="ra-chart-title">Donations and logged records</h2>
+                <span class="ra-chart-sub">Finalized donation value and entered service records</span>
+            </div>
+            <div class="ra-chart-wrap"><canvas id="trend-line-chart" role="img" aria-label="Trend over time line chart"></canvas></div>
+        </article>
+
+        <article class="ra-card ra-chart-card is-side">
+            <div class="ra-chart-head">
+                <h2 class="ra-chart-title">Donation payment methods</h2>
+                <span class="ra-chart-sub">Finalized GCash and Bank Transfer donations only</span>
+            </div>
+            <div class="ra-chart-wrap">
+                <canvas id="distribution-donut-chart" role="img" aria-label="Donation payment methods donut chart"></canvas>
+                <p class="ra-chart-empty" id="distribution-empty" hidden>No finalized donations for this selection.</p>
+            </div>
+        </article>
+
+        <article class="ra-card ra-chart-card is-full">
+            <div class="ra-chart-head">
+                <h2 class="ra-chart-title">Active accounts by role</h2>
+                <span class="ra-chart-sub">Current active accounts, independent of date filters; staff excluded</span>
+            </div>
+            <div class="ra-chart-wrap"><canvas id="accounts-by-role-chart" role="img" aria-label="Active account counts for regular users, beneficiaries, and volunteers"></canvas></div>
+            <p class="ra-chart-empty" id="accounts-empty" hidden>No active member accounts found.</p>
+        </article>
+    </section>
+
+    <section class="ra-insights-grid" aria-label="Secondary insights">
+        <article class="ra-card ra-insight">
+            <p class="ra-insight-label">Largest donor total</p>
+            <p class="ra-insight-main" id="insight-top-donor">--</p>
+            <p class="ra-insight-sub" id="insight-top-donor-meta">--</p>
+        </article>
+
+        <article class="ra-card ra-insight">
+            <p class="ra-insight-label">Closest to OJT target</p>
+            <p class="ra-insight-main" id="insight-top-ojt-volunteer">--</p>
+            <p class="ra-insight-sub" id="insight-top-ojt-volunteer-meta">--</p>
+        </article>
+    </section>
+
+    <section class="ra-card ra-table-card" aria-label="Detailed records">
+        <div class="ra-chart-head">
+            <h2 class="ra-chart-title">Recent managed records</h2>
+            <span class="ra-chart-sub" id="records-count">Loading records…</span>
+        </div>
+        <div class="ra-table-wrap">
+            <table class="ra-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Record type</th>
+                        <th>Record</th>
+                        <th>Details</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody id="records-table-body"></tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function initAnalyticsDashboard() {
+    "use strict";
+
+    var state = {
+        range: "30d",
+        category: "all",
+        campaign: "",
+        data: null,
+        charts: {
+            trend: null,
+            accounts: null,
+            distribution: null
+        }
+    };
+
+    function formatNumber(value) {
+        return new Intl.NumberFormat("en-US").format(value || 0);
+    }
+
+    function formatCurrency(value) {
+        return "₱" + formatNumber(value || 0);
+    }
+
+    function formatHours(value) {
+        return Number(value || 0).toFixed(1) + "h";
+    }
+
+    function updateKpis(series) {
+        var donations = series.kpis.totalDonations;
+        var volunteers = series.kpis.volunteerHours;
+        var activities = series.kpis.completedActivities;
+        var assistance = series.kpis.assistanceRecords;
+
+        document.getElementById("kpi-total-donations").textContent = formatCurrency(donations.value);
+        document.getElementById("kpi-total-donations-source").textContent = formatNumber(donations.count) + (donations.count === 1 ? " finalized donation" : " finalized donations");
+        document.getElementById("kpi-volunteer-hours").textContent = formatHours(volunteers.value);
+        document.getElementById("kpi-volunteer-hours-source").textContent = formatNumber(volunteers.volunteers) + (volunteers.volunteers === 1 ? " volunteer" : " volunteers");
+        document.getElementById("kpi-total-activities").textContent = formatNumber(activities.value);
+        document.getElementById("kpi-beneficiaries-assisted").textContent = formatNumber(assistance.value);
+
+        document.getElementById("insight-top-donor").textContent = series.insights.topDonor.name;
+        document.getElementById("insight-top-donor-meta").textContent = series.insights.topDonor.meta;
+        document.getElementById("insight-top-ojt-volunteer").textContent = series.insights.topOjtVolunteer.name;
+        document.getElementById("insight-top-ojt-volunteer-meta").textContent = series.insights.topOjtVolunteer.meta;
+    }
+
+    function createTrendChart(series) {
+        var canvas = document.getElementById("trend-line-chart");
+        if (!canvas || typeof Chart !== "function") {
+            return;
+        }
+
+        if (state.charts.trend) {
+            state.charts.trend.destroy();
+        }
+
+        state.charts.trend = new Chart(canvas, {
+            type: "line",
+            data: {
+                labels: series.labels,
+                datasets: [
+                    {
+                        label: "Donations",
+                        data: series.donations,
+                        borderColor: "#16a34a",
+                        backgroundColor: "rgba(22, 163, 74, 0.12)",
+                        borderWidth: 2.2,
+                        pointRadius: 3,
+                        tension: 0.35,
+                        fill: true,
+                        yAxisID: "y"
+                    },
+                    {
+                        label: "Managed service records",
+                        data: series.operationalRecords,
+                        borderColor: "#0ea5e9",
+                        backgroundColor: "rgba(14, 165, 233, 0.08)",
+                        borderWidth: 2,
+                        pointRadius: 2.8,
+                        tension: 0.35,
+                        fill: false,
+                        yAxisID: "y1"
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: "index", intersect: false },
+                plugins: {
+                    legend: { position: "top", labels: { usePointStyle: true, boxWidth: 8 } }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: "Donation amount (₱)" },
+                        grid: { color: "rgba(15, 118, 110, 0.09)" },
+                        ticks: { color: "#51706b" }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        position: "right",
+                        title: { display: true, text: "Record count" },
+                        grid: { drawOnChartArea: false },
+                        ticks: { color: "#51706b" }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: "#51706b" }
+                    }
+                }
+            }
+        });
+    }
+
+    function createAccountsChart(accounts) {
+        var canvas = document.getElementById("accounts-by-role-chart");
+        if (!canvas || typeof Chart !== "function") {
+            return;
+        }
+
+        if (state.charts.accounts) {
+            state.charts.accounts.destroy();
+        }
+
+        var values = accounts.values || [];
+        var total = values.reduce(function(sum, value) { return sum + Number(value || 0); }, 0);
+        var hasAccounts = total > 0;
+        document.getElementById("accounts-empty").hidden = hasAccounts;
+        canvas.hidden = !hasAccounts;
+        if (!hasAccounts) {
+            state.charts.accounts = null;
+            return;
+        }
+
+        var maxValue = Math.max.apply(Math, values);
+        state.charts.accounts = new Chart(canvas, {
+            type: "bar",
+            data: {
+                labels: accounts.labels,
+                datasets: [{
+                    label: "Active accounts",
+                    data: values,
+                    borderRadius: 5,
+                    backgroundColor: ["#16856b", "#d18a27", "#1682a5"],
+                    barThickness: 30
+                }]
+            },
+            plugins: [{
+                id: "account-count-labels",
+                afterDatasetsDraw: function(chart) {
+                    var context = chart.ctx;
+                    var bars = chart.getDatasetMeta(0).data;
+                    context.save();
+                    context.fillStyle = "#14352d";
+                    context.font = "600 12px Arial, sans-serif";
+                    context.textBaseline = "middle";
+                    bars.forEach(function(bar, index) {
+                        context.fillText(formatNumber(values[index]), bar.x + 8, bar.y);
+                    });
+                    context.restore();
+                }
+            }],
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: "y",
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return formatNumber(context.parsed.x) + " active accounts";
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: Math.max(5, Math.ceil(maxValue * 1.2 / 5) * 5),
+                        ticks: { precision: 0, maxTicksLimit: 6, color: "#51706b" },
+                        grid: { color: "rgba(15, 118, 110, 0.09)" }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: "#51706b" }
+                    }
+                }
+            }
+        });
+    }
+
+    function createDistributionChart(distribution) {
+        var canvas = document.getElementById("distribution-donut-chart");
+        if (!canvas || typeof Chart !== "function") {
+            return;
+        }
+
+        if (state.charts.distribution) {
+            state.charts.distribution.destroy();
+        }
+
+        var hasPaymentData = (distribution.values || []).some(function(value) { return value > 0; });
+        document.getElementById("distribution-empty").hidden = hasPaymentData;
+        canvas.hidden = !hasPaymentData;
+        if (!hasPaymentData) {
+            state.charts.distribution = null;
+            return;
+        }
+
+        state.charts.distribution = new Chart(canvas, {
+            type: "doughnut",
+            data: {
+                labels: distribution.labels,
+                datasets: [
+                    {
+                        data: distribution.values,
+                        borderWidth: 0,
+                        backgroundColor: ["#16856b", "#1682a5", "#d18a27", "#bd5a4a", "#6184a5"]
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "62%",
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: { usePointStyle: true, boxWidth: 8 }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderRecords() {
+        var tbody = document.getElementById("records-table-body");
+        var count = document.getElementById("records-count");
+        var rows = state.data && state.data.records || [];
+
+        tbody.innerHTML = "";
+
+        if (!rows.length) {
+            var emptyRow = document.createElement("tr");
+            var emptyCell = document.createElement("td");
+            emptyCell.colSpan = 5;
+            emptyCell.textContent = "No managed records for this period and filter.";
+            emptyCell.style.textAlign = "center";
+            emptyCell.style.color = "#6b7280";
+            emptyRow.appendChild(emptyCell);
+            tbody.appendChild(emptyRow);
+            count.textContent = "No records";
+            return;
+        }
+
+        rows.forEach(function(row) {
+            var tr = document.createElement("tr");
+            [row.date, toLabel(row.category), row.metric, row.detail, row.value].forEach(function(value, index) {
+                var td = document.createElement("td");
+                if (index === 1) {
+                    var chip = document.createElement("span");
+                    chip.className = "ra-chip ra-chip-" + row.category;
+                    chip.textContent = value;
+                    td.appendChild(chip);
+                } else {
+                    td.textContent = value || "—";
+                }
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+
+        count.textContent = "Showing " + rows.length + " of " + formatNumber(state.data.recordCount || 0) + " records";
+    }
+
+    function toLabel(value) {
+        var labels = {
+            donation: "Donation",
+            volunteer: "Volunteer attendance",
+            activity: "Activity",
+            assistance: "Beneficiary assistance"
+        };
+        if (labels[value]) {
+            return labels[value];
+        }
+        return String(value || "")
+            .split("-")
+            .map(function(part) {
+                return part.charAt(0).toUpperCase() + part.slice(1);
+            })
+            .join(" ");
+    }
+
+    function refreshAnalytics() {
+        if (!state.data) {
+            return;
+        }
+
+        var series = state.data.series[state.range];
+        if (!series) {
+            return;
+        }
+
+        updateKpis(series);
+        createTrendChart(series);
+        createAccountsChart(state.data.accounts);
+        createDistributionChart(state.data.distribution);
+        renderRecords();
+
+        var lastUpdated = document.getElementById("analytics-last-updated");
+        if (lastUpdated) {
+            lastUpdated.textContent = "Updated: " + new Date().toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit"
+            });
+        }
+    }
+
+    function populateFilterOptions() {
+        var campaignSelect = document.getElementById("analytics-campaign");
+        var categorySelect = document.getElementById("analytics-category");
+
+        if (!campaignSelect || !categorySelect || !state.data) {
+            return;
+        }
+
+        var campaigns = [{ value: "", label: "All campaigns" }].concat(state.data.campaigns || []);
+        var categories = state.data.categories || [];
+        campaignSelect.replaceChildren();
+        categorySelect.replaceChildren();
+        campaigns.forEach(function(item) {
+            var option = document.createElement("option");
+            option.value = item.value;
+            option.textContent = item.label;
+            campaignSelect.appendChild(option);
+        });
+        categories.forEach(function(item) {
+            var option = document.createElement("option");
+            option.value = item.value;
+            option.textContent = item.label;
+            categorySelect.appendChild(option);
+        });
+
+        if (campaigns.some(function(item) { return item.value === state.campaign; })) {
+            campaignSelect.value = state.campaign;
+        } else {
+            state.campaign = "";
+            campaignSelect.value = "";
+        }
+        categorySelect.value = state.category;
+        campaignSelect.disabled = state.category !== "all" && state.category !== "donation";
+    }
+
+    function bindFilters() {
+        var dateRange = document.getElementById("analytics-date-range");
+        var campaign = document.getElementById("analytics-campaign");
+        var category = document.getElementById("analytics-category");
+
+        category.addEventListener("change", function() {
+            campaign.disabled = category.value !== "all" && category.value !== "donation";
+        });
+
+        document.getElementById("analytics-apply").addEventListener("click", function() {
+            state.range = dateRange.value;
+            state.campaign = campaign.value;
+            state.category = category.value;
+            loadAnalytics();
+        });
+
+        document.getElementById("analytics-reset").addEventListener("click", function() {
+            dateRange.value = "30d";
+            campaign.value = "";
+            category.value = "all";
+            state.range = "30d";
+            state.campaign = "";
+            state.category = "all";
+            loadAnalytics();
+        });
+    }
+
+    function bindAnalyticsExports() {
+        [
+            { id: "analytics-export-csv", format: "csv" },
+            { id: "analytics-export-pdf", format: "pdf" }
+        ].forEach(function(item) {
+            var button = document.getElementById(item.id);
+            button.addEventListener("click", function() {
+                button.disabled = true;
+                var status = document.getElementById("analytics-error");
+                status.hidden = false;
+                status.classList.remove("is-error");
+                status.textContent = "Preparing analytics report…";
+
+                var body = new URLSearchParams({
+                    range: state.range,
+                    category: state.category,
+                    campaign: state.category === "all" || state.category === "donation" ? state.campaign : "",
+                    format: item.format
+                });
+                var csrfMatch = document.cookie.match(/(?:^|; )csrftoken=([^;]*)/);
+                var csrfToken = csrfMatch ? decodeURIComponent(csrfMatch[1]) : "";
+
+                fetch(window.REPORTS_EXPORT_ENDPOINT, {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "X-CSRFToken": csrfToken,
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    body: body.toString()
+                }).then(function(response) {
+                    if (!response.ok) {
+                        return response.json().then(function(payload) {
+                            throw new Error(payload.error || "Unable to generate the report.");
+                        });
+                    }
+                    var disposition = response.headers.get("Content-Disposition") || "";
+                    var filenameMatch = disposition.match(/filename="?([^";]+)"?/i);
+                    var filename = filenameMatch ? filenameMatch[1] : "analytics-report." + item.format;
+                    return response.blob().then(function(blob) {
+                        var downloadUrl = URL.createObjectURL(blob);
+                        var link = document.createElement("a");
+                        link.href = downloadUrl;
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                        window.setTimeout(function() { URL.revokeObjectURL(downloadUrl); }, 1000);
+                        status.textContent = "Downloaded " + filename;
+                    });
+                }).catch(function(error) {
+                    status.classList.add("is-error");
+                    status.textContent = error.message || "Unable to generate the report.";
+                }).finally(function() {
+                    button.disabled = false;
+                });
+            });
+        });
+    }
+
+    function loadAnalytics() {
+        var endpoint = window.REPORTS_ANALYTICS_ENDPOINT || "/admin-dashboard/reports/data/";
+        var url = new URL(endpoint, window.location.origin);
+        url.searchParams.set("range", state.range);
+        url.searchParams.set("category", state.category);
+        url.searchParams.set("campaign", state.campaign);
+
+        return fetch(url.toString(), { headers: { "X-Requested-With": "XMLHttpRequest" } })
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error("Analytics request failed.");
+                }
+                return response.json();
+            })
+            .then(function(payload) {
+                state.data = payload;
+                document.getElementById("analytics-error").hidden = true;
+                populateFilterOptions();
+                refreshAnalytics();
+            })
+            .catch(function(error) {
+                console.error(error);
+                var status = document.getElementById("analytics-error");
+                status.textContent = "Analytics could not be loaded. Check your connection and try applying the filters again.";
+                status.hidden = false;
+            });
+    }
+
+    function init() {
+        window.REPORTS_ANALYTICS_ENDPOINT = "/admin-dashboard/reports/data/";
+        window.REPORTS_EXPORT_ENDPOINT = "/admin-dashboard/reports/export/";
+        bindFilters();
+        bindAnalyticsExports();
+        loadAnalytics();
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+
+        setInterval(function() {
+            if (!document.hidden) {
+                loadAnalytics();
+            }
+        }, 60000);
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
+})();
+</script>
+{% endblock %}

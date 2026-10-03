@@ -1,0 +1,537 @@
+{% load static %}
+<style>
+	.shared-community {
+		--sc-surface: #ffffff;
+		--sc-surface-soft: #f6faf8;
+		--sc-border: rgba(15, 118, 110, 0.12);
+		--sc-ink: #17322d;
+		--sc-muted: #5d726b;
+		--sc-brand: #0f7a5a;
+		--sc-brand-soft: rgba(15, 122, 90, 0.1);
+		--sc-shadow: 0 14px 30px rgba(9, 44, 37, 0.08);
+		display: grid;
+		gap: 0.9rem;
+	}
+
+	.shared-community__panel {
+		background: var(--sc-surface);
+		border: 1px solid var(--sc-border);
+		border-radius: 1rem;
+		box-shadow: var(--sc-shadow);
+		overflow: hidden;
+	}
+
+	.shared-community__header {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.75rem;
+		padding: 0.95rem 1rem;
+		border-bottom: 1px solid rgba(15, 118, 110, 0.08);
+	}
+
+	.shared-community__title {
+		margin: 0;
+		color: var(--sc-ink);
+		font-size: 1rem;
+		font-weight: 800;
+	}
+
+	.shared-community__subtitle {
+		margin: 0.2rem 0 0;
+		color: var(--sc-muted);
+		font-size: 0.76rem;
+	}
+
+	.shared-community__badge {
+		align-self: flex-start;
+		border-radius: 999px;
+		padding: 0.24rem 0.56rem;
+		background: var(--sc-brand-soft);
+		color: var(--sc-brand);
+		font-size: 0.68rem;
+		font-weight: 700;
+	}
+
+	.shared-community__toolbar {
+		display: flex;
+		gap: 0.45rem;
+		flex-wrap: wrap;
+		padding: 0.85rem 1rem;
+		border-bottom: 1px solid rgba(15, 118, 110, 0.08);
+	}
+
+	.shared-community__search,
+	.shared-community__select {
+		border: 1px solid rgba(15, 118, 110, 0.18);
+		border-radius: 0.72rem;
+		padding: 0.52rem 0.66rem;
+		font: inherit;
+		font-size: 0.8rem;
+		background: #fff;
+		color: var(--sc-ink);
+	}
+
+	.shared-community__search {
+		min-width: 220px;
+		flex: 1;
+	}
+
+	.shared-community__tabs {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+		padding: 0.8rem 1rem 0;
+	}
+
+	.shared-community__tab {
+		border: 1px solid transparent;
+		background: transparent;
+		color: var(--sc-muted);
+		border-radius: 999px;
+		padding: 0.38rem 0.72rem;
+		font-size: 0.74rem;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	.shared-community__tab.is-active {
+		background: var(--sc-surface-soft);
+		border-color: rgba(15, 118, 110, 0.14);
+		color: var(--sc-brand);
+	}
+
+	.shared-community__feed {
+		list-style: none;
+		margin: 0;
+		padding: 0.85rem 1rem 1rem;
+		display: grid;
+		gap: 0.72rem;
+	}
+
+	.shared-community__card {
+		border: 1px solid rgba(15, 118, 110, 0.12);
+		border-radius: 0.9rem;
+		padding: 0.85rem;
+		background: #fff;
+		display: grid;
+		gap: 0.6rem;
+	}
+
+	.shared-community__card-head {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
+	.shared-community__author {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		min-width: 0;
+	}
+
+	.shared-community__avatar {
+		width: 2.25rem;
+		height: 2.25rem;
+		border-radius: 999px;
+		background: linear-gradient(135deg, #c8f1df, #8be0c1);
+		color: #064e3b;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.76rem;
+		font-weight: 800;
+		flex-shrink: 0;
+	}
+
+	.shared-community__name {
+		margin: 0;
+		color: var(--sc-ink);
+		font-size: 0.88rem;
+		font-weight: 700;
+	}
+
+	.shared-community__meta {
+		margin: 0.1rem 0 0;
+		color: var(--sc-muted);
+		font-size: 0.7rem;
+	}
+
+	.shared-community__body {
+		margin: 0;
+		color: #344054;
+		font-size: 0.84rem;
+		line-height: 1.55;
+	}
+
+	.shared-community__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+	}
+
+	.shared-community__button {
+		border: 1px solid rgba(15, 118, 110, 0.18);
+		background: #fff;
+		color: #35524a;
+		border-radius: 0.65rem;
+		padding: 0.38rem 0.65rem;
+		font: inherit;
+		font-size: 0.72rem;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	.shared-community__button.is-primary {
+		background: var(--sc-brand);
+		border-color: var(--sc-brand);
+		color: #fff;
+	}
+
+	.shared-community__empty {
+		margin: 0;
+		padding: 0.85rem 1rem 1rem;
+		color: var(--sc-muted);
+		font-size: 0.8rem;
+		text-align: center;
+	}
+
+	.shared-community__composer {
+		display: grid;
+		gap: 0.6rem;
+		padding: 0.95rem 1rem 1rem;
+		border-top: 1px solid rgba(15, 118, 110, 0.08);
+		background: var(--sc-surface-soft);
+	}
+
+	.shared-community__textarea {
+		min-height: 92px;
+		resize: vertical;
+		border: 1px solid rgba(15, 118, 110, 0.18);
+		border-radius: 0.9rem;
+		padding: 0.75rem 0.85rem;
+		font: inherit;
+		font-size: 0.84rem;
+		color: var(--sc-ink);
+	}
+
+	.shared-community__note {
+		margin: 0;
+		color: var(--sc-muted);
+		font-size: 0.72rem;
+	}
+
+	.shared-community__modal {
+		position: fixed;
+		inset: 0;
+		z-index: 80;
+		display: none;
+		align-items: center;
+		justify-content: center;
+		padding: 1rem;
+		background: rgba(2, 6, 23, 0.46);
+	}
+
+	.shared-community__modal[data-open="true"] {
+		display: flex;
+	}
+
+	.shared-community__modal-card {
+		width: min(680px, 100%);
+		border-radius: 1rem;
+		background: #fff;
+		box-shadow: 0 24px 48px rgba(2, 6, 23, 0.22);
+		overflow: hidden;
+	}
+
+	.shared-community__modal-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 0.6rem;
+		padding: 0.85rem 0.95rem;
+		border-bottom: 1px solid rgba(15, 118, 110, 0.08);
+	}
+
+	.shared-community__modal-title {
+		margin: 0;
+		font-size: 0.95rem;
+		font-weight: 800;
+		color: var(--sc-ink);
+	}
+
+	.shared-community__close {
+		border: 0;
+		background: transparent;
+		font-size: 1.25rem;
+		cursor: pointer;
+		color: var(--sc-muted);
+	}
+
+	.shared-community__modal-body {
+		display: grid;
+		gap: 0.6rem;
+		padding: 0.95rem;
+	}
+
+	.shared-community__label {
+		margin: 0;
+		font-size: 0.68rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--sc-muted);
+	}
+
+	.shared-community__value {
+		margin: 0.18rem 0 0;
+		font-size: 0.82rem;
+		line-height: 1.55;
+		color: #31443d;
+		white-space: pre-wrap;
+	}
+
+	@media (max-width: 720px) {
+		.shared-community__header,
+		.shared-community__card-head {
+			flex-direction: column;
+		}
+
+		.shared-community__search {
+			min-width: 0;
+		}
+	}
+</style>
+
+<section class="shared-community" id="shared-community" data-dashboard-scope="{{ dashboard_scope|default:'user' }}">
+	<div class="shared-community__panel">
+		<header class="shared-community__header">
+			<div>
+				<h2 class="shared-community__title">{% if dashboard_scope == "admin" %}Community Feed{% elif dashboard_scope == "volunteer" %}Volunteer Community{% else %}Community{% endif %}</h2>
+				<p class="shared-community__subtitle">{% if dashboard_scope == "admin" %}Review, moderate, and interact without leaving the admin dashboard.{% else %}A single place for updates, replies, and community conversation.{% endif %}</p>
+			</div>
+			<span class="shared-community__badge">{% if dashboard_scope == "admin" %}Admin view{% else %}Shared feed{% endif %}</span>
+		</header>
+
+		<div class="shared-community__toolbar">
+			<input id="shared-community-search" class="shared-community__search" type="search" placeholder="Search posts, people, or topics" aria-label="Search community posts" />
+			<select id="shared-community-sort" class="shared-community__select" aria-label="Sort posts">
+				<option value="recent">Most recent</option>
+				<option value="popular">Most popular</option>
+			</select>
+		</div>
+
+		<div class="shared-community__tabs" role="tablist" aria-label="Community categories">
+			<button type="button" class="shared-community__tab is-active" data-tab="all" aria-selected="true">All</button>
+			<button type="button" class="shared-community__tab" data-tab="announcements" aria-selected="false">Announcements</button>
+			<button type="button" class="shared-community__tab" data-tab="updates" aria-selected="false">Updates</button>
+			<button type="button" class="shared-community__tab" data-tab="discussion" aria-selected="false">Discussion</button>
+		</div>
+
+		<ul class="shared-community__feed" id="shared-community-feed"></ul>
+		<p class="shared-community__empty" id="shared-community-empty" hidden>No community posts match the current filter.</p>
+
+		<div class="shared-community__composer">
+			<label class="shared-community__label" for="shared-community-compose">Post to community</label>
+			<textarea id="shared-community-compose" class="shared-community__textarea" placeholder="Share an update, ask a question, or post a quick announcement..."></textarea>
+			<div class="shared-community__actions">
+				<button type="button" class="shared-community__button is-primary" id="shared-community-publish">Publish</button>
+				<button type="button" class="shared-community__button" id="shared-community-clear">Clear</button>
+			</div>
+			<p class="shared-community__note">{% if dashboard_scope == "admin" %}Admin-only actions can be layered on top of this same feed block.{% else %}This feed is shared across dashboard roles, but the surrounding navigation stays specific to each dashboard.{% endif %}</p>
+		</div>
+	</div>
+
+	<template id="shared-community-card-template">
+		<li class="shared-community__card">
+			<div class="shared-community__card-head">
+				<div class="shared-community__author">
+					<span class="shared-community__avatar"></span>
+					<div>
+						<p class="shared-community__name"></p>
+						<p class="shared-community__meta"></p>
+					</div>
+				</div>
+				<span class="shared-community__badge shared-community__post-type"></span>
+			</div>
+			<p class="shared-community__body"></p>
+			<div class="shared-community__actions shared-community__card-actions"></div>
+		</li>
+	</template>
+
+	<div class="shared-community__modal" id="shared-community-modal" data-open="false" role="dialog" aria-modal="true" aria-labelledby="shared-community-modal-title">
+		<div class="shared-community__modal-card">
+			<div class="shared-community__modal-head">
+				<h3 class="shared-community__modal-title" id="shared-community-modal-title">Community post</h3>
+				<button type="button" class="shared-community__close" data-community-close>&times;</button>
+			</div>
+			<div class="shared-community__modal-body">
+				<div>
+					<p class="shared-community__label">Author</p>
+					<p class="shared-community__value" id="shared-community-modal-author"></p>
+				</div>
+				<div>
+					<p class="shared-community__label">Content</p>
+					<p class="shared-community__value" id="shared-community-modal-content"></p>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script type="application/json" id="shared-community-data">
+{
+  "items": [
+    {"id": 1, "author": "Maya S.", "role": "Volunteer", "category": "updates", "time": "2h ago", "content": "Weekend outreach recap with a few photos and impact notes.", "likes": 18, "comments": 4},
+    {"id": 2, "author": "Jerome D.", "role": "Beneficiary", "category": "discussion", "time": "5h ago", "content": "Thanks for confirming the support hours for this week.", "likes": 7, "comments": 2},
+    {"id": 3, "author": "Admin Team", "role": "Administrator", "category": "announcements", "time": "1d ago", "content": "Reminder: please review the updated participation guidelines before posting new requests.", "likes": 4, "comments": 1}
+  ]
+}
+
+	</script>
+
+	<script>
+	(function initSharedCommunityPanel() {
+		"use strict";
+
+		var root = document.getElementById("shared-community");
+		if (!root) return;
+
+		var feed = document.getElementById("shared-community-feed");
+		var empty = document.getElementById("shared-community-empty");
+		var template = document.getElementById("shared-community-card-template");
+		var search = document.getElementById("shared-community-search");
+		var sort = document.getElementById("shared-community-sort");
+		var modal = document.getElementById("shared-community-modal");
+		var modalAuthor = document.getElementById("shared-community-modal-author");
+		var modalContent = document.getElementById("shared-community-modal-content");
+		var publish = document.getElementById("shared-community-publish");
+		var clear = document.getElementById("shared-community-clear");
+		var scope = root.getAttribute("data-dashboard-scope") || "user";
+		var state = {
+			items: JSON.parse(document.getElementById("shared-community-data").textContent).items || [],
+			tab: "all",
+			search: ""
+		};
+
+		function initials(value) {
+			return String(value || "U").split(/\s+/).map(function (part) { return part.charAt(0); }).join("").slice(0, 2).toUpperCase();
+		}
+
+		function matches(item) {
+			var tabOk = state.tab === "all" || item.category === state.tab;
+			if (!tabOk) return false;
+			if (!state.search) return true;
+			var haystack = [item.author, item.role, item.content, item.category].join(" ").toLowerCase();
+			return haystack.indexOf(state.search) !== -1;
+		}
+
+		function render() {
+			var items = state.items.filter(matches);
+			feed.innerHTML = "";
+			empty.hidden = items.length !== 0;
+
+			items.forEach(function(item) {
+				var fragment = template.content.cloneNode(true);
+				var card = fragment.querySelector(".shared-community__card");
+				card.querySelector(".shared-community__avatar").textContent = initials(item.author);
+				card.querySelector(".shared-community__name").textContent = item.author;
+				card.querySelector(".shared-community__meta").textContent = item.role + " · " + item.time + " · " + item.likes + " likes · " + item.comments + " comments";
+				card.querySelector(".shared-community__body").textContent = item.content;
+				card.querySelector(".shared-community__post-type").textContent = item.category;
+
+				var actions = card.querySelector(".shared-community__card-actions");
+				actions.innerHTML = "";
+				var openButton = document.createElement("button");
+				openButton.type = "button";
+				openButton.className = "shared-community__button";
+				openButton.textContent = "Open";
+				openButton.addEventListener("click", function() {
+					modalAuthor.textContent = item.author + " · " + item.role + " · " + item.time;
+					modalContent.textContent = item.content;
+					modal.setAttribute("data-open", "true");
+				});
+				actions.appendChild(openButton);
+
+				var replyButton = document.createElement("button");
+				replyButton.type = "button";
+				replyButton.className = "shared-community__button";
+				replyButton.textContent = scope === "admin" ? "Moderate" : "Reply";
+				actions.appendChild(replyButton);
+
+				if (scope === "admin") {
+					var flagButton = document.createElement("button");
+					flagButton.type = "button";
+					flagButton.className = "shared-community__button";
+					flagButton.textContent = "Flag";
+					actions.appendChild(flagButton);
+				}
+
+				feed.appendChild(fragment);
+			});
+		}
+
+		function closeModal() {
+			modal.setAttribute("data-open", "false");
+		}
+
+		document.querySelectorAll(".shared-community__tab").forEach(function(tab) {
+			tab.addEventListener("click", function() {
+				document.querySelectorAll(".shared-community__tab").forEach(function(btn) {
+					btn.classList.remove("is-active");
+					btn.setAttribute("aria-selected", "false");
+				});
+				tab.classList.add("is-active");
+				tab.setAttribute("aria-selected", "true");
+				state.tab = tab.getAttribute("data-tab") || "all";
+				render();
+			});
+		});
+
+		search.addEventListener("input", function(event) {
+			state.search = String(event.target.value || "").trim().toLowerCase();
+			render();
+		});
+
+		sort.addEventListener("change", function() {
+			state.items = state.items.slice().sort(function(a, b) {
+				if (sort.value === "popular") {
+					return (b.likes + b.comments) - (a.likes + a.comments);
+				}
+				return a.id - b.id;
+			});
+			render();
+		});
+
+		publish.addEventListener("click", function() {
+			var value = document.getElementById("shared-community-compose").value.trim();
+			if (!value) return;
+			state.items.unshift({
+				id: Date.now(),
+				author: scope === "admin" ? "Admin Team" : "You",
+				role: scope === "admin" ? "Administrator" : "Member",
+				category: scope === "admin" ? "announcements" : "discussion",
+				time: "Just now",
+				content: value,
+				likes: 0,
+				comments: 0
+			});
+			document.getElementById("shared-community-compose").value = "";
+			render();
+		});
+
+		clear.addEventListener("click", function() {
+			document.getElementById("shared-community-compose").value = "";
+		});
+
+		document.querySelectorAll("[data-community-close]").forEach(function(button) {
+			button.addEventListener("click", closeModal);
+		});
+
+		modal.addEventListener("click", function(event) {
+			if (event.target === modal) closeModal();
+		});
+
+		render();
+	})();
+	</script>
+</section>

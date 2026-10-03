@@ -1,0 +1,417 @@
+<footer class="footer" id="contacts">
+    <div class="container">
+        <div class="footer-grid">
+            <section>
+                <a class="brand" href="{% url 'home' %}" aria-label="HappYness Project home">
+                    <span class="brand-dot" aria-hidden="true"></span>
+                    <span>HappYness Project</span>
+                </a>
+                <p class="brand-copy">
+                    Uplifting lives through education, livelihood support, and genuine community care.
+                </p>
+            </section>
+
+            <section class="footer-quick-links">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="{% url 'home' %}">Home</a></li>
+                    <li><a href="{% url 'about' %}">About</a></li>
+                    <li><a href="{% url 'products' %}">Products</a></li>
+                    <li><a href="{% url 'contact' %}">Contact</a></li>
+                    <li><a href="{% url 'donate' %}" class="footer-donate" style="color:#1D9E75; font-weight:700;">Donate</a></li>
+                </ul>
+            </section>
+
+            <section>
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><button type="button" class="footer-link-btn" id="openFaqModal">FAQ</button></li>
+                </ul>
+            </section>
+
+            <section>
+                <h4>Contact</h4>
+                <ul class="footer-contact-list">
+                    <li>
+                        <a
+                            class="footer-contact-link"
+                            href="https://mail.google.com/mail/?view=cm&fs=1&to=HappynessProjectPhilippines@gmail.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Send an email to HappYness Project"
+                        >
+                            <i data-lucide="mail" class="icon-sm" aria-hidden="true"></i>
+                            <span>HappynessProjectPhilippines@gmail.com</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a
+                            class="footer-contact-link"
+                            href="https://maps.app.goo.gl/BCnpcfznJveuP27J7"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Open HappYness Project address in Google Maps"
+                        >
+                            <i data-lucide="house" class="icon-sm" aria-hidden="true"></i>
+                            <span>Blk. 4 Lot 4 Queen Carmel St. Queensrow East Bacoor, City</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="footer-contact-link" href="tel:+639567080539" aria-label="Call HappYness Project">
+                            <i data-lucide="phone" class="icon-sm" aria-hidden="true"></i>
+                            <span>0956 708 0539</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a
+                            class="footer-contact-link"
+                            href="https://facebook.com/PilipinasHappY"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Open HappYness Project Facebook page"
+                        >
+                            <span class="fb-icon-plain" aria-hidden="true">f</span>
+                            <span>HappYness Project</span>
+                        </a>
+                    </li>
+                </ul>
+            </section>
+        </div>
+
+        <p class="copyright">Copyright &copy; 2026 HappYness Project. All rights reserved.</p>
+    </div>
+</footer>
+
+<div class="faq-modal-overlay" id="faqModal" aria-hidden="true" hidden>
+    <section class="faq-modal-card" role="dialog" aria-modal="true" aria-labelledby="faqModalTitle">
+        <button type="button" class="faq-modal-close" id="closeFaqModal" aria-label="Close FAQ modal">
+            <i data-lucide="x"></i>
+        </button>
+
+        <header class="faq-modal-header">
+            <h2 id="faqModalTitle">Frequently Asked Questions</h2>
+            <p>Everything you need to know about HappYness Project</p>
+        </header>
+
+        <div class="faq-modal-body">
+            <section class="faq-category" aria-labelledby="faqCategoryAbout">
+                <h3 id="faqCategoryAbout">About the Organization</h3>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        What is HappYness Project Organization Inc.?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>HappYness Project is a registered non-profit organization that aims to uplift marginalized communities-children, parents, and families-through holistic programs that support physical, social, economic, and spiritual development.</p>
+                    </div>
+                </article>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        When and why was HappYness Project founded?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>It began in 2018 and was officially registered as an NGO to continue the legacy of love, kindness, and compassion in honor of the founder's late mother, "Mama Sal," who was known for her generosity, kindness, and unwavering faith - always choosing to help others, even in the simplest ways. Her life and values serve as the inspiration behind HappYness Project's mission to spread love and serve communities in need.</p>
+                    </div>
+                </article>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        What makes HappYness Project different from other organizations?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>We work closely with communities through proper community assessments, interviews, and profiling. We don't just provide one-time relief - we build sustainable programs that empower individuals and families.</p>
+                    </div>
+                </article>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        What locations or communities do you serve?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>We currently serve selected Barangays, communities, and institutions in Metro Manila and nearby provinces based on community needs and program partnerships. Our existing community engagements include Barangay Molino II, Bacoor, Cavite; Barangay 385, Quiapo, Manila; and Barangay Lunsad, Binangonan, Rizal.</p>
+                    </div>
+                </article>
+            </section>
+
+            <section class="faq-category" aria-labelledby="faqCategoryPrograms">
+                <h3 id="faqCategoryPrograms">Programs &amp; Beneficiaries</h3>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        What are your main programs?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>We have three core programs: HappY Hearts - Empowerment and emotional well-being activities for senior citizens, special groups, and other vulnerable individuals. HappY Nanays - Livelihood and skills training to empower mothers and women. HappY Kids - Outreach programs, learning activities, feeding programs, and character-building activities for children.</p>
+                    </div>
+                </article>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        How do you choose communities or beneficiaries?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>Beneficiaries are selected based on actual community needs assessment, home visits and interviews, income level, and vulnerability status.</p>
+                    </div>
+                </article>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        Can an individual request help from HappYness Project?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>Yes. Requests can be sent through our official Facebook page or via email. Assistance will depend on assessment and available resources.</p>
+                    </div>
+                </article>
+            </section>
+
+            <section class="faq-category" aria-labelledby="faqCategoryEvents">
+                <h3 id="faqCategoryEvents">Events &amp; Volunteering</h3>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        How can I volunteer?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>You may sign up through our volunteer interest form (posted on our FB page when openings are available) or send us a message expressing your intent to join.</p>
+                    </div>
+                </article>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        Do volunteers have to pay anything?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>No. Volunteering is free. However, volunteers may shoulder their own transportation or personal expense unless stated otherwise.</p>
+                    </div>
+                </article>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        Do I need experience or specific skills to volunteer?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>Not required. We welcome anyone with a willing heart to serve.</p>
+                    </div>
+                </article>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        Can students volunteer or have internships here?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>Yes, we accept student volunteers and interns, depending on availability and the timeline of ongoing projects.</p>
+                    </div>
+                </article>
+            </section>
+
+            <section class="faq-category" aria-labelledby="faqCategoryDonations">
+                <h3 id="faqCategoryDonations">Donations</h3>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        How can I donate?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>Donations may be sent through bank transfer, GCash, and in-kind donations (e.g., food, school supplies, hygiene kits). Official donation details (bank account/GCash QR) are posted on our official Facebook page.</p>
+                    </div>
+                </article>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        Can I donate in-kind items instead of money?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>Yes. We accept school supplies, food items, hygiene products, clothing (new or gently used), toys, educational materials, etc.</p>
+                    </div>
+                </article>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        Are donations acknowledged?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>Yes, donors receive acknowledgements via email or messenger. If requested, we can also issue a certification of donation.</p>
+                    </div>
+                </article>
+            </section>
+
+            <section class="faq-category" aria-labelledby="faqCategoryPartnerships">
+                <h3 id="faqCategoryPartnerships">Partnerships &amp; Event Requests</h3>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        Can organizations or companies partner with HappYness Project?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>Absolutely. We welcome collaborations with schools, companies, community groups, and individuals for CSR initiatives, outreach and community development projects, and sponsorships and fundraising.</p>
+                    </div>
+                </article>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        How do we request a proposal or partnership deck?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>Send us an email at happynessprojectphilippines@gmail.com or message on our Facebook page.</p>
+                    </div>
+                </article>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        Can we request HappYness Project to conduct an outreach program in our area?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>Yes, provided that a formal request letter is submitted, community assessment is completed, and partnership terms are clear and aligned to our programs.</p>
+                    </div>
+                </article>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        How far in advance should we request an event?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>At least 4-6 weeks before the desired date.</p>
+                    </div>
+                </article>
+            </section>
+
+            <section class="faq-category" aria-labelledby="faqCategoryTransparency">
+                <h3 id="faqCategoryTransparency">Transparency &amp; Contact</h3>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        How does HappYness ensure transparency?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>We practice documentation of events, public posting of activities, and proper liquidation and reporting on donations used.</p>
+                    </div>
+                </article>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        Where can we see updates or finished projects?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>You can follow our official Facebook page: facebook.com/PilipinasHappY</p>
+                    </div>
+                </article>
+
+                <article class="faq-item">
+                    <button type="button" class="faq-question" data-faq-question aria-expanded="false">
+                        Where can we message for concerns or inquiries?
+                    </button>
+                    <div class="faq-answer" hidden>
+                        <p>You may reach us through Facebook Messenger: HappYness Project Organization Inc. and email: happynessprojectphilippines@gmail.com.</p>
+                    </div>
+                </article>
+            </section>
+        </div>
+    </section>
+</div>
+
+{% if request.user.is_authenticated and request.resolver_match.url_name == 'products' %}
+<button class="order-tracker-button" id="orderTrackerButton" type="button" aria-label="Open your orders" aria-controls="orderTrackerModal" aria-expanded="false"{% if not product_tracker_orders %} hidden{% endif %}>
+    <i data-lucide="package"></i>
+    <span class="order-tracker-badge" id="orderTrackerBadge"{% if not product_tracker_active_count %} hidden{% endif %}>{{ product_tracker_active_count }}</span>
+</button>
+
+<div class="order-tracker-overlay" id="orderTrackerModal" aria-hidden="true" hidden>
+    <section class="order-tracker-modal" role="dialog" aria-modal="true" aria-labelledby="orderTrackerTitle">
+        <header class="order-tracker-header">
+            <div class="order-tracker-title-row">
+                <h2 id="orderTrackerTitle">Your orders</h2>
+                <label class="order-tracker-search" aria-label="Search your orders">
+                    <i data-lucide="search" aria-hidden="true"></i>
+                    <input id="orderTrackerSearch" type="search" placeholder="Search orders" autocomplete="off">
+                </label>
+                <button class="order-tracker-select" id="orderTrackerSelect" type="button" aria-pressed="false">Select</button>
+                <button class="order-tracker-delete" id="orderTrackerDelete" type="button" hidden>Delete</button>
+            </div>
+            <button class="order-tracker-close" id="orderTrackerClose" type="button" aria-label="Close your orders"><i data-lucide="x"></i></button>
+        </header>
+        <div class="order-tracker-list" id="orderTrackerList">
+            {% for order in product_tracker_orders %}
+            <article class="order-tracker-card" data-order-card-id="{{ order.id }}">
+                {% if order.status == 'pending' or order.status == 'verified' %}<input class="order-tracker-checkbox" type="checkbox" data-order-id="{{ order.id }}" aria-label="Select {{ order.name }} for cancellation">{% else %}<span class="order-tracker-checkbox-spacer" aria-hidden="true"></span>{% endif %}
+                <img src="{{ order.image }}" alt="{{ order.name }}">
+                <div class="order-tracker-card-body">
+                    <strong>{{ order.name }}</strong>
+                    {% if order.variation %}<span>{{ order.variation }}</span>{% endif %}
+                    <span>{{ order.quantity }} unit{% if order.quantity != 1 %}s{% endif %} · ₱{{ order.total }}</span>
+                    <time datetime="{{ order.date|date:'c' }}">{{ order.date|date:'M d, Y' }}</time>
+                </div>
+                {% if order.status == 'pending' or order.status == 'verified' %}
+                <div class="order-tracker-card-actions">
+                    <span class="order-tracker-status status-{{ order.status }}">{{ order.status_label }}</span>
+                    <button class="order-tracker-cancel" type="button" data-cancel-order-id="{{ order.id }}">Cancel</button>
+                </div>
+                {% else %}
+                <div class="order-tracker-card-actions">
+                    <span class="order-tracker-status status-{{ order.status }}">{{ order.status_label }}</span>
+                </div>
+                {% endif %}
+            </article>
+            {% empty %}
+            <p class="order-tracker-empty">You haven't placed any orders yet.</p>
+            {% endfor %}
+        </div>
+        <div class="order-tracker-bulk-bar" id="orderTrackerBulkBar" hidden>
+            <span><strong id="orderTrackerSelectedCount">0</strong> selected</span>
+            <div>
+                <button type="button" class="order-tracker-clear" id="orderTrackerClear">Clear</button>
+                <button type="button" class="order-tracker-bulk-cancel" id="orderTrackerBulkCancel">Cancel selected</button>
+            </div>
+        </div>
+    </section>
+</div>
+<div class="order-cancel-overlay" id="orderCancelModal" aria-hidden="true" hidden>
+    <section class="order-cancel-modal" role="dialog" aria-modal="true" aria-labelledby="orderCancelTitle">
+        <h2 id="orderCancelTitle">Cancel this order?</h2>
+        <p id="orderCancelMessage">This can't be undone.</p>
+        <div class="order-cancel-actions">
+            <button type="button" class="order-cancel-keep" id="orderCancelKeep">Keep order</button>
+            <button type="button" class="order-cancel-confirm" id="orderCancelConfirm">Cancel order</button>
+        </div>
+    </section>
+</div>
+<div class="receipt-overlay" id="orderReceiptModal" aria-hidden="true" hidden>
+    <section class="receipt-modal" role="dialog" aria-modal="true" aria-labelledby="receiptTitle">
+        <div class="receipt-paper" id="orderReceiptPaper">
+            <header class="receipt-header">
+                <div>
+                    <strong>HappYness Project</strong>
+                    <p class="receipt-location">Bacoor City, Cavite</p>
+                    <h2 id="receiptTitle">Order Receipt</h2>
+                </div>
+            </header>
+            <div class="receipt-meta">
+                <div><span>Order Number</span><strong id="receiptOrderNumber"></strong></div>
+                <div><span>Order Date</span><strong id="receiptOrderDate"></strong></div>
+                <div><span>Placed By</span><strong id="receiptCustomerName"></strong></div>
+            </div>
+            <div class="receipt-items" id="receiptItems"></div>
+            <div class="receipt-totals">
+                <div class="receipt-breakdown-row"><span>Subtotal</span><strong id="receiptSubtotal"></strong></div>
+                <div class="receipt-breakdown-row"><span>Shipping fee</span><strong id="receiptDeliveryFee">₱50</strong></div>
+                <div class="receipt-breakdown-row"><span>VAT (12%)</span><strong id="receiptVat"></strong></div>
+                <div class="receipt-total"><span>Total</span><strong id="receiptTotal"></strong></div>
+            </div>
+            <div class="receipt-meta receipt-payment-meta">
+                <div><span>Payment Method</span><strong id="receiptPaymentMethod"></strong></div>
+                <div><span>Payment Status</span><strong id="receiptPaymentStatus"></strong></div>
+            </div>
+            <p class="receipt-thanks">Thank you for supporting HappYness Project.</p>
+            <div class="receipt-barcode" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <p class="receipt-footer-line">happynessproject.org · Made with purpose</p>
+        </div>
+        <div class="receipt-actions">
+            <button class="receipt-print-button" id="printOrderReceipt" type="button"><i data-lucide="download"></i> Download Receipt</button>
+            <button class="receipt-close-button" id="closeOrderReceipt" type="button">Close</button>
+        </div>
+    </section>
+</div>
+{% endif %}

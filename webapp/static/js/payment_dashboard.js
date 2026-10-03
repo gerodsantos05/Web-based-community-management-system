@@ -39,6 +39,15 @@
         return document.getElementById(id);
     }
 
+    function buildTableActionControl(rowId) {
+        var template = byId("table-actions-template");
+        if (!template) {
+            return "";
+        }
+
+        return template.innerHTML.split("__ROW_ID__").join(String(rowId || ""));
+    }
+
     function parseDate(value) {
         return value ? new Date(value + "T00:00:00") : null;
     }
@@ -77,6 +86,10 @@
         return {
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                duration: 1900,
+                easing: "easeInOutCubic"
+            },
             plugins: {
                 tooltip: {
                     backgroundColor: "rgba(5, 46, 43, 0.92)",
@@ -86,36 +99,6 @@
                 legend: { labels: { color: "#0f4e48" } }
             }
         };
-    }
-
-    function initSparkline(id, points) {
-        var canvas = byId(id);
-        if (!canvas || typeof Chart === "undefined") {
-            return;
-        }
-
-        new Chart(canvas, {
-            type: "line",
-            data: {
-                labels: ["1", "2", "3", "4", "5", "6", "7"],
-                datasets: [{
-                    data: points,
-                    borderColor: "#0f766e",
-                    backgroundColor: "rgba(15, 118, 110, 0.12)",
-                    fill: true,
-                    pointRadius: 0,
-                    tension: 0.35,
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: false,
-                plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                scales: { x: { display: false }, y: { display: false } }
-            }
-        });
     }
 
     function getRangeData() {
@@ -129,10 +112,15 @@
         byId("kpi-pending").textContent = Number(summary.pendingPayments || 0).toLocaleString();
         byId("kpi-canceled").textContent = Number(summary.canceledRefunded || 0).toLocaleString();
 
-        initSparkline("kpi-spark-revenue", [8900, 9350, 9800, 10350, 11100, 11820, summary.revenue || 12300]);
-        initSparkline("kpi-spark-completed", [6, 7, 7, 8, 9, 9, summary.completedOrders || 10]);
-        initSparkline("kpi-spark-pending", [11, 10, 10, 9, 9, 8, summary.pendingPayments || 8]);
-        initSparkline("kpi-spark-canceled", [3, 3, 4, 4, 5, 5, summary.canceledRefunded || 5]);
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+
+        document.dispatchEvent(new CustomEvent("admin:panel-rendered", {
+            detail: {
+                panelUrl: window.location.pathname + window.location.search + window.location.hash
+            }
+        }));
     }
 
     function deriveSummary(transactions) {
@@ -200,8 +188,7 @@
             trend: state.raw.trend,
             topCustomers: state.raw.topCustomers || [],
             topProducts: state.raw.topProducts || [],
-            transactions: transactions,
-            activity: state.raw.activity || []
+            transactions: transactions
         };
     }
 
@@ -376,25 +363,6 @@
         });
     }
 
-    function renderActivity(data) {
-        var list = byId("payops-activity-list");
-        if (!list) {
-            return;
-        }
-
-        list.innerHTML = "";
-        (data.activity || []).forEach(function (entry) {
-            var item = document.createElement("li");
-            item.className = "rounded-xl border border-brand-100 bg-white p-2.5";
-            item.innerHTML = ""
-                + "<div class=\"flex items-start gap-2\">"
-                    + "<span class=\"payops-avatar\" aria-hidden=\"true\">" + initials(entry.customer) + "</span>"
-                    + "<div><p class=\"text-sm text-ink-900\"><span class=\"font-semibold\">" + entry.customer + "</span> " + entry.action + " <span class=\"font-semibold text-brand-700\">" + currency(entry.amount) + "</span></p><p class=\"text-xs text-ink-500\">" + entry.time + "</p></div>"
-                + "</div>";
-            list.appendChild(item);
-        });
-    }
-
     function activeDesktopFilters() {
         return window.matchMedia("(min-width: 1280px)").matches;
     }
@@ -447,8 +415,7 @@
     }
 
     function paginate(items) {
-        var start = (state.page - 1) * state.pageSize;
-        return items.slice(start, start + state.pageSize);
+        return items;
     }
 
     function setAriaSort() {
@@ -466,49 +433,7 @@
     }
 
     function renderPagination(total) {
-        var pager = byId("payops-pagination");
-        if (!pager) {
-            return;
-        }
-
-        var pages = Math.max(1, Math.ceil(total / state.pageSize));
-        if (state.page > pages) {
-            state.page = pages;
-        }
-
-        pager.innerHTML = "";
-
-        var prev = document.createElement("button");
-        prev.type = "button";
-        prev.className = "payops-focus rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-semibold text-ink-700 disabled:opacity-40";
-        prev.textContent = "Prev";
-        prev.disabled = state.page <= 1;
-        prev.addEventListener("click", function () {
-            if (state.page > 1) {
-                state.page -= 1;
-                renderTable();
-            }
-        });
-
-        var label = document.createElement("span");
-        label.className = "text-xs text-ink-500";
-        label.textContent = "Page " + state.page + " of " + pages;
-
-        var next = document.createElement("button");
-        next.type = "button";
-        next.className = "payops-focus rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-semibold text-ink-700 disabled:opacity-40";
-        next.textContent = "Next";
-        next.disabled = state.page >= pages;
-        next.addEventListener("click", function () {
-            if (state.page < pages) {
-                state.page += 1;
-                renderTable();
-            }
-        });
-
-        pager.appendChild(prev);
-        pager.appendChild(label);
-        pager.appendChild(next);
+        return;
     }
 
     function requestRowAction(action, orderId) {
@@ -554,12 +479,13 @@
         }
 
         var sorted = state.filtered.slice().sort(compareTransactions);
-        var pageItems = paginate(sorted);
+        var visibleItems = paginate(sorted);
 
         tableBody.innerHTML = "";
 
-        pageItems.forEach(function (tx) {
+        visibleItems.forEach(function (tx) {
             var row = document.createElement("tr");
+            var rowActionControl = buildTableActionControl(tx.orderId);
             row.innerHTML = ""
                 + "<td><input type=\"checkbox\" class=\"payops-focus payops-row-check\" data-order=\"" + tx.orderId + "\" aria-label=\"Select order " + tx.orderId + "\" " + (state.selected.has(tx.orderId) ? "checked" : "") + " /></td>"
                 + "<td><a href=\"/orders/" + tx.orderId + "/\" class=\"font-semibold text-brand-700 hover:underline\">" + tx.orderId + "</a></td>"
@@ -569,21 +495,13 @@
                 + "<td>" + tx.method + "</td>"
                 + "<td><span class=\"" + statusClass(tx.status) + "\">" + tx.status + "</span></td>"
                 + "<td>" + tx.date + "</td>"
-                + "<td><span class=\"payops-row-actions inline-flex items-center gap-0.5\">"
-                    + "<button type=\"button\" class=\"payops-focus rounded-lg p-1.5 text-brand-700 hover:bg-brand-50\" data-row-action=\"view\" data-order=\"" + tx.orderId + "\" aria-label=\"View details for " + tx.orderId + "\"><i data-lucide=\"eye\" class=\"h-4 w-4\"></i></button>"
-                    + "<button type=\"button\" class=\"payops-focus rounded-lg p-1.5 text-brand-700 hover:bg-brand-50\" data-row-action=\"invoice\" data-order=\"" + tx.orderId + "\" aria-label=\"Download invoice for " + tx.orderId + "\"><i data-lucide=\"download\" class=\"h-4 w-4\"></i></button>"
-                    + "<button type=\"button\" class=\"payops-focus rounded-lg p-1.5 text-brand-700 hover:bg-brand-50\" data-row-action=\"mark-paid\" data-order=\"" + tx.orderId + "\" aria-label=\"Mark order " + tx.orderId + " paid\"><i data-lucide=\"check\" class=\"h-4 w-4\"></i></button>"
-                    + "<button type=\"button\" class=\"payops-focus rounded-lg p-1.5 text-brand-700 hover:bg-brand-50\" data-row-action=\"refund\" data-order=\"" + tx.orderId + "\" aria-label=\"Refund order " + tx.orderId + "\"><i data-lucide=\"undo-2\" class=\"h-4 w-4\"></i></button>"
-                    + "<button type=\"button\" class=\"payops-focus rounded-lg p-1.5 text-red-600 hover:bg-red-50\" data-row-action=\"cancel\" data-order=\"" + tx.orderId + "\" aria-label=\"Cancel order " + tx.orderId + "\"><i data-lucide=\"x\" class=\"h-4 w-4\"></i></button>"
-                + "</span></td>";
+                + "<td class=\"text-right\" data-id=\"" + tx.orderId + "\">" + rowActionControl + "</td>";
 
             tableBody.appendChild(row);
         });
 
         tableCount.textContent = state.filtered.length + " records";
-        selectAll.checked = pageItems.length > 0 && pageItems.every(function (tx) { return state.selected.has(tx.orderId); });
-
-        renderPagination(sorted.length);
+        selectAll.checked = visibleItems.length > 0 && visibleItems.every(function (tx) { return state.selected.has(tx.orderId); });
 
         skeleton.classList.add("hidden");
         tableShell.classList.remove("hidden");
@@ -633,7 +551,6 @@
         renderSuccessRate(data.statusOverview);
         renderTopCustomers(data);
         renderTopProducts(data);
-        renderActivity(data);
         updateCharts(state.filters);
         renderTable();
         setAriaSort();
@@ -641,7 +558,10 @@
         byId("payops-aov").textContent = currency(data.summary.aov);
         byId("payops-refund-summary").textContent = (data.statusOverview.Refunded || 0) + " refunded, " + (data.statusOverview.Canceled || 0) + " canceled";
         byId("payops-daily-volume").textContent = (data.summary.dailyVolume || 0) + " orders / day";
-        byId("payops-filter-summary").textContent = summarizeFilters(state.filters);
+        var filterSummary = byId("payops-filter-summary");
+        if (filterSummary) {
+            filterSummary.textContent = summarizeFilters(state.filters);
+        }
         setQueryParams(state.filters);
     }
 
@@ -912,20 +832,11 @@
             });
         });
 
-        var pageSize = byId("payops-page-size");
-        if (pageSize) {
-            pageSize.addEventListener("change", function () {
-                state.pageSize = Number(pageSize.value) || 5;
-                state.page = 1;
-                renderTable();
-            });
-        }
-
         var selectAll = byId("payops-select-all");
         if (selectAll) {
             selectAll.addEventListener("change", function () {
-                var pageItems = paginate(state.filtered.slice().sort(compareTransactions));
-                pageItems.forEach(function (tx) {
+                var visibleItems = paginate(state.filtered.slice().sort(compareTransactions));
+                visibleItems.forEach(function (tx) {
                     if (selectAll.checked) {
                         state.selected.add(tx.orderId);
                     } else {
@@ -1100,6 +1011,46 @@
         observer.observe(target);
     }
 
+    function setCollapsibleState(card, isOpen) {
+        if (!card) {
+            return;
+        }
+
+        card.setAttribute("data-open", isOpen ? "true" : "false");
+        var trigger = card.querySelector(".payops-collapse-trigger");
+        if (trigger) {
+            trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        }
+    }
+
+    function initCollapsibleCards() {
+        var groups = document.querySelectorAll("[data-accordion]");
+        groups.forEach(function (group) {
+            var accordionMode = group.getAttribute("data-accordion") === "true";
+            group.querySelectorAll(".payops-collapsible").forEach(function (card) {
+                var trigger = card.querySelector(".payops-collapse-trigger");
+                if (!trigger) {
+                    return;
+                }
+
+                trigger.addEventListener("click", function () {
+                    var isOpen = card.getAttribute("data-open") === "true";
+
+                    if (accordionMode) {
+                        group.querySelectorAll(".payops-collapsible").forEach(function (otherCard) {
+                            setCollapsibleState(otherCard, false);
+                        });
+                        if (!isOpen) {
+                            setCollapsibleState(card, true);
+                        }
+                    } else {
+                        setCollapsibleState(card, !isOpen);
+                    }
+                });
+            });
+        });
+    }
+
     function finishLoading() {
         state.loading = false;
         byId("payops-table-skeleton").classList.add("hidden");
@@ -1112,10 +1063,10 @@
             renderSuccessRate(state.raw.statusOverview || {});
             renderTopCustomers(state.raw);
             renderTopProducts(state.raw);
-            renderActivity(state.raw);
             lazyInitCharts();
             wireControls();
             wirePopoverClose();
+            initCollapsibleCards();
 
             setTimeout(function () {
                 finishLoading();

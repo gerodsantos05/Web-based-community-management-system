@@ -1,0 +1,36 @@
+#dashboard-shell .global-chat-form .global-chat-input,
+.global-chat-form .global-chat-input {
+    box-sizing: border-box !important;
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 2.8rem !important;
+    min-height: 2.8rem !important;
+    max-height: 6rem !important;
+    resize: none !important;
+    overflow-y: auto !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    border: 1px solid rgba(15, 23, 42, 0.1) !important;
+    border-radius: 0.8rem !important;
+    padding: 0.7rem 0.8rem !important;
+    font: inherit !important;
+    color: #0f172a !important;
+    background: #f8fafc !important;
+    transition: border-color 180ms ease, box-shadow 180ms ease, min-height 200ms ease !important;
+}
+
+.global-chat-form .global-chat-input::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+}
+
+#dashboard-shell .global-chat-form .global-chat-input:focus,
+.global-chat-form .global-chat-input:focus {
+    border-color: #1d9e75 !important;
+    box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.12) !important;
+    outline: none !important;
+}

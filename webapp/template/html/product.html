@@ -4,194 +4,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Products | Happyness Project</title>
+    <title>Products | Happy Nanays Store</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}?v=20260820t">
 </head>
 <body>
-    <header class="header" id="home">
-        <div class="container header-row">
-            <a class="brand" href="{% url 'home' %}" aria-label="Happyness Project home">
-                <span class="brand-dot" aria-hidden="true"></span>
-                <span>Happyness Project</span>
-            </a>
+    {% include 'partials/_public_navbar.html' with nav_active='products' %}
 
-            <nav class="header-nav" id="mobileNav" aria-label="Primary navigation">
-                <ul class="nav-list">
-                    <li><a class="nav-link" href="{% url 'home' %}">Home</a></li>
-                    <li><a class="nav-link" href="{% url 'about' %}">About</a></li>
-                    <li><a class="nav-link active" href="{% url 'products' %}">Products</a></li>
-                    <li><a class="nav-link" href="{% url 'contact' %}">Contacts</a></li>
-                </ul>
-            </nav>
-
-            <div class="header-actions">
-                <button class="btn btn-signin" id="openSignInModal" type="button">Sign In</button>
-                <button class="menu-btn" id="menuBtn" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobileNav">
-                    <i data-lucide="menu"></i>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <main class="products-page">
+    <main class="products-page products-store-page">
         <section class="products-hero">
             <div class="container products-hero-inner">
-                <span class="pill products-pill">
-                    <i data-lucide="shopping-bag" class="icon-sm"></i>
-                    Mindful Store Collection
-                </span>
-                <h1>Find Tools That Support Your <span class="gradient-text">Daily Happiness</span></h1>
-                <p>
-                    Browse our curated products designed to elevate wellness, focus, and emotional balance.
-                    Filter by category and discover what fits your routine best.
+                <p class="products-eyebrow">Happy Nanays Store</p>
+                <h1>Shop with Purpose</h1>
+                <p class="products-subtitle">
+                    Every product you purchase is handcrafted by our Happy Nanays. Your support goes directly to empowering mothers and their families.
                 </p>
             </div>
         </section>
 
         <section class="products-catalog" id="productsCatalog">
-            <div class="container">
+            <div class="container products-catalog-inner">
                 <div class="products-toolbar" aria-label="Product category filters">
                     <button class="products-filter-btn active" type="button" data-category-btn="all" aria-pressed="true">All</button>
-                    <button class="products-filter-btn" type="button" data-category-btn="journals" aria-pressed="false">Journals</button>
-                    <button class="products-filter-btn" type="button" data-category-btn="kits" aria-pressed="false">Wellness Kits</button>
-                    <button class="products-filter-btn" type="button" data-category-btn="cards" aria-pressed="false">Mind Cards</button>
+                    <button class="products-filter-btn" type="button" data-category-btn="doormats" aria-pressed="false">Doormats</button>
+                    <button class="products-filter-btn" type="button" data-category-btn="pot-holder-rags" aria-pressed="false">Pot Holder Rags</button>
+                        <button class="products-filter-btn" type="button" data-category-btn="tote-bags" aria-pressed="false">Tote Bags</button>
+                    <button class="products-filter-btn" type="button" data-category-btn="sweaters" aria-pressed="false">Sweaters</button>
+                    <button class="products-filter-btn" type="button" data-category-btn="t-shirts" aria-pressed="false">T-shirt</button>
+                    <button class="products-filter-btn" type="button" data-category-btn="homemade-candles" aria-pressed="false">Homemade Candles</button>
+                    <button class="products-filter-btn" type="button" data-category-btn="perfume" aria-pressed="false">Perfume</button>
                 </div>
 
                 <div class="products-grid" id="productsGrid">
-                    <article class="product-card" data-category="journals">
+                    <article class="product-card" data-category="doormats" data-variations="Size|Small|Medium|Large" data-description="Beautiful handwoven doormat perfect for your home entrance">
                         <div class="product-media">
-                            <img src="https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=900&q=80" alt="Gratitude journal on wooden desk">
-                            <span class="product-badge">Top Pick</span>
+                            <img src="{% static 'media/hand woven doormat.jpg' %}" alt="Handwoven Doormat">
                         </div>
                         <div class="product-content">
-                            <p class="product-category">Journals</p>
-                            <h3>Daily Gratitude Journal</h3>
-                            <p class="product-copy">A guided journal with reflective prompts to nurture appreciation and calm each day.</p>
-                            <div class="product-meta">
-                                <p class="product-price">$24.00</p>
-                                <div class="product-rating" aria-label="Rated 5 out of 5">
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                </div>
-                            </div>
-                            <button class="btn product-cta" type="button"><i data-lucide="shopping-cart" class="icon-sm"></i> Add to Cart</button>
+                            <span class="product-category-badge">Doormats</span>
+                            <h3>Handwoven Doormat</h3>
+                            <span class="product-price">₱100</span>
                         </div>
                     </article>
 
-                    <article class="product-card" data-category="kits">
+                    <article class="product-card" data-category="doormats" data-variations="Color|Forest Green|Beige|Brown" data-description="Durable braided doormat with elegant design">
                         <div class="product-media">
-                            <img src="https://images.unsplash.com/photo-1511988617509-a57c8a288659?auto=format&fit=crop&w=900&q=80" alt="Wellness tea and self-care accessories">
+                            <img src="{% static 'media/braided doormat.jpg' %}" alt="Braided Doormat">
                         </div>
                         <div class="product-content">
-                            <p class="product-category">Wellness Kits</p>
-                            <h3>Evening Reset Kit</h3>
-                            <p class="product-copy">A calming set with herbal tea, breathing guide, and aroma blend for better evening routines.</p>
-                            <div class="product-meta">
-                                <p class="product-price">$42.00</p>
-                                <div class="product-rating" aria-label="Rated 4 out of 5">
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star-off"></i>
-                                </div>
-                            </div>
-                            <button class="btn product-cta" type="button"><i data-lucide="shopping-cart" class="icon-sm"></i> Add to Cart</button>
+                            <span class="product-category-badge">Doormats</span>
+                            <h3>Braided Doormat</h3>
+                            <span class="product-price">₱100</span>
                         </div>
                     </article>
 
-                    <article class="product-card" data-category="cards">
+                    <article class="product-card" data-category="pot-holder-rags" data-variations="Pattern|Floral|Tropical|Geometric" data-description="Durable and colorful pot holders made with love">
                         <div class="product-media">
-                            <img src="https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=900&q=80" alt="Mindfulness prompt cards spread on table">
+                            <img src="{% static 'media/pot holder rag.png' %}" alt="Pot Holder Rag">
                         </div>
                         <div class="product-content">
-                            <p class="product-category">Mind Cards</p>
-                            <h3>Mindfulness Prompt Deck</h3>
-                            <p class="product-copy">52 pocket cards with grounding prompts to recenter focus and reduce stress quickly.</p>
-                            <div class="product-meta">
-                                <p class="product-price">$18.00</p>
-                                <div class="product-rating" aria-label="Rated 5 out of 5">
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                </div>
-                            </div>
-                            <button class="btn product-cta" type="button"><i data-lucide="shopping-cart" class="icon-sm"></i> Add to Cart</button>
+                            <span class="product-category-badge">Pot Holder Rags</span>
+                            <h3>Pot Holder Rag</h3>
+                            <span class="product-price">₱50</span>
                         </div>
                     </article>
 
-                    <article class="product-card" data-category="journals">
+                    <article class="product-card" data-category="tote-bags" data-variations="Color|Natural|Black|Olive" data-description="Eco-friendly handmade tote bag for everyday use">
                         <div class="product-media">
-                            <img src="https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=900&q=80" alt="Notebook with pen and coffee">
+                            <img src="{% static 'media/tote bag.jpg' %}" alt="Tote Bag">
                         </div>
                         <div class="product-content">
-                            <p class="product-category">Journals</p>
-                            <h3>Clarity Planner</h3>
-                            <p class="product-copy">A weekly structure that helps you set intention, track wins, and manage emotional energy.</p>
-                            <div class="product-meta">
-                                <p class="product-price">$28.00</p>
-                                <div class="product-rating" aria-label="Rated 4 out of 5">
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star-off"></i>
-                                </div>
-                            </div>
-                            <button class="btn product-cta" type="button"><i data-lucide="shopping-cart" class="icon-sm"></i> Add to Cart</button>
+                                <span class="product-category-badge">Tote Bags</span>
+                            <h3>Tote Bag</h3>
+                            <span class="product-price">₱100</span>
                         </div>
                     </article>
 
-                    <article class="product-card" data-category="kits">
+                    <article class="product-card" data-category="tote-bags" data-variations="Color|White|Black|Cream" data-description="Special edition bag celebrating kindness and compassion">
                         <div class="product-media">
-                            <img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=80" alt="Meditation accessories and wellness notebook">
-                            <span class="product-badge">New</span>
+                            <img src="{% static 'media/champion of kindness bag.png' %}" alt="Champion of Kindness Bag">
                         </div>
                         <div class="product-content">
-                            <p class="product-category">Wellness Kits</p>
-                            <h3>Morning Focus Bundle</h3>
-                            <p class="product-copy">A simple morning system with stretch cards, audio access, and intention planner.</p>
-                            <div class="product-meta">
-                                <p class="product-price">$36.00</p>
-                                <div class="product-rating" aria-label="Rated 5 out of 5">
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                </div>
-                            </div>
-                            <button class="btn product-cta" type="button"><i data-lucide="shopping-cart" class="icon-sm"></i> Add to Cart</button>
+                                <span class="product-category-badge">Tote Bags</span>
+                            <h3>Champion of Kindness Bag</h3>
+                            <span class="product-price">₱100</span>
                         </div>
                     </article>
 
-                    <article class="product-card" data-category="cards">
+                    <article class="product-card" data-category="sweaters" data-variations="Size|Small|Medium|Large" data-description="Cozy hand-knitted sweater with unique patterns">
                         <div class="product-media">
-                            <img src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=900&q=80" alt="Affirmation cards with soft background">
+                            <img src="{% static 'media/handkit sweater.png' %}" alt="Handknit Sweater">
                         </div>
                         <div class="product-content">
-                            <p class="product-category">Mind Cards</p>
-                            <h3>Affirmation Card Set</h3>
-                            <p class="product-copy">Positive daily statements designed to reinforce confidence and supportive self-talk.</p>
-                            <div class="product-meta">
-                                <p class="product-price">$16.00</p>
-                                <div class="product-rating" aria-label="Rated 4 out of 5">
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star"></i>
-                                    <i data-lucide="star-off"></i>
-                                </div>
-                            </div>
-                            <button class="btn product-cta" type="button"><i data-lucide="shopping-cart" class="icon-sm"></i> Add to Cart</button>
+                            <span class="product-category-badge">Sweaters</span>
+                            <h3>Handknit Sweater</h3>
+                            <span class="product-price">₱150</span>
+                        </div>
+                    </article>
+
+                    <article class="product-card" data-category="t-shirts" data-variations="Size|Small|Medium|Large" data-description="Comfortable cotton T-shirt with the HappYness statement print">
+                        <div class="product-media">
+                            <img src="{% static 'media/Happyness T-shirt.png' %}" alt="HappYness T-shirt">
+                        </div>
+                        <div class="product-content">
+                            <span class="product-category-badge">T-shirt</span>
+                            <h3>HappYness T-shirt</h3>
+                            <span class="product-price">₱150</span>
+                        </div>
+                    </article>
+
+                    <article class="product-card" data-category="homemade-candles" data-variations="Scent|Vanilla|Lavender|Citrus" data-description="Soothing scented candle made from natural wax">
+                        <div class="product-media">
+                            <img src="{% static 'media/Homemade Candle.jpg' %}" alt="Homemade Candle">
+                        </div>
+                        <div class="product-content">
+                            <span class="product-category-badge">Homemade Candles</span>
+                            <h3>Homemade Candle</h3>
+                            <span class="product-price">₱50</span>
+                        </div>
+                    </article>
+
+                    <article class="product-card" data-category="perfume" data-variations="Scent|Fresh Citrus|Floral Bloom|Vanilla Musk" data-description="Handcrafted perfume with a delicate fragrance">
+                        <div class="product-media">
+                            <img src="{% static 'media/Handcrafted Perfume.jpg' %}" alt="Handcrafted Perfume">
+                        </div>
+                        <div class="product-content">
+                            <span class="product-category-badge">Perfume</span>
+                            <h3>Handcrafted Perfume</h3>
+                            <span class="product-price">₱120</span>
                         </div>
                     </article>
                 </div>
@@ -201,172 +143,608 @@
         </section>
     </main>
 
-    <footer class="footer" id="contacts">
-        <div class="container">
-            <div class="footer-grid">
-                <section>
-                    <a class="brand" href="{% url 'home' %}" aria-label="Happyness Project home">
-                        <span class="brand-dot" aria-hidden="true"></span>
-                        <span>Happyness Project</span>
-                    </a>
-                    <p class="brand-copy">
-                        Empowering happier and more fulfilled lives through practical habits, community care, and trusted guidance.
-                    </p>
-                </section>
+    {% comment %}
+        Product inquiry, payment, and product preview modal markup removed from the Products page.
+        <div class="product-inquiry-overlay" id="productInquiryModal" aria-hidden="true" hidden>
+        <section class="product-inquiry-modal" role="dialog" aria-modal="true" aria-labelledby="productInquiryTitle">
+            <header class="product-inquiry-header">
+                <div>
+                    <h2 id="productInquiryTitle">Product Inquiry</h2>
+                    <p>Set quantities for the products you want then fill in your details</p>
+                </div>
+                <button class="product-inquiry-close" id="closeProductInquiryModal" type="button" aria-label="Close product inquiry dialog">
+                    <i data-lucide="x"></i>
+                </button>
+            </header>
 
-                <section>
-                    <h4>Quick Links</h4>
-                    <ul>
-                        <li><a href="{% url 'home' %}">Home</a></li>
-                        <li><a href="{% url 'about' %}">About Us</a></li>
-                        <li><a href="{% url 'products' %}">Products</a></li>
-                        <li><a href="#">Blog</a></li>
-                    </ul>
-                </section>
+            <div class="product-inquiry-scroll">
+                <div id="productFormStateWrapper">
+                    <section class="product-inquiry-section">
+                        <div class="product-inquiry-section-header">
+                            <h3>Select Products</h3>
+                            <div class="product-inquiry-column-headers">
+                                <span class="product-col-header">Preview</span>
+                                <span class="product-col-header">Quantity</span>
+                            </div>
+                        </div>
+                        <div class="product-inquiry-list">
+                        <article class="product-qty-row" data-product-row data-product-name="Handwoven Doormat" data-product-category="Doormats" data-price="100" data-qty="0">
+                            <div>
+                                <p class="product-qty-name">Handwoven Doormat</p>
+                                <p class="product-qty-category">Doormats</p>
+                            </div>
+                            <div class="product-qty-actions">
+                                <button type="button" class="product-preview-btn" data-product-img="{% static 'media/hand woven doormat.jpg' %}" data-product-name="Handwoven Doormat" data-product-cat="Doormats" aria-label="Preview Handwoven Doormat" style="border:none;background:none;color:#2d6e4e;cursor:pointer;padding:0 0.75rem;">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                                <div class="product-qty-controls">
+                                    <button type="button" class="product-qty-btn" data-qty-step="-1" aria-label="Decrease Handwoven Doormat quantity">-</button>
+                                    <span class="product-qty-value" data-qty-value>0</span>
+                                    <button type="button" class="product-qty-btn" data-qty-step="1" aria-label="Increase Handwoven Doormat quantity">+</button>
+                                </div>
+                            </div>
+                        </article>
 
-                <section>
-                    <h4>Resources</h4>
-                    <ul>
-                        <li><a href="#">Help Center</a></li>
-                        <li><a href="#">Guides</a></li>
-                        <li><a href="#">Community</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
-                    </ul>
-                </section>
+                        <article class="product-qty-row" data-product-row data-product-name="Braided Doormat" data-product-category="Doormats" data-price="100" data-qty="0">
+                            <div>
+                                <p class="product-qty-name">Braided Doormat</p>
+                                <p class="product-qty-category">Doormats</p>
+                            </div>
+                            <div class="product-qty-actions">
+                                <button type="button" class="product-preview-btn" data-product-img="{% static 'media/braided doormat.jpg' %}" data-product-name="Braided Doormat" data-product-cat="Doormats" aria-label="Preview Braided Doormat" style="border:none;background:none;color:#2d6e4e;cursor:pointer;padding:0 0.75rem;">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                                <div class="product-qty-controls">
+                                    <button type="button" class="product-qty-btn" data-qty-step="-1" aria-label="Decrease Braided Doormat quantity">-</button>
+                                    <span class="product-qty-value" data-qty-value>0</span>
+                                    <button type="button" class="product-qty-btn" data-qty-step="1" aria-label="Increase Braided Doormat quantity">+</button>
+                                </div>
+                            </div>
+                        </article>
 
-                <section>
-                    <h4>Contact</h4>
-                    <ul>
-                        <li><i data-lucide="mail" class="icon-sm"></i> hello@happyness.com</li>
-                        <li><i data-lucide="phone" class="icon-sm"></i> +1 (555) 123-4567</li>
-                        <li><i data-lucide="map-pin" class="icon-sm"></i> 123 Joy Street</li>
-                        <li>San Francisco, CA</li>
-                    </ul>
-                </section>
+                        <article class="product-qty-row" data-product-row data-product-name="Pot Holder Rag" data-product-category="Pot Holder Rags" data-price="50" data-qty="0">
+                            <div>
+                                <p class="product-qty-name">Pot Holder Rag</p>
+                                <p class="product-qty-category">Pot Holder Rags</p>
+                            </div>
+                            <div class="product-qty-actions">
+                                <button type="button" class="product-preview-btn" data-product-img="{% static 'media/pot holder rag.png' %}" data-product-name="Pot Holder Rag" data-product-cat="Pot Holder Rags" aria-label="Preview Pot Holder Rag" style="border:none;background:none;color:#2d6e4e;cursor:pointer;padding:0 0.75rem;">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                                <div class="product-qty-controls">
+                                    <button type="button" class="product-qty-btn" data-qty-step="-1" aria-label="Decrease Pot Holder Rag quantity">-</button>
+                                    <span class="product-qty-value" data-qty-value>0</span>
+                                    <button type="button" class="product-qty-btn" data-qty-step="1" aria-label="Increase Pot Holder Rag quantity">+</button>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="product-qty-row" data-product-row data-product-name="Tote Bag" data-product-category="Tote Bags" data-price="100" data-qty="0">
+                            <div>
+                                <p class="product-qty-name">Tote Bag</p>
+                                <p class="product-qty-category">Tote Bags</p>
+                            </div>
+                            <div class="product-qty-actions">
+                                <button type="button" class="product-preview-btn" data-product-img="{% static 'media/tote bag.jpg' %}" data-product-name="Tote Bag" data-product-cat="Tote Bags" aria-label="Preview Tote Bag" style="border:none;background:none;color:#2d6e4e;cursor:pointer;padding:0 0.75rem;">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                                <div class="product-qty-controls">
+                                    <button type="button" class="product-qty-btn" data-qty-step="-1" aria-label="Decrease Tote Bag quantity">-</button>
+                                    <span class="product-qty-value" data-qty-value>0</span>
+                                    <button type="button" class="product-qty-btn" data-qty-step="1" aria-label="Increase Tote Bag quantity">+</button>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="product-qty-row" data-product-row data-product-name="Champion of Kindness Bag" data-product-category="Tote Bags" data-price="100" data-qty="0">
+                            <div>
+                                <p class="product-qty-name">Champion of Kindness Bag</p>
+                                <p class="product-qty-category">Tote Bags</p>
+                            </div>
+                            <div class="product-qty-actions">
+                                <button type="button" class="product-preview-btn" data-product-img="{% static 'media/champion of kindness bag.png' %}" data-product-name="Champion of Kindness Bag" data-product-cat="Tote Bags" aria-label="Preview Champion of Kindness Bag" style="border:none;background:none;color:#2d6e4e;cursor:pointer;padding:0 0.75rem;">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                                <div class="product-qty-controls">
+                                    <button type="button" class="product-qty-btn" data-qty-step="-1" aria-label="Decrease Champion of Kindness Bag quantity">-</button>
+                                    <span class="product-qty-value" data-qty-value>0</span>
+                                    <button type="button" class="product-qty-btn" data-qty-step="1" aria-label="Increase Champion of Kindness Bag quantity">+</button>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="product-qty-row" data-product-row data-product-name="Handknit Sweater" data-product-category="Sweaters" data-price="150" data-qty="0">
+                            <div>
+                                <p class="product-qty-name">Handknit Sweater</p>
+                                <p class="product-qty-category">Sweaters</p>
+                            </div>
+                            <div class="product-qty-actions">
+                                <button type="button" class="product-preview-btn" data-product-img="{% static 'media/handkit sweater.png' %}" data-product-name="Handknit Sweater" data-product-cat="Sweaters" aria-label="Preview Handknit Sweater" style="border:none;background:none;color:#2d6e4e;cursor:pointer;padding:0 0.75rem;">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                                <div class="product-qty-controls">
+                                    <button type="button" class="product-qty-btn" data-qty-step="-1" aria-label="Decrease Handknit Sweater quantity">-</button>
+                                    <span class="product-qty-value" data-qty-value>0</span>
+                                    <button type="button" class="product-qty-btn" data-qty-step="1" aria-label="Increase Handknit Sweater quantity">+</button>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="product-qty-row" data-product-row data-product-name="HappYness T-shirt" data-product-category="T-shirt" data-price="150" data-qty="0">
+                            <div>
+                                <p class="product-qty-name">HappYness T-shirt</p>
+                                <p class="product-qty-category">T-shirt</p>
+                            </div>
+                            <div class="product-qty-actions">
+                                <button type="button" class="product-preview-btn" data-product-img="{% static 'media/Happyness T-shirt.png' %}" data-product-name="HappYness T-shirt" data-product-cat="T-shirt" aria-label="Preview HappYness T-shirt" style="border:none;background:none;color:#2d6e4e;cursor:pointer;padding:0 0.75rem;">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                                <div class="product-qty-controls">
+                                    <button type="button" class="product-qty-btn" data-qty-step="-1" aria-label="Decrease HappYness T-shirt quantity">-</button>
+                                    <span class="product-qty-value" data-qty-value>0</span>
+                                    <button type="button" class="product-qty-btn" data-qty-step="1" aria-label="Increase HappYness T-shirt quantity">+</button>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="product-qty-row" data-product-row data-product-name="Homemade Candle" data-product-category="Homemade Candles" data-price="50" data-qty="0">
+                            <div>
+                                <p class="product-qty-name">Homemade Candle</p>
+                                <p class="product-qty-category">Homemade Candles</p>
+                            </div>
+                            <div class="product-qty-actions">
+                                <button type="button" class="product-preview-btn" data-product-img="{% static 'media/Homemade Candle.jpg' %}" data-product-name="Homemade Candle" data-product-cat="Homemade Candles" aria-label="Preview Homemade Candle" style="border:none;background:none;color:#2d6e4e;cursor:pointer;padding:0 0.75rem;">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                                <div class="product-qty-controls">
+                                    <button type="button" class="product-qty-btn" data-qty-step="-1" aria-label="Decrease Homemade Candle quantity">-</button>
+                                    <span class="product-qty-value" data-qty-value>0</span>
+                                    <button type="button" class="product-qty-btn" data-qty-step="1" aria-label="Increase Homemade Candle quantity">+</button>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="product-qty-row" data-product-row data-product-name="Handcrafted Perfume" data-product-category="Perfume" data-price="120" data-qty="0">
+                            <div>
+                                <p class="product-qty-name">Handcrafted Perfume</p>
+                                <p class="product-qty-category">Perfume</p>
+                            </div>
+                            <div class="product-qty-actions">
+                                <button type="button" class="product-preview-btn" data-product-img="{% static 'media/Handcrafted Perfume.jpg' %}" data-product-name="Handcrafted Perfume" data-product-cat="Perfume" aria-label="Preview Handcrafted Perfume" style="border:none;background:none;color:#2d6e4e;cursor:pointer;padding:0 0.75rem;">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                                <div class="product-qty-controls">
+                                    <button type="button" class="product-qty-btn" data-qty-step="-1" aria-label="Decrease Handcrafted Perfume quantity">-</button>
+                                    <span class="product-qty-value" data-qty-value>0</span>
+                                    <button type="button" class="product-qty-btn" data-qty-step="1" aria-label="Increase Handcrafted Perfume quantity">+</button>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                </section></br>
+
+                <section class="product-order-summary" id="productOrderSummary" hidden>
+                    <h3>Order Summary</h3>
+                    <div class="product-order-summary-list" id="productOrderSummaryList"></div>
+                    <div class="product-order-summary-total" id="productOrderSummaryTotal"></div>
+                </section></br>
+
+                <form class="product-inquiry-form" id="productInquiryForm" action="{% url 'submit_product_inquiry' %}" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="order_items" id="productOrderItemsPayload">
+                    <input type="hidden" name="order_total" id="productOrderTotal">
+
+                    <section class="product-payment-methods product-form-field product-form-field-full">
+                        <h3>Payment Method</h3>
+                        <input type="hidden" name="payment_method" id="paymentMethodInput" value="gcash">
+                        <div class="product-payment-options" role="radiogroup" aria-label="Payment Method">
+                            <label class="payment-option selected" data-payment="gcash">
+                                <div class="payment-radio">
+                                    <div class="payment-radio-dot"></div>
+                                </div>
+                                <div class="payment-option-text">
+                                    <span class="payment-option-title">GCash</span>
+                                    <span class="payment-option-desc">Send via mobile wallet</span>
+                                </div>
+                            </label>
+
+                            <label class="payment-option" data-payment="bank_transfer">
+                                <div class="payment-radio">
+                                    <div class="payment-radio-dot"></div>
+                                </div>
+                                <div class="payment-option-text">
+                                    <span class="payment-option-title">Bank Transfer</span>
+                                    <span class="payment-option-desc">Upload your transfer receipt</span>
+                                </div>
+                            </label>
+
+                            <label class="payment-option" data-payment="cod">
+                                <div class="payment-radio">
+                                    <div class="payment-radio-dot"></div>
+                                </div>
+                                <div class="payment-option-text">
+                                    <span class="payment-option-title">Cash on Delivery</span>
+                                    <span class="payment-option-desc">Pay when your order arrives</span>
+                                </div>
+                            </label>
+                        </div>
+                    </section>
+
+                    <div class="product-form-stage" id="productFormStage">
+                        <div class="product-form-field product-form-field-full">
+                            <label class="sr-only" for="productFullName">Full Name</label>
+                            <input id="productFullName" name="full_name" type="text" placeholder="Full Name" required>
+                        </div>
+
+                        <div class="product-form-row">
+                            <div class="product-form-field">
+                                <label class="sr-only" for="productEmail">Email Address</label>
+                                <input id="productEmail" name="email" type="email" placeholder="Email Address" required>
+                            </div>
+                            <div class="product-form-field">
+                                <label class="sr-only" for="productPhone">Phone Number</label>
+                                <div class="product-phone-row">
+                                    <div class="product-country-picker" data-product-country-picker>
+                                        <input id="productCountry" name="country_code" type="hidden" value="+63">
+                                        <button
+                                            type="button"
+                                            class="product-country-trigger"
+                                            data-country-trigger
+                                            aria-haspopup="listbox"
+                                            aria-expanded="false"
+                                        >
+                                            <span data-country-label>+63</span>
+                                            <i data-lucide="chevron-down" aria-hidden="true"></i>
+                                        </button>
+                                        <div class="product-country-menu" data-country-menu role="listbox" hidden>
+                                            <button type="button" class="product-country-option" data-country-option data-value="+1" role="option">+1</button>
+                                            <button type="button" class="product-country-option" data-country-option data-value="+44" role="option">+44</button>
+                                            <button type="button" class="product-country-option" data-country-option data-value="+63" role="option">+63</button>
+                                            <button type="button" class="product-country-option" data-country-option data-value="+81" role="option">+81</button>
+                                            <button type="button" class="product-country-option" data-country-option data-value="+86" role="option">+86</button>
+                                            <button type="button" class="product-country-option" data-country-option data-value="+91" role="option">+91</button>
+                                        </div>
+                                    </div>
+                                    <input id="productPhone" name="phone" type="tel" inputmode="numeric" pattern="[0-9]*" placeholder="Phone Number" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="product-form-field product-form-field-full">
+                            <label class="sr-only" for="productStreet">Street Address</label>
+                            <input id="productStreet" name="delivery_street" type="text" placeholder="Street Address" required>
+                        </div>
+                        <div class="product-form-row">
+                            <div class="product-form-field">
+                                <label class="sr-only" for="productCity">City / Municipality</label>
+                                <input id="productCity" name="delivery_city" type="text" placeholder="City / Municipality" required>
+                            </div>
+                            <div class="product-form-field">
+                                <label class="sr-only" for="productProvince">Province / State</label>
+                                <input id="productProvince" name="delivery_province" type="text" placeholder="Province / State" required>
+                            </div>
+                        </div>
+                        <div class="product-form-row">
+                            <div class="product-form-field">
+                                <label class="sr-only" for="productZip">ZIP Code</label>
+                                <input id="productZip" name="delivery_zip" type="text" placeholder="ZIP Code" required>
+                            </div>
+                            <div class="product-form-field">
+                                <label class="sr-only" for="productDeliveryCountry">Country</label>
+                                <input id="productDeliveryCountry" name="delivery_country" type="text" placeholder="Country" value="Philippines">
+                            </div>
+                        </div>
+
+                        <div class="product-form-field product-form-field-full">
+                            <label class="sr-only" for="productMessage">Message</label>
+                            <textarea id="productMessage" name="message" rows="5" placeholder="Message (optional)"></textarea>
+                        </div>
+
+                        <button class="btn product-form-submit" id="productInquirySubmit" type="submit">Send Inquiry</button>
+                    </div>
+                <div id="productInquiryThankYouContent" hidden></div>
+                </div>
+                </form>
             </div>
-
-            <p class="copyright">&copy; 2026 Happyness Project. Made with <i data-lucide="heart" class="icon-sm"></i> for better living.</p>
-        </div>
-    </footer>
-
-    <div
-        id="signinModal"
-        class="modal-overlay"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="signinDialogTitle"
-        aria-describedby="signinDialogDescription"
-        aria-hidden="true"
-    >
-        <section class="modal-card">
-            <button class="modal-close" id="closeSignInModal" type="button" aria-label="Close sign in dialog">
-                <i data-lucide="x"></i>
-            </button>
-
-            <article class="modal-left">
-                <h2 id="signinDialogTitle" class="dialog-title">Welcome Back!</h2>
-                <p id="signinDialogDescription" class="dialog-description">
-                    Sign in to continue your happiness journey with guided practices and community support.
-                </p>
-                <div class="modal-lines" aria-hidden="true">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-                <p class="social-title">Continue with social media</p>
-                <div class="social-login-row" aria-label="Social sign in options">
-                    <button class="social-login-btn social-facebook" type="button" aria-label="Continue with Facebook">
-                        <i data-lucide="facebook"></i>
-                    </button>
-                    <button class="social-login-btn social-google" type="button" aria-label="Continue with Google">
-                        <i data-lucide="chrome"></i>
-                    </button>
-                    <button class="social-login-btn social-youtube" type="button" aria-label="Continue with YouTube">
-                        <i data-lucide="youtube"></i>
-                    </button>
-                </div>
-            </article>
-
-            <article class="modal-right">
-                <h3>Sign In</h3>
-                <form class="modal-form" method="post" action="#">
-                    {% csrf_token %}
-                    <label class="sr-only" for="modalEmail">Email Address</label>
-                    <input id="modalEmail" name="email" type="email" placeholder="Email Address" required>
-
-                    <label class="sr-only" for="modalPassword">Password</label>
-                    <input id="modalPassword" name="password" type="password" placeholder="Password" required>
-
-                    <button class="btn modal-login-btn" type="submit">LOGIN</button>
-                </form>
-                <p class="modal-signup">new? <a href="#" id="switchToSignUpFromSignIn">Sign up</a></p>
-            </article>
         </section>
     </div>
 
-    <div
-        id="signupModal"
-        class="modal-overlay"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="signupDialogTitle"
-        aria-describedby="signupDialogDescription"
-        aria-hidden="true"
-    >
-        <section class="modal-card">
-            <button class="modal-close" id="closeSignUpModal" type="button" aria-label="Close sign up dialog">
-                <i data-lucide="x"></i>
-            </button>
-
-            <article class="modal-left modal-left-signup">
-                <h2 id="signupDialogTitle" class="dialog-title">Welcome New User!</h2>
-                <p id="signupDialogDescription" class="dialog-description">
-                    Create your account and begin your guided growth path today.
-                </p>
-                <div class="modal-lines" aria-hidden="true">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
+    <div class="product-inquiry-overlay" id="paymentModal" aria-hidden="true" hidden>
+        <section class="product-inquiry-modal" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+            <header class="product-inquiry-header" id="paymentModalHeader">
+                <div>
+                    <h2 id="paymentModalTitle">Complete Your Payment</h2>
                 </div>
-                <p class="social-title">Continue with social media</p>
-                <div class="social-login-row" aria-label="Social sign up options">
-                    <button class="social-login-btn social-facebook" type="button" aria-label="Continue with Facebook">
-                        <i data-lucide="facebook"></i>
-                    </button>
-                    <button class="social-login-btn social-x" type="button" aria-label="Continue with X">
-                        <svg class="x-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
-                        </svg>
-                    </button>
-                    <button class="social-login-btn social-youtube" type="button" aria-label="Continue with YouTube">
-                        <i data-lucide="youtube"></i>
-                    </button>
+                <button class="product-inquiry-close" id="closePaymentModal" type="button" aria-label="Close payment dialog">
+                    <i data-lucide="x"></i>
+                </button>
+            </header>
+
+            <div class="product-inquiry-scroll">
+                <div id="paymentModalCODContent" hidden>
+                    <div style="text-align: center; padding: 2rem 1rem;">
+                        <p style="color: #6b7280; font-size: 1.05rem; line-height: 1.6; margin: 0;">
+                            We'll contact you to arrange your delivery. Please prepare the exact amount.
+                        </p>
+                    </div>
                 </div>
-            </article>
 
-            <article class="modal-right">
-                <h3>Sign Up</h3>
-                <form class="modal-form" method="post" action="#">
-                    {% csrf_token %}
-                    <label class="sr-only" for="signupModalEmail">Email Address</label>
-                    <input id="signupModalEmail" name="email" type="email" placeholder="Email Address" required>
+                <div id="paymentModalGCashBankContent" hidden>
+                    <p class="payment-modal-subtitle">Scan the QR code then upload your payment screenshot</p>
+                    <div class="payment-modal-amount-pill" id="paymentModalAmountPill"></div>
 
-                    <label class="sr-only" for="signupModalPassword">Password</label>
-                    <input id="signupModalPassword" name="password" type="password" placeholder="Password" required>
+                    <div class="payment-modal-grid">
+                        <div class="payment-modal-qr-card">
+                            <span class="payment-modal-qr-label">GCASH QR</span>
+                            <div class="payment-modal-qr-image">
+                                <img id="paymentModalQr" alt="Payment QR code" />
+                            </div>
+                            <p class="payment-modal-qr-hint">Scan with your GCash app</p>
+                        </div>
 
-                    <label class="sr-only" for="signupModalConfirmPassword">Confirm Password</label>
-                    <input id="signupModalConfirmPassword" name="confirm_password" type="password" placeholder="Confirm Password" required>
+                        <section class="payment-modal-summary-card" aria-label="Order summary">
+                            <h3>Order Summary</h3>
+                            <div class="product-order-summary-list" id="paymentModalSummaryList"></div>
+                            <div class="product-order-summary-total" id="paymentModalSummaryTotal"></div>
+                        </section>
+                    </div>
 
-                    <button class="btn modal-login-btn" type="submit">REGISTER</button>
-                </form>
-                <p class="modal-signup">Already have? <a href="#" id="switchToSignInFromSignUp">Sign in</a></p>
-            </article>
+                    <form id="paymentModalForm" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="payment-modal-upload-section">
+                            <label class="payment-modal-upload-label" for="paymentScreenshotInput">Upload payment screenshot</label>
+                            <div class="payment-modal-upload-wrapper">
+                                <input id="paymentScreenshotInput" name="payment_screenshot" type="file" accept=".jpg,.jpeg,.png" required onchange="handlePaymentScreenshotSelection(event)" class="payment-modal-file-input">
+                                <div class="payment-modal-upload-zone" id="paymentUploadArea" onclick="javascript:document.getElementById('paymentScreenshotInput').click();">
+                                    <i data-lucide="upload-cloud"></i>
+                                    <div>
+                                        <p class="payment-modal-upload-title">Tap to upload screenshot</p>
+                                        <p class="payment-modal-upload-subtitle">JPG or PNG only · max 5MB</p>
+                                    </div>
+                                </div>
+                                <div id="paymentFilePreview" style="display:none; border:1.5px solid #c8e6d8; border-radius:10px; padding:14px 16px; background:#f0f7f4; align-items:center; gap:12px;">
+                                  <div style="width:40px;height:40px;background:#2d6e4e;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 2h8l4 4v12a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#fff" stroke-width="1.3"/><path d="M13 2v5h4" stroke="#fff" stroke-width="1.3"/></svg>
+                                  </div>
+                                  <div style="flex:1;">
+                                    <div id="paymentFileName" style="font-size:13px;font-weight:600;color:#111;"></div>
+                                    <div id="paymentFileSize" style="font-size:11px;color:#888;margin-top:2px;"></div>
+                                    <div style="font-size:11px;color:#2d6e4e;font-weight:500;margin-top:2px;">✓ Ready to submit</div>
+                                  </div>
+                                  <button type="button" id="removePaymentFile" style="width:28px;height:28px;border-radius:50%;background:#fff;border:1.5px solid #e0e0e0;color:#999;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">×</button>
+                                </div>
+                            </div>
+                        </div><br>
+
+                        <p class="product-payment-note" id="paymentModalNote">Upload a screenshot to enable the submit button.</p>
+                        <button class="btn payment-modal-submit-button" id="paymentModalSubmit" type="submit" disabled>
+                            Submit Payment <i data-lucide="arrow-right"></i>
+                        </button>
+                        <p class="payment-modal-deadline-note">Please pay within 24 hours to confirm your order</p>
+                    </form>
+
+                    <script>
+                        function updatePaymentUploadPreviewFile(input) {
+                            const previewName = document.getElementById("paymentFileName");
+                            const previewSize = document.getElementById("paymentFileSize");
+                            if (!previewName || !previewSize) return;
+                            const file = input.files?.[0];
+                            if (!file) {
+                                previewName.textContent = "";
+                                previewSize.textContent = "";
+                                return;
+                            }
+                            previewName.textContent = file.name;
+                            const fileSizeKb = file.size / 1024;
+                            previewSize.textContent = `${fileSizeKb.toFixed(1)} KB`;
+                        }
+
+                        function handlePaymentScreenshotSelection(event) {
+                            updatePaymentUploadPreviewFile(event.target);
+                        }
+
+                        function clearPaymentScreenshot(event) {
+                            const modal = document.getElementById("paymentModal");
+                            const fileInput = modal?.querySelector("#paymentScreenshotInput");
+                            if (!fileInput) return;
+                            fileInput.value = "";
+                            updatePaymentUploadPreviewFile(fileInput);
+                            fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+                        }
+
+                        (function () {
+                            const amountPill = document.getElementById("paymentModalAmountPill");
+                            const totalTarget = document.getElementById("paymentModalSummaryTotal");
+                            if (!amountPill || !totalTarget) return;
+                            const updateAmount = function () {
+                                const amountText = totalTarget.querySelector("strong")?.textContent || "";
+                                amountPill.textContent = amountText ? `Amount to pay: ${amountText}` : "";
+                            };
+                            updateAmount();
+                            new MutationObserver(updateAmount).observe(totalTarget, { childList: true, subtree: true });
+                        })();
+                    </script>
+                </div>
+
+                <div id="paymentModalThankYouContent" hidden>
+                    <div class="product-thankyou-card" style="margin-top: 2rem;">
+                        <p class="products-eyebrow">Order Received</p>
+                        <h3>We'll confirm your payment within 24 hours.</h3>
+                    </div>
+                </div>
+            </div>
         </section>
     </div>
 
+    <div id="productPreviewOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+      <div style="background:#fff; border-radius:12px; padding:16px; max-width:280px; width:100%; text-align:center; position:relative;">
+        <button id="closeProductPreview" style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:#f5f5f5;border:none;cursor:pointer;font-size:14px;color:#666;">×</button>
+        <img id="productPreviewImg" src="" alt="" style="width:100%;border-radius:8px;margin-bottom:10px;">
+        <div id="productPreviewName" style="font-size:14px;font-weight:600;color:#111;margin-bottom:2px;"></div>
+        <div id="productPreviewCat" style="font-size:12px;color:#2d8c5e;"></div>
+      </div>
+    </div>
+        {% endcomment %}
+
+    <div class="product-detail-overlay" id="productDetailModal" aria-hidden="true" hidden>
+        <section class="product-detail-modal" role="dialog" aria-modal="true" aria-labelledby="productDetailTitle">
+            <div class="product-detail-image-panel">
+                <img id="productDetailImage" src="" alt="">
+            </div>
+            <div class="product-detail-panel">
+                <button class="product-detail-close" id="closeProductDetailModal" type="button" aria-label="Close product details">
+                    <i data-lucide="x"></i>
+                </button>
+                <div class="product-detail-step" id="productDetailStepOne">
+                    <span class="product-category-badge" id="productDetailCategory"></span>
+                    <h2 id="productDetailTitle"></h2>
+                    <p class="product-detail-description" id="productDetailDescription"></p>
+                    <div class="product-detail-variations" id="productDetailVariations" hidden>
+                        <span class="product-detail-option-label" id="productDetailVariationLabel"></span>
+                        <div class="product-detail-option-list" id="productDetailVariationOptions"></div>
+                    </div>
+                    <div class="product-detail-quantity" aria-label="Product quantity">
+                        <button type="button" id="productDetailDecrease" aria-label="Decrease quantity">-</button>
+                        <span id="productDetailQuantity">1</span>
+                        <button type="button" id="productDetailIncrease" aria-label="Increase quantity">+</button>
+                    </div>
+                    <div class="product-detail-footer">
+                        <div>
+                            <span class="product-detail-total-label">Total</span>
+                            <strong id="productDetailTotal">₱0</strong>
+                        </div>
+                        <button class="btn product-detail-action" id="productDetailContinue" type="button">Continue</button>
+                    </div>
+                </div>
+
+                <div class="product-detail-step product-detail-step-two" id="productDetailStepTwo" hidden>
+                    <div class="product-detail-step-header">
+                        <button class="product-detail-back" id="productDetailBack" type="button" aria-label="Back to product details">
+                            <i data-lucide="arrow-left"></i>
+                        </button>
+                        <span>Step 2 of 2</span>
+                    </div>
+                    <form id="productDetailOrderForm" action="{% url 'submit_product_inquiry' %}" method="post">
+                        {% csrf_token %}
+                        <div class="product-detail-confirmed-card" id="productOrderConfirmedCard">
+                            <div>
+                                <strong id="productOrderConfirmedName">{% if request.user.is_authenticated %}{{ user_display_name|default:request.user.get_full_name|default:request.user.username }}{% else %}Name not available{% endif %}</strong>
+                                <span id="productOrderConfirmedEmail">{% if request.user.is_authenticated %}{{ request.user.email }}{% else %}Email not available{% endif %}</span>
+                                <span id="productOrderConfirmedPhone"></span>
+                                <span id="productOrderConfirmedAddress"></span>
+                            </div>
+                            <button type="button" class="product-detail-edit" id="productOrderEdit">Edit</button>
+                        </div>
+                        <p class="product-detail-submit-error" id="productDetailSubmitError" hidden>Your details are incomplete. Please complete them before placing your order.</p>
+                        <fieldset class="product-detail-payment" id="productOrderPaymentSection">
+                            <legend>Payment method</legend>
+                            <div class="product-detail-option-list" id="productOrderPaymentOptions">
+                                <button type="button" class="product-detail-option selected" data-payment-method="cod">COD</button>
+                                <button type="button" class="product-detail-option" data-payment-method="gcash">GCash</button>
+                                <button type="button" class="product-detail-option" data-payment-method="card">Card</button>
+                            </div>
+                            <input type="hidden" id="productOrderPayment" name="payment_method" value="cod">
+                            <div class="product-payment-info" id="productPaymentInfo" aria-live="polite">
+                                <div class="product-payment-panel" data-payment-panel="cod">
+                                    <p>Pay with exact cash when your order arrives. Please prepare <strong id="productCodTotal">₱0</strong>.</p>
+                                </div>
+                                <div class="product-payment-panel" data-payment-panel="gcash" hidden>
+                                    <div class="product-gcash-row">
+                                        <div class="product-gcash-qr" role="img" aria-label="QR code placeholder"><span>QR</span></div>
+                                        <div>
+                                            <strong>Scan to pay</strong>
+                                            <p>Or send manually to <strong>0917 000 0000</strong> · HappYness Project</p>
+                                        </div>
+                                    </div>
+                                    <label class="product-payment-field">
+                                        <span>GCash reference number</span>
+                                        <input id="productGcashReference" name="gcash_reference" type="text" autocomplete="off" placeholder="Enter reference number">
+                                    </label>
+                                </div>
+                                <div class="product-payment-panel" data-payment-panel="card" hidden>
+                                    <label class="product-payment-field">
+                                        <span>Card number</span>
+                                        <input id="productCardNumber" name="card_number" type="text" inputmode="numeric" autocomplete="cc-number" placeholder="Card number">
+                                    </label>
+                                    <div class="product-payment-fields-row">
+                                        <label class="product-payment-field">
+                                            <span>Expiry</span>
+                                            <input id="productCardExpiry" name="card_expiry" type="text" autocomplete="cc-exp" placeholder="MM/YY">
+                                        </label>
+                                        <label class="product-payment-field">
+                                            <span>CVV</span>
+                                            <input id="productCardCvv" name="card_cvv" type="text" inputmode="numeric" autocomplete="cc-csc" placeholder="CVV">
+                                        </label>
+                                    </div>
+                                    <label class="product-payment-field">
+                                        <span>Cardholder name</span>
+                                        <input id="productCardholderName" name="cardholder_name" type="text" autocomplete="cc-name" placeholder="Name on card">
+                                    </label>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <input type="hidden" id="productOrderItems" name="order_items">
+                        <input type="hidden" id="productOrderTotal" name="order_total">
+                        <input type="hidden" id="productOrderFullName" name="full_name">
+                        <input type="hidden" id="productOrderEmail" name="email">
+                        <input type="hidden" id="productOrderPhone" name="phone">
+                        <input type="hidden" id="productOrderAddress" name="delivery_street">
+                        <input type="hidden" id="productOrderCity" name="delivery_city">
+                        <input type="hidden" id="productOrderMessage" name="message">
+                        <input type="hidden" name="country_code" value="+63">
+                        <input type="hidden" name="delivery_province" value="Cavite">
+                        <input type="hidden" name="delivery_country" value="Philippines">
+                        <div class="product-detail-footer">
+                            <div>
+                                <span class="product-detail-total-label">Total</span>
+                                <strong id="productOrderTotalDisplay">₱0</strong>
+                            </div>
+                            <button class="btn product-detail-action" id="productOrderSubmit" type="submit">Place order</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="product-detail-success" id="productDetailSuccess" hidden>
+                    <div class="product-detail-success-animation" id="productDetailSuccessAnimation" data-lottie-path="{% static 'json/SUCCESS.json' %}" aria-hidden="true"></div>
+                    <h2>Order placed</h2>
+                    <p>Your order has been received successfully. Thank you for supporting Happy Nanays.</p>
+                    <div class="product-detail-success-summary" id="productDetailSuccessSummary"></div>
+                    <button class="btn product-detail-action product-detail-print-receipt" id="productOrderPrintReceipt" type="button"><i data-lucide="download"></i> Download Receipt</button>
+                    <button class="btn product-detail-action product-detail-success-close" id="productDetailSuccessClose" type="button">Close</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="product-edit-overlay" id="productEditModal" aria-hidden="true" hidden>
+        <section class="product-edit-modal" role="dialog" aria-modal="true" aria-labelledby="productEditTitle">
+            <header class="product-edit-header">
+                <h2 id="productEditTitle">Complete your details</h2>
+                <button class="product-detail-close" id="closeProductEditModal" type="button" aria-label="Close edit details"><i data-lucide="x"></i></button>
+            </header>
+            <div class="product-edit-fields">
+                <label><span>Name</span><input id="productEditName" class="product-edit-account-field" type="text" value="{% if request.user.is_authenticated %}{{ user_display_name|default:request.user.get_full_name|default:request.user.username }}{% endif %}"></label>
+                <label><span>Email</span><input id="productEditEmail" class="product-edit-account-field" type="email" value="{% if request.user.is_authenticated %}{{ request.user.email }}{% endif %}"></label>
+                <label><span>Phone number</span><input id="productEditPhone" type="tel" autocomplete="tel" value="{% if request.user.is_authenticated %}{{ request.user.userprofile.phone|default:'' }}{% endif %}" placeholder="09XX XXX XXXX"></label>
+                <label><span>City</span><select id="productEditCity" data-saved-city="{% if request.user.is_authenticated %}{{ request.user.userprofile.city_municipality|default:'' }}{% endif %}"><option value="">Select city</option><option>Bacoor</option><option>Dasmariñas</option><option>Imus</option><option>General Trias</option><option>Tagaytay</option><option>Trece Martires</option><option>Cavite City</option><option>Silang</option><option>Naic</option><option>Maragondon</option><option>Rosario</option><option>Tanza</option></select></label>
+                <label><span>Street address</span><input id="productEditStreet" type="text" autocomplete="street-address" value="{% if request.user.is_authenticated %}{{ request.user.userprofile.address_line|default:'' }}{% endif %}" placeholder="House number, street, barangay"></label>
+                <small class="product-detail-field-error" id="productEditError" hidden>Phone number, city, and street address are required.</small>
+            </div>
+            <button class="btn product-edit-save" id="saveProductEdit" data-save-url="{% url 'save_product_buyer_details' %}" type="button">Save details</button>
+        </section>
+    </div>
+
+    {% include 'partials/_public_footer.html' %}
+
+    {% include 'partials/_auth_modals.html' %}
+
+    <script>
+        window.isAuthenticated = {{ request.user.is_authenticated|yesno:"true,false" }};
+        window.isRegularUser = {{ is_regular_user|yesno:"true,false" }};
+    </script>
+    <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="{% static 'js/index.js' %}?v=20260307"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="{% static 'js/index.js' %}?v=20260910receiptpdf"></script>
 </body>
 </html>

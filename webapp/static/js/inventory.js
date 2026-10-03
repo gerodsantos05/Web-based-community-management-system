@@ -38,6 +38,15 @@
         return document.getElementById(id);
     }
 
+    function buildTableActionControl(rowId) {
+        var template = byId("table-actions-template");
+        if (!template) {
+            return "";
+        }
+
+        return template.innerHTML.split("__ROW_ID__").join(String(rowId || ""));
+    }
+
     function parseDate(value) {
         return value ? new Date(value + "T00:00:00") : null;
     }
@@ -68,6 +77,10 @@
         return {
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                duration: 1900,
+                easing: "easeInOutCubic"
+            },
             plugins: {
                 tooltip: {
                     backgroundColor: "rgba(5, 46, 43, 0.92)",
@@ -77,36 +90,6 @@
                 legend: { labels: { color: "#0f4e48" } }
             }
         };
-    }
-
-    function initSparkline(id, points) {
-        var canvas = byId(id);
-        if (!canvas || typeof Chart === "undefined") {
-            return;
-        }
-
-        new Chart(canvas, {
-            type: "line",
-            data: {
-                labels: ["1", "2", "3", "4", "5", "6"],
-                datasets: [{
-                    data: points,
-                    borderColor: "#0f766e",
-                    backgroundColor: "rgba(15, 118, 110, 0.12)",
-                    fill: true,
-                    pointRadius: 0,
-                    tension: 0.35,
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: false,
-                plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                scales: { x: { display: false }, y: { display: false } }
-            }
-        });
     }
 
     function getMovementData() {
@@ -120,10 +103,15 @@
         byId("kpi-low-stock").textContent = Number(summary.lowStock || 0).toLocaleString();
         byId("kpi-out-stock").textContent = Number(summary.outOfStock || 0).toLocaleString();
 
-        initSparkline("spark-value", [4200, 4380, 4550, 4720, 4870, summary.value || 5000]);
-        initSparkline("spark-items", [1300, 1340, 1385, 1430, 1470, summary.items || 1500]);
-        initSparkline("spark-low", [24, 22, 21, 20, 19, summary.lowStock || 18]);
-        initSparkline("spark-out", [7, 6, 6, 5, 5, summary.outOfStock || 4]);
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+
+        document.dispatchEvent(new CustomEvent("admin:panel-rendered", {
+            detail: {
+                panelUrl: window.location.pathname + window.location.search + window.location.hash
+            }
+        }));
     }
 
     function deriveStatusCounts(items) {
@@ -263,24 +251,6 @@
         });
     }
 
-    function renderRestock(data) {
-        var list = byId("restock-list");
-        if (!list) {
-            return;
-        }
-
-        list.innerHTML = "";
-        data.lowAlerts.forEach(function (alert) {
-            var suggested = Math.max(0, (alert.threshold * 2) - alert.qty);
-            var li = document.createElement("li");
-            li.className = "rounded-xl border border-brand-100 bg-white p-2.5";
-            li.innerHTML = ""
-                + "<p class=\"text-sm font-semibold text-ink-900\">" + alert.name + "</p>"
-                + "<p class=\"text-xs text-ink-500\">Suggested reorder: <span class=\"font-semibold text-brand-700\">" + suggested + " " + (alert.unit || "units") + "</span></p>";
-            list.appendChild(li);
-        });
-    }
-
     function renderTopConsumed(data) {
         var list = byId("top-consumed-list");
         if (!list) {
@@ -302,25 +272,6 @@
                     + "<span class=\"text-sm font-semibold text-brand-700\">" + item.issued + " issued</span>"
                 + "</div>"
                 + "<div class=\"inventory-progress\"><div class=\"inventory-progress-fill\" style=\"width:" + ratio + "%\"></div></div>";
-            list.appendChild(li);
-        });
-    }
-
-    function renderActivity(data) {
-        var list = byId("inventory-activity-list");
-        if (!list) {
-            return;
-        }
-
-        list.innerHTML = "";
-        (data.activity || []).forEach(function (entry) {
-            var li = document.createElement("li");
-            li.className = "rounded-xl border border-brand-100 bg-white p-2.5";
-            li.innerHTML = ""
-                + "<div class=\"flex items-start gap-2\">"
-                    + "<span class=\"inventory-icon-chip\" aria-hidden=\"true\">" + initials(entry.actor) + "</span>"
-                    + "<div><p class=\"text-sm text-ink-900\"><span class=\"font-semibold\">" + entry.item + "</span> " + entry.action + " <span class=\"font-semibold text-brand-700\">(" + entry.qty + ")</span></p><p class=\"text-xs text-ink-500\">" + entry.actor + " • " + entry.time + "</p></div>"
-                + "</div>";
             list.appendChild(li);
         });
     }
@@ -435,8 +386,7 @@
     }
 
     function paginate(items) {
-        var start = (state.page - 1) * state.pageSize;
-        return items.slice(start, start + state.pageSize);
+        return items;
     }
 
     function setAriaSort() {
@@ -454,49 +404,7 @@
     }
 
     function renderPagination(total) {
-        var container = byId("inventory-pagination");
-        if (!container) {
-            return;
-        }
-
-        var pages = Math.max(1, Math.ceil(total / state.pageSize));
-        if (state.page > pages) {
-            state.page = pages;
-        }
-
-        container.innerHTML = "";
-
-        var prev = document.createElement("button");
-        prev.type = "button";
-        prev.className = "inventory-focus rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-semibold text-ink-700 disabled:opacity-40";
-        prev.textContent = "Prev";
-        prev.disabled = state.page <= 1;
-        prev.addEventListener("click", function () {
-            if (state.page > 1) {
-                state.page -= 1;
-                renderTable();
-            }
-        });
-
-        var label = document.createElement("span");
-        label.className = "text-xs text-ink-500";
-        label.textContent = "Page " + state.page + " of " + pages;
-
-        var next = document.createElement("button");
-        next.type = "button";
-        next.className = "inventory-focus rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-semibold text-ink-700 disabled:opacity-40";
-        next.textContent = "Next";
-        next.disabled = state.page >= pages;
-        next.addEventListener("click", function () {
-            if (state.page < pages) {
-                state.page += 1;
-                renderTable();
-            }
-        });
-
-        container.appendChild(prev);
-        container.appendChild(label);
-        container.appendChild(next);
+        return;
     }
 
     function renderTable() {
@@ -508,12 +416,13 @@
         }
 
         var sorted = state.filteredItems.slice().sort(compareItems);
-        var pageItems = paginate(sorted);
+        var visibleItems = paginate(sorted);
 
         body.innerHTML = "";
 
-        pageItems.forEach(function (item) {
+        visibleItems.forEach(function (item) {
             var tr = document.createElement("tr");
+            var rowActionControl = buildTableActionControl(item.sku);
             tr.innerHTML = ""
                 + "<td><input type=\"checkbox\" class=\"inventory-focus inventory-row-check\" data-sku=\"" + item.sku + "\" aria-label=\"Select inventory item " + item.sku + "\" " + (state.selected.has(item.sku) ? "checked" : "") + " /></td>"
                 + "<td>" + item.sku + "</td>"
@@ -524,21 +433,13 @@
                 + "<td><span class=\"" + statusClass(item.status) + "\">" + item.status + "</span></td>"
                 + "<td>" + item.reorder + "</td>"
                 + "<td>" + item.updated + "</td>"
-                + "<td><span class=\"inventory-row-actions\">"
-                    + "<button type=\"button\" class=\"inventory-focus rounded-lg p-1.5 text-brand-700 hover:bg-brand-50\" aria-label=\"View item " + item.sku + "\"><i data-lucide=\"eye\" class=\"h-4 w-4\"></i></button>"
-                    + "<button type=\"button\" class=\"inventory-focus rounded-lg p-1.5 text-brand-700 hover:bg-brand-50\" aria-label=\"Edit item " + item.sku + "\"><i data-lucide=\"square-pen\" class=\"h-4 w-4\"></i></button>"
-                    + "<button type=\"button\" class=\"inventory-focus rounded-lg p-1.5 text-brand-700 hover:bg-brand-50\" aria-label=\"Stock in item " + item.sku + "\"><i data-lucide=\"plus\" class=\"h-4 w-4\"></i></button>"
-                    + "<button type=\"button\" class=\"inventory-focus rounded-lg p-1.5 text-brand-700 hover:bg-brand-50\" aria-label=\"Stock out item " + item.sku + "\"><i data-lucide=\"minus\" class=\"h-4 w-4\"></i></button>"
-                    + "<button type=\"button\" class=\"inventory-focus rounded-lg p-1.5 text-red-600 hover:bg-red-50\" aria-label=\"Delete item " + item.sku + "\"><i data-lucide=\"trash-2\" class=\"h-4 w-4\"></i></button>"
-                + "</span></td>";
+                + "<td class=\"text-right\" data-id=\"" + item.sku + "\">" + rowActionControl + "</td>";
 
             body.appendChild(tr);
         });
 
         count.textContent = state.filteredItems.length + " items";
-        selectAll.checked = pageItems.length > 0 && pageItems.every(function (item) { return state.selected.has(item.sku); });
-
-        renderPagination(sorted.length);
+        selectAll.checked = visibleItems.length > 0 && visibleItems.every(function (item) { return state.selected.has(item.sku); });
 
         if (window.lucide && typeof window.lucide.createIcons === "function") {
             window.lucide.createIcons();
@@ -583,9 +484,7 @@
 
         initKpis(data.summary);
         renderLowAlerts(data);
-        renderRestock(data);
         renderTopConsumed(data);
-        renderActivity(data);
         updateCharts(state.filters);
         renderTable();
         setAriaSort();
@@ -763,6 +662,44 @@
         }, { passive: true });
     }
 
+    function setInventoryCollapsibleState(card, isOpen) {
+        if (!card) {
+            return;
+        }
+
+        card.setAttribute("data-open", isOpen ? "true" : "false");
+        var trigger = card.querySelector(".inventory-collapse-trigger");
+        if (trigger) {
+            trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        }
+    }
+
+    function initInventoryCollapsibleCards() {
+        var group = document.querySelector(".inventory-collapsible-row");
+        if (!group) {
+            return;
+        }
+
+        group.querySelectorAll(".inventory-collapsible").forEach(function (card) {
+            var trigger = card.querySelector(".inventory-collapse-trigger");
+            if (!trigger) {
+                return;
+            }
+
+            trigger.addEventListener("click", function () {
+                var isOpen = card.getAttribute("data-open") === "true";
+                setInventoryCollapsibleState(card, !isOpen);
+
+                requestAnimationFrame(function () {
+                    if (card.querySelector("#category-chart") && state.charts.categories && typeof state.charts.categories.resize === "function") {
+                        state.charts.categories.resize();
+                        state.charts.categories.update("none");
+                    }
+                });
+            });
+        });
+    }
+
     function wireControls() {
         var apply = byId("inventory-apply-filters");
         if (apply) {
@@ -837,20 +774,11 @@
             });
         });
 
-        var pageSize = byId("inventory-page-size");
-        if (pageSize) {
-            pageSize.addEventListener("change", function () {
-                state.pageSize = Number(pageSize.value) || 5;
-                state.page = 1;
-                renderTable();
-            });
-        }
-
         var selectAll = byId("inventory-select-all");
         if (selectAll) {
             selectAll.addEventListener("change", function () {
-                var pageItems = paginate(state.filteredItems.slice().sort(compareItems));
-                pageItems.forEach(function (item) {
+                var visibleItems = paginate(state.filteredItems.slice().sort(compareItems));
+                visibleItems.forEach(function (item) {
                     if (selectAll.checked) {
                         state.selected.add(item.sku);
                     } else {
@@ -965,10 +893,9 @@
         fetchInventorySummary({}).then(function () {
             initKpis(state.raw.summary || {});
             renderLowAlerts(state.raw);
-            renderRestock(state.raw);
             renderTopConsumed(state.raw);
-            renderActivity(state.raw);
             lazyInitCharts();
+            initInventoryCollapsibleCards();
             wireControls();
             wirePopoverClose();
             applyFilters();

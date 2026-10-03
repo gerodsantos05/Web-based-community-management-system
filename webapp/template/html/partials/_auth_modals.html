@@ -1,0 +1,134 @@
+{% load static %}
+
+<div
+    id="signinModal"
+    class="modal-overlay{% if open_modal == 'signin' %} open{% endif %}"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="signinDialogTitle"
+    aria-describedby="signinDialogDescription"
+    aria-hidden="true"
+>
+    <section class="modal-card">
+        <button class="modal-close" id="closeSignInModal" type="button" aria-label="Close sign in dialog">
+            <i data-lucide="x"></i>
+        </button>
+
+        <article class="modal-left">
+            <h2 id="signinDialogTitle" class="dialog-title">Welcome Back!</h2>
+            <p id="signinDialogDescription" class="dialog-description">
+                Sign in to continue your happiness journey with guided practices and community support.
+            </p>
+            <img class="modal-side-image" src="{% static 'media/sign in.png' %}" alt="Sign In" />
+        </article>
+
+        <article class="modal-right">
+            <h3>Sign In</h3>
+            <form class="modal-form" method="post" action="{% url 'signin' %}">
+                {% csrf_token %}
+                <input id="signInNext" type="hidden" name="next" value="">
+
+                {% if signin_form.non_field_errors %}
+                    <div class="form-errors form-errors-block">
+                        {% for error in signin_form.non_field_errors %}
+                            <p class="form-error form-error-msg">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <label class="sr-only" for="id_username_or_email">Username or Email</label>
+                <input id="id_username_or_email" class="auth-input" type="text" name="username_or_email" value="{{ signin_form.username_or_email.value|default:'' }}" placeholder="Username or Email" required>
+                {% if signin_form.username_or_email.errors %}
+                    <p class="form-error form-error-msg">{{ signin_form.username_or_email.errors.0 }}</p>
+                {% endif %}
+
+                <label class="sr-only" for="id_password">Password</label>
+                <input id="id_password" class="auth-input" type="password" name="password" placeholder="Password" required>
+                {% if signin_form.password.errors %}
+                    <p class="form-error form-error-msg">{{ signin_form.password.errors.0 }}</p>
+                {% endif %}
+
+                <button class="btn modal-login-btn" type="submit">LOGIN</button>
+
+                <div class="auth-divider">or</div>
+                <a href="{% url 'google_login' %}" class="google-auth-btn">
+                    <img src="{% static 'media/search.png' %}" alt="Google" class="google-auth-icon" />
+                    <span class="google-auth-text">Continue with Google</span>
+                </a>
+            </form>
+            <p class="modal-signup">Don't have an account? <a href="#" id="switchToSignUpFromSignIn">Sign up</a></p>
+        </article>
+    </section>
+</div>
+
+<div
+    id="signupModal"
+    class="modal-overlay{% if open_modal == 'signup' %} open{% endif %}"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="signupDialogTitle"
+    aria-describedby="signupDialogDescription"
+    aria-hidden="true"
+>
+    <section class="modal-card">
+        <button class="modal-close" id="closeSignUpModal" type="button" aria-label="Close sign up dialog">
+            <i data-lucide="x"></i>
+        </button>
+
+        <article class="modal-left modal-left-signup">
+            <h2 id="signupDialogTitle" class="dialog-title">Welcome New User!</h2>
+            <p id="signupDialogDescription" class="dialog-description">
+                Create your account as a Regular User, then apply when you are ready to become a beneficiary or volunteer.
+            </p>
+            <img class="modal-side-image modal-side-image-signup" src="{% static 'media/sign up.png' %}" alt="Sign Up" />
+        </article>
+
+        <article class="modal-right">
+            <h3>Sign Up</h3>
+            <form class="modal-form" method="post" action="{% url 'signup' %}">
+                {% csrf_token %}
+
+                {% if signup_form.non_field_errors %}
+                    <div class="form-errors form-errors-block">
+                        {% for error in signup_form.non_field_errors %}
+                            <p class="form-error form-error-msg">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <label class="sr-only" for="id_username">Username</label>
+                <input id="id_username" class="auth-input" type="text" name="username" value="{{ signup_form.username.value|default:'' }}" placeholder="Username" required>
+                {% if signup_form.username.errors %}
+                    <p class="form-error form-error-msg">{{ signup_form.username.errors.0 }}</p>
+                {% endif %}
+
+                <label class="sr-only" for="id_email">Email</label>
+                <input id="id_email" class="auth-input" type="email" name="email" value="{{ signup_form.email.value|default:'' }}" placeholder="Email Address" required>
+                {% if signup_form.email.errors %}
+                    <p class="form-error form-error-msg">{{ signup_form.email.errors.0 }}</p>
+                {% endif %}
+
+                <label class="sr-only" for="id_password1">Password</label>
+                <input id="id_password1" class="auth-input" type="password" name="password1" placeholder="Password" required>
+                {% if signup_form.password1.errors %}
+                    <p class="form-error form-error-msg">{{ signup_form.password1.errors.0 }}</p>
+                {% endif %}
+
+                <label class="sr-only" for="id_password2">Confirm Password</label>
+                <input id="id_password2" class="auth-input" type="password" name="password2" placeholder="Confirm Password" required>
+                {% if signup_form.password2.errors %}
+                    <p class="form-error form-error-msg">{{ signup_form.password2.errors.0 }}</p>
+                {% endif %}
+
+                <button class="btn modal-login-btn" type="submit">REGISTER</button>
+
+                <div class="auth-divider">or</div>
+                <a href="{% url 'google_login' %}" class="google-auth-btn">
+                    <img src="{% static 'media/search.png' %}" alt="Google" class="google-auth-icon" />
+                    <span class="google-auth-text">Continue with Google</span>
+                </a>
+            </form>
+            <p class="modal-signup">Already have an account? <a href="#" id="switchToSignInFromSignUp">Sign in</a></p>
+        </article>
+    </section>
+</div>

@@ -1,0 +1,1392 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard | HappYness{% endblock %}
+
+{% block extra_head %}
+<style data-admin-panel-style="admin-dashboard-control-center">
+    .ops-dashboard {
+        --surface: #ffffff;
+        --surface-soft: #f5fbf8;
+        --stroke: #d6ebe1;
+        --ink-strong: #14352d;
+        --ink-soft: #55766c;
+        --brand: #119c77;
+        --brand-deep: #0b7f62;
+        display: grid;
+        gap: 1rem;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        padding: 0.2rem 0.15rem 0.25rem;
+    }
+
+    .ops-card {
+        background: var(--surface);
+        border: 1px solid var(--stroke);
+        border-radius: 16px;
+        box-shadow: 0 10px 24px rgba(6, 78, 59, 0.08);
+        padding: 0.95rem;
+    }
+
+    .ops-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(15, 23, 42, 0.25);
+        z-index: 1200;
+        padding: 1rem;
+    }
+
+    .ops-modal-backdrop.is-open {
+        display: flex;
+    }
+
+    .ops-modal {
+        width: min(980px, 100%);
+        max-height: min(88vh, 760px);
+        overflow: auto;
+        background: #ffffff;
+        border: 1px solid var(--stroke);
+        border-radius: 18px;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+        padding: 1.2rem 1.1rem 1.1rem;
+    }
+
+    .ops-modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.8rem;
+        margin-bottom: 1rem;
+    }
+
+    .ops-modal-title {
+        margin: 0;
+        font-size: clamp(1.3rem, 2vw, 2rem);
+        font-weight: 800;
+        color: #0f5d52;
+    }
+
+    .ops-modal-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--stroke);
+        background: #f6faf8;
+        color: var(--ink-strong);
+        width: 2.2rem;
+        height: 2.2rem;
+        border-radius: 999px;
+        cursor: pointer;
+        font-size: 1.15rem;
+        line-height: 1;
+        font-weight: 500;
+        transition: background-color 140ms ease, transform 140ms ease, border-color 140ms ease;
+    }
+
+    .ops-modal-close:hover,
+    .ops-modal-close:focus-visible {
+        background: #edf9f4;
+        border-color: #bfdccf;
+        transform: translateY(-1px);
+        outline: none;
+    }
+
+    .ops-modal-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .ops-modal-section {
+        background: rgba(15, 118, 110, 0.02);
+        border: 1px solid var(--stroke);
+        border-radius: 14px;
+        padding: 0.9rem;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        max-height: 460px;
+    }
+
+    .ops-modal-section h3 {
+        margin: 0 0 0.8rem;
+        font-size: 0.82rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #4d7b72;
+    }
+
+    .ops-applicant-list {
+        display: grid;
+        gap: 0.7rem;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        overflow-y: auto;
+        max-height: 360px;
+        min-height: 0;
+    }
+
+    .ops-applicant-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.7rem;
+        padding: 0.7rem 0.75rem;
+        border-radius: 12px;
+        border: 1px solid #e3efe9;
+        background: #ffffff;
+        text-decoration: none;
+        color: inherit;
+        transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+    }
+
+    .ops-applicant-item:hover,
+    .ops-applicant-item:focus-visible {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(15, 118, 110, 0.08);
+        border-color: #cfe7df;
+        outline: none;
+    }
+
+    .ops-applicant-item strong {
+        display: block;
+        color: var(--ink-strong);
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .ops-applicant-item small {
+        display: block;
+        color: var(--ink-soft);
+        font-size: 0.68rem;
+        margin-top: 0.12rem;
+    }
+
+    .ops-applicant-item .ops-applicant-tag {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0.22rem 0.5rem;
+        font-size: 0.62rem;
+        font-weight: 700;
+        white-space: nowrap;
+        background: rgba(17, 156, 119, 0.12);
+        color: #0f5f4d;
+    }
+
+    .ops-activity-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(15, 23, 42, 0.25);
+        z-index: 1200;
+        padding: 1rem;
+    }
+
+    .ops-activity-modal-backdrop.is-open {
+        display: flex;
+    }
+
+    .ops-activity-modal {
+        width: min(780px, 100%);
+        max-height: min(82vh, 720px);
+        overflow: hidden;
+        background: #ffffff;
+        border: 1px solid var(--stroke);
+        border-radius: 18px;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+        padding: 1.1rem 1rem 1rem;
+    }
+
+    .ops-activity-modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.8rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .ops-activity-modal-title {
+        margin: 0;
+        font-size: clamp(1.4rem, 2vw, 2rem);
+        font-weight: 800;
+        color: #0f5d52;
+    }
+
+    .ops-activity-modal-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.75rem;
+        max-height: min(62vh, 560px);
+        overflow-y: auto;
+    }
+
+    .ops-activity-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.8rem 0.85rem;
+        border-radius: 12px;
+        border: 1px solid #e6f0ec;
+        background: #f9fdfb;
+    }
+
+    .ops-activity-item-main {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.7rem;
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .ops-activity-item-main strong {
+        display: block;
+        color: var(--ink-strong);
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    .ops-activity-item-main small {
+        display: block;
+        color: var(--ink-soft);
+        font-size: 0.72rem;
+        margin-top: 0.18rem;
+    }
+
+    .ops-activity-item-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0.28rem 0.7rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .ops-activity-item .ops-dot {
+        margin-top: 0.18rem;
+    }
+
+    .ops-empty-list {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 0.76rem;
+        line-height: 1.5;
+    }
+
+    .ops-modal-trigger {
+        border: 0;
+        background: transparent;
+        padding: 0;
+        cursor: pointer;
+        color: inherit;
+    }
+
+    .ops-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.8rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .ops-title {
+        margin: 0;
+        font-size: 0.96rem;
+        font-weight: 700;
+        color: var(--ink-strong);
+    }
+
+    .ops-sub {
+        margin: 0.14rem 0 0;
+        font-size: 0.74rem;
+        color: var(--ink-soft);
+    }
+
+    .ops-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 100%;
+        border-radius: 999px;
+        padding: 0.24rem 0.52rem;
+        font-size: 0.66rem;
+        font-weight: 700;
+        line-height: 1.2;
+        text-align: center;
+        color: #0f5f4d;
+        background: #dcf7ed;
+        text-decoration: none;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .ops-kpi-grid {
+        display: grid;
+        gap: 0.8rem;
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+
+    .ops-kpi {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(15, 118, 110, 0.15);
+        border-radius: 1rem;
+        box-shadow: 0 8px 18px rgba(8, 83, 76, 0.08);
+        padding: 12px;
+        min-height: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .ops-kpi-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .ops-kpi-icon {
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        color: #0f766e;
+        background: rgba(16, 185, 129, 0.1);
+    }
+
+    .ops-kpi-label {
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #5f7f75;
+        font-size: 0.62rem;
+        font-weight: 700;
+    }
+
+    .ops-kpi-value {
+        margin: 0.36rem 0 0;
+        color: #16372e;
+        font-size: 1.75rem;
+        font-weight: 800;
+        line-height: 1.05;
+    }
+
+    .ops-kpi-meta {
+        margin: 0.34rem 0 0;
+        font-size: 0.72rem;
+        color: #4f766b;
+    }
+
+    .ops-main-grid {
+        display: grid;
+        gap: 0.9rem;
+        grid-template-columns: 1fr;
+    }
+
+    .ops-priority-list,
+    .ops-mini-list,
+    .ops-activity-list,
+    .ops-moderation-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.44rem;
+    }
+
+    .ops-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 0.58rem;
+        border-bottom: 1px solid #e7f2ed;
+        padding: 0.48rem 0;
+    }
+
+    .ops-row:last-child {
+        border-bottom: 0;
+    }
+
+    .ops-dot {
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 999px;
+        flex-shrink: 0;
+    }
+
+    .ops-dot-critical { background: #dc2626; }
+    .ops-dot-high { background: #ea580c; }
+    .ops-dot-medium { background: #d97706; }
+    .ops-dot-low { background: #16a34a; }
+
+    .ops-row strong {
+        display: block;
+        color: #173a31;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .ops-row small {
+        display: block;
+        color: #5e7d73;
+        font-size: 0.7rem;
+    }
+
+    .ops-badge {
+        border-radius: 999px;
+        font-size: 0.63rem;
+        font-weight: 700;
+        padding: 0.22rem 0.5rem;
+        white-space: nowrap;
+    }
+
+    .ops-badge-critical { color: #8c1d1d; background: #fee2e2; }
+    .ops-badge-high { color: #9a3412; background: #ffedd5; }
+    .ops-badge-medium { color: #92400e; background: #fef3c7; }
+    .ops-badge-low { color: #166534; background: #dcfce7; }
+
+    .ops-calendar {
+        border-radius: 16px;
+        background: var(--surface-soft);
+        padding: 0.8rem 0.8rem 0.65rem;
+    }
+
+    .ops-calendar-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.35rem;
+        margin-bottom: 0.75rem;
+        font-size: 0.72rem;
+        color: #44685e;
+        font-weight: 700;
+    }
+
+    .mini-cal-nav {
+        width: 30px;
+        height: 30px;
+        border-radius: 999px;
+        border: 1px solid #d7e9e2;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        color: #0f6e56;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .mini-calendar .ops-calendar-head span {
+        flex: 1;
+        text-align: center;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #14352d;
+    }
+
+    .ops-calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 32px);
+        justify-content: center;
+        gap: 6px;
+        padding-bottom: 0.65rem;
+    }
+
+    .mini-cal-day {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        cursor: pointer;
+        color: #666;
+        position: relative;
+        transition: background 120ms ease, color 120ms ease;
+    }
+
+    .mini-cal-day:hover { background: #f0f7f4; color: #111; }
+    .mini-cal-day.today { background: #0F6E56; color: #fff; }
+    .mini-cal-day.has-event::after {
+        content: '';
+        width: 4px;
+        height: 4px;
+        background: #0F6E56;
+        border-radius: 50%;
+        position: absolute;
+        bottom: 2px;
+    }
+    .mini-cal-day.today.has-event::after { background: #fff; }
+    .mini-cal-day.selected { background: #E1F5EE; color: #085041; font-weight: 500; }
+
+    .ops-calendar .activity-schedule-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 0.5px solid #e0e0e0;
+    }
+
+    .ops-calendar .activity-schedule-item:last-child { border-bottom: 0; }
+
+    .ops-calendar .activity-date-box {
+        background: #f8faf9;
+        border-radius: 8px;
+        padding: 6px 10px;
+        min-width: 46px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .ops-calendar .activity-date-box strong {
+        display: block;
+        font-size: 18px;
+        font-weight: 500;
+        color: #111;
+        line-height: 1;
+    }
+
+    .ops-calendar .activity-date-box span {
+        display: block;
+        margin-top: 2px;
+        font-size: 10px;
+        color: #888;
+        text-transform: uppercase;
+    }
+
+    .ops-calendar .activity-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .ops-calendar .activity-title {
+        margin: 0 0 3px;
+        font-size: 13px;
+        font-weight: 500;
+        color: #111;
+    }
+
+    .ops-calendar .activity-meta {
+        font-size: 11px;
+        color: #888;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .ops-calendar .activity-status {
+        font-size: 10px;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 20px;
+        flex-shrink: 0;
+    }
+
+    .ops-calendar .activity-status.active { background: #E1F5EE; color: #085041; }
+    .ops-calendar .activity-status.draft { background: #FAEEDA; color: #633806; }
+    .ops-calendar .activity-status.cancelled { background: #FCEBEB; color: #501313; }
+
+    .ops-calendar .activity-empty {
+        font-size: 13px;
+        color: #888;
+        padding: 12px 0;
+    }
+
+    .ops-analytics-grid,
+    .ops-lower-grid {
+        display: grid;
+        gap: 0.9rem;
+        grid-template-columns: 1fr;
+    }
+
+    .ops-chart-wrap {
+        height: 220px;
+    }
+
+    .ops-quick-grid {
+        display: grid;
+        gap: 0.5rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .ops-quick-btn {
+        border: 1px solid #d7e9e2;
+        border-radius: 11px;
+        background: #ffffff;
+        color: #195144;
+        min-height: 58px;
+        padding: 0.5rem 0.45rem;
+        font-size: 0.69rem;
+        font-weight: 700;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.24rem;
+        text-align: center;
+        line-height: 1.2;
+        cursor: pointer;
+        transition: transform 140ms ease, background-color 140ms ease;
+    }
+
+    .ops-quick-btn:hover {
+        transform: translateY(-1px);
+        background: #f2fbf7;
+    }
+
+    .ops-quick-btn span {
+        display: block;
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .ops-quick-btn i {
+        width: 0.82rem;
+        height: 0.82rem;
+        flex-shrink: 0;
+    }
+
+    @media (max-width: 760px) {
+        .ops-modal-backdrop {
+            align-items: flex-start;
+            padding-top: 100px;
+        }
+
+        .ops-modal {
+            width: min(100%, 540px);
+            max-height: min(76vh, 760px);
+            padding: 0.9rem 0.8rem 0.8rem;
+            overflow-y: auto;
+        }
+
+        .ops-modal-grid {
+            grid-template-columns: 1fr;
+            gap: 0.9rem;
+        }
+
+        .ops-modal-section {
+            max-height: 320px;
+            min-height: 220px;
+            padding: 0.75rem 0.75rem 0.8rem;
+            background: rgba(15, 118, 110, 0.016);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ops-modal-section h3 {
+            margin-bottom: 0.65rem;
+            font-size: 0.74rem;
+            letter-spacing: 0.11em;
+        }
+
+        .ops-applicant-list {
+            flex: 1 1 auto;
+            gap: 0.75rem;
+            max-height: 230px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 0.18rem;
+        }
+
+        .ops-applicant-item {
+            min-height: 88px;
+            padding: 0.8rem 0.8rem;
+            border-width: 1px;
+        }
+
+        .ops-applicant-item strong {
+            font-size: 1.02rem;
+            line-height: 1.2;
+        }
+
+        .ops-applicant-item small {
+            font-size: 0.72rem;
+            line-height: 1.4;
+        }
+
+        .ops-applicant-item .ops-applicant-tag {
+            font-size: 0.7rem;
+            padding: 0.32rem 0.72rem;
+        }
+    }
+
+    @media (max-width: 560px) {
+        .ops-quick-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 420px) {
+        .ops-quick-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .ops-chip {
+            font-size: 0.62rem;
+            padding: 0.2rem 0.45rem;
+        }
+    }
+
+    @media (min-width: 760px) {
+        .ops-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (min-width: 820px) {
+        .ops-main-grid { grid-template-columns: 1.2fr 1fr; }
+        .ops-analytics-grid { grid-template-columns: 1fr 1fr; }
+        .ops-lower-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (min-width: 1240px) {
+        .ops-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .ops-main-grid { grid-template-columns: 1.45fr 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{{ pending_role_applications|json_script:"pending-role-applications-data" }}
+<div class="ops-dashboard">
+    <section class="ops-kpi-grid" aria-label="Performance indicators">
+        <article class="admin-kpi-card ops-kpi" aria-labelledby="kpi-active-volunteers">
+            <div class="admin-kpi-head ops-kpi-head">
+                <p id="kpi-active-volunteers" class="admin-kpi-label ops-kpi-label text-xs uppercase tracking-wide text-ink-500">Active Volunteers</p>
+                <span class="admin-kpi-icon ops-kpi-icon" aria-hidden="true"><i data-lucide="user-check"></i></span>
+            </div>
+            <p class="admin-kpi-value ops-kpi-value text-3xl font-bold text-ink-900" data-kpi-value="true">{{ active_volunteers_count|default:0 }}</p>
+            <p class="ops-kpi-meta">Live count from volunteer profiles</p>
+        </article>
+
+        <article class="admin-kpi-card ops-kpi" aria-labelledby="kpi-donations-month">
+            <div class="admin-kpi-head ops-kpi-head">
+                <p id="kpi-donations-month" class="admin-kpi-label ops-kpi-label text-xs uppercase tracking-wide text-ink-500">Donations This Month</p>
+                <span class="admin-kpi-icon ops-kpi-icon" aria-hidden="true"><i data-lucide="hand-coins"></i></span>
+            </div>
+            <p class="admin-kpi-value ops-kpi-value text-3xl font-bold text-ink-900" data-kpi-value="true">{{ donations_this_month_amount|default:0 }}</p>
+            <p class="ops-kpi-meta">PHP total confirmed this month</p>
+        </article>
+
+        <article class="admin-kpi-card ops-kpi" aria-labelledby="kpi-low-stock-items">
+            <div class="admin-kpi-head ops-kpi-head">
+                <p id="kpi-low-stock-items" class="admin-kpi-label ops-kpi-label text-xs uppercase tracking-wide text-ink-500">Low Stock Items</p>
+                <span class="admin-kpi-icon ops-kpi-icon" aria-hidden="true"><i data-lucide="triangle-alert"></i></span>
+            </div>
+            <p class="admin-kpi-value ops-kpi-value text-3xl font-bold text-ink-900" data-kpi-value="true">{{ low_stock_items_count|default:0 }}</p>
+            <p class="ops-kpi-meta">{{ low_stock_critical_count|default:0 }} critical restocks needed</p>
+        </article>
+
+        <article class="admin-kpi-card ops-kpi" aria-labelledby="kpi-pending-approvals">
+            <div class="admin-kpi-head ops-kpi-head">
+                <p id="kpi-pending-approvals" class="admin-kpi-label ops-kpi-label text-xs uppercase tracking-wide text-ink-500">Pending Approvals</p>
+                <span class="admin-kpi-icon ops-kpi-icon" aria-hidden="true"><i data-lucide="clipboard-check"></i></span>
+            </div>
+            <p class="admin-kpi-value ops-kpi-value text-3xl font-bold text-ink-900" data-kpi-value="true">{{ pending_application_count|default:0 }}</p>
+            <p class="ops-kpi-meta">{{ pending_beneficiary_count|default:0 }} beneficiary and {{ pending_volunteer_count|default:0 }} volunteer requests</p>
+        </article>
+    </section>
+
+    <section class="ops-main-grid" aria-label="Priority and schedule">
+        <article class="ops-card" aria-labelledby="today-priority-title">
+            <div class="ops-head">
+                <div>
+                    <h2 id="today-priority-title" class="ops-title">Today's Priorities</h2>
+                    <p class="ops-sub">Live queue ranked by urgency</p>
+                </div>
+                <span class="ops-chip">{{ priority_rows|length }} active</span>
+            </div>
+            <ul class="ops-priority-list">
+                {% if priority_rows %}
+                    {% for row in priority_rows %}
+                        <li class="ops-row">
+                            <span class="ops-dot {{ row.dot_class|default:'ops-dot-low' }}"></span>
+                            <div>
+                                <strong>{{ row.title }}</strong>
+                                <small>{{ row.detail }}</small>
+                            </div>
+                            <span class="ops-badge {{ row.badge_class|default:'ops-badge-low' }}">{{ row.priority }}</span>
+                        </li>
+                    {% endfor %}
+                {% else %}
+                    <li class="ops-row"><span class="ops-dot ops-dot-low"></span><div><strong>No active priorities</strong><small>System is clear right now.</small></div><span class="ops-badge ops-badge-low">Clear</span></li>
+                {% endif %}
+            </ul>
+        </article>
+
+        <article class="ops-card" aria-labelledby="schedule-title">
+            <div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;padding:1.25rem;">
+
+                <!-- Header -->
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+                    <div>
+                        <div style="font-size:15px;font-weight:500;color:#111;">Upcoming schedule</div>
+                        <div style="font-size:12px;color:#888;margin-top:2px;">Click a date to filter activities</div>
+                    </div>
+                    <span style="font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;background:#E1F5EE;color:#085041;">This week</span>
+                </div>
+
+                <!-- Mini calendar -->
+                <div style="background:#f8faf9;border-radius:10px;padding:12px;margin-bottom:14px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <button id="prevMonth" style="width:26px;height:26px;border-radius:50%;border:0.5px solid #e0e0e0;background:#fff;cursor:pointer;font-size:14px;color:#666;">‹</button>
+                        <span id="calMonthLabel" style="font-size:13px;font-weight:500;color:#111;"></span>
+                        <button id="nextMonth" style="width:26px;height:26px;border-radius:50%;border:0.5px solid #e0e0e0;background:#fff;cursor:pointer;font-size:14px;color:#666;">›</button>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;" id="calGrid"></div>
+                </div>
+
+                <!-- Activity list -->
+                <div id="scheduleList"></div>
+
+                <!-- View all link -->
+                <a href="{% url 'activities' %}" style="display:flex;align-items:center;justify-content:center;gap:4px;font-size:12px;color:#0F6E56;font-weight:500;margin-top:12px;padding-top:12px;border-top:0.5px solid #e0e0e0;text-decoration:none;">
+                    <i data-lucide="calendar" style="width:13px;height:13px;"></i>
+                    View all in Activities tab
+                    <i data-lucide="arrow-right" style="width:12px;height:12px;"></i>
+                </a>
+
+            </div>
+        </article>
+    </section>
+
+    <section class="ops-analytics-grid" aria-label="Analytics trends">
+        <article class="ops-card">
+            <div class="ops-head"><div><h2 class="ops-title">Donations Trend</h2><p class="ops-sub">Weekly donation momentum</p></div></div>
+            <div class="ops-chart-wrap"><canvas id="donations-trend-chart" aria-label="Donations trend chart"></canvas></div>
+        </article>
+
+        <article class="ops-card">
+            <div class="ops-head"><div><h2 class="ops-title">Volunteer Participation Trend</h2><p class="ops-sub">Attendance and assignment completion</p></div></div>
+            <div class="ops-chart-wrap"><canvas id="volunteer-trend-chart" aria-label="Volunteer trend chart"></canvas></div>
+        </article>
+    </section>
+
+    <section class="ops-lower-grid" aria-label="Operational panels">
+        <article class="ops-card">
+            <div class="ops-head"><h2 class="ops-title">Inventory Status</h2><a href="{% url 'inventory' %}" class="ops-chip">View all</a></div>
+            <ul class="ops-mini-list">
+                {% if inventory_rows %}
+                    {% for item in inventory_rows %}
+                        <li class="ops-row">
+                            <span class="ops-dot {{ item.dot_class|default:'ops-dot-low' }}"></span>
+                            <div>
+                                <strong>{{ item.name }}</strong>
+                                <small>{{ item.stock }} units left</small>
+                            </div>
+                            <span class="ops-badge {{ item.badge_class|default:'ops-badge-low' }}">{{ item.status_label }}</span>
+                        </li>
+                    {% endfor %}
+                {% else %}
+                    <li class="ops-row"><span class="ops-dot ops-dot-low"></span><div><strong>No inventory items</strong><small>Stock list is empty.</small></div><span class="ops-badge ops-badge-low">OK</span></li>
+                {% endif %}
+            </ul>
+        </article>
+
+        <article class="ops-card">
+            <div class="ops-head">
+                <h2 class="ops-title">Approval Queue</h2>
+                <button type="button" class="ops-chip ops-modal-trigger" data-open-approval-modal="true">Open queue</button>
+            </div>
+            <ul class="ops-mini-list">
+                {% if pending_role_applications %}
+                    {% for application in pending_role_applications %}
+                        <li class="ops-row">
+                            <span class="ops-dot {% if application.role == 'beneficiary' %}ops-dot-medium{% else %}ops-dot-high{% endif %}"></span>
+                            <div>
+                                <strong>{{ application.name }}</strong>
+                                <small>{{ application.role|capfirst }} application · Submitted {{ application.submittedAt }}</small>
+                            </div>
+                            <span class="ops-badge {% if application.role == 'beneficiary' %}ops-badge-medium{% else %}ops-badge-high{% endif %}">Pending</span>
+                        </li>
+                    {% endfor %}
+                {% else %}
+                    <li class="ops-row"><span class="ops-dot ops-dot-low"></span><div><strong>No pending role applications</strong><small>New beneficiary and volunteer applications will appear here.</small></div><span class="ops-badge ops-badge-low">Clear</span></li>
+                {% endif %}
+            </ul>
+        </article>
+
+    </section>
+
+    <section class="ops-card" aria-label="Quick actions">
+        <div class="ops-head"><div><h2 class="ops-title">Quick Actions</h2><p class="ops-sub">Launch frequent admin tasks instantly</p></div></div>
+        <div class="ops-quick-grid">
+            <button class="ops-quick-btn" type="button" data-open-add-activity="true"><i data-lucide="calendar-plus"></i><span>Add Activity</span></button>
+            <button class="ops-quick-btn" type="button" data-open-add-item="true"><i data-lucide="package-plus"></i><span>Add Item</span></button>
+            <button class="ops-quick-btn" type="button" data-open-add-beneficiary="true"><i data-lucide="user-plus"></i><span>Add Beneficiary</span></button>
+            <button class="ops-quick-btn" type="button" data-open-add-volunteer="true"><i data-lucide="user-plus"></i><span>Add Volunteer</span></button>
+            <button class="ops-quick-btn" type="button" data-open-post-announcement="true"><i data-lucide="megaphone"></i><span>Post Announcement</span></button>
+            <button class="ops-quick-btn" type="button" data-open-certificate="true"><i data-lucide="award"></i><span>Generate Certificate</span></button>
+        </div>
+    </section>
+</div>
+
+<div id="approval-queue-modal" class="ops-modal-backdrop" aria-hidden="true">
+    <div class="ops-modal" role="dialog" aria-modal="true" aria-labelledby="approval-queue-modal-title">
+        <div class="ops-modal-head">
+            <h2 id="approval-queue-modal-title" class="ops-modal-title">Approval Queue</h2>
+            <button type="button" class="ops-modal-close" data-close-approval-modal="true" aria-label="Close approval queue">×</button>
+        </div>
+
+        <div class="ops-modal-grid">
+            <section class="ops-modal-section" aria-labelledby="approval-beneficiary-list-title">
+                <h3 id="approval-beneficiary-list-title">Beneficiary applicants</h3>
+                <ul class="ops-applicant-list">
+                    {% if pending_beneficiary_applications %}
+                        {% for application in pending_beneficiary_applications %}
+                            <li>
+                                <a class="ops-applicant-item" href="{% url 'beneficiaries' %}" title="Review beneficiary application for {{ application.name }}">
+                                    <div>
+                                        <strong>{{ application.name }}</strong>
+                                        <small>Submitted {{ application.submittedAt }}</small>
+                                    </div>
+                                    <span class="ops-applicant-tag">Pending</span>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="ops-empty-list">No beneficiary applications waiting for review.</li>
+                    {% endif %}
+                </ul>
+            </section>
+
+            <section class="ops-modal-section" aria-labelledby="approval-volunteer-list-title">
+                <h3 id="approval-volunteer-list-title">Volunteer applicants</h3>
+                <ul class="ops-applicant-list">
+                    {% if pending_volunteer_applications %}
+                        {% for application in pending_volunteer_applications %}
+                            <li>
+                                <a class="ops-applicant-item" href="{% url 'volunteers' %}" title="Review volunteer application for {{ application.name }}">
+                                    <div>
+                                        <strong>{{ application.name }}</strong>
+                                        <small>Submitted {{ application.submittedAt }}</small>
+                                    </div>
+                                    <span class="ops-applicant-tag">Pending</span>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="ops-empty-list">No volunteer applications waiting for review.</li>
+                    {% endif %}
+                </ul>
+            </section>
+        </div>
+    </div>
+</div>
+
+<div id="activity-feed-modal" class="ops-activity-modal-backdrop" aria-hidden="true">
+    <div class="ops-activity-modal" role="dialog" aria-modal="true" aria-labelledby="activity-feed-modal-title">
+        <div class="ops-activity-modal-head">
+            <h2 id="activity-feed-modal-title" class="ops-activity-modal-title">Recent Activity Feed</h2>
+            <button type="button" class="ops-modal-close" data-close-activity-modal="true" aria-label="Close recent activity feed">×</button>
+        </div>
+
+        <ul class="ops-activity-modal-list">
+            {% if recent_activity_rows %}
+                {% for row in recent_activity_rows %}
+                    <li class="ops-activity-item">
+                        <div class="ops-activity-item-main">
+                            <span class="ops-dot {{ row.dot_class|default:'ops-dot-low' }}"></span>
+                            <div>
+                                <strong>{{ row.title }}</strong>
+                                <small>{{ row.detail }}</small>
+                            </div>
+                        </div>
+                        <span class="ops-activity-item-badge {{ row.badge_class|default:'ops-badge-low' }}">{{ row.badge_label|default:'Updated' }}</span>
+                    </li>
+                {% endfor %}
+            {% else %}
+                <li class="ops-empty-list">No recent activity available right now.</li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+
+{% include "admin_dashboard/activity_modal.html" %}
+{% include "admin_dashboard/beneficiary_modal.html" %}
+{% include "admin_dashboard/community_announcement_modal.html" %}
+{% include "admin_dashboard/certificate_modal.html" %}
+{% include "admin_dashboard/volunteer_add_modal.html" %}
+{% include "admin_dashboard/inventory_add_modal.html" %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    "use strict";
+
+    var upcomingActivities = [];
+    try {
+        upcomingActivities = JSON.parse('{{ upcoming_activities_json|safe }}');
+    } catch (error) {
+        upcomingActivities = [];
+    }
+
+    const activities = upcomingActivities;
+
+    let currentDate = new Date();
+    let selectedDay = null;
+
+    function renderCalendar() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      document.getElementById('calMonthLabel').textContent = monthNames[month] + ' ' + year;
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const today = new Date();
+      const activityDays = upcomingActivities.filter(a => a.month === month+1 && a.year === year).map(a => a.day);
+
+      const heads = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+      let html = heads.map(h => `<div style="font-size:10px;color:#888;text-align:center;padding:4px 0;font-weight:500;">${h}</div>`).join('');
+
+      for(let i=0;i<firstDay;i++) html += `<div></div>`;
+
+      for(let d=1;d<=daysInMonth;d++){
+        const isToday = d===today.getDate() && month===today.getMonth() && year===today.getFullYear();
+        const hasEvent = activityDays.includes(d);
+        const isSelected = selectedDay === d;
+        let bg = isToday ? '#0F6E56' : isSelected ? '#E1F5EE' : 'transparent';
+        let color = isToday ? '#fff' : isSelected ? '#085041' : '#666';
+        let dot = hasEvent ? `<span style="width:4px;height:4px;background:${isToday?'#9FE1CB':'#0F6E56'};border-radius:50%;display:block;margin:1px auto 0;"></span>` : '';
+        html += `<div onclick="filterDay(${d})" style="border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 0;cursor:pointer;background:${bg};color:${color};font-size:12px;transition:all .1s;" onmouseover="if(!${isToday}&&!${isSelected})this.style.background='#f0f7f4'" onmouseout="if(!${isToday}&&!${isSelected})this.style.background='transparent'">${d}${dot}</div>`;
+      }
+
+      document.getElementById('calGrid').innerHTML = html;
+    }
+
+    function filterDay(day) {
+      selectedDay = selectedDay === day ? null : day;
+      renderCalendar();
+      renderList();
+    }
+    window.filterDay = filterDay;
+
+    function renderList() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
+      let filtered = selectedDay
+        ? upcomingActivities.filter(a => a.day===selectedDay && a.month===month && a.year===year)
+        : upcomingActivities.slice(0, 5);
+
+      if(filtered.length === 0) {
+        document.getElementById('scheduleList').innerHTML = '<p style="font-size:13px;color:#888;padding:8px 0;">No activities on this day.</p>';
+        return;
+      }
+
+      const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      document.getElementById('scheduleList').innerHTML = filtered.map(a => {
+        const badgeBg = a.status==='active' ? '#E1F5EE' : a.status==='draft' ? '#FAEEDA' : '#FCEBEB';
+        const badgeColor = a.status==='active' ? '#085041' : a.status==='draft' ? '#633806' : '#501313';
+        const label = a.status.charAt(0).toUpperCase() + a.status.slice(1);
+        return `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid #e0e0e0;">
+          <div style="background:#f8faf9;border-radius:6px;padding:5px 8px;text-align:center;flex-shrink:0;min-width:40px;">
+            <div style="font-size:16px;font-weight:500;color:#111;line-height:1.1;">${a.day}</div>
+            <div style="font-size:9px;color:#888;text-transform:uppercase;margin-top:1px;">${monthNames[a.month-1]}</div>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:500;color:#111;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.title}</div>
+            <div style="font-size:11px;color:#888;display:flex;align-items:center;gap:4px;">
+              <span>${a.time}</span>
+              <span style="width:3px;height:3px;border-radius:50%;background:#ccc;display:inline-block;"></span>
+              <span>${a.location}</span>
+            </div>
+          </div>
+          <span style="font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;background:${badgeBg};color:${badgeColor};flex-shrink:0;">${label}</span>
+        </div>`;
+      }).join('');
+    }
+    
+    // make mini calendar renderer available to any DOMContentLoaded handlers
+    function renderMiniCalendar() {
+        var grid = document.getElementById("ops-calendar-grid");
+        if (!grid) return;
+
+        var now = new Date();
+        var year = now.getFullYear();
+        var month = now.getMonth();
+        var today = now.getDate();
+
+        var first = new Date(year, month, 1);
+        var startDay = first.getDay();
+        var daysInMonth = new Date(year, month + 1, 0).getDate();
+        var prevDays = new Date(year, month, 0).getDate();
+
+        var cells = [];
+        for (var i = 0; i < startDay; i += 1) {
+            cells.push({ day: prevDays - startDay + i + 1, muted: true });
+        }
+        for (var d = 1; d <= daysInMonth; d += 1) {
+            cells.push({ day: d, muted: false, today: d === today });
+        }
+        while (cells.length % 7 !== 0) {
+            cells.push({ day: cells.length % 7 + 1, muted: true });
+        }
+
+        grid.innerHTML = "";
+        cells.forEach(function (cell) {
+            var span = document.createElement("span");
+            span.className = "ops-day" + (cell.muted ? " is-muted" : "") + (cell.today ? " is-today" : "");
+            span.textContent = String(cell.day);
+            grid.appendChild(span);
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById('prevMonth').onclick = function() {
+          currentDate.setMonth(currentDate.getMonth()-1);
+          selectedDay = null;
+          renderCalendar();
+          renderList();
+        };
+        document.getElementById('nextMonth').onclick = function() {
+          currentDate.setMonth(currentDate.getMonth()+1);
+          selectedDay = null;
+          renderCalendar();
+          renderList();
+        };
+        renderCalendar();
+        renderList();
+        renderMiniCalendar();
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+    });
+
+    function getSafeSeries(values) {
+        if (!Array.isArray(values) || !values.length) {
+            return [0, 0, 0, 0, 0, 0, 0, 0];
+        }
+        return values.map(function (value) {
+            var numeric = Number(value);
+            return Number.isFinite(numeric) ? numeric : 0;
+        });
+    }
+
+    function buildTrend(canvasId, color, labels, data, options) {
+        if (typeof Chart === "undefined") return;
+        var ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+
+        var series = getSafeSeries(data);
+        var minValue = Math.min.apply(null, series);
+        var maxValue = Math.max.apply(null, series);
+        var range = maxValue - minValue || 1;
+        var paddedMin = Math.max(0, minValue - range * 0.15);
+        var paddedMax = maxValue + range * 0.15;
+
+        if (options && options.isCurrency) {
+            paddedMin = 0;
+            paddedMax = Math.max(1, maxValue * 1.25);
+        }
+
+        var stepSize = 1;
+        if (options && options.isCurrency) {
+            var currencyRange = paddedMax - paddedMin;
+            if (currencyRange >= 10000) stepSize = 5000;
+            else if (currencyRange >= 5000) stepSize = 2000;
+            else if (currencyRange >= 1000) stepSize = 500;
+            else if (currencyRange >= 200) stepSize = 100;
+            else stepSize = 50;
+        } else {
+            // Round up paddedMax to nearest integer for clean volunteer count labels
+            paddedMax = Math.ceil(paddedMax);
+            var countRange = paddedMax - paddedMin;
+            if (countRange > 10) stepSize = Math.ceil(countRange / 5);
+            else if (countRange > 5) stepSize = 2;
+            else stepSize = 1;
+        }
+
+        new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: labels || ["Jul 11", "Jul 18", "Jul 25", "Aug 01", "Aug 08", "Aug 15", "Aug 22", "Aug 29"],
+                datasets: [{
+                    data: series,
+                    borderColor: color,
+                    backgroundColor: color === "#119c77" ? "rgba(17, 156, 119, 0.15)" : "rgba(15, 122, 149, 0.14)",
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: "#5b7b71", font: { size: 11 } }, grid: { color: "rgba(221,236,229,0.7)", drawBorder: false } },
+                    y: {
+                        beginAtZero: true,
+                        min: paddedMin,
+                        max: paddedMax,
+                        ticks: {
+                            color: "#5b7b71",
+                            font: { size: 11 },
+                            stepSize: stepSize,
+                            callback: function (value) {
+                                if (options && options.isCurrency) {
+                                    return "₱" + Number(value).toLocaleString("en-US", { maximumFractionDigits: 0 });
+                                }
+                                return Number(value).toLocaleString("en-US", { maximumFractionDigits: 0 });
+                            }
+                        },
+                        grid: { color: "rgba(221,236,229,0.7)", drawBorder: false }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderModerationRows(rows) {
+        var list = document.getElementById('admin-moderation-list');
+        if (!list) return;
+
+        if (!rows || !rows.length) {
+            list.innerHTML = '<li class="ops-row"><span class="ops-dot ops-dot-low"></span><div><strong>No moderation items</strong><small>Community activity is clear right now.</small></div><span class="ops-badge ops-badge-low">Clear</span></li>';
+            return;
+        }
+
+        list.innerHTML = rows.map(function(row) {
+            var dotClass = row.dot_class || 'ops-dot-low';
+            var badgeClass = row.badge_class || 'ops-badge-low';
+            var badgeLabel = row.badge_label || 'Review';
+            var detail = row.detail || 'Needs moderator review';
+            var title = row.title || 'Community moderation update';
+            return '<li class="ops-row"><span class="ops-dot ' + dotClass + '"></span><div><strong>' + title + '</strong><small>' + detail + '</small></div><span class="ops-badge ' + badgeClass + '">' + badgeLabel + '</span></li>';
+        }).join('');
+    }
+
+    function refreshModerationQueue() {
+        var card = document.querySelector('[data-moderation-poll-url]');
+        if (!card) return;
+        var url = card.getAttribute('data-moderation-poll-url');
+        if (!url) return;
+
+        fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (response) {
+                if (!response.ok) throw new Error('Failed to load moderation queue');
+                return response.json();
+            })
+            .then(function (payload) {
+                if (payload && Array.isArray(payload.rows)) {
+                    renderModerationRows(payload.rows);
+                }
+            })
+            .catch(function () {
+                // Keep the current list if the poll fails so the page stays stable.
+            });
+    }
+
+    function bindApprovalQueueModal() {
+        var trigger = document.querySelector('[data-open-approval-modal="true"]');
+        var modal = document.getElementById('approval-queue-modal');
+        if (!trigger || !modal) return;
+
+        function openModal() {
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeModal() {
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        trigger.addEventListener('click', openModal);
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+
+        document.querySelector('[data-close-approval-modal="true"]').addEventListener('click', closeModal);
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+                closeModal();
+            }
+        });
+    }
+
+    function bindActivityFeedModal() {
+        var trigger = document.querySelector('[data-open-activity-modal="true"]');
+        var modal = document.getElementById('activity-feed-modal');
+        if (!trigger || !modal) return;
+
+        function openModal() {
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeModal() {
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        trigger.addEventListener('click', openModal);
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+
+        var closeButton = document.querySelector('[data-close-activity-modal="true"]');
+        if (closeButton) {
+            closeButton.addEventListener('click', closeModal);
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+                closeModal();
+            }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        renderMiniCalendar();
+        bindApprovalQueueModal();
+        bindActivityFeedModal();
+        const donationLabels = {{ chart_data.donations|safe }};
+        const volunteerLabels = {{ chart_data.volunteers|safe }};
+        const donationValues = getSafeSeries({{ chart_data.donation_values|safe }});
+        const volunteerValues = getSafeSeries({{ chart_data.volunteer_values|safe }});
+        buildTrend("donations-trend-chart", "#119c77", donationLabels, donationValues, { isCurrency: true });
+        buildTrend("volunteer-trend-chart", "#0f7a95", volunteerLabels, volunteerValues, { isCurrency: false });
+        refreshModerationQueue();
+        window.setInterval(refreshModerationQueue, 20000);
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,322 @@
+{# Admins scripts removed #}
+    .admins-log-item small { display: block; color: #5e7d73; font-size: 0.69rem; }
+    .admins-log-badge { border-radius: 999px; font-size: 0.64rem; font-weight: 700; padding: 0.18rem 0.46rem; white-space: nowrap; }
+    .admins-log-create { color: #14532d; background: #dcfce7; }
+    .admins-log-update { color: #115e59; background: #ccfbf1; }
+    .admins-log-approve { color: #7c2d12; background: #ffedd5; }
+    .admins-log-settings { color: #5b21b6; background: #ede9fe; }
+
+    @media (min-width: 760px) {
+        .admins-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .admins-filters { grid-template-columns: 1fr 1fr; align-items: end; }
+    }
+
+    @media (min-width: 1024px) {
+        .admins-layout { grid-template-columns: 1.72fr 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="admins-page" class="admins-page">
+    <section class="admins-summary" aria-label="Admin summary">
+        <article class="admins-card admins-kpi" aria-labelledby="kpi-total-admins">
+            <div class="admins-kpi-head"><p id="kpi-total-admins" class="admins-kpi-label">Total Admins</p><span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="users"></i></span></div>
+            <p id="kpi-total-admins-value" class="admins-kpi-value" data-kpi-value="true">0</p>
+            <p class="admins-kpi-meta">All admin accounts</p>
+        </article>
+        <article class="admins-card admins-kpi" aria-labelledby="kpi-active-admins">
+            <div class="admins-kpi-head"><p id="kpi-active-admins" class="admins-kpi-label">Active Admins</p><span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="user-check"></i></span></div>
+            <p id="kpi-active-admins-value" class="admins-kpi-value" data-kpi-value="true">0</p>
+            <p class="admins-kpi-meta">Status marked active</p>
+        </article>
+        <article class="admins-card admins-kpi" aria-labelledby="kpi-recent-admins">
+            <div class="admins-kpi-head"><p id="kpi-recent-admins" class="admins-kpi-label">Recently Active</p><span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="clock-3"></i></span></div>
+            <p id="kpi-recent-admins-value" class="admins-kpi-value" data-kpi-value="true">0</p>
+            <p class="admins-kpi-meta">Active in the last 7 days</p>
+        </article>
+    </section>
+
+    <section class="admins-card admins-filters" aria-label="Admin filters">
+        <div class="admins-field">
+            <label for="admin-role-filter">Role</label>
+            <select id="admin-role-filter" class="admins-select">
+                <option value="">All roles</option>
+                <option value="Super Admin">Super Admin</option>
+                <option value="Admin">Admin</option>
+                <option value="Moderator">Moderator</option>
+            </select>
+        </div>
+        <div class="admins-field">
+            <label for="admin-status-filter">Status</label>
+            <select id="admin-status-filter" class="admins-select">
+                <option value="">All statuses</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Suspended">Suspended</option>
+            </select>
+        </div>
+    </section>
+
+    <!-- Admins table and activity logs removed -->
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    "use strict";
+
+    var ADMINS_DATA = [
+        { id: 1, name: "Maria Santos", email: "maria.santos@happyness.org", role: "Super Admin", status: "Active", lastLogin: "Apr 11, 2026 09:14", created: "Jan 14, 2024", recentDays: 0, permissions: ["All settings", "Role management", "Audit logs"] },
+        { id: 2, name: "Daniel Cruz", email: "daniel.cruz@happyness.org", role: "Admin", status: "Active", lastLogin: "Apr 10, 2026 18:32", created: "Mar 03, 2024", recentDays: 1, permissions: ["User management", "Inventory updates", "Approvals"] },
+        { id: 3, name: "Leah Mendoza", email: "leah.mendoza@happyness.org", role: "Admin", status: "Inactive", lastLogin: "Mar 29, 2026 13:07", created: "Aug 19, 2024", recentDays: 13, permissions: ["User management", "Donations review", "Reports"] },
+        { id: 4, name: "Rico Valdez", email: "rico.valdez@happyness.org", role: "Moderator", status: "Active", lastLogin: "Apr 09, 2026 20:18", created: "Nov 09, 2024", recentDays: 2, permissions: ["Moderation", "Approvals", "Announcements"] },
+        { id: 5, name: "Camille Navarro", email: "camille.navarro@happyness.org", role: "Moderator", status: "Suspended", lastLogin: "Apr 01, 2026 10:45", created: "Dec 21, 2024", recentDays: 10, permissions: ["Moderation", "Community posts"] },
+        { id: 6, name: "Josefina Reyes", email: "josefina.reyes@happyness.org", role: "Admin", status: "Active", lastLogin: "Apr 08, 2026 16:52", created: "Feb 06, 2025", recentDays: 3, permissions: ["Inventory updates", "Approvals", "Payments"] }
+    ];
+
+    var ADMIN_LOGS = [
+        { actor: "Maria Santos", action: "Created a new user account for outreach volunteer", time: "10 minutes ago", type: "create" },
+        { actor: "Daniel Cruz", action: "Updated inventory counts for Hygiene Kits and Rice Packs", time: "24 minutes ago", type: "update" },
+        { actor: "Rico Valdez", action: "Approved 3 pending volunteer records", time: "46 minutes ago", type: "approve" },
+        { actor: "Maria Santos", action: "Modified organization security settings", time: "1 hour ago", type: "settings" }
+    ];
+
+    var ROLE_CLASS = { "Super Admin": "admins-role-super", "Admin": "admins-role-admin", "Moderator": "admins-role-moderator" };
+    var STATUS_CLASS = { "Active": "admins-status-active", "Inactive": "admins-status-inactive", "Suspended": "admins-status-suspended" };
+    var LOG_BADGE = {
+        create: { label: "Create", cls: "admins-log-create" },
+        update: { label: "Update", cls: "admins-log-update" },
+        approve: { label: "Approval", cls: "admins-log-approve" },
+        settings: { label: "Settings", cls: "admins-log-settings" }
+    };
+
+    var tableBody = document.getElementById("admins-table-body");
+    var tableCount = document.getElementById("admins-table-count");
+    var roleFilter = document.getElementById("admin-role-filter");
+    var statusFilter = document.getElementById("admin-status-filter");
+    var actionsMenu = document.getElementById("admins-actions-menu");
+    var tableWrap = document.querySelector(".admins-table-wrap");
+    var logsList = document.getElementById("admins-log-list");
+
+    var kpiTotal = document.getElementById("kpi-total-admins-value");
+    var kpiActive = document.getElementById("kpi-active-admins-value");
+    var kpiRecent = document.getElementById("kpi-recent-admins-value");
+    var openMenuFor = null;
+    var openMenuTrigger = null;
+
+    function esc(value) {
+        return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
+        @media (min-width: 1024px) {
+            .admins-layout { grid-template-columns: 1.72fr 1fr; }
+        }
+    </style>
+    {% endblock %}
+
+    {% block content %}
+    <div id="admins-page" class="admins-page">
+        <section class="admins-summary" aria-label="Admin summary">
+            <article class="admins-card admins-kpi" aria-labelledby="kpi-total-admins">
+                <div class="admins-kpi-head"><p id="kpi-total-admins" class="admins-kpi-label">Total Admins</p><span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="users"></i></span></div>
+                <p id="kpi-total-admins-value" class="admins-kpi-value" data-kpi-value="true">0</p>
+                <p class="admins-kpi-meta">All admin accounts</p>
+            </article>
+            <article class="admins-card admins-kpi" aria-labelledby="kpi-active-admins">
+                <div class="admins-kpi-head"><p id="kpi-active-admins" class="admins-kpi-label">Active Admins</p><span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="user-check"></i></span></div>
+                <p id="kpi-active-admins-value" class="admins-kpi-value" data-kpi-value="true">0</p>
+                <p class="admins-kpi-meta">Status marked active</p>
+            </article>
+            <article class="admins-card admins-kpi" aria-labelledby="kpi-recent-admins">
+                <div class="admins-kpi-head"><p id="kpi-recent-admins" class="admins-kpi-label">Recently Active</p><span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="clock-3"></i></span></div>
+                <p id="kpi-recent-admins-value" class="admins-kpi-value" data-kpi-value="true">0</p>
+                <p class="admins-kpi-meta">Active in the last 7 days</p>
+            </article>
+        </section>
+
+        <section class="admins-card admins-filters" aria-label="Admin filters">
+            <div class="admins-field">
+                <label for="admin-role-filter">Role</label>
+                <select id="admin-role-filter" class="admins-select">
+                    <option value="">All roles</option>
+                    <option value="Super Admin">Super Admin</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Moderator">Moderator</option>
+                </select>
+            </div>
+            <div class="admins-field">
+                <label for="admin-status-filter">Status</label>
+                <select id="admin-status-filter" class="admins-select">
+                    <option value="">All statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                    <option value="Suspended">Suspended</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Admins table and activity logs removed -->
+    </div>
+    {% endblock %}
+
+    {% block extra_scripts %}{% endblock %}
+            var statusCls = STATUS_CLASS[a.status] || "admins-status-inactive";
+            return "<tr>" +
+                "<td><div class=\"admins-name\"><span class=\"admins-avatar\">" + initials(a.name) + "</span><div><strong>" + esc(a.name) + "</strong></div></div></td>" +
+                "<td>" + esc(a.email) + "</td>" +
+                "<td><span class=\"admins-role " + roleCls + "\">" + esc(a.role) + "</span></td>" +
+                "<td><span class=\"admins-status " + statusCls + "\">" + esc(a.status) + "</span></td>" +
+                "<td>" + esc(a.lastLogin) + "</td>" +
+                "<td>" + esc(a.created) + "</td>" +
+                "<td><button class=\"admins-action-btn\" type=\"button\" data-action-toggle=\"" + a.id + "\" aria-expanded=\"false\" aria-label=\"Open actions for " + esc(a.name) + "\" title=\"Actions\"><span class=\"admins-ellipsis\" aria-hidden=\"true\"></span></button></td>" +
+                "</tr>";
+        }).join("");
+
+        tableCount.textContent = rows.length + " admin" + (rows.length === 1 ? "" : "s") + " shown";
+    }
+
+    function closeMenu() {
+        actionsMenu.setAttribute("data-open", "false");
+        openMenuFor = null;
+        openMenuTrigger = null;
+        document.querySelectorAll("[data-action-toggle]").forEach(function (btn) {
+            btn.setAttribute("aria-expanded", "false");
+            btn.classList.remove("is-active");
+        });
+    }
+
+    function positionMenu(trigger) {
+        if (!trigger || actionsMenu.getAttribute("data-open") !== "true") {
+            return;
+        }
+
+        var menuMargin = 8;
+        var edgePadding = 10;
+        var r = trigger.getBoundingClientRect();
+        var menuWidth = actionsMenu.offsetWidth || 214;
+        var menuHeight = actionsMenu.offsetHeight || 220;
+
+        var left = r.left + (r.width / 2) - (menuWidth / 2);
+        var maxLeft = window.innerWidth - menuWidth - edgePadding;
+        left = Math.max(edgePadding, Math.min(left, Math.max(edgePadding, maxLeft)));
+
+        var top = r.bottom + menuMargin;
+        var maxTop = window.innerHeight - menuHeight - edgePadding;
+        if (top > maxTop) {
+            top = Math.max(edgePadding, r.top - menuHeight - menuMargin);
+        }
+
+        actionsMenu.style.top = top + "px";
+        actionsMenu.style.left = left + "px";
+    }
+
+    function openMenu(adminId, trigger) {
+        var a = ADMINS_DATA.find(function (item) { return item.id === adminId; });
+        if (!a) return;
+        actionsMenu.innerHTML = rowActions(a).map(function (item) {
+            return "<button type=\"button\" class=\"admins-menu-item\" data-row-action=\"" + item.key + "\" data-admin-id=\"" + a.id + "\"" + (item.enabled ? "" : " disabled") + "><span>" + item.label + "</span>" + (item.note ? "<span class=\"admins-menu-note\">" + item.note + "</span>" : "") + "</button>";
+        }).join("");
+
+        document.querySelectorAll("[data-action-toggle]").forEach(function (btn) {
+            btn.setAttribute("aria-expanded", "false");
+            btn.classList.remove("is-active");
+        });
+        actionsMenu.setAttribute("data-open", "true");
+        openMenuFor = adminId;
+        openMenuTrigger = trigger;
+        trigger.setAttribute("aria-expanded", "true");
+        trigger.classList.add("is-active");
+
+        positionMenu(trigger);
+    }
+
+    function refresh() {
+        closeMenu();
+        var rows = filterRows();
+        renderTable(rows);
+        renderKpi(rows);
+        if (window.lucide && typeof window.lucide.createIcons === "function") window.lucide.createIcons();
+    }
+
+    document.addEventListener("click", function (e) {
+        var toggle = e.target.closest("[data-action-toggle]");
+        if (toggle) {
+            var id = Number(toggle.getAttribute("data-action-toggle"));
+            if (openMenuFor === id && actionsMenu.getAttribute("data-open") === "true") closeMenu();
+            else openMenu(id, toggle);
+            return;
+        }
+
+        var menuBtn = e.target.closest("[data-row-action]");
+        if (menuBtn) {
+            var action = menuBtn.getAttribute("data-row-action");
+            var adminId = Number(menuBtn.getAttribute("data-admin-id"));
+            var admin = ADMINS_DATA.find(function (a) { return a.id === adminId; });
+            if (!admin) return;
+
+            if (action === "toggle") {
+                admin.status = admin.status === "Active" ? "Inactive" : "Active";
+                admin.recentDays = 0;
+                refresh();
+                return;
+            }
+
+            if (action === "remove" && canRemove(admin)) {
+                ADMINS_DATA = ADMINS_DATA.filter(function (a) { return a.id !== adminId; });
+                refresh();
+                return;
+            }
+
+            closeMenu();
+            return;
+        }
+
+        if (actionsMenu && !actionsMenu.contains(e.target)) closeMenu();
+    });
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") closeMenu();
+    });
+
+    window.addEventListener("resize", function () {
+        if (openMenuTrigger) {
+            positionMenu(openMenuTrigger);
+        }
+    });
+
+    window.addEventListener("scroll", function () {
+        if (openMenuTrigger) {
+            positionMenu(openMenuTrigger);
+        }
+    }, true);
+
+    roleFilter.addEventListener("change", refresh);
+    statusFilter.addEventListener("change", refresh);
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
+
+    function init() {
+        if (actionsMenu && actionsMenu.parentElement !== document.body) {
+            document.body.appendChild(actionsMenu);
+        }
+
+        if (tableWrap) {
+            tableWrap.addEventListener("scroll", function () {
+                if (openMenuTrigger) {
+                    positionMenu(openMenuTrigger);
+                }
+            });
+        }
+
+        refresh();
+        renderLogs();
+        if (window.lucide && typeof window.lucide.createIcons === "function") window.lucide.createIcons();
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") window.AdminPanelAnimations.animateAll(document);
+    }
+})();
+</script>
+{% endblock %}

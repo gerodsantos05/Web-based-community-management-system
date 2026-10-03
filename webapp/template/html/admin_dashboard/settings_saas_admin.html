@@ -1,0 +1,1640 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}System Settings | HappYness{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
+<link rel="stylesheet" href="{% static 'css/profile-photo-cropper.css' %}">
+<style data-admin-panel-style="admin-settings-saas">
+    .sysset-page {
+        --sysset-border: rgba(15, 118, 110, 0.14);
+        --sysset-shadow: 0 10px 24px rgba(2, 44, 34, 0.06);
+        --sysset-muted: #64748b;
+        --sysset-text: #0f172a;
+        --sysset-accent: #0f766e;
+        --sysset-accent-soft: rgba(15, 118, 110, 0.12);
+        --sysset-danger: #b91c1c;
+        --sysset-danger-soft: rgba(239, 68, 68, 0.12);
+        display: grid;
+        gap: 0.9rem;
+    }
+
+    .sysset-sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .sysset-focus:focus-visible {
+        outline: 2px solid #14b8a6;
+        outline-offset: 2px;
+    }
+
+    .sysset-tabs-wrap {
+        background: #ffffff;
+        border: 1px solid var(--sysset-border);
+        border-radius: 1rem;
+        box-shadow: var(--sysset-shadow);
+        padding: 0.55rem;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 0.62rem;
+    }
+
+    .sysset-toolbar-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        justify-self: end;
+    }
+
+    .sysset-tabs {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        gap: 0.45rem;
+        overflow-x: auto;
+    }
+
+    .sysset-tabs li {
+        flex: 0 0 auto;
+    }
+
+    .sysset-tab {
+        border: 1px solid transparent;
+        border-radius: 999px;
+        background: transparent;
+        color: #475569;
+        font: inherit;
+        font-size: 0.82rem;
+        font-weight: 700;
+        padding: 0.48rem 0.78rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.36rem;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .sysset-tab:hover {
+        background: #f8fafc;
+        border-color: rgba(148, 163, 184, 0.32);
+        color: #334155;
+    }
+
+    .sysset-tab[aria-selected="true"] {
+        background: rgba(16, 185, 129, 0.18);
+        border-color: rgba(5, 150, 105, 0.34);
+        color: #065f46;
+        box-shadow: 0 7px 16px rgba(5, 150, 105, 0.18);
+    }
+
+    .sysset-tab .tab-icon {
+        width: 15px;
+        height: 15px;
+    }
+
+    .sysset-panel {
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .sysset-panel[hidden] {
+        display: none !important;
+    }
+
+    .sysset-grid {
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sysset-card {
+        background: #ffffff;
+        border: 1px solid var(--sysset-border);
+        border-radius: 1rem;
+        box-shadow: var(--sysset-shadow);
+        padding: 0.9rem;
+        display: grid;
+        gap: 0.74rem;
+        min-width: 0;
+    }
+
+    .sysset-general-grid {
+        align-items: stretch;
+    }
+
+    .sysset-personal-layout {
+        display: grid;
+        gap: 0.72rem;
+        align-content: start;
+    }
+
+    .sysset-personal-avatar-wrap {
+        display: grid;
+        justify-items: center;
+        text-align: center;
+        gap: 0.34rem;
+    }
+
+    .sysset-avatar-upload-control {
+        position: relative;
+        display: inline-grid;
+        place-items: center;
+    }
+
+    .sysset-avatar-preview {
+        width: 6.6rem;
+        height: 6.6rem;
+        border-radius: 999px;
+        border: 2px solid rgba(15, 118, 110, 0.24);
+        background: linear-gradient(145deg, #ecfeff 0%, #f0fdf9 100%);
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+    }
+
+    .sysset-avatar-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: none;
+    }
+
+    .sysset-avatar-preview[data-has-image="true"] img {
+        display: block;
+    }
+
+    .sysset-avatar-preview[data-has-image="true"] .sysset-avatar-initials {
+        display: none;
+    }
+
+    .sysset-avatar-initials {
+        color: #0f766e;
+        font-size: 1.38rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+    }
+
+    .sysset-avatar-camera-btn {
+        position: absolute;
+        right: -0.26rem;
+        bottom: -0.26rem;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.46);
+        background: #ffffff;
+        color: #0f766e;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+    }
+
+    .sysset-avatar-camera-btn svg {
+        width: 1.08rem;
+        height: 1.08rem;
+    }
+
+    .sysset-file-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .sysset-hover-label {
+        display: block;
+        margin: 0;
+        color: #64748b;
+        font-size: 0.67rem;
+        font-weight: 400;
+        line-height: 1.1;
+        letter-spacing: 0.01em;
+    }
+
+    .sysset-personal-fields {
+        margin-top: 0.16rem;
+    }
+
+    .sysset-card-full {
+        grid-column: 1 / -1;
+    }
+
+    .sysset-card-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.7rem;
+    }
+
+    .sysset-card-title {
+        margin: 0;
+        color: var(--sysset-text);
+        font-size: 0.95rem;
+        font-weight: 800;
+    }
+
+    .sysset-card-desc {
+        margin: 0.2rem 0 0;
+        color: var(--sysset-muted);
+        font-size: 0.76rem;
+        line-height: 1.45;
+    }
+
+    .sysset-card-icon {
+        width: 1.95rem;
+        height: 1.95rem;
+        border-radius: 0.62rem;
+        border: 1px solid rgba(16, 185, 129, 0.24);
+        background: #f0fdf9;
+        color: #0f766e;
+        display: grid;
+        place-items: center;
+        flex: 0 0 auto;
+    }
+
+    .sysset-fields {
+        display: grid;
+        gap: 0.62rem 0.7rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sysset-field {
+        display: grid;
+        gap: 0.26rem;
+        min-width: 0;
+    }
+
+    .sysset-field-full {
+        grid-column: 1 / -1;
+    }
+
+    .sysset-label {
+        color: #334155;
+        font-size: 0.73rem;
+        font-weight: 700;
+    }
+
+    .sysset-help {
+        margin: 0;
+        color: var(--sysset-muted);
+        font-size: 0.7rem;
+        line-height: 1.4;
+    }
+
+    .sysset-input,
+    .sysset-select,
+    .sysset-textarea {
+        width: 100%;
+        border: 1px solid rgba(148, 163, 184, 0.36);
+        border-radius: 0.72rem;
+        background: #ffffff;
+        color: #0f172a;
+        padding: 0.46rem 0.58rem;
+        font: inherit;
+        font-size: 0.8rem;
+        min-height: 39px;
+    }
+
+    .sysset-textarea {
+        min-height: 84px;
+        resize: vertical;
+    }
+
+    .sysset-input:focus-visible,
+    .sysset-select:focus-visible,
+    .sysset-textarea:focus-visible,
+    .sysset-btn:focus-visible,
+    .sysset-tab:focus-visible,
+    .sysset-danger-btn:focus-visible {
+        outline: 2px solid rgba(15, 118, 110, 0.34);
+        outline-offset: 2px;
+    }
+
+    .sysset-toggle-list {
+        display: grid;
+        gap: 0.52rem;
+    }
+
+    .sysset-toggle {
+        border: 1px solid rgba(148, 163, 184, 0.26);
+        border-radius: 0.76rem;
+        padding: 0.52rem 0.56rem;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 0.56rem;
+        cursor: pointer;
+    }
+
+    .sysset-toggle input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .sysset-toggle-track {
+        width: 2.2rem;
+        height: 1.26rem;
+        border-radius: 999px;
+        background: #cbd5e1;
+        position: relative;
+        transition: background-color 170ms ease;
+        flex: 0 0 auto;
+    }
+
+    .sysset-toggle-track::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 0.94rem;
+        height: 0.94rem;
+        border-radius: 999px;
+        background: #ffffff;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.28);
+        transition: transform 170ms ease;
+    }
+
+    .sysset-toggle input:checked + .sysset-toggle-track {
+        background: #14b8a6;
+    }
+
+    .sysset-toggle input:checked + .sysset-toggle-track::after {
+        transform: translateX(0.94rem);
+    }
+
+    .sysset-toggle-copy {
+        min-width: 0;
+        display: grid;
+        gap: 0.12rem;
+    }
+
+    .sysset-toggle-title {
+        color: #0f172a;
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .sysset-toggle-desc {
+        color: #64748b;
+        font-size: 0.71rem;
+        margin: 0;
+    }
+
+    .sysset-footer {
+        background: #ffffff;
+        border: 1px solid var(--sysset-border);
+        border-radius: 1rem;
+        box-shadow: var(--sysset-shadow);
+        padding: 0.72rem 0.82rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.7rem;
+        flex-wrap: wrap;
+    }
+
+    .sysset-save-state {
+        margin: 0;
+        color: #0f766e;
+        font-size: 0.75rem;
+        border: 1px solid rgba(15, 118, 110, 0.24);
+        background: var(--sysset-accent-soft);
+        border-radius: 999px;
+        padding: 0.26rem 0.58rem;
+    }
+
+    .sysset-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.46rem;
+    }
+
+    .sysset-btn {
+        border-radius: 0.7rem;
+        border: 1px solid transparent;
+        padding: 0.47rem 0.74rem;
+        font: inherit;
+        font-size: 0.78rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .sysset-btn[disabled] {
+        cursor: not-allowed;
+        opacity: 0.55;
+    }
+
+    .sysset-btn-ghost {
+        border-color: rgba(148, 163, 184, 0.36);
+        background: #ffffff;
+        color: #334155;
+    }
+
+    .sysset-btn-primary {
+        border-color: #0f766e;
+        background: #0f766e;
+        color: #ffffff;
+    }
+
+    .sysset-btn-primary:hover:not([disabled]) {
+        background: #115e59;
+    }
+
+    .sysset-danger-card {
+        border-color: rgba(239, 68, 68, 0.32);
+        background: linear-gradient(180deg, #fffdfd 0%, #fff8f8 100%);
+    }
+
+    .sysset-danger-title {
+        margin: 0;
+        font-size: 0.95rem;
+        color: #991b1b;
+        font-weight: 800;
+    }
+
+    .sysset-danger-copy {
+        margin: 0.22rem 0 0;
+        color: #7f1d1d;
+        font-size: 0.74rem;
+    }
+
+    .sysset-danger-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+
+    .sysset-danger-btn {
+        border: 1px solid rgba(185, 28, 28, 0.3);
+        background: #ffffff;
+        color: #991b1b;
+        border-radius: 0.66rem;
+        font: inherit;
+        font-size: 0.76rem;
+        font-weight: 700;
+        padding: 0.42rem 0.66rem;
+        cursor: pointer;
+    }
+
+    .sysset-danger-btn:hover {
+        background: var(--sysset-danger-soft);
+    }
+
+    .sysset-danger-btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.58;
+    }
+
+    .sysset-inline-status {
+        margin: 0;
+        color: var(--sysset-accent);
+        font-size: 0.78rem;
+        min-height: 1rem;
+    }
+
+    @media (max-width: 980px) {
+        .sysset-grid,
+        .sysset-fields {
+            grid-template-columns: 1fr;
+        }
+
+        .sysset-tabs-wrap {
+            grid-template-columns: 1fr;
+        }
+
+        .sysset-toolbar-actions {
+            justify-self: end;
+        }
+
+        .sysset-personal-avatar-wrap {
+            justify-items: start;
+            text-align: left;
+        }
+
+        .sysset-card-full,
+        .sysset-field-full {
+            grid-column: auto;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .sysset-save-state {
+            border-radius: 0.7rem;
+        }
+
+        .sysset-actions {
+            width: 100%;
+            justify-content: flex-end;
+        }
+
+        .sysset-btn {
+            min-width: 118px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<form id="sysset-form" class="sysset-page" novalidate data-profile-endpoint="{% url 'dashboard_profile_update' %}" data-settings-endpoint="{% url 'admin_system_settings_update' %}" data-preferences-endpoint="{% url 'admin_user_preferences_update' %}">
+    {% csrf_token %}
+
+    <div class="sysset-tabs-wrap">
+        <ul id="sysset-tabs" class="sysset-tabs" role="tablist" aria-label="System settings tabs">
+            <li><button type="button" class="sysset-tab sysset-focus" role="tab" aria-selected="true" aria-controls="panel-general" id="tab-general" data-target="general"><i data-lucide="settings" class="tab-icon" aria-hidden="true"></i><span>General</span></button></li>
+            <li><button type="button" class="sysset-tab sysset-focus" role="tab" aria-selected="false" aria-controls="panel-users-roles" id="tab-users-roles" data-target="users-roles"><i data-lucide="users-round" class="tab-icon" aria-hidden="true"></i><span>Users &amp; Roles</span></button></li>
+            <li><button type="button" class="sysset-tab sysset-focus" role="tab" aria-selected="false" aria-controls="panel-notifications" id="tab-notifications" data-target="notifications"><i data-lucide="bell" class="tab-icon" aria-hidden="true"></i><span>Notifications</span></button></li>
+            <li><button type="button" class="sysset-tab sysset-focus" role="tab" aria-selected="false" aria-controls="panel-security" id="tab-security" data-target="security"><i data-lucide="shield-check" class="tab-icon" aria-hidden="true"></i><span>Security</span></button></li>
+            <li><button type="button" class="sysset-tab sysset-focus" role="tab" aria-selected="false" aria-controls="panel-system" id="tab-system" data-target="system"><i data-lucide="server-cog" class="tab-icon" aria-hidden="true"></i><span>System</span></button></li>
+        </ul>
+        <div class="sysset-toolbar-actions">
+            <p id="sysset-save-state" class="sysset-save-state" role="status" aria-live="polite">No unsaved changes</p>
+            <div class="sysset-actions">
+                <button type="button" id="sysset-discard" class="sysset-btn sysset-btn-ghost sysset-focus">Discard</button>
+                <button type="button" id="sysset-save" class="sysset-btn sysset-btn-primary sysset-focus" disabled>Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <section class="sysset-panel" id="panel-general" role="tabpanel" aria-labelledby="tab-general" data-panel="general">
+        <div class="sysset-grid sysset-general-grid">
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Personal Information</h2>
+                        <p class="sysset-card-desc">Core profile details for the admin account.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="id-card"></i></span>
+                </header>
+                <div class="sysset-personal-layout">
+                    <div class="sysset-personal-avatar-wrap">
+                        <div id="sysset-photo-upload" class="sysset-avatar-upload-control" data-has-file="false">
+                            <div id="sysset-avatar-preview" class="sysset-avatar-preview" data-has-image="{% if user_avatar_url %}true{% else %}false{% endif %}" aria-hidden="true">
+                                <img id="sysset-avatar-image" {% if user_avatar_url %}src="{{ user_avatar_url }}" alt="{{ user_display_name|default:'User' }} profile photo"{% else %}alt=""{% endif %}>
+                                <span id="sysset-avatar-initials" class="sysset-avatar-initials">{{ user_initials|default:'U' }}</span>
+                            </div>
+                            <input id="profile_photo" name="profile_photo" class="sysset-file-input" type="file" accept="image/*">
+                            <label for="profile_photo" class="sysset-avatar-camera-btn sysset-focus" aria-label="Upload or change profile photo"><i data-lucide="camera" aria-hidden="true"></i></label>
+                        </div>
+                    </div>
+
+                    <div class="sysset-fields sysset-personal-fields">
+                        <div class="sysset-field">
+                            <label class="sysset-hover-label" for="first_name">First Name</label>
+                            <input id="first_name" name="first_name" class="sysset-input" type="text" value="{{ request.user.first_name|default:'' }}" placeholder="First name" autocomplete="given-name">
+                        </div>
+                        <div class="sysset-field">
+                            <label class="sysset-hover-label" for="last_name">Last Name</label>
+                            <input id="last_name" name="last_name" class="sysset-input" type="text" value="{{ request.user.last_name|default:'' }}" placeholder="Last name" autocomplete="family-name">
+                        </div>
+                        <div class="sysset-field">
+                            <label class="sysset-hover-label" for="email">Email</label>
+                            <input id="email" name="email" class="sysset-input" type="email" value="{{ request.user.email|default:'' }}" placeholder="Email address" autocomplete="email">
+                        </div>
+                        <div class="sysset-field">
+                            <label class="sysset-hover-label" for="phone">Phone Number</label>
+                            <input id="phone" name="phone" class="sysset-input" type="tel" value="{{ current_user_profile.phone|default:'' }}" placeholder="Phone number" autocomplete="tel">
+                        </div>
+                        <div class="sysset-field">
+                            <label class="sysset-hover-label" for="birthdate">Birthdate</label>
+                            <input id="birthdate" name="birthdate" class="sysset-input" type="date" value="{% if current_user_profile.birthdate %}{{ current_user_profile.birthdate|date:'Y-m-d' }}{% endif %}" autocomplete="bday">
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Platform Identity</h2>
+                        <p class="sysset-card-desc">Core naming and environment details used throughout the dashboard.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="badge-info"></i></span>
+                </header>
+                <div class="sysset-fields">
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="system_name">System Name</label>
+                        <input id="system_name" name="system_name" class="sysset-input" type="text" value="HappYness Admin Suite">
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="system_code">System Code</label>
+                        <input id="system_code" name="system_code" class="sysset-input" type="text" value="HAP-SYS-01">
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="deployment_env">Environment</label>
+                        <select id="deployment_env" name="deployment_env" class="sysset-select">
+                            <option selected>Production</option>
+                            <option>Staging</option>
+                            <option>Development</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="support_email">Support Email</label>
+                        <input id="support_email" name="support_email" class="sysset-input" type="email" value="admin@happyness.org">
+                        <a id="admin-support-email-link" class="sysset-help" href="mailto:admin@happyness.org">Email support</a>
+                    </div>
+                </div>
+            </article>
+
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Localization Defaults</h2>
+                        <p class="sysset-card-desc">Default language, timezone, and formatting used for admin and reports.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="globe"></i></span>
+                </header>
+                <div class="sysset-fields">
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="timezone">Timezone</label>
+                        <select id="timezone" name="timezone" class="sysset-select">
+                            <option selected>Asia/Manila (UTC+8)</option>
+                            <option>Asia/Singapore (UTC+8)</option>
+                            <option>America/New_York (UTC-5)</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="language">Language</label>
+                        <select id="language" name="language" class="sysset-select">
+                            <option selected>English</option>
+                            <option>Filipino</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="date_format">Date Format</label>
+                        <select id="date_format" name="date_format" class="sysset-select">
+                            <option selected>MM/DD/YYYY</option>
+                            <option>DD/MM/YYYY</option>
+                            <option>YYYY-MM-DD</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="number_format">Number Format</label>
+                        <select id="number_format" name="number_format" class="sysset-select">
+                            <option selected>1,234.56</option>
+                            <option>1 234,56</option>
+                        </select>
+                    </div>
+                </div>
+            </article>
+
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Interface and Locale</h2>
+                        <p class="sysset-card-desc">Customize display preferences for your admin account.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="layout-grid"></i></span>
+                </header>
+                <div class="sysset-toggle-list">
+                    <label class="sysset-toggle">
+                        <input type="checkbox" name="pref_dark_mode">
+                        <span class="sysset-toggle-track"></span>
+                        <span class="sysset-toggle-copy">
+                            <span class="sysset-toggle-title">Dark Mode</span>
+                            <span class="sysset-toggle-desc">Use a low-light dashboard theme.</span>
+                        </span>
+                    </label>
+                    <label class="sysset-toggle">
+                        <input type="checkbox" name="pref_animations" checked>
+                        <span class="sysset-toggle-track"></span>
+                        <span class="sysset-toggle-copy">
+                            <span class="sysset-toggle-title">Animations</span>
+                            <span class="sysset-toggle-desc">Enable UI animations and transitions.</span>
+                        </span>
+                    </label>
+                </div>
+                <div class="sysset-fields">
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="font_size">Font Size</label>
+                        <select id="font_size" name="font_size" class="sysset-select">
+                            <option>Small</option>
+                            <option selected>Medium</option>
+                            <option>Large</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="font_type">Font Type</label>
+                        <select id="font_type" name="font_type" class="sysset-select">
+                            <option selected>System Default</option>
+                            <option>Serif</option>
+                            <option>Sans-serif</option>
+                            <option>Monospace</option>
+                        </select>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="sysset-panel" id="panel-users-roles" role="tabpanel" aria-labelledby="tab-users-roles" data-panel="users-roles" hidden>
+        <div class="sysset-grid">
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Role Defaults</h2>
+                        <p class="sysset-card-desc">Set baseline assignment and provisioning behavior for new users.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="user-cog"></i></span>
+                </header>
+                <div class="sysset-fields">
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="default_role">Default Role</label>
+                        <select id="default_role" name="default_role" class="sysset-select">
+                            <option selected>Viewer</option>
+                            <option>Moderator</option>
+                            <option>Administrator</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="invite_policy">Invitation Policy</label>
+                        <select id="invite_policy" name="invite_policy" class="sysset-select">
+                            <option selected>Admin approval required</option>
+                            <option>Open invite by managers</option>
+                            <option>Invite disabled</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="max_admins">Maximum Admin Accounts</label>
+                        <input id="max_admins" name="max_admins" class="sysset-input" type="number" min="1" value="12">
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="session_limit">Concurrent Sessions per User</label>
+                        <select id="session_limit" name="session_limit" class="sysset-select">
+                            <option>1</option>
+                            <option selected>2</option>
+                            <option>3</option>
+                        </select>
+                    </div>
+                </div>
+            </article>
+
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Permissions Workflow</h2>
+                        <p class="sysset-card-desc">Define how role and permission changes are controlled.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="key-round"></i></span>
+                </header>
+                <div class="sysset-fields">
+                    <div class="sysset-field sysset-field-full">
+                        <label class="sysset-label" for="permission_change_approval">Permission Change Approval</label>
+                        <select id="permission_change_approval" name="permission_change_approval" class="sysset-select">
+                            <option selected>Dual approval required</option>
+                            <option>Single admin approval</option>
+                            <option>No approval</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field sysset-field-full">
+                        <label class="sysset-label" for="custom_roles_policy">Custom Roles Policy</label>
+                        <select id="custom_roles_policy" name="custom_roles_policy" class="sysset-select">
+                            <option selected>Enabled for super admins</option>
+                            <option>Enabled for admins</option>
+                            <option>Disabled</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="sysset-toggle-list">
+                    <label class="sysset-toggle">
+                        <input type="checkbox" name="require_role_change_reason" checked>
+                        <span class="sysset-toggle-track"></span>
+                        <span class="sysset-toggle-copy">
+                            <span class="sysset-toggle-title">Require reason for role changes</span>
+                            <span class="sysset-toggle-desc">Capture an audit note whenever role scope is modified.</span>
+                        </span>
+                    </label>
+                    <label class="sysset-toggle">
+                        <input type="checkbox" name="allow_manager_password_reset" checked>
+                        <span class="sysset-toggle-track"></span>
+                        <span class="sysset-toggle-copy">
+                            <span class="sysset-toggle-title">Allow manager-initiated password reset</span>
+                            <span class="sysset-toggle-desc">Permit managers to start reset flow for users in their teams.</span>
+                        </span>
+                    </label>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="sysset-panel" id="panel-notifications" role="tabpanel" aria-labelledby="tab-notifications" data-panel="notifications" hidden>
+        <div class="sysset-grid">
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Delivery Channels</h2>
+                        <p class="sysset-card-desc">Choose where alert messages are delivered.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="send"></i></span>
+                </header>
+                <div class="sysset-toggle-list">
+                    <label class="sysset-toggle">
+                        <input type="checkbox" name="notify_email" checked>
+                        <span class="sysset-toggle-track"></span>
+                        <span class="sysset-toggle-copy">
+                            <span class="sysset-toggle-title">Email notifications</span>
+                            <span class="sysset-toggle-desc">Send operational and security updates by email.</span>
+                        </span>
+                    </label>
+                    <label class="sysset-toggle">
+                        <input type="checkbox" name="notify_inapp" checked>
+                        <span class="sysset-toggle-track"></span>
+                        <span class="sysset-toggle-copy">
+                            <span class="sysset-toggle-title">In-app notifications</span>
+                            <span class="sysset-toggle-desc">Display badges and alerts inside the admin dashboard.</span>
+                        </span>
+                    </label>
+                </div>
+            </article>
+
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Notification Rules</h2>
+                        <p class="sysset-card-desc">Configure digest cadence and escalation behavior.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="alarm-clock"></i></span>
+                </header>
+                <div class="sysset-fields">
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="digest_frequency">Digest Frequency</label>
+                        <select id="digest_frequency" name="digest_frequency" class="sysset-select">
+                            <option>Instant</option>
+                            <option selected>Hourly digest</option>
+                            <option>Daily digest</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="escalation_window">Escalation Window</label>
+                        <select id="escalation_window" name="escalation_window" class="sysset-select">
+                            <option>15 minutes</option>
+                            <option selected>30 minutes</option>
+                            <option>60 minutes</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="quiet_hours_start">Quiet Hours Start</label>
+                        <input id="quiet_hours_start" name="quiet_hours_start" class="sysset-input" type="time" value="22:00">
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="quiet_hours_end">Quiet Hours End</label>
+                        <input id="quiet_hours_end" name="quiet_hours_end" class="sysset-input" type="time" value="06:00">
+                    </div>
+                </div>
+                <p class="sysset-help">Critical incident and security alerts bypass quiet hours automatically.</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="sysset-panel" id="panel-security" role="tabpanel" aria-labelledby="tab-security" data-panel="security" hidden>
+        <div class="sysset-grid">
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Authentication Policy</h2>
+                        <p class="sysset-card-desc">Define password, MFA, and session standards for all users.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="lock-keyhole"></i></span>
+                </header>
+                <div class="sysset-fields">
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="password_length">Minimum Password Length</label>
+                        <input id="password_length" name="password_length" class="sysset-input" type="number" min="8" value="12">
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="password_complexity">Complexity Rule</label>
+                        <select id="password_complexity" name="password_complexity" class="sysset-select">
+                            <option selected>Upper, lower, number, symbol</option>
+                            <option>Upper, lower, number</option>
+                            <option>Passphrase only</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="mfa_policy">MFA Policy</label>
+                        <select id="mfa_policy" name="mfa_policy" class="sysset-select">
+                            <option selected>Required for admins</option>
+                            <option>Required for all users</option>
+                            <option>Optional</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="session_timeout">Session Timeout</label>
+                        <select id="session_timeout" name="session_timeout" class="sysset-select">
+                            <option>15 minutes</option>
+                            <option selected>30 minutes</option>
+                            <option>60 minutes</option>
+                        </select>
+                    </div>
+                </div>
+            </article>
+
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Network &amp; Monitoring</h2>
+                        <p class="sysset-card-desc">IP restrictions, login throttling, and audit controls.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="shield"></i></span>
+                </header>
+                <div class="sysset-fields">
+                    <div class="sysset-field sysset-field-full">
+                        <label class="sysset-label" for="ip_allowlist">IP Allowlist</label>
+                        <textarea id="ip_allowlist" name="ip_allowlist" class="sysset-textarea">192.168.20.0/24
+203.177.14.19</textarea>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="failed_login_limit">Failed Login Limit</label>
+                        <select id="failed_login_limit" name="failed_login_limit" class="sysset-select">
+                            <option>3 attempts</option>
+                            <option selected>5 attempts</option>
+                            <option>8 attempts</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="account_lockout">Lockout Duration</label>
+                        <select id="account_lockout" name="account_lockout" class="sysset-select">
+                            <option>10 minutes</option>
+                            <option selected>30 minutes</option>
+                            <option>60 minutes</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="sysset-toggle-list">
+                    <label class="sysset-toggle">
+                        <input type="checkbox" name="enable_audit_logs" checked>
+                        <span class="sysset-toggle-track"></span>
+                        <span class="sysset-toggle-copy">
+                            <span class="sysset-toggle-title">Enable security audit logs</span>
+                            <span class="sysset-toggle-desc">Track authentication changes, role updates, and sensitive actions.</span>
+                        </span>
+                    </label>
+                    <label class="sysset-toggle">
+                        <input type="checkbox" name="geo_restrictions">
+                        <span class="sysset-toggle-track"></span>
+                        <span class="sysset-toggle-copy">
+                            <span class="sysset-toggle-title">Restrict sign-ins by geography</span>
+                            <span class="sysset-toggle-desc">Block login attempts from countries outside your approved list.</span>
+                        </span>
+                    </label>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="sysset-panel" id="panel-system" role="tabpanel" aria-labelledby="tab-system" data-panel="system" hidden>
+        <div class="sysset-grid">
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Maintenance</h2>
+                        <p class="sysset-card-desc">Control updates, backup frequency, and maintenance windows.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="wrench"></i></span>
+                </header>
+                <div class="sysset-fields">
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="maintenance_window">Maintenance Window</label>
+                        <select id="maintenance_window" name="maintenance_window" class="sysset-select">
+                            <option selected>Sunday 01:00 - 03:00</option>
+                            <option>Sunday 03:00 - 05:00</option>
+                            <option>Saturday 23:00 - 01:00</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="backup_frequency">Backup Frequency</label>
+                        <select id="backup_frequency" name="backup_frequency" class="sysset-select">
+                            <option>Every 6 hours</option>
+                            <option selected>Daily</option>
+                            <option>Weekly</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="retention_period">Backup Retention</label>
+                        <select id="retention_period" name="retention_period" class="sysset-select">
+                            <option>14 days</option>
+                            <option selected>30 days</option>
+                            <option>90 days</option>
+                        </select>
+                    </div>
+                    <div class="sysset-field">
+                        <label class="sysset-label" for="update_channel">Update Channel</label>
+                        <select id="update_channel" name="update_channel" class="sysset-select">
+                            <option selected>Stable</option>
+                            <option>Release candidate</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="sysset-toggle-list">
+                    <label class="sysset-toggle">
+                        <input type="checkbox" name="maintenance_mode">
+                        <span class="sysset-toggle-track"></span>
+                        <span class="sysset-toggle-copy">
+                            <span class="sysset-toggle-title">Enable maintenance mode</span>
+                            <span class="sysset-toggle-desc">Limit access to administrators while infrastructure tasks are running.</span>
+                        </span>
+                    </label>
+                    <label class="sysset-toggle">
+                        <input type="checkbox" name="auto_patch" checked>
+                        <span class="sysset-toggle-track"></span>
+                        <span class="sysset-toggle-copy">
+                            <span class="sysset-toggle-title">Apply security patches automatically</span>
+                            <span class="sysset-toggle-desc">Install critical security fixes during the configured maintenance window.</span>
+                        </span>
+                    </label>
+                </div>
+            </article>
+
+            <article class="sysset-card sysset-danger-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-danger-title">Danger Zone</h2>
+                        <p class="sysset-danger-copy">These actions are irreversible and can impact the entire platform.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="triangle-alert"></i></span>
+                </header>
+                <div class="sysset-fields">
+                    <div class="sysset-field sysset-field-full">
+                        <label class="sysset-label" for="danger_confirm">Type RESET to unlock critical actions</label>
+                        <input id="danger_confirm" name="danger_confirm" class="sysset-input" type="text" placeholder="RESET" autocomplete="off">
+                        <p class="sysset-help">These actions are currently disabled until their server-side safeguards are implemented.</p>
+                    </div>
+                </div>
+                <div class="sysset-danger-actions">
+                    <button type="button" class="sysset-danger-btn sysset-focus" disabled title="Unavailable until server-side safeguards are implemented">Reset system configuration</button>
+                    <button type="button" class="sysset-danger-btn sysset-focus" disabled title="Unavailable until server-side safeguards are implemented">Delete transactional data</button>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <p id="sysset-inline-status" class="sysset-inline-status" role="status" aria-live="polite"></p>
+</form>
+{{ admin_system_settings|json_script:"admin-system-settings-data" }}
+{{ admin_user_preferences|json_script:"admin-user-preferences-data" }}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<script src="{% static 'js/profile-photo-cropper.js' %}"></script>
+<script>
+    (function initSystemSettingsPage() {
+        "use strict";
+
+        var form = document.getElementById("sysset-form");
+        if (!form || form.dataset.bound === "true") {
+            return;
+        }
+        form.dataset.bound = "true";
+
+        var settingsDataNode = document.getElementById("admin-system-settings-data");
+        var savedAdminSettings = {};
+        try {
+            savedAdminSettings = settingsDataNode ? JSON.parse(settingsDataNode.textContent) : {};
+        } catch (error) {}
+        window.adminSystemSettings = savedAdminSettings;
+        Object.keys(savedAdminSettings).forEach(function (name) {
+            var field = form.elements.namedItem(name);
+            if (!field) return;
+            if (field.type === "checkbox") {
+                field.checked = savedAdminSettings[name] === true;
+            } else {
+                field.value = savedAdminSettings[name] == null ? "" : String(savedAdminSettings[name]);
+            }
+        });
+        var preferencesDataNode = document.getElementById("admin-user-preferences-data");
+        var savedAdminPreferences = {};
+        try {
+            savedAdminPreferences = preferencesDataNode ? JSON.parse(preferencesDataNode.textContent) : {};
+        } catch (error) {}
+        window.adminUserPreferences = savedAdminPreferences;
+        Object.keys(savedAdminPreferences).forEach(function (name) {
+            var field = form.elements.namedItem(name);
+            if (!field) return;
+            if (field.type === "checkbox") {
+                field.checked = savedAdminPreferences[name] === true;
+            } else {
+                field.value = savedAdminPreferences[name] == null ? "" : String(savedAdminPreferences[name]);
+            }
+        });
+
+        var tabs = Array.from(document.querySelectorAll(".sysset-tab"));
+        var panels = Array.from(document.querySelectorAll(".sysset-panel"));
+
+        function activateTab(target) {
+            tabs.forEach(function (tab) {
+                var selected = tab.getAttribute("data-target") === target;
+                tab.setAttribute("aria-selected", selected ? "true" : "false");
+            });
+
+            panels.forEach(function (panel) {
+                panel.hidden = panel.getAttribute("data-panel") !== target;
+            });
+        }
+
+        function normalizeTabKey(raw) {
+            var value = (raw || "").toLowerCase();
+            var legacyMap = {
+                "audit-logs": "system",
+                "access": "users-roles",
+                "organization": "general",
+                "operations": "system",
+                "integrations": "notifications",
+                "billing": "system"
+            };
+            if (legacyMap[value]) {
+                return legacyMap[value];
+            }
+            return value;
+        }
+
+        tabs.forEach(function (tab) {
+            tab.addEventListener("click", function () {
+                activateTab(tab.getAttribute("data-target"));
+            });
+        });
+
+        var fromQuery = normalizeTabKey(new URLSearchParams(window.location.search).get("tab"));
+        var initial = tabs.some(function (tab) { return tab.getAttribute("data-target") === fromQuery; }) ? fromQuery : "general";
+        activateTab(initial);
+
+        // --- Interface preferences ---
+
+        var fontSizeEl   = document.getElementById("font_size");
+        var fontTypeEl   = document.getElementById("font_type");
+        var darkModeEl   = form.querySelector('[name="pref_dark_mode"]');
+        var animationsEl = form.querySelector('[name="pref_animations"]');
+
+        var FONT_SIZE_TO_KEY  = { "Small": "small", "Medium": "medium", "Large": "large" };
+        var FONT_TYPE_TO_KEY  = { "System Default": "system", "Serif": "serif", "Sans-serif": "sans-serif", "Monospace": "monospace" };
+        var KEY_TO_FONT_SIZE  = { "small": "Small", "medium": "Medium", "large": "Large" };
+        var KEY_TO_FONT_TYPE  = { "system": "System Default", "serif": "Serif", "sans-serif": "Sans-serif", "monospace": "Monospace" };
+
+        function applyFontSize(key) {
+            var k = key || "medium";
+            document.documentElement.classList.remove("dashboard-font-small", "dashboard-font-medium", "dashboard-font-large");
+            document.documentElement.classList.add("dashboard-font-" + k);
+            try { localStorage.setItem("dashboard_font_size_preference", k); } catch (e) {}
+        }
+
+        function applyFontType(key) {
+            var k = key || "system";
+            document.documentElement.classList.remove("dashboard-font-system", "dashboard-font-serif", "dashboard-font-sans-serif", "dashboard-font-monospace");
+            document.documentElement.classList.add("dashboard-font-" + k);
+            try { localStorage.setItem("dashboard_font_type_preference", k); } catch (e) {}
+        }
+
+        function applyDarkMode(isDark) {
+            document.documentElement.classList.toggle("dark-mode", isDark);
+            try { localStorage.setItem("theme_preference", isDark ? "dark" : "light"); } catch (e) {}
+        }
+
+        function applyAnimations(enabled) {
+            document.documentElement.classList.toggle("no-animations", !enabled);
+            try { localStorage.setItem("pref_animations", enabled ? "true" : "false"); } catch (e) {}
+        }
+
+        function applyCurrentInterfacePreferences() {
+            if (darkModeEl) applyDarkMode(darkModeEl.checked);
+            if (animationsEl) applyAnimations(animationsEl.checked);
+            if (fontSizeEl) applyFontSize(FONT_SIZE_TO_KEY[fontSizeEl.value] || "medium");
+            if (fontTypeEl) applyFontType(FONT_TYPE_TO_KEY[fontTypeEl.value] || "system");
+        }
+
+        window.applyAdminSystemInterfacePreferences = applyCurrentInterfacePreferences;
+        applyCurrentInterfacePreferences();
+
+        // --- End Interface and Locale ---
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    })();
+</script>
+<script>
+(function initAdminProfileSettings() {
+    "use strict";
+
+    var form = document.getElementById("sysset-form");
+    if (!form || form.dataset.adminProfileBound === "true") {
+        return;
+    }
+    form.dataset.adminProfileBound = "true";
+
+    var saveButton = document.getElementById("sysset-save");
+    var discardButton = document.getElementById("sysset-discard");
+    var saveState = document.getElementById("sysset-save-state");
+    var inlineStatus = document.getElementById("sysset-inline-status");
+    var profileEndpoint = form.getAttribute("data-profile-endpoint") || "";
+    var settingsEndpoint = form.getAttribute("data-settings-endpoint") || "";
+    var preferencesEndpoint = form.getAttribute("data-preferences-endpoint") || "";
+    var systemSettingKeys = Object.keys(window.adminSystemSettings || {});
+    var userPreferenceKeys = Object.keys(window.adminUserPreferences || {});
+    var csrfInput = form.querySelector("input[name='csrfmiddlewaretoken']");
+    var csrfToken = csrfInput ? csrfInput.value : "";
+    var photoInput = document.getElementById("profile_photo");
+    var photoUpload = document.getElementById("sysset-photo-upload");
+    var avatarPreview = document.getElementById("sysset-avatar-preview");
+    var avatarImage = document.getElementById("sysset-avatar-image");
+    var avatarInitials = document.getElementById("sysset-avatar-initials");
+    var firstNameInput = document.getElementById("first_name");
+    var lastNameInput = document.getElementById("last_name");
+    var supportEmailInput = document.getElementById("support_email");
+    var supportEmailLink = document.getElementById("admin-support-email-link");
+    var initialFormState = new FormData(form);
+    var isDirty = false;
+    var croppedPhotoFile = null;
+
+    function setInlineStatus(message) {
+        if (inlineStatus) {
+            inlineStatus.textContent = message;
+        }
+    }
+
+    function initialsFromName() {
+        var first = firstNameInput && firstNameInput.value ? firstNameInput.value.trim().charAt(0) : "";
+        var last = lastNameInput && lastNameInput.value ? lastNameInput.value.trim().charAt(0) : "";
+        var initials = (first + last).toUpperCase();
+        return initials || (avatarInitials ? avatarInitials.textContent || "U" : "U");
+    }
+
+    function setDirty() {
+        if (isDirty) {
+            return;
+        }
+
+        isDirty = true;
+        if (saveButton) {
+            saveButton.disabled = false;
+        }
+        if (saveState) {
+            saveState.textContent = "Unsaved changes";
+        }
+        setInlineStatus("");
+    }
+
+    function markClean(message) {
+        isDirty = false;
+        if (saveButton) {
+            saveButton.disabled = true;
+        }
+        if (saveState) {
+            saveState.textContent = "All changes saved";
+        }
+        setInlineStatus(message || "Settings updated.");
+        initialFormState = new FormData(form);
+    }
+
+    function syncPhotoUploadState(file) {
+        if (photoUpload) {
+            photoUpload.setAttribute("data-has-file", file ? "true" : "false");
+        }
+    }
+
+    function resetAvatarPreview() {
+        if (!avatarPreview || !avatarImage || !avatarInitials) {
+            return;
+        }
+
+        avatarPreview.setAttribute("data-has-image", "false");
+        avatarImage.removeAttribute("src");
+        avatarImage.alt = "";
+        avatarInitials.textContent = initialsFromName();
+    }
+
+    function setAvatarPreview(src, filename) {
+        if (!avatarPreview || !avatarImage) {
+            return;
+        }
+
+        avatarImage.src = src;
+        avatarImage.alt = "Selected profile photo " + (filename || "preview");
+        avatarPreview.setAttribute("data-has-image", "true");
+    }
+
+    function updateSupportEmailLink() {
+        if (!supportEmailInput || !supportEmailLink) return;
+        var email = supportEmailInput.value.trim();
+        supportEmailLink.hidden = !email;
+        supportEmailLink.href = email ? "mailto:" + encodeURIComponent(email) : "#";
+        supportEmailLink.textContent = email ? "Email support: " + email : "No support email configured";
+    }
+
+    if (supportEmailInput) {
+        supportEmailInput.addEventListener("input", updateSupportEmailLink);
+        updateSupportEmailLink();
+    }
+
+    var cropperController = window.initProfilePhotoCropper({
+        input: photoInput,
+        onCropped: function (file, previewUrl) {
+            croppedPhotoFile = file;
+            setAvatarPreview(previewUrl, file.name);
+            syncPhotoUploadState(file);
+            setDirty();
+        },
+        onCancelled: function () {
+            croppedPhotoFile = null;
+            if (avatarImage && avatarImage.getAttribute("src")) {
+                setAvatarPreview(avatarImage.getAttribute("src"), "profile photo");
+            } else {
+                resetAvatarPreview();
+            }
+            syncPhotoUploadState(null);
+        },
+        onError: setInlineStatus
+    });
+
+    function updateHeaderProfile(profileData) {
+        var userData = profileData && profileData.user ? profileData.user : {};
+        var userProfile = profileData && profileData.profile ? profileData.profile : {};
+        var displayName = String(userData.display_name || "User");
+        var initials = String(userData.initials || "U");
+        var avatarUrl = String(userProfile.avatar_url || "");
+
+        [document.getElementById("header-profile-display-name"), document.getElementById("dropdown-profile-display-name")].forEach(function (node) {
+            if (node) {
+                node.textContent = displayName;
+            }
+        });
+
+        [document.getElementById("header-profile-avatar-initials"), document.getElementById("dropdown-profile-avatar-initials")].forEach(function (node) {
+            if (node) {
+                node.textContent = initials;
+                node.hidden = !!avatarUrl;
+            }
+        });
+
+        [document.getElementById("header-profile-avatar-image"), document.getElementById("dropdown-profile-avatar-image")].forEach(function (node) {
+            if (!node) {
+                return;
+            }
+
+            if (avatarUrl) {
+                node.src = avatarUrl;
+                node.removeAttribute("hidden");
+            } else {
+                node.removeAttribute("src");
+                node.setAttribute("hidden", "");
+            }
+        });
+
+        [document.getElementById("header-profile-avatar"), document.getElementById("dropdown-profile-avatar")].forEach(function (node) {
+            if (node) {
+                node.setAttribute("data-has-image", avatarUrl ? "true" : "false");
+            }
+        });
+    }
+
+    function restoreSnapshot() {
+        Array.from(form.elements).forEach(function (element) {
+            if (!element.name || element.type === "file") {
+                return;
+            }
+
+            var values = initialFormState.getAll(element.name);
+            if (element.type === "checkbox" || element.type === "radio") {
+                element.checked = values.indexOf(element.value) !== -1;
+                return;
+            }
+
+            if (element.tagName === "SELECT" && element.multiple) {
+                Array.from(element.options).forEach(function (option) {
+                    option.selected = values.indexOf(option.value) !== -1;
+                });
+                return;
+            }
+
+            element.value = values.length ? values[0] : "";
+        });
+
+        if (photoInput) {
+            photoInput.value = "";
+        }
+        croppedPhotoFile = null;
+        if (cropperController) cropperController.clear();
+
+        if (avatarImage && avatarImage.getAttribute("src")) {
+            avatarPreview.setAttribute("data-has-image", "true");
+        } else {
+            resetAvatarPreview();
+        }
+
+        syncPhotoUploadState(null);
+        if (window.applyAdminSystemInterfacePreferences) {
+            window.applyAdminSystemInterfacePreferences();
+        }
+    }
+
+    form.addEventListener("input", function (event) {
+        if ((event.target === firstNameInput || event.target === lastNameInput) && avatarPreview && avatarPreview.getAttribute("data-has-image") !== "true" && avatarInitials) {
+            avatarInitials.textContent = initialsFromName();
+        }
+
+        setDirty();
+    });
+
+    form.addEventListener("change", function (event) {
+        if (event.target === photoInput) {
+            return;
+        }
+
+        setDirty();
+    });
+
+    if (discardButton) {
+        discardButton.addEventListener("click", function () {
+            restoreSnapshot();
+            isDirty = false;
+            if (saveButton) {
+                saveButton.disabled = true;
+            }
+            if (saveState) {
+                saveState.textContent = "No unsaved changes";
+            }
+            setInlineStatus("All fields reverted.");
+        });
+    }
+
+    function valuesPayloadFromForm(keys) {
+        var payload = {};
+        keys.forEach(function (name) {
+            var field = form.elements.namedItem(name);
+            if (!field) return;
+            if (field.type === "checkbox") {
+                payload[name] = field.checked;
+            } else if (field.type === "number") {
+                payload[name] = Number(field.value);
+            } else {
+                payload[name] = field.value;
+            }
+        });
+        return payload;
+    }
+
+    function valuesHaveChanged(keys, payload) {
+        return keys.some(function (name) {
+            var field = form.elements.namedItem(name);
+            if (!field) return false;
+            var previousValues = initialFormState.getAll(name);
+            var previousValue;
+            if (field.type === "checkbox") {
+                previousValue = previousValues.indexOf(field.value) !== -1;
+                return previousValue !== field.checked;
+            }
+            previousValue = previousValues.length ? previousValues[0] : "";
+            if (field.type === "number") previousValue = Number(previousValue);
+            return payload[name] !== previousValue;
+        });
+    }
+
+    function profileHasChanged() {
+        return ["first_name", "last_name", "email", "phone", "birthdate"].some(function (name) {
+            var field = form.elements.namedItem(name);
+            return field && field.value !== String(initialFormState.get(name) || "");
+        }) || !!croppedPhotoFile || !!(photoInput && photoInput.files && photoInput.files[0]);
+    }
+
+    function parseSaveResponse(response, fallbackMessage) {
+        return response.json().then(function (data) {
+            if (!response.ok) {
+                throw new Error(data && data.error ? data.error : fallbackMessage);
+            }
+            return data;
+        });
+    }
+
+    if (saveButton) {
+        saveButton.addEventListener("click", function () {
+            if (!isDirty) {
+                setInlineStatus("No changes to save.");
+                return;
+            }
+
+            var currentSettings = valuesPayloadFromForm(systemSettingKeys);
+            var currentPreferences = valuesPayloadFromForm(userPreferenceKeys);
+            var settingsChanged = valuesHaveChanged(systemSettingKeys, currentSettings);
+            var preferencesChanged = valuesHaveChanged(userPreferenceKeys, currentPreferences);
+            var profileChanged = profileHasChanged();
+            if (!settingsChanged && !preferencesChanged && !profileChanged) {
+                markClean("No persistent changes to save.");
+                return;
+            }
+            if ((settingsChanged && !settingsEndpoint) || (preferencesChanged && !preferencesEndpoint) || (profileChanged && !profileEndpoint)) {
+                setInlineStatus("Unable to save: a required settings endpoint is not configured.");
+                return;
+            }
+
+            saveButton.disabled = true;
+            if (saveState) saveState.textContent = "Saving...";
+
+            var settingsRequest = settingsChanged ? fetch(settingsEndpoint, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ settings: currentSettings }),
+                credentials: "same-origin"
+            }).then(function (response) {
+                return parseSaveResponse(response, "Unable to save system settings.");
+            }) : Promise.resolve(null);
+
+            var preferencesRequest = preferencesChanged ? fetch(preferencesEndpoint, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ preferences: currentPreferences }),
+                credentials: "same-origin"
+            }).then(function (response) {
+                return parseSaveResponse(response, "Unable to save interface preferences.");
+            }) : Promise.resolve(null);
+
+            var profilePayload = new FormData();
+            ["first_name", "last_name", "email", "phone", "birthdate"].forEach(function (fieldName) {
+                var field = form.elements.namedItem(fieldName);
+                if (field) profilePayload.append(fieldName, field.value || "");
+            });
+            if (croppedPhotoFile || photoInput && photoInput.files && photoInput.files[0]) {
+                profilePayload.append("profile_photo", croppedPhotoFile || photoInput.files[0]);
+            }
+            var profileRequest = profileChanged ? fetch(profileEndpoint, {
+                method: "POST",
+                headers: { "X-CSRFToken": csrfToken },
+                body: profilePayload,
+                credentials: "same-origin"
+            }).then(function (response) {
+                return parseSaveResponse(response, "Unable to save profile changes.");
+            }) : Promise.resolve(null);
+
+            Promise.all([settingsRequest, preferencesRequest, profileRequest]).then(function (results) {
+                var settingsResult = results[0];
+                var preferencesResult = results[1];
+                var profileResult = results[2];
+                if (settingsResult && settingsResult.settings) {
+                    window.adminSystemSettings = settingsResult.settings;
+                }
+                if (preferencesResult && preferencesResult.preferences) {
+                    window.adminUserPreferences = preferencesResult.preferences;
+                }
+                var payloadData = profileResult && profileResult.data ? profileResult.data : null;
+                if (payloadData) {
+                    var nextAvatarUrl = payloadData.profile && payloadData.profile.avatar_url ? payloadData.profile.avatar_url : "";
+                    if (nextAvatarUrl) {
+                        setAvatarPreview(nextAvatarUrl, "profile photo");
+                    } else {
+                        resetAvatarPreview();
+                    }
+                    updateHeaderProfile(payloadData);
+                }
+
+                if (preferencesChanged && window.applyAdminSystemInterfacePreferences) {
+                    window.applyAdminSystemInterfacePreferences();
+                }
+                if (photoInput) {
+                    photoInput.value = "";
+                }
+                croppedPhotoFile = null;
+                syncPhotoUploadState(null);
+                var savedParts = [];
+                if (profileChanged) savedParts.push("Profile information");
+                if (preferencesChanged) savedParts.push("Personal preferences");
+                if (settingsChanged) savedParts.push("Shared configuration");
+                markClean(savedParts.join(", ") + " saved. System policies are not active yet.");
+            }).catch(function (error) {
+                saveButton.disabled = false;
+                if (saveState) {
+                    saveState.textContent = "Unsaved changes";
+                }
+                setInlineStatus("Save may be partial; retry to finish. " + (error && error.message ? error.message : "Unable to save settings."));
+            });
+        });
+    }
+
+    if (!avatarImage || !avatarImage.getAttribute("src")) {
+        resetAvatarPreview();
+    }
+
+    syncPhotoUploadState(null);
+    initialFormState = new FormData(form);
+})();
+</script>
+{% endblock %}

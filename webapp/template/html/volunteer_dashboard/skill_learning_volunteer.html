@@ -1,0 +1,14 @@
+﻿{% extends "user_dashboard/skill_learning.html" %}
+
+{% block sl_user_role %}volunteer{% endblock %}
+
+{% block sl_topic_grid_container %}
+<div id="sl-topic-grid" class="sl-topic-grid" aria-live="polite"></div>
+{% endblock %}
+
+{% block sl_create_topic_action %}
+<button id="sl-open-create-topic" type="button" class="focus-ring sl-create-btn">
+    <i data-lucide="plus" aria-hidden="true"></i>
+    <span>Create Topic</span>
+</button>
+{% endblock %}

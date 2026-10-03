@@ -4,336 +4,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact Hub | Happyness Project</title>
+    <title>Contact | HappYness Project</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}?v=20260820t">
 </head>
 <body>
-    <header class="header" id="home">
-        <div class="container header-row">
-            <a class="brand" href="{% url 'home' %}" aria-label="Happyness Project home">
-                <span class="brand-dot" aria-hidden="true"></span>
-                <span>Happyness Project</span>
-            </a>
+    {% include 'partials/_public_navbar.html' with nav_active='contact' %}
 
-            <nav class="header-nav" id="mobileNav" aria-label="Primary navigation">
-                <ul class="nav-list">
-                    <li><a class="nav-link" href="{% url 'home' %}">Home</a></li>
-                    <li><a class="nav-link" href="{% url 'about' %}">About</a></li>
-                    <li><a class="nav-link" href="{% url 'products' %}">Products</a></li>
-                    <li><a class="nav-link active" href="{% url 'contact' %}">Contacts</a></li>
-                </ul>
-            </nav>
+    <main class="contact-page contact-page-modern">
+        <section class="contact-v2-wrap">
+            <div class="container contact-v2-shell">
+                <header class="contact-v2-hero">
+                    <p class="contact-v2-label">Contact Us</p>
+                    <h1>Get in Touch</h1>
+                    <p>
+                        Have a question, want to volunteer, donate, or partner with us? We'd love to hear from you.
+                        Fill out the form below and we'll get back to you as soon as possible.
+                    </p>
+                </header>
 
-            <div class="header-actions">
-                <button class="btn btn-signin" id="openSignInModal" type="button">Sign In</button>
-                <button class="menu-btn" id="menuBtn" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobileNav">
-                    <i data-lucide="menu"></i>
-                </button>
-            </div>
-        </div>
-    </header>
+                <div class="contact-v2-grid">
+                    <article class="contact-v2-card contact-v2-form-card">
+                        <form class="contact-v2-form" action="#" method="post">
+                            {% csrf_token %}
 
-    <main class="contact-page matrix-mode" id="contactHub">
-        <section class="contact-shell container">
-            <div class="contact-hero">
-                <h1>Let's Connect</h1>
-                <p>
-                    Choose the path that works best for you, instant answers, schedule a meeting,
-                    or tell us about your project.
-                </p>
-            </div>
-
-            <section class="contact-path-grid" aria-label="Contact paths">
-                <button class="contact-path-card" type="button" data-contact-path="chat" aria-pressed="false">
-                    <span class="contact-path-icon"><i data-lucide="message-circle"></i></span>
-                    <h3>Chat with our Team</h3>
-                    <p>Get instant answers from our digital concierge trained on our knowledge base.</p>
-                    <strong>⚡ Real-time answers</strong>
-                </button>
-
-                <button class="contact-path-card" type="button" data-contact-path="calendar" aria-pressed="false">
-                    <span class="contact-path-icon"><i data-lucide="calendar-days"></i></span>
-                    <h3>Grab a spot on the calendar</h3>
-                    <p>Book a 15-minute sync meeting instantly, no back-and-forth emails.</p>
-                    <strong>📅 Invites sent instantly</strong>
-                </button>
-
-                <button class="contact-path-card" type="button" data-contact-path="form" aria-pressed="false">
-                    <span class="contact-path-icon"><i data-lucide="file-text"></i></span>
-                    <h3>Tell us about your project</h3>
-                    <p>Complete our guided conversation for complex inquiries and custom projects.</p>
-                    <strong>⏱️ 2-minute form</strong>
-                </button>
-            </section>
-
-            <section class="contact-workspace">
-                <article class="contact-panel" data-contact-panel="chat">
-                    <div class="contact-detail-head">
-                        <button class="contact-back-btn" type="button" data-path-home aria-label="Back to contact paths">
-                            <i data-lucide="arrow-left"></i>
-                        </button>
-                        <div>
-                            <h2><i data-lucide="sparkles" class="icon-sm"></i> Chat with our Team</h2>
-                            <p class="contact-anchor">⚡ Real-time answers</p>
-                        </div>
-                    </div>
-
-                    <div class="contact-chat-stage">
-                        <div class="contact-chat-window" id="contactChatMessages" aria-live="polite">
-                            <article class="chat-bubble bot">
-                                <div class="chat-avatar"><i data-lucide="briefcase-business"></i></div>
-                                <div class="chat-body">
-                                    <p>Hi! I'm your digital concierge. I can answer questions in seconds. What can I help you with?</p>
-                                </div>
-                            </article>
-                        </div>
-
-                        <div class="contact-chat-footer">
-                            <p class="chat-helper">💬 I can answer questions about our services, location, hours, and more</p>
-                            <div class="chat-typing" id="contactTyping" hidden>
-                                <span></span><span></span><span></span>
+                            <div class="contact-v2-field">
+                                <label class="sr-only" for="contactName">Full Name</label>
+                                <input id="contactName" name="full_name" type="text" placeholder="Full Name" required>
                             </div>
-                            <form id="contactChatForm" class="contact-chat-input" autocomplete="off">
-                                <label class="sr-only" for="contactChatInput">Message</label>
-                                <input id="contactChatInput" type="text" placeholder="Ask me anything..." required>
-                                <button class="btn" type="submit" aria-label="Send message">
-                                    <i data-lucide="send" class="icon-sm"></i>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </article>
 
-                <article class="contact-panel" data-contact-panel="calendar">
-                    <div class="contact-detail-head">
-                        <button class="contact-back-btn" type="button" data-path-home aria-label="Back to contact paths">
-                            <i data-lucide="arrow-left"></i>
-                        </button>
-                        <div>
-                            <h2><i data-lucide="calendar-days" class="icon-sm"></i> Grab a spot on the calendar</h2>
-                        </div>
-                    </div>
+                            <div class="contact-v2-field">
+                                <label class="sr-only" for="contactEmail">Email Address</label>
+                                <input id="contactEmail" name="email" type="email" placeholder="Email Address" required>
+                            </div>
 
-                    <div class="cal-progress-track"><div id="calProgressFill"></div></div>
+                            <div class="contact-v2-field">
+                                <label class="sr-only" for="contactPhone">Phone Number</label>
+                                <div class="contact-v2-phone-row">
+                                    <div class="contact-country-picker" data-contact-country-picker>
+                                        <input id="contactCountry" name="country_code" type="hidden" value="+63">
+                                        <button
+                                            type="button"
+                                            class="contact-country-trigger"
+                                            data-contact-country-trigger
+                                            aria-haspopup="listbox"
+                                            aria-expanded="false"
+                                        >
+                                            <span data-contact-country-label>+63</span>
+                                            <i data-lucide="chevron-down" aria-hidden="true"></i>
+                                        </button>
+                                        <div class="contact-country-menu" data-contact-country-menu role="listbox" hidden>
+                                            <button type="button" class="contact-country-option" data-contact-country-option data-value="+1" role="option">+1</button>
+                                            <button type="button" class="contact-country-option" data-contact-country-option data-value="+44" role="option">+44</button>
+                                            <button type="button" class="contact-country-option" data-contact-country-option data-value="+63" role="option">+63</button>
+                                            <button type="button" class="contact-country-option" data-contact-country-option data-value="+81" role="option">+81</button>
+                                            <button type="button" class="contact-country-option" data-contact-country-option data-value="+86" role="option">+86</button>
+                                            <button type="button" class="contact-country-option" data-contact-country-option data-value="+91" role="option">+91</button>
+                                        </div>
+                                    </div>
+                                    <input id="contactPhone" name="phone" type="tel" inputmode="numeric" pattern="[0-9]*" placeholder="Phone Number" required>
+                                </div>
+                            </div>
 
-                    <div id="calendarBookingBody" class="calendar-surface">
-                        <div class="calendar-grid">
-                            <section class="calendar-dates" aria-label="Pick a date">
-                                <h3 class="calendar-col-title"><i data-lucide="calendar"></i> Pick a date</h3>
-                                <div id="contactDateList"></div>
-                            </section>
+                            <div class="contact-v2-field">
+                                <label class="sr-only" for="contactSubject">Subject</label>
+                                <select id="contactSubject" name="subject" required>
+                                    <option value="" selected disabled hidden>Select a subject</option>
+                                    <option value="General Inquiry">General Inquiry</option>
+                                    <option value="Volunteer">Volunteer</option>
+                                    <option value="Donate">Donate</option>
+                                    <option value="Partnership">Partnership</option>
+                                    <option value="Support">Support</option>
+                                </select>
+                            </div>
 
-                            <section class="calendar-slots-wrap">
-                                <h3 class="calendar-col-title"><i data-lucide="clock-3"></i> Select a time</h3>
-                                <section class="calendar-slots" id="contactTimeSlots" aria-label="Select a time"></section>
-                                <form id="contactBookingForm" class="calendar-form" novalidate>
-                                    <input id="bookingName" type="text" placeholder="Your name" required>
-                                    <input id="bookingEmail" type="email" placeholder="Your email" required>
-                                    <p id="bookingError" class="booking-error" hidden></p>
-                                    <button class="btn" id="confirmBookingBtn" type="submit">Confirm Booking</button>
-                                </form>
-                                <p class="cal-footer-note">↗ Powered by Cal.com</p>
-                            </section>
-                        </div>
-                    </div>
+                            <div class="contact-v2-field">
+                                <label class="sr-only" for="contactMessage">Message</label>
+                                <textarea id="contactMessage" name="message" rows="5" placeholder="Message" required></textarea>
+                            </div>
 
-                    <section id="calendarSuccess" class="calendar-success" hidden aria-live="polite">
-                        <span class="calendar-success-icon"><i data-lucide="calendar-check"></i></span>
-                        <h3>Booking confirmed</h3>
-                        <p>Your invite is on the way. We sent details to <strong id="calendarSuccessEmail"></strong>.</p>
-                        <p id="calendarSuccessDetails"></p>
-                    </section>
-                </article>
+                            <button type="submit" class="contact-v2-submit">Send Message</button>
+                        </form>
+                    </article>
 
-                <article class="contact-panel form-awaiting-choice" data-contact-panel="form">
-                    <div class="contact-detail-head">
-                        <button class="contact-back-btn" type="button" data-path-home aria-label="Back to contact paths">
-                            <i data-lucide="arrow-left"></i>
-                        </button>
-                        <div>
-                            <h2><i data-lucide="file-text" class="icon-sm"></i> Tell us about your needs</h2>
-                            <p class="contact-anchor">⏱️ 2-minute form · Team replies in 2 hours</p>
-                        </div>
-                    </div>
+                    <aside class="contact-v2-side">
+                        <section class="contact-v2-card contact-v2-info-card">
+                            <h2>Contact Information</h2>
+                            <ul>
+                                <li>
+                                    <i data-lucide="mail" aria-hidden="true"></i>
+                                    <span>HappynessProjectPhilippines@gmail.com</span>
+                                </li>
+                                <li>
+                                    <i data-lucide="map-pin" aria-hidden="true"></i>
+                                    <span>Blk. 4 Lot 4 Queen Carmel St., Queensrow East Bacoor, City</span>
+                                </li>
+                                <li>
+                                    <i data-lucide="phone" aria-hidden="true"></i>
+                                    <span>0956 708 0539</span>
+                                </li>
+                                <li>
+                                    <span class="fb-icon-plain" aria-hidden="true">f</span>
+                                    <span>HappYness Project</span>
+                                </li>
+                            </ul>
+                        </section>
 
-                    <div class="form-progress">
-                        <div class="form-progress-track"><div id="formProgressFill"></div></div>
-                        <p id="formProgressText">Step 1</p>
-                    </div>
+                        <section class="contact-v2-card contact-v2-hours-card">
+                            <h2>
+                                <i data-lucide="clock-3" aria-hidden="true"></i>
+                                <span>Office Hours</span>
+                            </h2>
+                            <div class="contact-v2-hours-row">
+                                <span>Monday - Friday</span>
+                                <strong>9:00 AM - 5:00 PM</strong>
+                            </div>
+                            <div class="contact-v2-hours-row">
+                                <span>Saturday</span>
+                                <strong>9:00 AM - 12:00 PM</strong>
+                            </div>
+                            <div class="contact-v2-hours-row">
+                                <span>Sunday</span>
+                                <strong>Closed</strong>
+                            </div>
+                        </section>
 
-                    <div id="flowPicker" class="flow-picker">
-                        <h3>What brings you here today?</h3>
-                        <div class="flow-options">
-                            <button class="flow-option-btn" type="button" data-flow="project">
-                                <span><i data-lucide="briefcase"></i> I have a project</span>
-                                <small>Tell us about your upcoming project, partnership, or collaboration opportunity.</small>
-                            </button>
-                            <button class="flow-option-btn" type="button" data-flow="support">
-                                <span><i data-lucide="wrench"></i> I need support</span>
-                                <small>Get help with an existing product, service, or order.</small>
-                            </button>
-                        </div>
-                    </div>
-
-                    <form id="contactConversationForm" class="conversation-card" hidden novalidate>
-                        <h3 id="formPrompt"></h3>
-                        <p id="formHint" class="form-hint"></p>
-
-                        <div id="formOptions" class="form-option-grid"></div>
-
-                        <div id="formTextWrap" class="form-text-wrap" hidden>
-                            <label class="sr-only" for="formTextInput">Answer</label>
-                            <input id="formTextInput" type="text">
-                        </div>
-
-                        <div id="formTextAreaWrap" class="form-text-wrap" hidden>
-                            <label class="sr-only" for="formTextArea">Details</label>
-                            <textarea id="formTextArea" rows="5" placeholder="Share relevant details..."></textarea>
-                        </div>
-
-                        <div class="conversation-actions" id="conversationActions" hidden>
-                            <button class="btn btn-secondary" type="button" id="formBackBtn">Back</button>
-                            <button class="btn btn-secondary" type="button" id="formSkipBtn" hidden>Skip</button>
-                            <button class="btn" type="submit" id="formNextBtn">Next</button>
-                        </div>
-                    </form>
-
-                    <section id="formSuccess" class="form-success" hidden aria-live="polite">
-                        <span class="calendar-success-icon"><i data-lucide="circle-check"></i></span>
-                        <h3>Thanks, your request is queued</h3>
-                        <p>We received your details and our team will reply in about <strong>2 hours</strong>.</p>
-                    </section>
-                </article>
-            </section>
+                        <section class="contact-v2-card contact-v2-map-card">
+                            <a href="https://maps.app.goo.gl/oQnH5KCyAxUdpFQ96" target="_blank" rel="noopener noreferrer">
+                                Open in Maps
+                                <i data-lucide="external-link" aria-hidden="true"></i>
+                            </a>
+                            <iframe
+                                src="https://maps.google.com/maps?hl=en&q=14.400945,120.994528&z=18&iwloc=B&output=embed"
+                                loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade"
+                                title="HappYness Project location"
+                            ></iframe>
+                        </section>
+                    </aside>
+                </div>
+            </div>
         </section>
     </main>
 
-    <footer class="footer" id="contacts">
-        <div class="container">
-            <div class="footer-grid">
-                <section>
-                    <a class="brand" href="{% url 'home' %}" aria-label="Happyness Project home">
-                        <span class="brand-dot" aria-hidden="true"></span>
-                        <span>Happyness Project</span>
-                    </a>
-                    <p class="brand-copy">
-                        Empowering happier and more fulfilled lives through practical habits, community care, and trusted guidance.
-                    </p>
-                </section>
+    {% include 'partials/_public_footer.html' %}
 
-                <section>
-                    <h4>Quick Links</h4>
-                    <ul>
-                        <li><a href="{% url 'home' %}">Home</a></li>
-                        <li><a href="{% url 'about' %}">About Us</a></li>
-                        <li><a href="{% url 'products' %}">Products</a></li>
-                        <li><a href="{% url 'contact' %}">Contact Hub</a></li>
-                    </ul>
-                </section>
-
-                <section>
-                    <h4>Resources</h4>
-                    <ul>
-                        <li><a href="#">Help Center</a></li>
-                        <li><a href="#">Guides</a></li>
-                        <li><a href="#">Community</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
-                    </ul>
-                </section>
-
-                <section>
-                    <h4>Contact</h4>
-                    <ul>
-                        <li><i data-lucide="mail" class="icon-sm"></i> hello@happyness.com</li>
-                        <li><i data-lucide="phone" class="icon-sm"></i> +1 (555) 123-4567</li>
-                        <li><i data-lucide="map-pin" class="icon-sm"></i> 123 Joy Street</li>
-                        <li>San Francisco, CA</li>
-                    </ul>
-                </section>
-            </div>
-
-            <p class="copyright">&copy; 2026 Happyness Project. Made with <i data-lucide="heart" class="icon-sm"></i> for better living.</p>
-        </div>
-    </footer>
-
-    <div id="signinModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="signinDialogTitle" aria-describedby="signinDialogDescription" aria-hidden="true">
-        <section class="modal-card">
-            <button class="modal-close" id="closeSignInModal" type="button" aria-label="Close sign in dialog">
-                <i data-lucide="x"></i>
-            </button>
-
-            <article class="modal-left">
-                <h2 id="signinDialogTitle" class="dialog-title">Welcome Back!</h2>
-                <p id="signinDialogDescription" class="dialog-description">Sign in to continue your happiness journey with guided practices and community support.</p>
-                <div class="modal-lines" aria-hidden="true">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-            </article>
-
-            <article class="modal-right">
-                <h3>Sign In</h3>
-                <form class="modal-form" method="post" action="{% url 'signin' %}">
-                    {% csrf_token %}
-                    <label class="sr-only" for="id_username_or_email">Username or Email</label>
-                    <input id="id_username_or_email" class="auth-input" type="text" name="username_or_email" value="{{ signin_form.username_or_email.value|default:'' }}" placeholder="Username or Email" required>
-
-                    <label class="sr-only" for="id_password">Password</label>
-                    <input id="id_password" class="auth-input" type="password" name="password" placeholder="Password" required>
-
-                    <button class="btn modal-login-btn" type="submit">LOGIN</button>
-                </form>
-                <p class="modal-signup">new? <a href="#" id="switchToSignUpFromSignIn">Sign up</a></p>
-            </article>
-        </section>
-    </div>
-
-    <div id="signupModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="signupDialogTitle" aria-describedby="signupDialogDescription" aria-hidden="true">
-        <section class="modal-card">
-            <button class="modal-close" id="closeSignUpModal" type="button" aria-label="Close sign up dialog">
-                <i data-lucide="x"></i>
-            </button>
-
-            <article class="modal-left modal-left-signup">
-                <h2 id="signupDialogTitle" class="dialog-title">Welcome New User!</h2>
-                <p id="signupDialogDescription" class="dialog-description">Create your account and begin your guided growth path today.</p>
-                <div class="modal-lines" aria-hidden="true">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-            </article>
-
-            <article class="modal-right">
-                <h3>Sign Up</h3>
-                <form class="modal-form" method="post" action="{% url 'signup' %}">
-                    {% csrf_token %}
-                    <label class="sr-only" for="id_username">Username</label>
-                    <input id="id_username" class="auth-input" type="text" name="username" value="{{ signup_form.username.value|default:'' }}" placeholder="Username" required>
-
-                    <label class="sr-only" for="id_email">Email</label>
-                    <input id="id_email" class="auth-input" type="email" name="email" value="{{ signup_form.email.value|default:'' }}" placeholder="Email Address" required>
-
-                    <label class="sr-only" for="id_password1">Password</label>
-                    <input id="id_password1" class="auth-input" type="password" name="password1" placeholder="Password" required>
-
-                    <label class="sr-only" for="id_password2">Confirm Password</label>
-                    <input id="id_password2" class="auth-input" type="password" name="password2" placeholder="Confirm Password" required>
-
-                    <button class="btn modal-login-btn" type="submit">REGISTER</button>
-                </form>
-                <p class="modal-signup">Already have? <a href="#" id="switchToSignInFromSignUp">Sign in</a></p>
-            </article>
-        </section>
-    </div>
+    {% include 'partials/_auth_modals.html' %}
 
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="{% static 'js/index.js' %}?v=20260307d"></script>
+    <script src="{% static 'js/index.js' %}?v=20260820t"></script>
 </body>
 </html>

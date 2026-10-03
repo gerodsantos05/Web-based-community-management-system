@@ -1,0 +1,346 @@
+{% extends base_template|default:"user_dashboard/base.html" %}
+
+{% block title %}Notifications | HappYness{% endblock %}
+
+{% block content %}
+<style>
+    .notifications-page {
+        width: min(100%, 900px);
+        margin: 0 auto;
+        color: var(--ink-900, #1f2937);
+    }
+
+    .notifications-page__header,
+    .notifications-page__toolbar,
+    .notifications-page__item {
+        border: 1px solid rgba(61, 107, 71, 0.14);
+        background: #ffffff;
+        box-shadow: 0 8px 22px rgba(46, 61, 48, 0.06);
+    }
+
+    .notifications-page__header {
+        padding: 1.25rem 1.4rem;
+        border-radius: 14px;
+    }
+
+    .notifications-page__eyebrow {
+        margin: 0 0 0.25rem;
+        color: #3d6b47;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .notifications-page__title {
+        margin: 0;
+        font-size: 1.45rem;
+        line-height: 1.25;
+        font-weight: 700;
+    }
+
+    .notifications-page__subtitle {
+        margin: 0.4rem 0 0;
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+
+    .notifications-page__toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 0.9rem;
+        padding: 0.8rem 1rem;
+        border-radius: 10px;
+    }
+
+    .notifications-page__count {
+        color: #4b6352;
+        font-size: 0.88rem;
+        font-weight: 600;
+    }
+
+    .notifications-page__mark-all {
+        border: 1px solid rgba(61, 107, 71, 0.2);
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        background: #ffffff;
+        color: #3d6b47;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .notifications-page__mark-all:hover,
+    .notifications-page__mark-all:focus-visible {
+        background: #f0f6f1;
+        outline: none;
+    }
+
+    .notifications-page__group {
+        margin-top: 1.25rem;
+    }
+
+    .notifications-page__group-title {
+        margin: 0 0 0.55rem;
+        color: #4b6352;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .notifications-page__list {
+        display: grid;
+        gap: 0.65rem;
+    }
+
+    .notifications-page__item {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: start;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 0.9rem 1rem;
+        border-radius: 10px;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .notifications-page__item:hover,
+    .notifications-page__item:focus-visible {
+        border-color: rgba(61, 107, 71, 0.35);
+        outline: none;
+        transform: translateY(-1px);
+    }
+
+    .notifications-page__item.is-unread {
+        border-left: 4px solid #3d6b47;
+        background: #fbfefb;
+    }
+
+    .notifications-page__dot {
+        width: 0.55rem;
+        height: 0.55rem;
+        margin-top: 0.35rem;
+        border-radius: 50%;
+        background: #d1d5db;
+    }
+
+    .is-unread .notifications-page__dot {
+        background: #dc2626;
+    }
+
+    .notifications-page__message {
+        margin: 0;
+        color: #1f2937;
+        font-size: 0.92rem;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    .notifications-page__time {
+        display: block;
+        margin-top: 0.25rem;
+        color: #6b7280;
+        font-size: 0.78rem;
+        font-weight: 400;
+    }
+
+    .notifications-page__state {
+        color: #6b7280;
+        font-size: 0.72rem;
+        white-space: nowrap;
+    }
+
+    .notifications-page__empty {
+        margin: 1rem 0 0;
+        padding: 2rem 1rem;
+        border: 1px dashed rgba(61, 107, 71, 0.24);
+        border-radius: 10px;
+        color: #6b7280;
+        text-align: center;
+    }
+
+    @media (max-width: 640px) {
+        .notifications-page__header {
+            padding: 1rem;
+        }
+
+        .notifications-page__toolbar {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .notifications-page__mark-all {
+            width: 100%;
+        }
+
+        .notifications-page__item {
+            grid-template-columns: auto 1fr;
+        }
+
+        .notifications-page__state {
+            grid-column: 2;
+        }
+    }
+</style>
+
+<section class="notifications-page" aria-labelledby="notifications-page-title">
+    <header class="notifications-page__header">
+        <p class="notifications-page__eyebrow">Inbox</p>
+        <h1 id="notifications-page-title" class="notifications-page__title">All notifications</h1>
+        <p class="notifications-page__subtitle">Review updates and open the related dashboard activity.</p>
+    </header>
+
+    <div class="notifications-page__toolbar">
+        <span class="notifications-page__count"><span id="notifications-page-unread-count">{{ notifications_page_unread_count }}</span> unread notification{{ notifications_page_unread_count|pluralize }}</span>
+        <button id="notifications-page-mark-all" class="notifications-page__mark-all" type="button" {% if not notifications_page_unread_count %}disabled{% endif %}>Mark all as read</button>
+    </div>
+
+    <div id="notifications-page-list">
+        {% if notifications_page_unread %}
+            <section class="notifications-page__group" data-read-group="unread">
+                <h2 class="notifications-page__group-title">Unread</h2>
+                <div class="notifications-page__list">
+                    {% for notification in notifications_page_unread %}
+                        <button type="button" class="notifications-page__item is-unread" data-notification-id="{{ notification.id }}" data-notification-url="{{ notification.url }}" data-unread="true">
+                            <span class="notifications-page__dot" aria-hidden="true"></span>
+                            <span>
+                                <span class="notifications-page__message">{{ notification.title }}</span>
+                                <span class="notifications-page__time">{{ notification.time_ago }}</span>
+                            </span>
+                            <span class="notifications-page__state">Unread</span>
+                        </button>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+        {% if notifications_page_read %}
+            <section class="notifications-page__group" data-read-group="read">
+                <h2 class="notifications-page__group-title">Earlier</h2>
+                <div class="notifications-page__list">
+                    {% for notification in notifications_page_read %}
+                        <button type="button" class="notifications-page__item" data-notification-id="{{ notification.id }}" data-notification-url="{{ notification.url }}" data-unread="false">
+                            <span class="notifications-page__dot" aria-hidden="true"></span>
+                            <span>
+                                <span class="notifications-page__message">{{ notification.title }}</span>
+                                <span class="notifications-page__time">{{ notification.time_ago }}</span>
+                            </span>
+                            <span class="notifications-page__state">Read</span>
+                        </button>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+        {% if not notifications_page_unread and not notifications_page_read %}
+            <p class="notifications-page__empty">No notifications yet.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function initNotificationsPage() {
+    "use strict";
+
+    var pageList = document.getElementById("notifications-page-list");
+    var markAllButton = document.getElementById("notifications-page-mark-all");
+    var unreadCount = document.getElementById("notifications-page-unread-count");
+    if (!pageList) {
+        return;
+    }
+
+    var markReadEndpoint = "{% url 'dashboard_notification_mark_read' %}";
+    var markAllEndpoint = "{% url 'dashboard_notification_mark_all_read' %}";
+
+    function getCookie(name) {
+        var prefix = name + "=";
+        var cookies = document.cookie ? document.cookie.split(";") : [];
+        for (var index = 0; index < cookies.length; index += 1) {
+            var cookie = cookies[index].trim();
+            if (cookie.indexOf(prefix) === 0) {
+                return decodeURIComponent(cookie.substring(prefix.length));
+            }
+        }
+        return "";
+    }
+
+    function refreshUnreadCount() {
+        var unreadItems = pageList.querySelectorAll('[data-unread="true"]');
+        var count = unreadItems.length;
+        if (unreadCount) {
+            unreadCount.textContent = String(count);
+        }
+        if (markAllButton) {
+            markAllButton.disabled = count === 0;
+        }
+    }
+
+    function markRead(item) {
+        if (!item || item.getAttribute("data-unread") !== "true") {
+            return Promise.resolve();
+        }
+
+        var body = new URLSearchParams();
+        body.append("notification_id", item.getAttribute("data-notification-id"));
+
+        return fetch(markReadEndpoint, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "X-CSRFToken": getCookie("csrftoken") },
+            body: body.toString()
+        }).then(function (response) {
+            if (!response.ok) {
+                return;
+            }
+            item.setAttribute("data-unread", "false");
+            item.classList.remove("is-unread");
+            var state = item.querySelector(".notifications-page__state");
+            if (state) {
+                state.textContent = "Read";
+            }
+            refreshUnreadCount();
+        });
+    }
+
+    pageList.addEventListener("click", function (event) {
+        var item = event.target.closest("[data-notification-id]");
+        if (!item) {
+            return;
+        }
+        var targetUrl = item.getAttribute("data-notification-url") || "";
+        markRead(item).finally(function () {
+            if (targetUrl) {
+                window.location.href = targetUrl;
+            }
+        });
+    });
+
+    if (markAllButton) {
+        markAllButton.addEventListener("click", function () {
+            fetch(markAllEndpoint, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { "X-CSRFToken": getCookie("csrftoken") }
+            }).then(function (response) {
+                if (!response.ok) {
+                    return;
+                }
+                pageList.querySelectorAll('[data-unread="true"]').forEach(function (item) {
+                    item.setAttribute("data-unread", "false");
+                    item.classList.remove("is-unread");
+                    var state = item.querySelector(".notifications-page__state");
+                    if (state) {
+                        state.textContent = "Read";
+                    }
+                });
+                refreshUnreadCount();
+            });
+        });
+    }
+})();
+</script>
+{% endblock %}

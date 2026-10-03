@@ -1,0 +1,786 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Engagement - Feedback | HappYness{% endblock %}
+
+{% block extra_head %}
+<style data-admin-panel-style="admin-feedback">
+    .eng-page {
+        --eng-green-50: #f0fdf4;
+        --eng-green-500: #22c55e;
+        --eng-green-700: #15803d;
+        --eng-teal-500: #14b8a6;
+        --eng-border: rgba(21, 128, 61, 0.14);
+        --eng-shadow: 0 10px 24px rgba(2, 44, 34, 0.06);
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .eng-panel {
+        background: #ffffff;
+        border: 1px solid var(--eng-border);
+        border-radius: 1rem;
+        box-shadow: var(--eng-shadow);
+    }
+
+    .eng-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.7rem;
+        padding: 0.85rem 0.95rem;
+    }
+
+    .eng-title {
+        margin: 0;
+        color: var(--ink-900);
+        font-size: 1rem;
+        font-weight: 800;
+    }
+
+    .eng-subtitle {
+        margin: 0.25rem 0 0;
+        color: var(--ink-500);
+        font-size: 0.78rem;
+    }
+
+    .eng-actions {
+        padding: 0.72rem 0.95rem;
+        border-top: 1px solid rgba(15, 118, 110, 0.1);
+        border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+    }
+
+    .eng-search {
+        min-width: 220px;
+        flex: 1;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        border-radius: 0.68rem;
+        padding: 0.48rem 0.58rem;
+        font-size: 0.79rem;
+    }
+
+    .eng-tabs {
+        display: flex;
+        gap: 0.3rem;
+        flex-wrap: wrap;
+        padding: 0.62rem 0.95rem;
+        border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+    }
+
+    .eng-tab {
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--ink-700);
+        border-radius: 0.66rem;
+        padding: 0.38rem 0.56rem;
+        font-size: 0.77rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        cursor: pointer;
+    }
+
+    .eng-tab:hover {
+        background: var(--eng-green-50);
+        border-color: rgba(34, 197, 94, 0.22);
+    }
+
+    .eng-tab.is-active {
+        color: var(--eng-green-700);
+        font-weight: 700;
+        border-color: rgba(34, 197, 94, 0.36);
+        background: linear-gradient(180deg, var(--eng-green-50), #ffffff);
+    }
+
+    .eng-count {
+        border-radius: 999px;
+        border: 1px solid rgba(100, 116, 139, 0.2);
+        background: #f8fafc;
+        min-width: 1.4rem;
+        text-align: center;
+        font-size: 0.67rem;
+        padding: 0.12rem 0.32rem;
+    }
+
+    .fb-main {
+        display: grid;
+        grid-template-columns: minmax(320px, 0.95fr) minmax(360px, 1.1fr);
+        min-height: 560px;
+    }
+
+    .fb-list-wrap {
+        border-right: 1px solid rgba(15, 118, 110, 0.1);
+    }
+
+    .fb-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: calc(100vh - 260px);
+        overflow-y: auto;
+    }
+
+    .fb-item {
+        border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+        padding: 0.7rem;
+        cursor: pointer;
+        display: grid;
+        gap: 0.36rem;
+    }
+
+    .fb-item:hover {
+        background: #f8fffb;
+    }
+
+    .fb-item.is-active {
+        background: var(--eng-green-50);
+    }
+
+    .fb-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.45rem;
+    }
+
+    .fb-user {
+        margin: 0;
+        color: var(--ink-900);
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .fb-date {
+        margin: 0;
+        color: var(--ink-500);
+        font-size: 0.71rem;
+        white-space: nowrap;
+    }
+
+    .fb-title {
+        margin: 0;
+        color: var(--ink-800);
+        font-size: 0.81rem;
+        font-weight: 600;
+    }
+
+    .fb-preview {
+        margin: 0;
+        color: var(--ink-600);
+        font-size: 0.77rem;
+        line-height: 1.43;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .fb-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+    }
+
+    .eng-badge {
+        border-radius: 999px;
+        border: 1px solid transparent;
+        padding: 0.14rem 0.4rem;
+        font-size: 0.67rem;
+        font-weight: 700;
+    }
+
+    .fb-status-unread {
+        background: rgba(59, 130, 246, 0.13);
+        color: #1d4ed8;
+        border-color: rgba(59, 130, 246, 0.24);
+    }
+
+    .fb-status-in-progress {
+        background: rgba(245, 158, 11, 0.14);
+        color: #92400e;
+        border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .fb-status-resolved {
+        background: rgba(34, 197, 94, 0.13);
+        color: #166534;
+        border-color: rgba(34, 197, 94, 0.25);
+    }
+
+    .fb-status-reported {
+        background: rgba(239, 68, 68, 0.14);
+        color: #b91c1c;
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .fb-priority-low {
+        background: rgba(148, 163, 184, 0.16);
+        color: #475569;
+        border-color: rgba(148, 163, 184, 0.28);
+    }
+
+    .fb-priority-medium {
+        background: rgba(20, 184, 166, 0.14);
+        color: #0f766e;
+        border-color: rgba(20, 184, 166, 0.28);
+    }
+
+    .fb-priority-high {
+        background: rgba(245, 158, 11, 0.16);
+        color: #92400e;
+        border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .fb-priority-urgent {
+        background: rgba(239, 68, 68, 0.14);
+        color: #b91c1c;
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .fb-empty {
+        margin: 0.74rem;
+        border: 1px dashed rgba(15, 118, 110, 0.2);
+        border-radius: 0.72rem;
+        color: var(--ink-500);
+        font-size: 0.8rem;
+        text-align: center;
+        padding: 0.75rem;
+    }
+
+    .fb-detail {
+        display: grid;
+        grid-template-rows: auto auto auto 1fr auto;
+        min-height: 560px;
+    }
+
+    .fb-detail-head {
+        padding: 0.8rem 0.86rem;
+        border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+    }
+
+    .fb-detail-title {
+        margin: 0;
+        color: var(--ink-900);
+        font-size: 0.92rem;
+        font-weight: 700;
+    }
+
+    .fb-detail-sub {
+        margin: 0.24rem 0 0;
+        color: var(--ink-500);
+        font-size: 0.75rem;
+    }
+
+    .fb-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.42rem;
+        border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+        padding: 0.72rem 0.86rem;
+    }
+
+    .fb-label {
+        margin: 0 0 0.24rem;
+        color: var(--ink-500);
+        font-size: 0.67rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .fb-select {
+        width: 100%;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        border-radius: 0.66rem;
+        padding: 0.43rem 0.5rem;
+        font-size: 0.76rem;
+    }
+
+    .fb-message {
+        border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+        padding: 0.8rem 0.86rem;
+    }
+
+    .fb-message-text {
+        margin: 0;
+        color: var(--ink-800);
+        font-size: 0.8rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+
+    .fb-attachments {
+        margin-top: 0.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+    }
+
+    .fb-attach {
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        border-radius: 0.6rem;
+        background: #f8fffb;
+        color: #0f766e;
+        font-size: 0.72rem;
+        padding: 0.24rem 0.42rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.24rem;
+    }
+
+    .fb-thread {
+        padding: 0.72rem 0.86rem;
+        overflow-y: auto;
+        max-height: 220px;
+        display: grid;
+        gap: 0.4rem;
+        align-content: start;
+    }
+
+    .fb-reply {
+        border: 1px solid rgba(15, 118, 110, 0.12);
+        border-radius: 0.68rem;
+        padding: 0.46rem 0.52rem;
+        background: #ffffff;
+    }
+
+    .fb-reply.is-admin {
+        background: var(--eng-green-50);
+        border-color: rgba(34, 197, 94, 0.24);
+    }
+
+    .fb-reply-meta {
+        margin: 0;
+        color: var(--ink-500);
+        font-size: 0.68rem;
+    }
+
+    .fb-reply-text {
+        margin: 0.2rem 0 0;
+        color: var(--ink-800);
+        font-size: 0.78rem;
+        line-height: 1.43;
+        white-space: pre-wrap;
+    }
+
+    .fb-reply-form {
+        border-top: 1px solid rgba(15, 118, 110, 0.1);
+        padding: 0.72rem 0.86rem;
+        display: grid;
+        gap: 0.38rem;
+    }
+
+    .fb-textarea {
+        width: 100%;
+        min-height: 70px;
+        resize: vertical;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        border-radius: 0.68rem;
+        padding: 0.52rem;
+        font-size: 0.78rem;
+        font-family: inherit;
+    }
+
+    .fb-send {
+        justify-self: end;
+        border: 0;
+        border-radius: 0.66rem;
+        background: linear-gradient(135deg, #22c55e, #14b8a6);
+        color: #ffffff;
+        font-size: 0.77rem;
+        font-weight: 700;
+        padding: 0.38rem 0.62rem;
+        cursor: pointer;
+    }
+
+    .fb-send:hover {
+        box-shadow: 0 8px 16px rgba(34, 197, 94, 0.26);
+    }
+
+    .eng-focus:focus-visible {
+        outline: 2px solid var(--eng-teal-500);
+        outline-offset: 2px;
+    }
+
+    @media (max-width: 980px) {
+        .fb-main {
+            grid-template-columns: 1fr;
+        }
+
+        .fb-list-wrap {
+            border-right: 0;
+            border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+        }
+
+        .fb-list {
+            max-height: 320px;
+        }
+
+        .fb-controls {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="eng-page" id="fb-page">
+    <section class="eng-panel">
+        <header class="eng-header">
+            <div>
+                <h1 class="eng-title">Feedback</h1>
+                <p class="eng-subtitle">Inbox-style queue with ticket detail, status control, and threaded replies.</p>
+            </div>
+            <span class="eng-subtitle" id="fb-total-label">0 tickets</span>
+        </header>
+
+        <div class="eng-actions">
+            <input type="search" id="fb-search" class="eng-search eng-focus" placeholder="Search feedback by user, title, or message..." aria-label="Search feedback" />
+        </div>
+
+        <div class="eng-tabs" role="tablist" aria-label="Feedback tabs">
+            <button type="button" class="eng-tab eng-focus is-active" data-tab="all" role="tab" aria-selected="true">All <span class="eng-count" data-count="all">0</span></button>
+            <button type="button" class="eng-tab eng-focus" data-tab="unread" role="tab" aria-selected="false">Unread <span class="eng-count" data-count="unread">0</span></button>
+            <button type="button" class="eng-tab eng-focus" data-tab="in-progress" role="tab" aria-selected="false">In Progress <span class="eng-count" data-count="in-progress">0</span></button>
+            <button type="button" class="eng-tab eng-focus" data-tab="resolved" role="tab" aria-selected="false">Resolved <span class="eng-count" data-count="resolved">0</span></button>
+            <button type="button" class="eng-tab eng-focus" data-tab="reported" role="tab" aria-selected="false">Reported <span class="eng-count" data-count="reported">0</span></button>
+        </div>
+
+        <div class="fb-main">
+            <div class="fb-list-wrap">
+                <ul class="fb-list" id="fb-list"></ul>
+                <div class="fb-empty" id="fb-empty" style="display:none;">No feedback found for this filter.</div>
+            </div>
+
+            <div class="fb-detail">
+                <div class="fb-detail-head">
+                    <h2 class="fb-detail-title" id="fb-detail-title">Select feedback</h2>
+                    <p class="fb-detail-sub" id="fb-detail-sub">Choose a ticket from the list.</p>
+                    <div class="fb-meta" id="fb-detail-badges"></div>
+                </div>
+
+                <div class="fb-controls">
+                    <div>
+                        <p class="fb-label">Status</p>
+                        <select id="fb-status" class="fb-select eng-focus" aria-label="Update status">
+                            <option value="Unread">Unread</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
+                            <option value="Reported">Reported</option>
+                        </select>
+                    </div>
+                    <div>
+                        <p class="fb-label">Priority</p>
+                        <select id="fb-priority" class="fb-select eng-focus" aria-label="Update priority">
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                            <option value="Urgent">Urgent</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="fb-message">
+                    <p class="fb-message-text" id="fb-message">No message selected.</p>
+                    <div class="fb-attachments" id="fb-attachments"></div>
+                </div>
+
+                <div class="fb-thread" id="fb-thread"></div>
+
+                <form class="fb-reply-form" id="fb-reply-form">
+                    <textarea id="fb-reply-text" class="fb-textarea eng-focus" placeholder="Write an admin reply..." aria-label="Reply"></textarea>
+                    <button type="submit" class="fb-send eng-focus">Send Reply</button>
+                </form>
+            </div>
+        </div>
+    </section>
+</div>
+
+<template id="fb-item-template">
+    <li class="fb-item" data-id="">
+        <div class="fb-row">
+            <p class="fb-user"></p>
+            <p class="fb-date"></p>
+        </div>
+        <p class="fb-title"></p>
+        <p class="fb-preview"></p>
+        <div class="fb-meta">
+            <span class="eng-badge fb-status"></span>
+            <span class="eng-badge fb-priority"></span>
+        </div>
+    </li>
+</template>
+
+<script id="fb-data" type="application/json">
+{
+  "items": [
+    {"id": 101, "user": "Maya S.", "title": "Mobile dashboard is slow", "message": "Dashboard takes around 10 seconds to load on mobile but works fine on desktop.", "status": "Unread", "priority": "High", "date": "Apr 11, 2026", "attachments": ["screen-recording.mp4"], "thread": [{"author": "Maya S.", "role": "User", "text": "Initial report submitted.", "time": "9:42 AM"}]},
+    {"id": 102, "user": "Jerome D.", "title": "Donation receipt details", "message": "Can campaign name be included in the donation receipt email?", "status": "In Progress", "priority": "Medium", "date": "Apr 10, 2026", "attachments": [], "thread": [{"author": "Jerome D.", "role": "User", "text": "Donors are requesting this detail.", "time": "2:15 PM"}, {"author": "Admin Team", "role": "Admin", "text": "We have added this to the next sprint.", "time": "3:02 PM"}]},
+    {"id": 103, "user": "Nina R.", "title": "Offensive comment in feed", "message": "A comment includes offensive language and should be reviewed immediately.", "status": "Reported", "priority": "Urgent", "date": "Apr 10, 2026", "attachments": ["comment-screenshot.png"], "thread": [{"author": "Nina R.", "role": "User", "text": "Please escalate this.", "time": "11:31 AM"}]},
+    {"id": 104, "user": "Paul T.", "title": "Workshop email missing date", "message": "Confirmation email arrived without the event date.", "status": "Resolved", "priority": "Low", "date": "Apr 9, 2026", "attachments": [], "thread": [{"author": "Paul T.", "role": "User", "text": "Missing event date in email.", "time": "9:00 AM"}, {"author": "Admin Team", "role": "Admin", "text": "Issue fixed and deployed.", "time": "1:18 PM"}]}
+  ]
+}
+</script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function initFeedbackTabs() {
+    "use strict";
+
+    var state = {
+        items: [],
+        tab: "all",
+        search: "",
+        selectedId: null
+    };
+
+    function slug(value) {
+        return String(value || "").toLowerCase().replace(/\s+/g, "-");
+    }
+
+    function findItem(id) {
+        return state.items.find(function(item) { return item.id === id; });
+    }
+
+    function filteredItems() {
+        return state.items.filter(function(item) {
+            var tabOk = state.tab === "all" || slug(item.status) === state.tab;
+            if (!tabOk) return false;
+            if (!state.search) return true;
+            var hay = [item.user, item.title, item.message, item.status, item.priority].join(" ").toLowerCase();
+            return hay.indexOf(state.search) !== -1;
+        });
+    }
+
+    function updateCounts() {
+        var counts = {
+            all: state.items.length,
+            unread: state.items.filter(function(item) { return slug(item.status) === "unread"; }).length,
+            "in-progress": state.items.filter(function(item) { return slug(item.status) === "in-progress"; }).length,
+            resolved: state.items.filter(function(item) { return slug(item.status) === "resolved"; }).length,
+            reported: state.items.filter(function(item) { return slug(item.status) === "reported"; }).length
+        };
+
+        Object.keys(counts).forEach(function(key) {
+            var node = document.querySelector('[data-count="' + key + '"]');
+            if (node) node.textContent = String(counts[key]);
+        });
+
+        document.getElementById("fb-total-label").textContent = String(state.items.length) + " tickets";
+    }
+
+    function ensureSelection() {
+        var visible = filteredItems();
+        if (!visible.length) {
+            state.selectedId = null;
+            return;
+        }
+
+        var exists = visible.some(function(item) { return item.id === state.selectedId; });
+        if (!exists) state.selectedId = visible[0].id;
+    }
+
+    function renderList() {
+        var root = document.getElementById("fb-list");
+        var empty = document.getElementById("fb-empty");
+        var template = document.getElementById("fb-item-template");
+        var items = filteredItems();
+
+        root.innerHTML = "";
+
+        if (!items.length) {
+            empty.style.display = "block";
+            return;
+        }
+
+        empty.style.display = "none";
+
+        items.forEach(function(item) {
+            var frag = template.content.cloneNode(true);
+            var row = frag.querySelector(".fb-item");
+
+            row.setAttribute("data-id", String(item.id));
+            if (item.id === state.selectedId) row.classList.add("is-active");
+
+            frag.querySelector(".fb-user").textContent = item.user;
+            frag.querySelector(".fb-date").textContent = item.date;
+            frag.querySelector(".fb-title").textContent = item.title;
+            frag.querySelector(".fb-preview").textContent = item.message;
+
+            var status = frag.querySelector(".fb-status");
+            status.textContent = item.status;
+            status.className = "eng-badge fb-status fb-status-" + slug(item.status);
+
+            var priority = frag.querySelector(".fb-priority");
+            priority.textContent = item.priority;
+            priority.className = "eng-badge fb-priority fb-priority-" + slug(item.priority);
+
+            row.addEventListener("click", function() {
+                state.selectedId = item.id;
+                renderList();
+                renderDetail();
+            });
+
+            root.appendChild(frag);
+        });
+    }
+
+    function renderDetail() {
+        var item = findItem(state.selectedId);
+        var title = document.getElementById("fb-detail-title");
+        var sub = document.getElementById("fb-detail-sub");
+        var badges = document.getElementById("fb-detail-badges");
+        var message = document.getElementById("fb-message");
+        var attachments = document.getElementById("fb-attachments");
+        var thread = document.getElementById("fb-thread");
+        var statusSelect = document.getElementById("fb-status");
+        var prioritySelect = document.getElementById("fb-priority");
+
+        if (!item) {
+            title.textContent = "Select feedback";
+            sub.textContent = "Choose a ticket from the list.";
+            badges.innerHTML = "";
+            message.textContent = "No message selected.";
+            attachments.innerHTML = "";
+            thread.innerHTML = "";
+            statusSelect.value = "Unread";
+            prioritySelect.value = "Low";
+            return;
+        }
+
+        title.textContent = item.title;
+        sub.textContent = item.user + " · " + item.date;
+        badges.innerHTML = ''
+            + '<span class="eng-badge fb-status-' + slug(item.status) + '">' + item.status + '</span>'
+            + '<span class="eng-badge fb-priority-' + slug(item.priority) + '">' + item.priority + '</span>';
+
+        message.textContent = item.message;
+
+        attachments.innerHTML = "";
+        if (item.attachments && item.attachments.length) {
+            item.attachments.forEach(function(file) {
+                var span = document.createElement("span");
+                span.className = "fb-attach";
+                span.innerHTML = '<i data-lucide="paperclip" style="width:0.82rem;height:0.82rem;"></i>' + file;
+                attachments.appendChild(span);
+            });
+        } else {
+            attachments.innerHTML = '<span class="fb-attach">No attachments</span>';
+        }
+
+        thread.innerHTML = "";
+        (item.thread || []).forEach(function(reply) {
+            var article = document.createElement("article");
+            article.className = "fb-reply" + (String(reply.role).toLowerCase() === "admin" ? " is-admin" : "");
+            article.innerHTML = ''
+                + '<p class="fb-reply-meta">' + reply.author + ' · ' + (reply.time || "") + '</p>'
+                + '<p class="fb-reply-text">' + reply.text + '</p>';
+            thread.appendChild(article);
+        });
+
+        statusSelect.value = item.status;
+        prioritySelect.value = item.priority;
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    }
+
+    function bindTabs() {
+        var tabs = document.querySelectorAll(".eng-tab");
+        tabs.forEach(function(tab) {
+            tab.addEventListener("click", function() {
+                tabs.forEach(function(btn) {
+                    btn.classList.remove("is-active");
+                    btn.setAttribute("aria-selected", "false");
+                });
+                tab.classList.add("is-active");
+                tab.setAttribute("aria-selected", "true");
+                state.tab = tab.getAttribute("data-tab");
+                ensureSelection();
+                renderList();
+                renderDetail();
+            });
+        });
+    }
+
+    function bindSearch() {
+        document.getElementById("fb-search").addEventListener("input", function(event) {
+            state.search = event.target.value.trim().toLowerCase();
+            ensureSelection();
+            renderList();
+            renderDetail();
+        });
+    }
+
+    function bindDetailControls() {
+        document.getElementById("fb-status").addEventListener("change", function(event) {
+            var item = findItem(state.selectedId);
+            if (!item) return;
+            item.status = event.target.value;
+            updateCounts();
+            ensureSelection();
+            renderList();
+            renderDetail();
+        });
+
+        document.getElementById("fb-priority").addEventListener("change", function(event) {
+            var item = findItem(state.selectedId);
+            if (!item) return;
+            item.priority = event.target.value;
+            renderList();
+            renderDetail();
+        });
+    }
+
+    function bindReply() {
+        document.getElementById("fb-reply-form").addEventListener("submit", function(event) {
+            event.preventDefault();
+            var item = findItem(state.selectedId);
+            var text = document.getElementById("fb-reply-text").value.trim();
+            if (!item || !text) return;
+
+            item.thread = item.thread || [];
+            item.thread.push({ author: "Admin Team", role: "Admin", text: text, time: "just now" });
+            item.status = "In Progress";
+            document.getElementById("fb-reply-text").value = "";
+            updateCounts();
+            renderList();
+            renderDetail();
+        });
+    }
+
+    function init() {
+        var data = JSON.parse(document.getElementById("fb-data").textContent);
+        state.items = Array.isArray(data.items) ? data.items : [];
+        state.selectedId = state.items.length ? state.items[0].id : null;
+
+        bindTabs();
+        bindSearch();
+        bindDetailControls();
+        bindReply();
+
+        updateCounts();
+        ensureSelection();
+        renderList();
+        renderDetail();
+
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
+})();
+</script>
+{% endblock %}

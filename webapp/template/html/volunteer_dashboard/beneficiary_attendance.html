@@ -1,0 +1,163 @@
+{% extends "volunteer_dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Beneficiary Attendance | HappYness{% endblock %}
+
+{% block extra_head %}
+<style>
+    #beneficiary-attendance-page { max-width: 1120px; margin: 0 auto; padding: 1.25rem 0 2rem; color: #0f172a; animation: ba-page-enter 260ms cubic-bezier(.2,.8,.2,1) both; }
+    #beneficiary-attendance-page.ba-page-leaving { animation: ba-page-leave 180ms ease-in both; pointer-events:none; }
+    @keyframes ba-page-enter { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes ba-page-leave { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(8px); } }
+    .ba-breadcrumb { display:inline-flex; align-items:center; gap:.4rem; border:0; background:transparent; color:#0f766e; cursor:pointer; font-size:.8rem; font-weight:800; padding:0; }
+    .ba-header { display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; margin:1rem 0 1.15rem; }
+    .ba-kicker { margin:0 0 .35rem; color:#0f766e; font-size:.7rem; font-weight:850; letter-spacing:.1em; text-transform:uppercase; }
+    .ba-title { margin:0; font-size:1.8rem; font-weight:850; letter-spacing:-.03em; }
+    .ba-subtitle { margin:.3rem 0 0; color:#64748b; font-size:.9rem; }
+    .ba-live { display:inline-flex; align-items:center; gap:.4rem; padding:.42rem .7rem; border-radius:999px; background:#dff4ef; color:#0f766e; font-size:.75rem; font-weight:850; white-space:nowrap; }
+    .ba-live-dot { width:.45rem; height:.45rem; border-radius:50%; background:#0f9b8e; animation:ba-pulse 1.5s ease-in-out infinite; }
+    @keyframes ba-pulse { 0%,100%{opacity:.45} 50%{opacity:1} }
+    .ba-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.75rem; margin-bottom:1rem; }
+    .ba-stat { padding:.85rem 1rem; border:1px solid #dfe7e2; border-radius:.85rem; background:#fff; }
+    .ba-stat-label { display:block; color:#64748b; font-size:.72rem; font-weight:750; }
+    .ba-stat-value { display:block; margin-top:.25rem; color:#0f172a; font-size:1.35rem; font-weight:850; }
+    .ba-stat.pending .ba-stat-value { color:#b45309; }
+    .ba-stat.confirmed .ba-stat-value { color:#0f766e; }
+    .ba-panel { border:1px solid #dfe7e2; border-radius:1rem; background:#fff; box-shadow:0 12px 30px rgba(15,23,42,.05); overflow:hidden; }
+    .ba-panel-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1rem 1.1rem; border-bottom:1px solid #e7efe8; }
+    .ba-panel-title { margin:0; font-size:1rem; font-weight:850; }
+    .ba-panel-meta { margin:.25rem 0 0; color:#64748b; font-size:.78rem; }
+    .ba-tools { display:flex; align-items:center; gap:.55rem; flex-wrap:wrap; padding:.8rem 1.1rem; background:#f8fbfa; border-bottom:1px solid #e7efe8; }
+    .ba-search { flex:1 1 250px; min-width:0; padding:.65rem .75rem; border:1px solid #d5e4df; border-radius:.65rem; background:#fff; color:#0f172a; font:inherit; font-size:.82rem; outline:none; }
+    .ba-search:focus { border-color:#0f9b8e; box-shadow:0 0 0 3px rgba(15,155,142,.12); }
+    .ba-filter { padding:.5rem .7rem; border:1px solid #d5e4df; border-radius:999px; background:#fff; color:#64748b; cursor:pointer; font-size:.74rem; font-weight:800; }
+    .ba-filter.is-active { border-color:#0f9b8e; background:#e5f6f1; color:#0f766e; }
+    .ba-list { display:grid; gap:.65rem; padding:1rem 1.1rem 1.1rem; }
+    .ba-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.75rem; border:1px solid #dfe7e2; border-radius:.8rem; background:#f8fbfa; }
+    .ba-person { display:flex; align-items:center; min-width:0; gap:.7rem; }
+    .ba-avatar { width:2.7rem; height:2.7rem; flex:0 0 2.7rem; display:grid; place-items:center; overflow:hidden; border:2px solid #c5e8dc; border-radius:50%; background:#dff4ef; color:#0f766e; font-weight:850; }
+    .ba-avatar img { width:100%; height:100%; object-fit:cover; }
+    .ba-person-copy { display:flex; min-width:0; flex-direction:column; gap:.2rem; }
+    .ba-name { overflow:hidden; color:#0f172a; font-size:.9rem; font-weight:850; text-overflow:ellipsis; white-space:nowrap; }
+    .ba-status { color:#64748b; font-size:.74rem; font-weight:700; }
+    .ba-status.confirmed { color:#0f766e; }
+    .ba-status.submitted { color:#9a6700; }
+    .ba-status.rejected { color:#b42318; }
+    .ba-action { padding:.55rem .75rem; border:1px solid #0f9b8e; border-radius:.65rem; background:#0f9b8e; color:#fff; cursor:pointer; font-size:.76rem; font-weight:850; white-space:nowrap; }
+    .ba-action:disabled { opacity:.6; cursor:not-allowed; }
+    .ba-empty { padding:2rem 1rem; color:#64748b; text-align:center; }
+    .ba-locked { padding:1.25rem; color:#92400e; background:#fff8e8; font-size:.85rem; font-weight:700; }
+    @media (max-width:760px) { .ba-header { align-items:flex-start; flex-direction:column; } .ba-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:520px) { #beneficiary-attendance-page { padding-top:.8rem; } .ba-title { font-size:1.45rem; } .ba-row { align-items:stretch; flex-direction:column; } .ba-action { align-self:flex-start; } }
+    @media (prefers-reduced-motion: reduce) { #tasks-ojt-page.toj-page-leaving, #beneficiary-attendance-page, #beneficiary-attendance-page.ba-page-leaving { animation:none; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<section id="beneficiary-attendance-page" aria-labelledby="ba-title">
+    <button id="ba-back-button" type="button" class="ba-breadcrumb">← Back to Tasks &amp; OJT</button>
+    <header class="ba-header">
+        <div>
+            <p class="ba-kicker">Attendance workspace</p>
+            <h1 id="ba-title" class="ba-title">{{ assignment_payload.activity_name }}</h1>
+            <p class="ba-subtitle">{{ assignment_payload.date }} · {{ assignment_payload.location|default:"Location to be confirmed" }}</p>
+        </div>
+        {% if assignment_payload.status == "time_in" or assignment_payload.status == "in_progress" %}
+            <span class="ba-live"><span class="ba-live-dot" aria-hidden="true"></span>Live attendance</span>
+        {% endif %}
+    </header>
+
+    <div id="ba-summary" class="ba-summary" aria-label="Attendance summary"></div>
+    <section class="ba-panel" aria-labelledby="ba-list-title">
+        <header class="ba-panel-head">
+            <div>
+                <h2 id="ba-list-title" class="ba-panel-title">Beneficiaries</h2>
+                <p class="ba-panel-meta">Confirm attendance only for people assigned to this activity.</p>
+            </div>
+        </header>
+        <div id="ba-locked" class="ba-locked" hidden>Time in first to manage beneficiary attendance.</div>
+        <div id="ba-tools" class="ba-tools">
+            <input id="ba-search" class="ba-search" type="search" placeholder="Search beneficiaries" aria-label="Search beneficiaries">
+            <div id="ba-filters" role="group" aria-label="Attendance filters"></div>
+        </div>
+        <div id="ba-list" class="ba-list"></div>
+    </section>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ assignment_payload|json_script:"beneficiary-attendance-assignment" }}
+<script>
+(function(){
+    "use strict";
+    var assignment = JSON.parse(document.getElementById("beneficiary-attendance-assignment").textContent || "{}");
+    var beneficiaries = Array.isArray(assignment.beneficiaries) ? assignment.beneficiaries : [];
+    var activeFilter = "all";
+    var search = document.getElementById("ba-search");
+    var list = document.getElementById("ba-list");
+    var summary = document.getElementById("ba-summary");
+    var tools = document.getElementById("ba-tools");
+    var locked = document.getElementById("ba-locked");
+    var isLive = assignment.status === "time_in" || assignment.status === "in_progress";
+    var csrf = (document.cookie.match(/(?:^|; )csrftoken=([^;]*)/) || ["", ""])[1];
+    var page = document.getElementById("beneficiary-attendance-page");
+    var backButton = document.getElementById("ba-back-button");
+
+    if (backButton) {
+        backButton.addEventListener("click", function(){
+            var targetUrl = "{% url 'volunteer_dashboard_tasks_ojt' %}";
+            if (page) {
+                page.classList.add("ba-page-leaving");
+                window.setTimeout(function(){ window.location.href = targetUrl; }, 180);
+            } else {
+                window.location.href = targetUrl;
+            }
+        });
+    }
+
+    function initials(name){ return String(name || "B").split(/\s+/).filter(Boolean).slice(0,2).map(function(part){ return part.charAt(0).toUpperCase(); }).join("") || "B"; }
+    function statusText(item){ return item.status === "pending" && item.confirmed_at ? "Submitted for approval" : item.status_label || (item.status === "confirmed" ? "Confirmed" : item.status === "rejected" ? "Rejected" : "Pending"); }
+    function refreshSummary(){
+        var confirmed = beneficiaries.filter(function(item){ return item.status === "confirmed"; }).length;
+        var awaiting = beneficiaries.filter(function(item){ return item.status === "pending" && item.confirmed_at; }).length;
+        var needsAction = beneficiaries.filter(function(item){ return item.status !== "confirmed" && !item.confirmed_at; }).length;
+        summary.innerHTML = '<article class="ba-stat"><span class="ba-stat-label">Assigned</span><strong class="ba-stat-value">' + beneficiaries.length + '</strong></article><article class="ba-stat pending"><span class="ba-stat-label">Needs action</span><strong class="ba-stat-value">' + needsAction + '</strong></article><article class="ba-stat pending"><span class="ba-stat-label">Awaiting approval</span><strong class="ba-stat-value">' + awaiting + '</strong></article><article class="ba-stat confirmed"><span class="ba-stat-label">Confirmed</span><strong class="ba-stat-value">' + confirmed + '</strong></article>';
+    }
+    function renderFilters(){
+        var filters = document.getElementById("ba-filters");
+        filters.innerHTML = "";
+        [["all","All"],["needs","Needs action"],["awaiting","Awaiting approval"],["confirmed","Confirmed"],["rejected","Rejected"]].forEach(function(item){
+            var button = document.createElement("button"); button.type="button"; button.className="ba-filter" + (activeFilter === item[0] ? " is-active" : ""); button.textContent=item[1];
+            button.addEventListener("click", function(){ activeFilter=item[0]; renderFilters(); renderRows(); }); filters.appendChild(button);
+        });
+    }
+    function matches(item){
+        var status = String(item.status || "pending");
+        var filterMatch = activeFilter === "all" || (activeFilter === "confirmed" && status === "confirmed") || (activeFilter === "awaiting" && status === "pending" && item.confirmed_at) || (activeFilter === "needs" && status !== "confirmed" && !item.confirmed_at) || (activeFilter === "rejected" && status === "rejected");
+        return filterMatch && (!search.value.trim() || String(item.name || "").toLowerCase().indexOf(search.value.trim().toLowerCase()) !== -1);
+    }
+    function renderRows(){
+        list.innerHTML = "";
+        var rows = beneficiaries.filter(matches);
+        if(!rows.length){ list.innerHTML = '<p class="ba-empty">No beneficiaries match this filter.</p>'; return; }
+        rows.forEach(function(item){
+            var row = document.createElement("div"); row.className="ba-row";
+            var person = document.createElement("div"); person.className="ba-person";
+            var avatar = document.createElement("span"); avatar.className="ba-avatar";
+            if(item.avatar_url){ var image=document.createElement("img"); image.src=item.avatar_url; image.alt=""; image.onerror=function(){ avatar.textContent=initials(item.name); }; avatar.appendChild(image); } else avatar.textContent=initials(item.name);
+            var copy=document.createElement("div"); copy.className="ba-person-copy";
+            var name=document.createElement("span"); name.className="ba-name"; name.textContent=item.name || "Beneficiary";
+            var status=document.createElement("span"); status.className="ba-status " + (item.status === "pending" && item.confirmed_at ? "submitted" : String(item.status || "pending")); status.textContent=statusText(item);
+            copy.appendChild(name); copy.appendChild(status); person.appendChild(avatar); person.appendChild(copy); row.appendChild(person);
+            if(isLive && item.status !== "confirmed" && !(item.status === "pending" && item.confirmed_at)){
+                var action=document.createElement("button"); action.type="button"; action.className="ba-action"; action.textContent=item.status === "rejected" ? "Resubmit attendance" : "Confirm attendance";
+                action.addEventListener("click", function(){ action.disabled=true; action.textContent="Submitting..."; var body=new URLSearchParams({activity_id:String(assignment.activity_id),beneficiary_id:String(item.id),action:"confirm"}); fetch("{% url 'volunteer_beneficiary_attendance' %}",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8","X-CSRFToken":decodeURIComponent(csrf)},body:body.toString()}).then(function(response){ return response.json().then(function(payload){ if(!response.ok) throw new Error(payload.error || "Unable to submit attendance."); return payload; }); }).then(function(payload){ item.status=payload.record.status; item.status_label=payload.record.status_label; item.confirmed_at=payload.record.confirmed_at; refreshSummary(); renderRows(); }).catch(function(error){ action.disabled=false; action.textContent="Confirm attendance"; window.alert(error.message); }); }); row.appendChild(action);
+            }
+            list.appendChild(row);
+        });
+    }
+    if(!isLive){ tools.hidden=true; locked.hidden=false; }
+    search.addEventListener("input", renderRows); refreshSummary(); renderFilters(); renderRows();
+})();
+</script>
+{% endblock %}

@@ -4,467 +4,2012 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}Happyness{% endblock %}</title>
+    <title>{% block title %}HappYness{% endblock %}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="{% static 'css/index.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/index.css' %}?v=20260820t" />
+    <link rel="stylesheet" href="{% static 'css/admin-fixes.css' %}?v=20261002-sidebar-rail" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-    {% block extra_head %}{% endblock %}
-
     <style>
-        /* Dashboard layout helpers */
-        .dashboard {
-            min-height: 100vh;
-            display: grid;
-            grid-template-columns: 280px 1fr;
-            gap: 1.5rem;
+        /* Dashboard-wide readability scaling for text and icons */
+        :root {
+            --dash-text-xs: 0.75rem;
+            --dash-text-sm: 1rem;
+            --dash-text-md: 1.08rem;
+            --dash-text-lg: 1.22rem;
+            --dash-text-xl: 1.25rem;
+            --dash-text-2xl: 1.5rem;
+            --dash-text-3xl: 1.875rem;
+            --dash-icon-size: 1.3rem;
+            --dash-font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        #dashboard-shell, 
+        #dashboard-shell *,
+        #dashboard-main-wrapper,
+        #dashboard-main-wrapper * {
+            font-family: var(--dash-font-family) !important;
+        }
+
+        html.dashboard-font-small {
+            --dash-text-xs: 0.68rem;
+            --dash-text-sm: 0.9rem;
+            --dash-text-md: 0.98rem;
+            --dash-text-lg: 1.1rem;
+            --dash-text-xl: 1.15rem;
+            --dash-text-2xl: 1.35rem;
+            --dash-text-3xl: 1.7rem;
+            --dash-icon-size: 1.15rem;
+        }
+
+        html.dashboard-font-medium {
+            --dash-text-xs: 0.75rem;
+            --dash-text-sm: 1rem;
+            --dash-text-md: 1.08rem;
+            --dash-text-lg: 1.22rem;
+            --dash-text-xl: 1.25rem;
+            --dash-text-2xl: 1.5rem;
+            --dash-text-3xl: 1.875rem;
+            --dash-icon-size: 1.3rem;
+        }
+
+        html.dashboard-font-large {
+            --dash-text-xs: 0.82rem;
+            --dash-text-sm: 1.1rem;
+            --dash-text-md: 1.2rem;
+            --dash-text-lg: 1.34rem;
+            --dash-text-xl: 1.4rem;
+            --dash-text-2xl: 1.75rem;
+            --dash-text-3xl: 2.1rem;
+            --dash-icon-size: 1.45rem;
+        }
+
+        /* Font Type Styles */
+        html.dashboard-font-system {
+            --dash-font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        html.dashboard-font-serif {
+            --dash-font-family: "Georgia", "Times New Roman", Times, serif;
+        }
+
+        html.dashboard-font-sans-serif {
+            --dash-font-family: Arial, Helvetica, sans-serif;
+        }
+
+        html.dashboard-font-monospace {
+            --dash-font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        }
+
+        /* Apply font size to ALL text elements */
+        #dashboard-shell,
+        #dashboard-shell *,
+        #dashboard-main-wrapper,
+        #dashboard-main-wrapper * {
+            font-size: inherit;
+        }
+
+        #dashboard-shell .text-xs,
+        html.dashboard-font-small #dashboard-shell .text-xs {
+            font-size: var(--dash-text-xs) !important;
+            line-height: 1.35rem !important;
+        }
+
+        #dashboard-shell .text-sm,
+        html.dashboard-font-small #dashboard-shell .text-sm {
+            font-size: var(--dash-text-sm) !important;
+            line-height: 1.45rem !important;
+        }
+
+        #dashboard-shell .text-base,
+        html.dashboard-font-small #dashboard-shell .text-base {
+            font-size: var(--dash-text-md) !important;
+            line-height: 1.52rem !important;
+        }
+
+        #dashboard-shell .text-lg,
+        html.dashboard-font-small #dashboard-shell .text-lg {
+            font-size: var(--dash-text-lg) !important;
+            line-height: 1.72rem !important;
+        }
+
+        #dashboard-shell .text-xl,
+        html.dashboard-font-small #dashboard-shell .text-xl {
+            font-size: var(--dash-text-xl) !important;
+            line-height: 1.75rem !important;
+        }
+
+        #dashboard-shell .text-2xl,
+        html.dashboard-font-small #dashboard-shell .text-2xl {
+            font-size: var(--dash-text-2xl) !important;
+            line-height: 2rem !important;
+        }
+
+        #dashboard-shell .text-3xl,
+        html.dashboard-font-small #dashboard-shell .text-3xl {
+            font-size: var(--dash-text-3xl) !important;
+            line-height: 2.25rem !important;
+        }
+
+        /* Sidebar specific */
+        #dashboard-shell .sidebar-link {
+            font-size: var(--dash-text-sm) !important;
+        }
+
+        #dashboard-shell .sidebar-brand-text .text-sm {
+            font-size: 1.05rem !important;
+        }
+
+        #dashboard-shell .sidebar-brand-text .text-xs {
+            font-size: var(--dash-text-xs) !important;
+        }
+
+        #dashboard-shell .sidebar-icon-wrap svg {
+            width: var(--dash-icon-size) !important;
+            height: var(--dash-icon-size) !important;
+        }
+
+        /* Header specific */
+        #dashboard-shell #app-header h1 {
+            font-size: var(--dash-text-lg) !important;
+            line-height: 1.35 !important;
+        }
+
+        #dashboard-shell #app-header p {
+            font-size: var(--dash-text-sm) !important;
+        }
+
+        #dashboard-shell #app-header #dashboard-search {
+            font-size: var(--dash-text-sm) !important;
+        }
+
+        #dashboard-shell #app-header button svg,
+        #dashboard-shell #app-header .user-item__icon svg,
+        #dashboard-shell #app-header .notif-type-icon svg {
+            width: var(--dash-icon-size) !important;
+            height: var(--dash-icon-size) !important;
+        }
+
+        #dashboard-shell #header-notifications,
+        #dashboard-shell #sidebar-toggle-mobile,
+        #dashboard-shell #sidebar-toggle-desktop {
+            width: 2.6rem;
+            height: 2.6rem;
+        }
+
+        #dashboard-shell #header-profile {
+            min-height: 2.6rem;
+            font-size: var(--dash-text-sm) !important;
+        }
+
+        /* Apply to all headings and paragraphs */
+        #dashboard-shell h1, #dashboard-shell h2, #dashboard-shell h3, 
+        #dashboard-shell h4, #dashboard-shell h5, #dashboard-shell h6 {
+            font-size: var(--dash-text-lg) !important;
+        }
+
+        #dashboard-shell p, #dashboard-shell span, #dashboard-shell a,
+        #dashboard-shell li, #dashboard-shell td, #dashboard-shell th {
+            font-size: var(--dash-text-sm) !important;
+        }
+
+        #dashboard-shell button, #dashboard-shell input, #dashboard-shell select,
+        #dashboard-shell textarea {
+            font-size: var(--dash-text-sm) !important;
+        }
+
+        /* Animations preference */
+        html.no-animations *,
+        html.no-animations *::before,
+        html.no-animations *::after {
+            transition: none !important;
+            animation: none !important;
+            animation-duration: 0s !important;
+        }
+
+        /* Dark mode — same palette and variable system as Beneficiary/Volunteer dashboards */
+        html.dark-mode #dashboard-shell {
+            --dm-bg-base:        #0D0D0D;
+            --dm-bg-primary:     #141414;
+            --dm-bg-card:        #1E1E1E;
+            --dm-bg-elevated:    #252525;
+            --dm-bg-subtle:      #2C2C2C;
+            --dm-text-primary:   #F0F0F0;
+            --dm-text-secondary: #9A9A9A;
+            --dm-text-muted:     #5C5C5C;
+            --dm-border:         rgba(255, 255, 255, 0.07);
+            --dm-border-strong:  rgba(255, 255, 255, 0.12);
+            --dm-accent:         #1D9E75;
+            --dm-accent-text:    #2ECFA0;
+            --dm-accent-subtle:  #0F2E22;
+        }
+
+        html.dark-mode,
+        html.dark-mode body,
+        body.dark-mode {
+            background-color: #0D0D0D !important;
+            color: #F0F0F0 !important;
+            color-scheme: dark;
+            transition: background-color 0.25s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+
+        html.dark-mode #dashboard-shell,
+        body.dark-mode #dashboard-shell,
+        html.dark-mode #dashboard-main-wrapper,
+        body.dark-mode #dashboard-main-wrapper,
+        html.dark-mode #dashboard-content-scroll,
+        body.dark-mode #dashboard-content-scroll {
+            background: var(--dm-bg-primary) !important;
+            color: var(--dm-text-primary) !important;
+        }
+
+        html.dark-mode #dashboard-content-scroll section[aria-label="Page content"],
+        body.dark-mode #dashboard-content-scroll section[aria-label="Page content"] {
+            background: var(--dm-bg-primary) !important;
         }
 
         /* Sidebar */
-        .dashboard-sidebar {
-            background: rgba(255, 255, 255, 0.68);
-            border-right: 1px solid rgba(16, 185, 129, 0.16);
-            padding: 2rem 1.5rem;
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            align-self: stretch;
-            display: flex;
-            flex-direction: column;
-            gap: 2.5rem;
+        html.dark-mode #dashboard-shell #dashboard-sidebar,
+        body.dark-mode #dashboard-shell #dashboard-sidebar {
+            background: #111111 !important;
+            border-color: rgba(255, 255, 255, 0.07) !important;
         }
 
-        .sidebar-profile {
+        /* Header */
+        html.dark-mode #dashboard-shell #app-header,
+        body.dark-mode #dashboard-shell #app-header {
+            background: #111111 !important;
+            border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+        }
+
+        html.dark-mode #dashboard-shell #dashboard-search,
+        body.dark-mode #dashboard-shell #dashboard-search {
+            background: #1E1E1E !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            color: var(--dm-text-primary) !important;
+        }
+
+        html.dark-mode #dashboard-shell #dashboard-search::placeholder,
+        body.dark-mode #dashboard-shell #dashboard-search::placeholder {
+            color: var(--dm-text-muted) !important;
+        }
+
+        /* Smooth transitions on key elements */
+        html.dark-mode #dashboard-shell #dashboard-sidebar,
+        body.dark-mode #dashboard-shell #dashboard-sidebar,
+        html.dark-mode #dashboard-shell #app-header,
+        body.dark-mode #dashboard-shell #app-header,
+        html.dark-mode #dashboard-shell .sysset-card,
+        body.dark-mode #dashboard-shell .sysset-card,
+        html.dark-mode #dashboard-shell .sysset-tabs-wrap,
+        body.dark-mode #dashboard-shell .sysset-tabs-wrap,
+        html.dark-mode #dashboard-shell .dropdown-card,
+        body.dark-mode #dashboard-shell .dropdown-card,
+        html.dark-mode #dashboard-shell .notification-panel,
+        body.dark-mode #dashboard-shell .notification-panel,
+        html.dark-mode #dashboard-shell input,
+        body.dark-mode #dashboard-shell input,
+        html.dark-mode #dashboard-shell select,
+        body.dark-mode #dashboard-shell select,
+        html.dark-mode #dashboard-shell textarea,
+        body.dark-mode #dashboard-shell textarea,
+        html.dark-mode #dashboard-shell .sidebar-link,
+        body.dark-mode #dashboard-shell .sidebar-link {
+            transition: background-color 0.25s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+
+        /* Cards and panels — all admin pages */
+        html.dark-mode #dashboard-shell :is(
+            .sysset-card, .sysset-tabs-wrap, .sysset-footer,
+            .dropdown-card, .notification-panel, .user-dropdown,
+            .act-card, .act-calendar-card,
+            .admins-card, .admins-kpi,
+            .ann-card, .ann-modal-content,
+            .al-card, .al-code-card,
+            .ben-card, .ben-modal,
+            .cp-card, .cp-post, .cp-compose-area,
+            .ops-card, .ops-kpi,
+            .don-card, .don-kpi, .don-list-item, .don-modal,
+            .ex-card, .ex-preset,
+            .fb-item, .fb-detail, .fb-reply,
+            .inv-card, .inv-kpi, .inv-list-item, .inv-modal,
+            .mod-panel, .mod-item, .mod-content,
+            .pay-card, .pay-kpi, .pay-list-item, .pay-modal, .pay-filters, .pay-block,
+            .ra-card, .ra-kpi, .ra-insight, .ra-chart-card,
+            .eng-panel
+        ),
+        body.dark-mode #dashboard-shell :is(
+            .sysset-card, .sysset-tabs-wrap, .sysset-footer,
+            .dropdown-card, .notification-panel, .user-dropdown,
+            .act-card, .act-calendar-card,
+            .admins-card, .admins-kpi,
+            .ann-card, .ann-modal-content,
+            .al-card, .al-code-card,
+            .ben-card, .ben-modal,
+            .cp-card, .cp-post, .cp-compose-area,
+            .ops-card, .ops-kpi,
+            .don-card, .don-kpi, .don-list-item, .don-modal,
+            .ex-card, .ex-preset,
+            .fb-item, .fb-detail, .fb-reply,
+            .inv-card, .inv-kpi, .inv-list-item, .inv-modal,
+            .mod-panel, .mod-item, .mod-content,
+            .pay-card, .pay-kpi, .pay-list-item, .pay-modal, .pay-filters, .pay-block,
+            .ra-card, .ra-kpi, .ra-insight, .ra-chart-card,
+            .eng-panel
+        ) {
+            background: var(--dm-bg-card) !important;
+            border-color: var(--dm-border) !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        /* Form inputs */
+        html.dark-mode #dashboard-shell .sysset-input,
+        body.dark-mode #dashboard-shell .sysset-input,
+        html.dark-mode #dashboard-shell .sysset-select,
+        body.dark-mode #dashboard-shell .sysset-select,
+        html.dark-mode #dashboard-shell .sysset-textarea,
+        body.dark-mode #dashboard-shell .sysset-textarea,
+        html.dark-mode #dashboard-shell input:not([type="checkbox"]):not([type="radio"]),
+        body.dark-mode #dashboard-shell input:not([type="checkbox"]):not([type="radio"]),
+        html.dark-mode #dashboard-shell select,
+        body.dark-mode #dashboard-shell select,
+        html.dark-mode #dashboard-shell textarea,
+        body.dark-mode #dashboard-shell textarea {
+            background: var(--dm-bg-elevated) !important;
+            border: 0.5px solid rgba(255, 255, 255, 0.1) !important;
+            color: var(--dm-text-primary) !important;
+        }
+
+        html.dark-mode #dashboard-shell input::placeholder,
+        body.dark-mode #dashboard-shell input::placeholder,
+        html.dark-mode #dashboard-shell .sysset-input::placeholder,
+        body.dark-mode #dashboard-shell .sysset-input::placeholder,
+        html.dark-mode #dashboard-shell textarea::placeholder,
+        body.dark-mode #dashboard-shell textarea::placeholder {
+            color: var(--dm-text-muted) !important;
+        }
+
+        html.dark-mode #dashboard-shell input:focus,
+        body.dark-mode #dashboard-shell input:focus,
+        html.dark-mode #dashboard-shell select:focus,
+        body.dark-mode #dashboard-shell select:focus,
+        html.dark-mode #dashboard-shell textarea:focus,
+        body.dark-mode #dashboard-shell textarea:focus {
+            border-color: var(--dm-accent) !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Sidebar chrome text */
+        html.dark-mode #dashboard-shell .sidebar-brand-title,
+        body.dark-mode #dashboard-shell .sidebar-brand-title {
+            color: var(--dm-text-primary) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sidebar-brand-subtitle,
+        body.dark-mode #dashboard-shell .sidebar-brand-subtitle,
+        html.dark-mode #dashboard-shell .sidebar-section-label,
+        body.dark-mode #dashboard-shell .sidebar-section-label {
+            color: var(--dm-text-muted) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sidebar-header,
+        body.dark-mode #dashboard-shell .sidebar-header {
+            border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sidebar-footer,
+        body.dark-mode #dashboard-shell .sidebar-footer {
+            border-top-color: rgba(255, 255, 255, 0.06) !important;
+        }
+
+        /* Sidebar nav links */
+        html.dark-mode #dashboard-shell .sidebar-link,
+        body.dark-mode #dashboard-shell .sidebar-link {
+            color: var(--dm-text-primary) !important;
+            border-left: 2px solid transparent;
+        }
+
+        html.dark-mode #dashboard-shell .sidebar-icon-wrap,
+        body.dark-mode #dashboard-shell .sidebar-icon-wrap {
+            color: var(--dm-text-secondary) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sidebar-link.is-active,
+        body.dark-mode #dashboard-shell .sidebar-link.is-active {
+            background: #1E1E1E !important;
+            border-left-color: var(--dm-accent) !important;
+            color: var(--dm-text-primary) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sidebar-link.is-active .sidebar-icon-wrap,
+        body.dark-mode #dashboard-shell .sidebar-link.is-active .sidebar-icon-wrap {
+            color: var(--dm-accent-text) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sidebar-link:hover,
+        body.dark-mode #dashboard-shell .sidebar-link:hover,
+        html.dark-mode #dashboard-shell .sidebar-link:focus-visible,
+        body.dark-mode #dashboard-shell .sidebar-link:focus-visible {
+            background: var(--dm-bg-elevated) !important;
+            color: var(--dm-text-primary) !important;
+        }
+
+        /* Sidebar submenu links */
+        html.dark-mode #dashboard-shell .sidebar-submenu-link,
+        body.dark-mode #dashboard-shell .sidebar-submenu-link {
+            color: var(--dm-text-secondary) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sidebar-submenu-link:hover,
+        body.dark-mode #dashboard-shell .sidebar-submenu-link:hover {
+            background: var(--dm-bg-elevated) !important;
+            color: var(--dm-text-primary) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sidebar-submenu-link.is-active,
+        body.dark-mode #dashboard-shell .sidebar-submenu-link.is-active {
+            background: var(--dm-accent-subtle) !important;
+            color: var(--dm-accent-text) !important;
+        }
+
+        /* Toggles */
+        html.dark-mode #dashboard-shell .sysset-toggle,
+        body.dark-mode #dashboard-shell .sysset-toggle {
+            background: var(--dm-bg-elevated) !important;
+            border-color: var(--dm-border) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-toggle-track,
+        body.dark-mode #dashboard-shell .sysset-toggle-track {
+            background: #3A3A3A !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-toggle input:checked + .sysset-toggle-track,
+        body.dark-mode #dashboard-shell .sysset-toggle input:checked + .sysset-toggle-track {
+            background: var(--dm-accent) !important;
+        }
+
+        /* Text colours */
+        html.dark-mode #dashboard-shell .sysset-tab,
+        body.dark-mode #dashboard-shell .sysset-tab,
+        html.dark-mode #dashboard-shell .sysset-label,
+        body.dark-mode #dashboard-shell .sysset-label,
+        html.dark-mode #dashboard-shell .sysset-card-desc,
+        body.dark-mode #dashboard-shell .sysset-card-desc,
+        html.dark-mode #dashboard-shell .sysset-toggle-desc,
+        body.dark-mode #dashboard-shell .sysset-toggle-desc,
+        html.dark-mode #dashboard-shell .sysset-help,
+        body.dark-mode #dashboard-shell .sysset-help {
+            color: var(--dm-text-secondary) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-card-title,
+        body.dark-mode #dashboard-shell .sysset-card-title,
+        html.dark-mode #dashboard-shell .sysset-toggle-title,
+        body.dark-mode #dashboard-shell .sysset-toggle-title {
+            color: var(--dm-text-primary) !important;
+        }
+
+        /* Active tab */
+        html.dark-mode #dashboard-shell .sysset-tab[aria-selected="true"],
+        body.dark-mode #dashboard-shell .sysset-tab[aria-selected="true"] {
+            background: var(--dm-accent-subtle) !important;
+            color: var(--dm-accent-text) !important;
+            border-color: var(--dm-accent) !important;
+            box-shadow: none !important;
+        }
+
+        /* Footer / save bar */
+        html.dark-mode #dashboard-shell .sysset-save-state,
+        body.dark-mode #dashboard-shell .sysset-save-state {
+            background: var(--dm-accent-subtle) !important;
+            color: var(--dm-accent-text) !important;
+            border-color: var(--dm-accent) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-inline-status,
+        body.dark-mode #dashboard-shell .sysset-inline-status {
+            color: var(--dm-accent-text) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-btn-ghost,
+        body.dark-mode #dashboard-shell .sysset-btn-ghost {
+            background: var(--dm-bg-elevated) !important;
+            color: var(--dm-text-secondary) !important;
+            border-color: var(--dm-border-strong) !important;
+        }
+
+        /* Generic white / brand-50 backgrounds across all admin pages */
+        html.dark-mode #dashboard-shell .bg-white,
+        body.dark-mode #dashboard-shell .bg-white,
+        html.dark-mode #dashboard-shell [class*="bg-brand-50"],
+        body.dark-mode #dashboard-shell [class*="bg-brand-50"] {
+            background-color: var(--dm-bg-card) !important;
+        }
+
+        /* Dropdown panels (header notifications / profile) */
+        html.dark-mode #dashboard-shell :is(#dropdown-notifications .notification-title, #dropdown-profile .user-title),
+        body.dark-mode #dashboard-shell :is(#dropdown-notifications .notification-title, #dropdown-profile .user-title) {
+            color: var(--dm-text-primary) !important;
+        }
+
+        html.dark-mode #dashboard-shell :is(#dropdown-notifications .notif-meta, #dropdown-profile .user-role),
+        body.dark-mode #dashboard-shell :is(#dropdown-notifications .notif-meta, #dropdown-profile .user-role) {
+            color: var(--dm-text-secondary) !important;
+        }
+
+        html.dark-mode #dashboard-shell :is(#dropdown-notifications .notif-btn-secondary, #dropdown-profile .user-signout),
+        body.dark-mode #dashboard-shell :is(#dropdown-notifications .notif-btn-secondary, #dropdown-profile .user-signout) {
+            color: var(--dm-text-primary) !important;
+            border-color: rgba(255, 255, 255, 0.14) !important;
+            background: var(--dm-bg-elevated) !important;
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-brand-50 text-ink-900 antialiased overflow-x-hidden">
+    <div id="dashboard-shell" data-sidebar="expanded" class="admin-page min-h-screen sidebar-booting">
+        <script>
+            (function () {
+                var key = "dashboard-sidebar-state";
+                var state = "expanded";
+                try {
+                    var saved = localStorage.getItem(key);
+                    if (saved === "collapsed" || saved === "expanded") {
+                        state = saved;
+                    }
+                } catch (e) {
+                    state = "expanded";
+                }
+
+                var shell = document.getElementById("dashboard-shell");
+                if (shell) {
+                    shell.setAttribute("data-sidebar", state);
+                }
+
+                // Early boot: Font Size preference
+                var fontKey = "dashboard_font_size_preference";
+                var fontSize = "medium";
+                try {
+                    var storedFont = String(localStorage.getItem(fontKey) || "").toLowerCase();
+                    if (storedFont === "small" || storedFont === "large") {
+                        fontSize = storedFont;
+                    }
+                } catch (e) {
+                    isDark = false;
+                    fontSize = "medium";
+                }
+
+                document.documentElement.classList.remove("dashboard-font-small", "dashboard-font-medium", "dashboard-font-large");
+                document.documentElement.classList.add("dashboard-font-" + fontSize);
+
+                // Early boot: Font Type preference
+                var fontTypeKey = "dashboard_font_type_preference";
+                var fontType = "sans-serif";
+                try {
+                    var storedFontType = String(localStorage.getItem(fontTypeKey) || "").toLowerCase();
+                    var validFontTypes = ["system", "serif", "sans-serif", "monospace"];
+                    if (validFontTypes.indexOf(storedFontType) !== -1) {
+                        fontType = storedFontType;
+                    }
+                } catch (e) {
+                    fontType = "sans-serif";
+                }
+
+                document.documentElement.classList.remove("dashboard-font-system", "dashboard-font-serif", "dashboard-font-sans-serif", "dashboard-font-monospace");
+                document.documentElement.classList.add("dashboard-font-" + fontType);
+
+                // Early boot: Dark mode preference
+                var isDark = false;
+                try {
+                    isDark = localStorage.getItem("theme_preference") === "dark";
+                } catch (e) {}
+                document.documentElement.classList.toggle("dark-mode", isDark);
+
+                // Early boot: Animations preference
+                var animDisabled = false;
+                try {
+                    animDisabled = localStorage.getItem("pref_animations") === "false";
+                } catch (e) {}
+                document.documentElement.classList.toggle("no-animations", animDisabled);
+            })();
+        </script>
+
+        {% include "partials/_sidebar.html" %}
+        <div id="mobile-overlay" data-mobile-overlay="admin" data-open="false" class="hidden fixed inset-0 z-40" aria-hidden="true"></div>
+
+        <div id="dashboard-main-wrapper" class="min-w-0">
+            {% include "partials/_header.html" %}
+
+            <main id="dashboard-content-scroll" class="min-w-0" aria-label="Page content area">
+                <section class="px-4 py-6 md:px-6 lg:px-8" aria-label="Page content">
+                    {% block content %}{% endblock %}
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <script src="{% static 'js/index.js' %}?v=20260820t"></script>
+    <script src="{% static 'js/admin-panel-animations.js' %}"></script>
+    <script src="{% static 'js/sidebar-state.js' %}"></script>
+    <script src="{% static 'js/sidebar-animations.js' %}"></script>
+
+    <div id="global-chat-widget" class="global-chat-widget" {% if dashboard_scope == "volunteer" or user.is_superuser %}{% else %}hidden{% endif %}>
+        <button id="global-chat-toggle" class="global-chat-toggle" type="button" aria-expanded="false" aria-controls="global-chat-panel" aria-label="Open volunteer support chat">
+            <span class="global-chat-toggle__icon"><i data-lucide="message-circle" aria-hidden="true"></i></span>
+            <span id="global-chat-unread" class="global-chat-unread" hidden>0</span>
+        </button>
+
+        <div id="global-chat-panel" class="global-chat-panel" aria-live="polite" hidden>
+            <div class="global-chat-header">
+                <div class="global-chat-header-main">
+                    <button id="global-chat-back" class="global-chat-back" type="button" aria-label="Back to inbox" hidden><i data-lucide="arrow-left" aria-hidden="true"></i></button>
+                    <h3 id="global-chat-title">Inbox</h3>
+                    <div id="global-chat-header-person" class="global-chat-header-person" hidden>
+                        <span id="global-chat-header-avatar" class="global-chat-header-avatar"><span id="global-chat-header-avatar-initials">A</span><img id="global-chat-header-avatar-image" alt="" hidden></span>
+                        <span id="global-chat-header-name"></span>
+                    </div>
+                </div>
+                <div class="global-chat-header-actions">
+                    <button id="global-chat-close" type="button" class="global-chat-close" aria-label="Close chat"><i data-lucide="x" aria-hidden="true"></i></button>
+                </div>
+            </div>
+
+            <div id="global-chat-body" class="global-chat-body">
+                <aside id="global-chat-inbox" class="global-chat-inbox" hidden>
+                    <div class="global-chat-inbox-search"><i data-lucide="search" aria-hidden="true"></i><input id="global-chat-inbox-search-input" type="search" placeholder="Search volunteers" aria-label="Search volunteers"></div>
+                    <div id="global-chat-thread-list" class="global-chat-thread-list"></div>
+                </aside>
+
+                <div id="global-chat-thread" class="global-chat-thread" hidden>
+                    <span id="global-chat-thread-header" hidden></span>
+                    <div id="global-chat-messages" class="global-chat-messages"></div>
+                    <div id="global-chat-toast" class="global-chat-toast" hidden></div>
+                    <div id="global-chat-delete-modal" class="global-chat-delete-modal" hidden role="dialog" aria-modal="true" aria-labelledby="global-chat-delete-title">
+                        <strong id="global-chat-delete-title">Delete this message?</strong>
+                        <span>This can't be undone.</span>
+                        <div><button type="button" data-chat-delete-cancel>Cancel</button><button type="button" data-chat-delete-confirm>Delete</button></div>
+                    </div>
+                    <div id="global-chat-image-lightbox" class="global-chat-image-lightbox" hidden role="dialog" aria-modal="true" aria-label="Image preview">
+                        <button type="button" data-chat-close-image aria-label="Close image preview"><i data-lucide="x" aria-hidden="true"></i></button>
+                        <img id="global-chat-image-lightbox-image" src="" alt="">
+                    </div>
+                    <form id="global-chat-form" class="global-chat-form">
+                        <div id="global-chat-reply-preview" class="global-chat-reply-preview" hidden></div>
+                        <div id="global-chat-attachment-preview" class="global-chat-attachment-preview" hidden></div>
+                        <div id="global-chat-edit-preview" class="global-chat-edit-preview" hidden><span>Editing message</span><button type="button" data-chat-cancel-edit aria-label="Cancel editing"><i data-lucide="x" aria-hidden="true"></i></button></div>
+                        <button type="button" id="global-chat-attach" class="global-chat-attach" aria-label="Attach a file" title="Attach a file"><i data-lucide="paperclip" aria-hidden="true"></i></button>
+                        <input id="global-chat-attachment-input" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip" hidden>
+                        <textarea id="global-chat-input" class="global-chat-input" rows="2" placeholder="Type your message..." aria-label="Type a message"></textarea>
+                        <button type="submit" aria-label="Send message" title="Send message"><i data-lucide="send" aria-hidden="true"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .global-chat-widget {
+            position: fixed;
+            right: 1.25rem;
+            bottom: 1.25rem;
+            z-index: 70;
+            font-family: "Poppins", sans-serif;
+        }
+
+        .global-chat-toggle {
+            position: relative;
+            width: 4rem;
+            height: 4rem;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1d9e75, #0f766e);
+            box-shadow: 0 14px 30px rgba(16, 124, 110, 0.32);
+            color: #fff;
+            cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 1rem;
+            justify-content: center;
+            transition: transform 180ms ease, box-shadow 180ms ease;
         }
 
-        .sidebar-avatar {
-            width: 54px;
-            height: 54px;
+        .global-chat-toggle:hover,
+        .global-chat-toggle:focus-visible {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 0 18px 34px rgba(16, 124, 110, 0.38);
+        }
+
+        .global-chat-toggle:active { transform: scale(0.94); }
+
+        .global-chat-toggle__icon {
+            font-size: 1.65rem;
+            line-height: 1;
+        }
+
+        .global-chat-toggle__icon svg,
+        .global-chat-close svg,
+        .global-chat-back svg,
+        .global-chat-form button svg,
+        .global-chat-message-action svg { width: 1rem; height: 1rem; }
+
+        .global-chat-unread {
+            position: absolute;
+            top: -0.35rem;
+            right: -0.2rem;
+            min-width: 1.3rem;
+            height: 1.3rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0.25rem;
             border-radius: 999px;
-            display: grid;
-            place-items: center;
-            background: linear-gradient(135deg, var(--mint-500), var(--teal-500));
-            color: var(--white);
-            font-weight: 700;
-            box-shadow: var(--shadow-soft);
-        }
-
-        .sidebar-name {
-            margin: 0;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.64rem;
             font-weight: 700;
         }
 
-        .sidebar-role {
-            margin: 0.2rem 0 0;
-            font-size: 0.9rem;
-            color: var(--ink-500);
-        }
+        #global-chat-widget:has(.global-chat-unread:not([hidden])) .global-chat-unread { animation: global-chat-unread-pulse 2.4s ease-in-out infinite; }
+        @keyframes global-chat-unread-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 
-        .sidebar-nav {
-            flex: 1;
-        }
-
-        .sidebar-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            display: grid;
-            gap: 0.35rem;
-        }
-
-        .sidebar-link {
-            display: flex;
-            align-items: center;
-            gap: 0.9rem;
-            padding: 0.85rem 1rem;
-            border-radius: 16px;
-            color: var(--ink-700);
-            font-weight: 600;
-            transition: background 160ms ease, color 160ms ease;
-        }
-
-        .sidebar-link i {
-            width: 1.35rem;
-            height: 1.35rem;
-        }
-
-        .sidebar-link:hover,
-        .sidebar-link.active {
-            background: rgba(16, 185, 129, 0.14);
-            color: var(--teal-700);
-        }
-
-        /* Main content */
-        .dashboard-main {
+        .global-chat-panel {
+            position: absolute;
+            right: 0;
+            bottom: 4.5rem;
+            width: min(38rem, calc(100vw - 2rem));
+            height: min(38rem, calc(100vh - 4.5rem));
+            max-height: min(38rem, calc(100vh - 4.5rem));
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 1.35rem;
+            box-shadow: 0 25px 60px rgba(15, 23, 42, 0.18);
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            gap: 2.5rem;
-            padding: 2.5rem 0;
+            opacity: 0;
+            transform: translateY(0.6rem) scale(0.97);
+            transition: opacity 200ms ease, transform 200ms ease;
         }
 
-        .dashboard-inner > section {
-            padding-top: 1.5rem;
-            padding-bottom: 1.5rem;
+        .global-chat-panel.is-open { opacity: 1; transform: translateY(0) scale(1); }
+
+        .global-chat-widget[hidden],
+        .global-chat-panel[hidden],
+        .global-chat-thread[hidden],
+        .global-chat-inbox[hidden],
+        .global-chat-unread[hidden],
+        .global-chat-toast[hidden],
+        .global-chat-delete-modal[hidden],
+        .global-chat-edit-preview[hidden],
+        .global-chat-reply-preview[hidden] {
+            display: none !important;
         }
 
-        .dashboard-inner > section + section {
-            border-top: 1px solid rgba(15, 118, 110, 0.12);
-        }
-
-        .dashboard-inner {
-            width: min(1000px, 100%);
-            margin: 0 auto;
-            padding-inline: 1.25rem;
-        }
-
-        .dashboard-header {
+        .global-chat-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 1rem;
+            min-height: 4.5rem;
+            padding: 1rem 1.1rem;
+            background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
         }
 
-        .dashboard-brand {
-            display: flex;
-            align-items: center;
-            gap: 0.85rem;
+        .global-chat-eyebrow {
+            margin: 0;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #0f766e;
+            font-weight: 700;
         }
 
-        .dashboard-brand .brand-dot {
-            width: 2rem;
-            height: 2rem;
-        }
-
-        .dashboard-brand span {
-            font-weight: 800;
-            letter-spacing: 0.02em;
-        }
-
-        .dashboard-header-actions {
+        .global-chat-header-main {
+            min-width: 0;
             display: flex;
             align-items: center;
             gap: 0.7rem;
         }
 
-        .icon-btn {
-            width: 44px;
-            height: 44px;
-            border: 1px solid rgba(15, 118, 110, 0.3);
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.9);
-            color: var(--teal-700);
-            display: grid;
-            place-items: center;
-            cursor: pointer;
-            transition: transform 150ms ease, box-shadow 150ms ease;
+        .global-chat-header-main h3 {
+            margin: 0;
         }
 
-        .icon-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 14px 28px rgba(16, 185, 129, 0.18);
-        }
-
-        .profile-btn {
+        .global-chat-header-person {
+            min-width: 0;
             display: inline-flex;
             align-items: center;
-            gap: 0.55rem;
-            border-radius: 999px;
-            border: 1px solid rgba(15, 118, 110, 0.2);
-            background: rgba(255, 255, 255, 0.85);
-            padding: 0.6rem 0.9rem;
-            color: var(--ink-700);
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 150ms ease, box-shadow 150ms ease;
-        }
-
-        .profile-btn:hover {
-            background: rgba(236, 253, 245, 0.8);
-            box-shadow: 0 12px 26px rgba(16, 185, 129, 0.12);
-        }
-
-        .dashboard-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.5rem;
-            padding-top: 0.5rem;
-        }
-
-        .dashboard-card {
-            border-radius: var(--radius-lg);
-            background: rgba(255, 255, 255, 0.75);
-            border: 1px solid rgba(15, 118, 110, 0.14);
-            padding: 1.35rem 1.3rem;
-            box-shadow: var(--shadow-soft);
-            transition: transform 200ms ease, box-shadow 200ms ease;
-        }
-
-        .dashboard-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 18px 38px rgba(16, 185, 129, 0.18);
-        }
-
-        .dashboard-card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .dashboard-card-title {
-            margin: 0;
+            gap: 0.65rem;
+            color: #0f172a;
+            font-size: 1.1rem;
             font-weight: 700;
-            color: var(--ink-700);
-            font-size: 0.95rem;
         }
 
-        .dashboard-card-value {
-            margin: 0;
-            font-size: clamp(1.9rem, 2.5vw, 2.5rem);
-            font-weight: 800;
-            color: #087b68;
-        }
-
-        .dashboard-card-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 16px;
-            display: grid;
-            place-items: center;
-            background: linear-gradient(145deg, rgba(16, 185, 129, 0.18), rgba(20, 184, 166, 0.22));
-            color: var(--teal-700);
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 1.75rem;
-            padding-top: 1rem;
-        }
-
-        .dashboard-card-summary {
-            padding: 0;
+        .global-chat-header-person > span:last-child {
+            min-width: 0;
+            max-width: min(16rem, calc(100vw - 10rem));
             overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        .dashboard-card-summary-header {
-            padding: 1.2rem 1.25rem;
-            background: rgba(15, 118, 110, 0.14);
+        .global-chat-header-person[hidden] { display: none !important; }
+
+        .global-chat-header-avatar {
+            width: 40px;
+            height: 40px;
+            flex: 0 0 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1d9e75, #14b8a6);
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+
+        .global-chat-header-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .global-chat-header h3 {
+            margin: 0.1rem 0 0;
+            font-size: 1rem;
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        .global-chat-close {
+            width: 1.8rem;
+            height: 1.8rem;
+            border: 0;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.18);
+            color: #475569;
+            font-size: 1rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .global-chat-header-actions { display: flex; align-items: center; gap: 0.25rem; }
+
+        .global-chat-body {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            background: #f8fafc;
+        }
+
+        .global-chat-inbox {
+            width: 100%;
+            height: auto;
+            min-height: 0;
+            overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            border-right: 0;
+            background: #fff;
+        }
+
+        .global-chat-inbox::-webkit-scrollbar,
+        .global-chat-thread-list::-webkit-scrollbar { width: 0; height: 0; }
+
+        .global-chat-inbox-header {
+            padding: 0.8rem 0.9rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .global-chat-inbox-search { display: flex; align-items: center; gap: 0.5rem; margin: 0.8rem 0.9rem 0.55rem; padding: 0.55rem 0.7rem; border: 1px solid rgba(15, 23, 42, 0.1); border-radius: 0.7rem; background: #f8fafc; color: #64748b; }
+        .global-chat-inbox-search:focus-within { border-color: #1d9e75; box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.12); }
+        .global-chat-inbox-search svg { width: 0.95rem; height: 0.95rem; flex: 0 0 auto; }
+        .global-chat-inbox-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: #0f172a; font: inherit; font-size: 0.78rem; }
+        .global-chat-inbox-search input::placeholder { color: #94a3b8; }
+        .global-chat-inbox-empty { padding: 0.8rem 0.9rem; color: #64748b; font-size: 0.75rem; }
+
+        .global-chat-thread-list {
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .global-chat-thread-item {
+            width: 100%;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 0.75rem;
-            border-bottom: 1px solid rgba(15, 118, 110, 0.12);
+            min-height: 4.25rem;
+            padding: 0.65rem 0.8rem;
+            border: none;
+            background: transparent;
+            text-align: left;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.04);
         }
 
-        .dashboard-card-summary-header h3 {
-            margin: 0;
-            font-size: 0.95rem;
+        .global-chat-thread-item.is-active {
+            background: #ecfdf5;
+        }
+
+        .global-chat-thread-summary {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .global-chat-thread-avatar {
+            width: 44px !important;
+            height: 44px !important;
+            flex: 0 0 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1d9e75, #14b8a6);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .global-chat-thread-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: inherit;
+        }
+
+        .global-chat-thread-meta {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .global-chat-thread-name {
+            display: block;
+            color: #0f172a;
+            font-size: 0.78rem;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .global-chat-thread-preview {
+            display: block;
+            margin-top: 0.15rem;
+            color: #64748b;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .global-chat-thread-badge {
+            min-width: 1.15rem;
+            height: 1.15rem;
+            padding: 0 0.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.6rem;
             font-weight: 700;
         }
 
-        .dashboard-card-summary-value {
-            font-weight: 800;
-            font-size: 1.85rem;
-            color: #087b68;
-        }
-
-        .dashboard-card-summary-body {
-            padding: 1.1rem 1.25rem 1.3rem;
+        .global-chat-thread {
+            width: 100%;
+            height: auto;
+            flex: 1;
             display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            gap: 1rem;
+            flex-direction: column;
+            min-width: 0;
+            background: #fff;
         }
 
-        .dashboard-card-summary-label {
-            margin: 0;
-            font-weight: 600;
-            color: var(--ink-700);
+        .global-chat-back {
+            margin-right: 0.55rem;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: #0f766e;
+            font-size: 1.4rem;
+            line-height: 1;
+            cursor: pointer;
         }
 
-        .dashboard-card-summary-meta {
-            margin: 0;
-            color: var(--ink-500);
-            font-size: 0.9rem;
+        .global-chat-messages {
+            flex: 1;
+            min-height: 0;
+            padding: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            overflow-y: auto;
+            background: linear-gradient(to bottom, #fff, #f8fafc);
         }
 
-        .dashboard-chart {
-            border-radius: var(--radius-lg);
-            background: rgba(255, 255, 255, 0.72);
-            border: 1px solid rgba(15, 118, 110, 0.14);
-            box-shadow: var(--shadow-soft);
-            padding: 1.75rem 1.5rem 1.8rem;
-            margin-top: 1.5rem;
+        .global-chat-message {
+            position: relative;
+            width: fit-content;
+            max-width: 78%;
+            align-self: flex-start;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.2rem;
+            padding: 0;
+            background: transparent !important;
+            box-shadow: none;
+        }
+        .global-chat-message > .global-chat-bubble,
+        .global-chat-message > .global-chat-bubble {
+            position: relative;
+            width: fit-content;
+            max-width: 100%;
+            padding: 0.75rem 0.85rem;
+            border-radius: 1rem;
+            line-height: 1.45;
+            font-size: 0.92rem;
+            word-break: break-word;
+            animation: global-chat-message-in 200ms ease both;
         }
 
-        .dashboard-chart-header {
-            margin-bottom: 1.25rem;
+        @keyframes global-chat-message-in {
+            from { opacity: 0; transform: translateY(0.35rem); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .dashboard-chart-header h2 {
-            margin: 0;
-            font-size: 1.15rem;
+        .global-chat-message-actions {
+            display: flex;
+            gap: 0.2rem;
+            opacity: 0;
+            transition: opacity 150ms ease, transform 150ms ease;
+            position: absolute;
+            top: 50%;
+            bottom: auto;
+            transform: translateY(-50%);
+            padding: 0.2rem 0.3rem;
+            border-radius: 0.6rem;
+            background: #fff;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+            white-space: nowrap;
+        }
+
+        .global-chat-message.is-actions-visible .global-chat-message-actions {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .global-chat-message.is-self .global-chat-message-actions { right: calc(100% + 0.35rem); }
+        .global-chat-message:not(.is-self) .global-chat-message-actions { left: calc(100% + 0.35rem); }
+        .global-chat-message.is-deleting { opacity: 0.35; transition: opacity 200ms ease; }
+        .global-chat-message.is-finalizing { opacity: 0; transform: scale(0.96); max-height: 0; margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; overflow: hidden; transition: opacity 300ms ease, transform 300ms ease, max-height 300ms ease, margin 300ms ease, padding 300ms ease; }
+        .global-chat-message-quote { padding: 0.25rem 0.4rem; margin-bottom: 0.35rem; border-left: 2px solid #1d9e75; opacity: 0.8; font-size: 0.68rem; }
+
+        .global-chat-message-action,
+        .global-chat-edit-save,
+        .global-chat-edit-cancel,
+        .global-chat-delete-confirm,
+        .global-chat-delete-cancel {
+            border: 0;
+            background: transparent;
+            color: #0f766e;
+            cursor: pointer;
+            font-size: 0.68rem;
+            padding: 0.2rem;
+        }
+
+        .global-chat-edit {
+            width: 100%;
+            min-width: 12rem;
+            border: 1px solid rgba(15, 118, 110, 0.35);
+            border-radius: 0.4rem;
+            padding: 0.35rem;
+            font: inherit;
+        }
+
+        .global-chat-message-tools { margin-top: 0.25rem; }
+        .global-chat-delete-confirm { color: #dc2626; }
+
+        .global-chat-reply-preview {
+            flex-basis: 100%;
+            padding: 0.4rem 0.55rem;
+            border-left: 3px solid #1d9e75;
+            background: #ecfdf5;
+            color: #475569;
+            font-size: 0.72rem;
+        }
+
+        .global-chat-reply-preview button {
+            float: right;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            color: #64748b;
+        }
+
+        .global-chat-reply-preview { flex: 0 0 100%; order: -1; }
+        .global-chat-attachment-preview { flex: 0 0 100%; order: -1; display: flex; flex-wrap: wrap; gap: 0.42rem; margin: 0; padding: 0.35rem; font-size: 0.72rem; }
+        .global-chat-attachment-preview .ch-chat-selected-label { position: relative; width: 56px; height: 56px; padding: 0; margin: 0; background: transparent; border: 0; box-shadow: none; overflow: visible; }
+        .global-chat-attachment-preview .ch-chat-selected-thumb,
+        .global-chat-attachment-preview .ch-chat-selected-file { width: 56px; height: 56px; border-radius: 8px; display: block; }
+        .global-chat-attachment-preview .ch-chat-selected-thumb { object-fit: cover; background: #eef3f8; border: 1px solid #d7e0ea; }
+        .global-chat-attachment-preview .ch-chat-selected-file { display: inline-flex; align-items: center; justify-content: center; background: #eef3f8; border: 1px solid #dde6f0; color: #6a7d94; }
+        .global-chat-attachment-preview .ch-chat-selected-remove { position: absolute; top: -6px; right: -6px; margin: 0; border: 1px solid #d8e0ea; background: #fff; color: #6c7e93; width: 18px; height: 18px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.68rem; line-height: 1; cursor: pointer; padding: 0; box-shadow: 0 1px 5px rgba(15, 23, 42, 0.14); }
+        .global-chat-attachment-preview .community-attachment-name { align-self: center; max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .global-chat-attach { flex: 0 0 2.8rem; width: 2.8rem; height: 2.8rem; padding: 0; border: 0; border-radius: 50%; background: #ecfdf5; color: #0f766e; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+
+        .global-chat-toast { position: absolute; left: 0.8rem; right: 0.8rem; bottom: 0.8rem; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0.8rem; border-radius: 0.7rem; background: rgba(15, 23, 42, 0.92); color: #fff; font-size: 0.75rem; animation: global-chat-toast-in 180ms ease both; }
+        .global-chat-toast button { border: 0; background: transparent; color: #a7f3d0; cursor: pointer; font-weight: 700; }
+        @keyframes global-chat-toast-in { from { opacity: 0; transform: translateY(0.3rem); } to { opacity: 1; transform: translateY(0); } }
+
+        .global-chat-message.is-self { align-self: flex-end; align-items: flex-end; }
+        .global-chat-message.is-self > .global-chat-bubble {
+            background: linear-gradient(135deg, #10b981, #0f766e);
+            color: #fff;
+            border-bottom-right-radius: 0.3rem;
+        }
+
+        .global-chat-message:not(.is-self) > .global-chat-bubble {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-bottom-left-radius: 0.3rem;
+        }
+        .global-chat-message > .global-chat-image-shell { padding: 0; background: transparent; box-shadow: none; }
+        .global-chat-message.is-self > .global-chat-image-shell { background: transparent; color: inherit; }
+        .global-chat-message:not(.is-self) > .global-chat-image-shell { background: transparent; color: inherit; }
+        .global-chat-image-caption { margin-top: 0.35rem; padding: 0.65rem 0.75rem; border-radius: 0.8rem; line-height: 1.45; }
+        .global-chat-message.is-self .global-chat-image-caption { background: linear-gradient(135deg, #10b981, #0f766e); color: #fff; border-bottom-right-radius: 0.3rem; }
+        .global-chat-message:not(.is-self) .global-chat-image-caption { background: #f1f5f9; color: #0f172a; border-bottom-left-radius: 0.3rem; }
+
+        .global-chat-message-time {
+            display: block;
+            align-self: flex-start;
+            font-size: 0.63rem;
+            color: #94a3b8;
+            white-space: nowrap;
+            opacity: 0.78;
+        }
+        .global-chat-message.is-self .global-chat-message-time { align-self: flex-end; }
+
+        .global-chat-form {
+            border-top: 1px solid rgba(15, 23, 42, 0.08);
+            padding: 0.75rem 0.8rem 0.85rem;
+            display: flex;
+            gap: 0.6rem;
+            background: #fff;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .global-chat-form textarea {
+            flex: 1;
+            min-width: 0;
+            resize: none;
+            min-height: 2.8rem;
+            max-height: 6rem;
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            border-radius: 0.8rem;
+            padding: 0.7rem 0.8rem;
+            font: inherit;
+            color: #0f172a;
+            background: #f8fafc;
+            transition: border-color 180ms ease, box-shadow 180ms ease, min-height 200ms ease;
+        }
+
+        .global-chat-form textarea:focus { border-color: #1d9e75; box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.12); }
+        .global-chat-form.is-editing textarea { border-color: #0f766e; box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12); }
+        .global-chat-edit-preview { flex: 0 0 100%; order: -1; display: flex; align-items: center; justify-content: space-between; padding: 0.35rem 0.55rem; border-left: 3px solid #0f766e; background: #ecfdf5; color: #0f766e; font-size: 0.72rem; }
+        .global-chat-edit-preview button { border: 0; background: transparent; color: #64748b; cursor: pointer; }
+        .global-chat-delete-modal { position: absolute; left: 50%; top: 50%; z-index: 5; width: min(18rem, calc(100% - 2rem)); transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 0.45rem; padding: 1rem; border-radius: 0.8rem; background: #fff; color: #0f172a; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.24); font-size: 0.78rem; }
+        .global-chat-delete-modal span { color: #64748b; font-size: 0.72rem; }
+        .global-chat-delete-modal div { display: flex; justify-content: flex-end; gap: 0.45rem; margin-top: 0.35rem; }
+        .global-chat-delete-modal button { border: 0; border-radius: 0.45rem; padding: 0.4rem 0.65rem; cursor: pointer; font-size: 0.72rem; }
+        .global-chat-delete-modal button:first-child { background: #e2e8f0; color: #334155; }
+        .global-chat-delete-modal button:last-child { background: #dc2626; color: #fff; }
+
+        .global-chat-form button {
+            align-self: flex-end;
+            border: none;
+            border-radius: 0.8rem;
+            padding: 0.8rem 1rem;
+            background: linear-gradient(135deg, #1d9e75, #0f766e);
+            color: #fff;
+            cursor: pointer;
             font-weight: 700;
-        }
-
-        .dashboard-chart-body {
-            display: flex;
+            transition: transform 150ms ease;
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
             justify-content: center;
         }
 
-        .chart-placeholder {
-            width: 100%;
-            max-width: 860px;
-            height: 220px;
-            border-radius: 14px;
-            background: rgba(16, 185, 129, 0.08);
-            display: flex;
-            align-items: flex-end;
-            gap: 1rem;
-            padding: 1.5rem;
-        }
+        .global-chat-form button:active { transform: scale(0.96); }
 
-        .chart-bar {
-            flex: 1;
-            background: linear-gradient(180deg, rgba(16, 185, 129, 0.5), rgba(16, 185, 129, 0.22));
-            border-radius: 999px;
-            max-width: 26px;
-        }
+        .global-chat-reply-preview { flex: 0 0 100%; order: -1; }
+        .global-chat-form { align-items: flex-end; }
+        .global-chat-form textarea { min-width: 0; }
+        .global-chat-form button { flex: 0 0 2.8rem; width: 2.8rem; height: 2.8rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+        .global-chat-form textarea { box-sizing: border-box; height: 2.8rem; overflow-y: auto; }
+        .global-chat-form textarea { appearance: none; -webkit-appearance: none; resize: none; scrollbar-width: none; -ms-overflow-style: none; }
+        .global-chat-form textarea::-webkit-scrollbar { width: 0; height: 0; display: none; }
+        .global-chat-form button { border-radius: 50%; }
+        .global-chat-image { display: block; max-width: 16rem; max-height: 16rem; border-radius: 0.8rem; object-fit: cover; }
+        .global-chat-image-wrap { position: relative; display: inline-block; max-width: 100%; }
+        .global-chat-image-options { position: absolute; right: 0.45rem; bottom: 0.45rem; width: 1.9rem; height: 1.9rem; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 50%; background: rgba(15, 23, 42, 0.72); color: #fff; cursor: pointer; }
+        .global-chat-image-options svg { width: 1rem; height: 1rem; }
+        .global-chat-file { display: flex; align-items: center; gap: 0.4rem; color: inherit; text-decoration: none; font-size: 0.75rem; }
+        .global-chat-file small { opacity: 0.7; }
+        .global-chat-attachment-error { color: #dc2626; font-size: 0.72rem; }
+        .global-chat-messages { scrollbar-width: none; -ms-overflow-style: none; }
+        .global-chat-messages::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
-        .panel-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.6rem;
-        }
-
-        .panel-title {
-            margin: 0;
-            font-weight: 700;
-            font-size: 1.05rem;
-            letter-spacing: -0.01em;
-        }
-
-        .panel-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            display: grid;
-            gap: 0.9rem;
-        }
-
-        .panel-item {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            padding: 0.85rem 1rem;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.65);
-            border: 1px solid rgba(15, 118, 110, 0.1);
-        }
-
-        .panel-item-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 14px;
-            display: grid;
-            place-items: center;
-            background: rgba(16, 185, 129, 0.14);
-            color: var(--teal-700);
-        }
-
-        .panel-item-text {
-            margin: 0;
-            font-weight: 600;
-            color: var(--ink-700);
-        }
-
-        .panel-footer {
-            margin-top: auto;
-            display: flex;
-            justify-content: flex-end;
-        }
-
-        .panel-footer .btn {
-            padding: 0.65rem 1.2rem;
-            font-size: 0.95rem;
-        }
-
-        @media (max-width: 1024px) {
-            .dashboard {
-                grid-template-columns: 1fr;
+        @media (max-width: 768px) {
+            .global-chat-widget {
+                right: 0.75rem;
+                bottom: 0.75rem;
             }
 
-            .dashboard-sidebar {
-                position: relative;
-                border-right: none;
-                border-bottom: 1px solid rgba(16, 185, 129, 0.16);
-                padding: 1.5rem 1.25rem;
+            .global-chat-panel {
+                width: calc(100vw - 1.25rem);
+                height: calc(100vh - 9rem);
+                max-height: calc(100vh - 9rem);
             }
 
-            .dashboard-main {
-                padding: 1.5rem 0;
-            }
-
-            .dashboard-inner {
-                padding-inline: 1rem;
-            }
-
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 560px) {
-            .dashboard-stats {
-                grid-template-columns: 1fr;
-            }
-
-            .dashboard-header {
+            .global-chat-body {
                 flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
+                min-height: 21rem;
             }
 
-            .dashboard-header-actions {
+            .global-chat-inbox {
                 width: 100%;
-                justify-content: flex-start;
-                flex-wrap: wrap;
+                border-right: none;
+                border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+                max-height: none;
+                overflow-y: auto;
             }
 
-            .dashboard-header-actions .profile-btn {
-                width: 100%;
-                justify-content: center;
-            }
+            .global-chat-body { min-height: 0; }
+            .global-chat-thread { min-height: 0; height: auto; overflow: hidden; }
+            .global-chat-messages { min-height: 0; overflow-y: auto; }
+            .global-chat-image-options { width: 2.5rem; height: 2.5rem; right: 0.35rem; bottom: 0.35rem; }
+            #global-chat-panel .global-chat-image-lightbox button { width: 2.2rem; height: 2.2rem; }
+            .global-chat-toggle { width: 4.25rem; height: 4.25rem; }
+            .global-chat-toggle__icon { font-size: 1.75rem; }
+            .global-chat-message { max-width: calc(100% - 6.5rem); }
+        }
+
+        .global-chat-body,
+        .global-chat-thread,
+        .global-chat-messages,
+        .global-chat-form {
+            border-bottom: 0;
+            box-shadow: none;
+        }
+
+        .global-chat-form {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .global-chat-form::before,
+        .global-chat-form::after {
+            display: none !important;
+            content: none !important;
+        }
+
+        #global-chat-panel { width: 380px !important; font-size: 14px; }
+        #global-chat-panel .global-chat-header h3,
+        #global-chat-panel .global-chat-thread-header { font-size: 15px !important; }
+        #global-chat-panel .global-chat-eyebrow,
+        #global-chat-panel .global-chat-inbox-header { font-size: 12px !important; }
+        #global-chat-panel .global-chat-thread-name { font-size: 15px !important; font-weight: 600; }
+        #global-chat-panel .global-chat-thread-preview { font-size: 14px !important; }
+        #global-chat-panel .global-chat-message > .global-chat-bubble,
+        #global-chat-panel .global-chat-message-content { font-size: 14px !important; }
+        #global-chat-panel .global-chat-message-time { font-size: 12px !important; }
+        #global-chat-panel .global-chat-file { font-size: 14px !important; }
+        #global-chat-panel .global-chat-load-error { align-self: center; margin: auto; padding: 1rem; color: #64748b; font-size: 14px; text-align: center; }
+        #global-chat-panel .global-chat-image-lightbox[hidden] { display: none !important; }
+        #global-chat-panel .global-chat-image-lightbox { position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(15, 23, 42, 0.82); }
+        #global-chat-panel .global-chat-image-lightbox img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 0.6rem; }
+        #global-chat-panel .global-chat-image-lightbox button { position: absolute; top: 0.75rem; right: 0.75rem; z-index: 1; width: 1.9rem; height: 1.9rem; border: 0; border-radius: 50%; background: rgba(15, 23, 42, 0.78); color: #fff; cursor: pointer; }
+        @media (max-width: 768px) {
+            #global-chat-panel { width: calc(100vw - 1.25rem) !important; }
         }
     </style>
-</head>
-<body class="bg-brand-50 text-ink-900 antialiased">
-    <div id="dashboard-shell" data-sidebar="expanded" class="min-h-screen grid">
-        {% include "partials/_sidebar.html" %}
 
-        <main class="min-w-0">
-            {% include "partials/_header.html" %}
+    <link rel="stylesheet" href="{% static 'css/global-chat.css' %}">
 
-            <section class="px-4 py-6 md:px-6 lg:px-8" aria-label="Page content">
-                {% block content %}{% endblock %}
-            </section>
-        </main>
-    </div>
+    <script>
+        (function () {
+            function getCookie(name) {
+                var cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    var cookies = document.cookie.split(';');
+                    for (var i = 0; i < cookies.length; i += 1) {
+                        var cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
 
-    <div id="mobile-overlay" data-open="false" class="hidden fixed inset-0 z-50 bg-ink-900/30" aria-hidden="true"></div>
+            var widget = document.getElementById('global-chat-widget');
+            var toggle = document.getElementById('global-chat-toggle');
+            var panel = document.getElementById('global-chat-panel');
+            var closeBtn = document.getElementById('global-chat-close');
+            var unreadEl = document.getElementById('global-chat-unread');
+            var form = document.getElementById('global-chat-form');
+            var input = document.getElementById('global-chat-input');
+            var attachmentInput = document.getElementById('global-chat-attachment-input');
+            var attachmentPreview = document.getElementById('global-chat-attachment-preview');
+            var editPreview = document.getElementById('global-chat-edit-preview');
+            var deleteModal = document.getElementById('global-chat-delete-modal');
+            var imageLightbox = document.getElementById('global-chat-image-lightbox');
+            var imageLightboxImage = document.getElementById('global-chat-image-lightbox-image');
+            var attachButton = document.getElementById('global-chat-attach');
+            var messagesEl = document.getElementById('global-chat-messages');
+            var replyPreviewEl = document.getElementById('global-chat-reply-preview');
+            var threadEl = document.getElementById('global-chat-thread');
+            var backBtn = document.getElementById('global-chat-back');
+            var threadHeaderEl = document.getElementById('global-chat-thread-header');
+            var threadListEl = document.getElementById('global-chat-thread-list');
+            var inboxSearchEl = document.getElementById('global-chat-inbox-search-input');
+            var inboxEl = document.getElementById('global-chat-inbox');
+            var chatTitleEl = document.getElementById('global-chat-title');
+            var headerPersonEl = document.getElementById('global-chat-header-person');
+            var headerNameEl = document.getElementById('global-chat-header-name');
+            var headerAvatarInitialsEl = document.getElementById('global-chat-header-avatar-initials');
+            var headerAvatarImageEl = document.getElementById('global-chat-header-avatar-image');
+            var panelCloseTimer = null;
+            var chatEligible = {% if dashboard_scope == "volunteer" or user.is_superuser %}true{% else %}false{% endif %};
+            var threadState = {
+                activeThreadId: null,
+                activeThreadName: '',
+                activeThreadAvatar: '',
+                activeThreadInitials: '',
+                currentRole: null,
+                timer: null,
+                lastUserId: null,
+                inboxThreads: []
+            };
+            var replyTarget = null;
+            var editTarget = null;
+            var deleteTarget = null;
+            var renderedMessages = {};
+            var selectedAttachment = null;
+            var audioContext = null;
+            var soundMuted = false;
+            var lastUnreadCount = null;
+            var messageBaselineReady = false;
 
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="{% static 'js/index.js' %}"></script>
+            if (!widget || !toggle || !panel || !form || !messagesEl || !threadEl || !threadHeaderEl || !threadListEl) {
+                return;
+            }
+
+            function setHeaderIdentity(name, avatarUrl, initials, showBack) {
+                var hasIdentity = Boolean(name);
+                if (chatTitleEl) {
+                    chatTitleEl.hidden = hasIdentity;
+                    chatTitleEl.textContent = hasIdentity ? '' : 'Inbox';
+                }
+                if (headerPersonEl) headerPersonEl.hidden = !hasIdentity;
+                if (headerNameEl) headerNameEl.textContent = name || '';
+                if (headerAvatarInitialsEl) {
+                    headerAvatarInitialsEl.textContent = initials || 'A';
+                    headerAvatarInitialsEl.hidden = Boolean(avatarUrl);
+                }
+                if (headerAvatarImageEl) {
+                    headerAvatarImageEl.hidden = !avatarUrl;
+                    if (avatarUrl) headerAvatarImageEl.src = avatarUrl;
+                    else headerAvatarImageEl.removeAttribute('src');
+                }
+                if (backBtn) backBtn.hidden = !showBack;
+            }
+
+            function updateUnreadBadge(count) {
+                if (!unreadEl) return;
+                var total = Number(count) || 0;
+                if (total > 0) {
+                    unreadEl.hidden = false;
+                    unreadEl.textContent = String(total);
+                } else {
+                    unreadEl.hidden = true;
+                    unreadEl.textContent = '0';
+                }
+            }
+
+            function ensureAudioContext() {
+                if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioContext.state === 'suspended') audioContext.resume();
+                return audioContext;
+            }
+
+            function playChatTone(kind) {
+                if (soundMuted || !window.AudioContext && !window.webkitAudioContext) return;
+                var context = ensureAudioContext();
+                var oscillator = context.createOscillator();
+                var gain = context.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.value = kind === 'sent' ? 660 : 880;
+                gain.gain.setValueAtTime(0.0001, context.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.035, context.currentTime + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.14);
+                oscillator.connect(gain); gain.connect(context.destination);
+                oscillator.start(); oscillator.stop(context.currentTime + 0.15);
+            }
+
+            function setOpenState(isOpen) {
+                if (panelCloseTimer) window.clearTimeout(panelCloseTimer);
+                if (isOpen) {
+                    panel.hidden = false;
+                    window.requestAnimationFrame(function () { panel.classList.add('is-open'); });
+                } else {
+                    panel.classList.remove('is-open');
+                    panelCloseTimer = window.setTimeout(function () { panel.hidden = true; }, 200);
+                }
+                toggle.setAttribute('aria-expanded', String(isOpen));
+            }
+
+            function refreshChatIcons() {
+                if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+            }
+
+            function closePanel() {
+                if (threadState.currentRole === 'admin') {
+                    showAdminInbox();
+                }
+                setOpenState(false);
+            }
+
+            function showAdminInbox() {
+                threadState.activeThreadId = null;
+                threadState.activeThreadName = '';
+                threadState.activeThreadAvatar = '';
+                threadState.activeThreadInitials = '';
+                setHeaderIdentity('', '', '', false);
+                applyAdminView();
+            }
+
+            function applyAdminView() {
+                var conversationSelected = Boolean(threadState.activeThreadId);
+                inboxEl.hidden = conversationSelected;
+                threadEl.hidden = !conversationSelected;
+                if (backBtn) backBtn.hidden = !conversationSelected;
+            }
+
+            function isInteractionInsidePanel(event) {
+                if (!event) return false;
+                var target = event.target;
+                if (!(target instanceof Element)) {
+                    return false;
+                }
+                return panel.contains(target) || toggle.contains(target);
+            }
+
+            function formatMessageTime(value) {
+                if (!value) return '';
+                var date = new Date(value);
+                if (Number.isNaN(date.getTime())) return '';
+                return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            }
+
+            function escapeHtml(value) {
+                return String(value || '').replace(/[&<>'"]/g, function (character) {
+                    return {'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[character];
+                });
+            }
+
+            function formatFileSize(bytes) { return bytes < 1048576 ? Math.max(1, Math.round(bytes / 1024)) + ' KB' : (bytes / 1048576).toFixed(1) + ' MB'; }
+            function renderAttachmentPreview() {
+                if (!attachmentPreview) return;
+                if (selectedAttachment && selectedAttachment.size > 5 * 1024 * 1024) {
+                    attachmentPreview.hidden = false;
+                    attachmentPreview.innerHTML = '<span class="global-chat-attachment-error">Attachment must be 5 MB or smaller.</span>';
+                    selectedAttachment = null;
+                    if (attachmentInput) attachmentInput.value = '';
+                    return;
+                }
+                attachmentPreview.hidden = !selectedAttachment;
+                if (!selectedAttachment) { attachmentPreview.innerHTML = ''; return; }
+                var isImage = selectedAttachment.type.indexOf('image/') === 0 || /\.(jpg|jpeg|jfif|png|gif|webp|bmp|svg|heic|heif)$/i.test(selectedAttachment.name || '');
+                var media = isImage ? '<img class="ch-chat-selected-thumb" src="' + URL.createObjectURL(selectedAttachment) + '" alt="">' : '<span class="ch-chat-selected-file" aria-hidden="true"><i data-lucide="paperclip"></i></span>';
+                var name = isImage ? '' : '<span class="community-attachment-name">' + escapeHtml(selectedAttachment.name) + ' (' + formatFileSize(selectedAttachment.size) + ')</span>';
+                attachmentPreview.innerHTML = '<article class="ch-chat-selected-label">' + media + name + '<button type="button" class="ch-chat-selected-remove" data-chat-remove-attachment aria-label="Remove attachment">&#10005;</button></article>';
+                refreshChatIcons();
+            }
+
+            function setReplyTarget(message) {
+                replyTarget = message || null;
+                if (!replyPreviewEl) return;
+                replyPreviewEl.hidden = !replyTarget;
+                replyPreviewEl.innerHTML = replyTarget ? '<span>Replying to: ' + escapeHtml(replyTarget.message.slice(0, 120)) + '</span><button type="button" data-chat-cancel-reply aria-label="Cancel reply"><i data-lucide="x"></i></button>' : '';
+                refreshChatIcons();
+            }
+
+            function setEditTarget(message) {
+                editTarget = message || null;
+                form.classList.toggle('is-editing', Boolean(editTarget));
+                if (editPreview) editPreview.hidden = !editTarget;
+                input.value = editTarget ? (editTarget.message || '') : '';
+                input.style.height = 'auto';
+                input.style.height = Math.min(input.scrollHeight, 96) + 'px';
+                if (editTarget) { input.focus(); input.selectionStart = input.value.length; input.selectionEnd = input.value.length; }
+            }
+
+            function closeDeleteModal() { deleteTarget = null; if (deleteModal) deleteModal.hidden = true; }
+            function openDeleteModal(messageId) { deleteTarget = messageId; if (deleteModal) { deleteModal.hidden = false; deleteModal.querySelector('[data-chat-delete-cancel]').focus(); } }
+            function closeImagePreview() { if (imageLightbox) imageLightbox.hidden = true; if (imageLightboxImage) imageLightboxImage.src = ''; }
+            function openImagePreview(url) { if (!imageLightbox || !imageLightboxImage) return; imageLightboxImage.src = url; imageLightbox.hidden = false; }
+            if (imageLightbox) imageLightbox.addEventListener('click', function (event) { if (event.target === imageLightbox || event.target.closest('[data-chat-close-image]')) closeImagePreview(); });
+
+            function renderMessages(messages) {
+                var incoming = {};
+                var changed = false;
+                var newIncomingMessage = false;
+                renderedMessages = {};
+                (messages || []).forEach(function (message) { incoming[String(message.id)] = message; renderedMessages[String(message.id)] = message; });
+                Array.prototype.slice.call(messagesEl.querySelectorAll('.global-chat-message[data-message-id]')).forEach(function (wrap) {
+                    var id = wrap.dataset.messageId;
+                    if (!incoming[id]) wrap.remove();
+                });
+                Object.keys(incoming).forEach(function (id) {
+                    var message = incoming[id];
+                    var signature = JSON.stringify([message.message, message.is_edited, message.reply_to && message.reply_to.id]);
+                    var wrap = messagesEl.querySelector('[data-message-id="' + id + '"]');
+                    if (!wrap) {
+                        wrap = document.createElement('div');
+                        wrap.dataset.messageId = id;
+                        messagesEl.appendChild(wrap);
+                        changed = true;
+                        if (messageBaselineReady && !message.is_self && !panel.hidden) newIncomingMessage = true;
+                    }
+                    if (wrap.dataset.signature !== signature) {
+                        wrap.className = 'global-chat-message' + (message.is_self ? ' is-self' : '');
+                        var quoted = message.reply_to ? '<div class="global-chat-message-quote">' + escapeHtml(message.reply_to.sender_name) + ': ' + escapeHtml(message.reply_to.message.slice(0, 120)) + '</div>' : '';
+                        var isImageAttachment = Boolean(message.attachment && message.attachment.is_image);
+                        var mediaOptions = isImageAttachment ? '<button type="button" class="global-chat-image-options" data-chat-media-options="' + id + '" aria-label="More image actions"><i data-lucide="more-horizontal"></i></button>' : '';
+                        var attachment = message.attachment ? (isImageAttachment ? '<span class="global-chat-image-wrap"><a class="global-chat-image-link" href="' + message.attachment.url + '" data-chat-image-preview="' + escapeHtml(message.attachment.url) + '" aria-label="Open image preview"><img class="global-chat-image" src="' + message.attachment.url + '" alt=""></a>' + mediaOptions + '</span>' : '<a class="global-chat-file" href="' + message.attachment.url + '" download><i data-lucide="file"></i><span>' + escapeHtml(message.attachment.name) + '</span><small>' + formatFileSize(message.attachment.size) + '</small><i data-lucide="download"></i></a>') : '';
+                        var actions = '<div class="global-chat-message-actions"><button type="button" class="global-chat-message-action" data-chat-reply="' + id + '" aria-label="Reply"><i data-lucide="reply"></i></button>' + (message.is_self && !isImageAttachment ? '<button type="button" class="global-chat-message-action" data-chat-edit="' + id + '" aria-label="Edit"><i data-lucide="pencil"></i></button>' : '') + '<button type="button" class="global-chat-message-action" data-chat-delete="' + id + '" aria-label="Delete"><i data-lucide="trash-2"></i></button></div>';
+                        var messageContent = message.message ? '<div class="global-chat-message-content">' + escapeHtml(message.message).replace(/\n/g, '<br>') + '</div>' : '';
+                        var imageMessage = isImageAttachment ? '<div class="global-chat-bubble global-chat-image-shell">' + attachment + (message.message || quoted ? '<div class="global-chat-image-caption">' + quoted + messageContent + '</div>' : '') + actions + '</div>' : '<div class="global-chat-bubble">' + quoted + attachment + messageContent + actions + '</div>';
+                        wrap.innerHTML = imageMessage + '<span class="global-chat-message-time">' + formatMessageTime(message.created_at) + (message.is_edited ? ' <em>(edited)</em>' : '') + '</span>';
+                        wrap.dataset.signature = signature;
+                        changed = true;
+                    }
+                });
+                var empty = messagesEl.querySelector('.global-chat-empty');
+                if (!(messages || []).length && !empty) { messagesEl.innerHTML = '<div class="global-chat-empty" style="align-self:center; background:#f8fafc; color:#64748b;">No messages yet.</div>'; }
+                if ((messages || []).length && empty) empty.remove();
+                if (changed) messagesEl.scrollTop = messagesEl.scrollHeight;
+                if (changed) refreshChatIcons();
+                if (newIncomingMessage) playChatTone('received');
+                messageBaselineReady = true;
+            }
+
+            function reloadActiveThread() {
+                loadThreadMessages(threadState.currentRole === 'admin' ? threadState.activeThreadId : threadState.lastUserId);
+            }
+
+            function manageMessage(messageId, method, body) {
+                return fetch('/chat/message/' + encodeURIComponent(messageId) + '/', { method: method, credentials: 'same-origin', headers: Object.assign({'X-CSRFToken': getCookie('csrftoken') || ''}, body ? {'Content-Type': 'application/json'} : {}), body: body ? JSON.stringify(body) : undefined }).then(function (response) {
+                    if (!response.ok) throw new Error('Unable to update message');
+                    return response.json();
+                });
+            }
+
+            function confirmDelete() {
+                if (!deleteTarget) return;
+                var messageId = deleteTarget;
+                closeDeleteModal();
+                manageMessage(messageId, 'DELETE').then(reloadActiveThread);
+            }
+
+            messagesEl.addEventListener('click', function (event) {
+                var action = event.target.closest('[data-chat-reply], [data-chat-edit], [data-chat-delete], [data-chat-media-options]');
+                if (!action) return;
+                event.stopPropagation();
+                var message = renderedMessages[String(action.dataset.chatReply || action.dataset.chatEdit || action.dataset.chatDelete || action.dataset.chatMediaOptions)];
+                if (!message) return;
+                    action.closest('.global-chat-message').classList.add('is-actions-visible');
+                if (action.dataset.chatMediaOptions) {
+                    return;
+                } else if (action.dataset.chatReply) {
+                    setReplyTarget(message);
+                    input.focus();
+                } else if (action.dataset.chatEdit) {
+                    setEditTarget(message);
+                } else {
+                    openDeleteModal(action.dataset.chatDelete);
+                }
+            });
+
+            messagesEl.addEventListener('click', function (event) {
+                var wrap = event.target.closest('.global-chat-message');
+                if (!wrap) return;
+                if (event.target.closest('.global-chat-image-link')) return;
+                if (!event.target.closest('button, textarea')) {
+                    wrap.classList.toggle('is-actions-visible');
+                    return;
+                }
+            });
+
+            if (replyPreviewEl) {
+                replyPreviewEl.addEventListener('click', function (event) {
+                    if (event.target.closest('[data-chat-cancel-reply]')) setReplyTarget(null);
+                });
+            }
+
+            if (attachButton && attachmentInput) attachButton.addEventListener('click', function () { attachmentInput.click(); });
+            if (attachmentInput) attachmentInput.addEventListener('change', function () { selectedAttachment = attachmentInput.files[0] || null; renderAttachmentPreview(); });
+            document.addEventListener('click', function (event) { if (event.target.closest('[data-chat-remove-attachment]')) { selectedAttachment = null; if (attachmentInput) attachmentInput.value = ''; renderAttachmentPreview(); } });
+
+            document.addEventListener('click', function (event) {
+                var image = event.target.closest('.global-chat-image');
+                if (image) { event.preventDefault(); openImagePreview(image.currentSrc || image.src); return; }
+                if (event.target.closest('[data-chat-delete-cancel]')) { event.stopPropagation(); closeDeleteModal(); return; }
+                if (event.target.closest('[data-chat-delete-confirm]')) { event.stopPropagation(); confirmDelete(); return; }
+                if (event.target.closest('[data-chat-cancel-edit]')) { event.stopPropagation(); setEditTarget(null); return; }
+                if (!event.target.closest('.global-chat-message')) {
+                    Array.prototype.forEach.call(messagesEl.querySelectorAll('.is-actions-visible'), function (item) { item.classList.remove('is-actions-visible'); });
+                }
+            });
+
+            function renderInbox(threads) {
+                threadListEl.innerHTML = '';
+                threadState.inboxThreads = threads || [];
+                var query = inboxSearchEl ? inboxSearchEl.value.trim().toLowerCase() : '';
+                var filteredThreads = threadState.inboxThreads.filter(function (thread) {
+                    return !query || String(thread.name || '').toLowerCase().indexOf(query) !== -1;
+                });
+                if (!filteredThreads.length) {
+                    threadListEl.innerHTML = '<div class="global-chat-inbox-empty">No volunteers found.</div>';
+                    return;
+                }
+
+                filteredThreads.forEach(function (thread) {
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'global-chat-thread-item' + (Number(thread.user_id) === Number(threadState.activeThreadId) ? ' is-active' : '');
+                    button.innerHTML = `
+                        <span class="global-chat-thread-summary">
+                            <span class="global-chat-thread-avatar">${thread.avatar_url ? '<img src="' + escapeHtml(thread.avatar_url) + '" alt="">' : escapeHtml(thread.initials || 'U')}</span>
+                            <span class="global-chat-thread-meta">
+                                <span class="global-chat-thread-name">${thread.name || 'Volunteer'}</span>
+                                <span class="global-chat-thread-preview">${thread.preview || 'No messages yet'}</span>
+                            </span>
+                        </span>
+                        ${Number(thread.unread_count) > 0 ? '<span class="global-chat-thread-badge">' + thread.unread_count + '</span>' : ''}
+                    `;
+                    button.addEventListener('click', function () {
+                        threadState.activeThreadId = thread.user_id;
+                        threadState.activeThreadName = thread.name || 'Volunteer';
+                        threadState.activeThreadAvatar = thread.avatar_url || '';
+                        threadState.activeThreadInitials = thread.initials || 'U';
+                        setHeaderIdentity(threadState.activeThreadName, threadState.activeThreadAvatar, threadState.activeThreadInitials, true);
+                        threadHeaderEl.textContent = thread.name || 'Volunteer';
+                        messageBaselineReady = false;
+                        applyAdminView();
+                        loadThreadMessages(thread.user_id);
+                    });
+                    threadListEl.appendChild(button);
+                });
+            }
+
+            function loadThreadMessages(threadUserId) {
+                if (!threadUserId) return;
+                fetch('/chat/messages/' + encodeURIComponent(threadUserId) + '/', { credentials: 'same-origin' })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            return response.text().then(function (body) { throw new Error('Failed to load messages (' + response.status + '): ' + (body || response.statusText)); });
+                        }
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        threadHeaderEl.textContent = data.thread_user_name || 'Conversation';
+                        renderMessages(data.messages || []);
+                        if (threadState.currentRole === 'admin') {
+                            refreshInbox();
+                        }
+                    })
+                    .catch(function (error) {
+                        console.error('Chat history load failed', error);
+                        if (!messagesEl.querySelector('.global-chat-message')) {
+                            messagesEl.innerHTML = '<div class="global-chat-load-error">Unable to load this conversation. Please try again.</div>';
+                        }
+                    });
+            }
+
+            function refreshInbox() {
+                fetch('/chat/conversations/', { credentials: 'same-origin' })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error('Failed to load conversations');
+                        }
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        var threads = data.threads || [];
+                        renderInbox(threads);
+                        applyAdminView();
+
+                        if (threadState.activeThreadId && threads.length) {
+                            var stillExists = threads.some(function (thread) {
+                                return Number(thread.user_id) === Number(threadState.activeThreadId);
+                            });
+                            if (!stillExists) {
+                                showAdminInbox();
+                            }
+                        }
+                    })
+                    .catch(function () {
+                        threadListEl.innerHTML = '<div style="padding:1rem;color:#64748b;font-size:0.75rem;">Unable to load inbox.</div>';
+                    });
+            }
+
+            function refreshVolunteerThread() {
+                fetch('/chat/messages/' + encodeURIComponent(threadState.lastUserId || document.querySelector('[data-user-id]') || 0) + '/', { credentials: 'same-origin' })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            return null;
+                        }
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        if (!data || !data.messages) return;
+                        threadHeaderEl.textContent = 'Message Admin';
+                        renderMessages(data.messages || []);
+                    })
+                    .catch(function () {});
+            }
+
+            function fetchState() {
+                fetch('/chat/widget-state/', { credentials: 'same-origin' })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            return null;
+                        }
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        if (!data || !data.enabled) {
+                            widget.hidden = true;
+                            return;
+                        }
+
+                        widget.hidden = false;
+                        threadState.currentRole = data.role || 'volunteer';
+                        var unreadCount = Number(data.unread_count) || 0;
+                        var shouldPlayUnreadTone = panel.hidden || (threadState.currentRole === 'admin' && !threadState.activeThreadId);
+                        if (lastUnreadCount !== null && unreadCount > lastUnreadCount && shouldPlayUnreadTone) playChatTone('received');
+                        lastUnreadCount = unreadCount;
+                        updateUnreadBadge(data.unread_count || 0);
+
+                        if (threadState.currentRole === 'admin') {
+                            if (threadState.activeThreadId) {
+                                applyAdminView();
+                            } else {
+                                showAdminInbox();
+                            }
+                            refreshInbox();
+                        } else {
+                            inboxEl.hidden = true;
+                            threadEl.hidden = false;
+                            threadState.lastUserId = Number(data.user_id || 0) || null;
+                            threadHeaderEl.textContent = 'Message Admin';
+                            if (!threadState.lastUserId) {
+                                renderMessages([]);
+                                return;
+                            }
+                            fetch('/chat/messages/' + encodeURIComponent(threadState.lastUserId) + '/', { credentials: 'same-origin' })
+                                .then(function (response) {
+                                    if (!response.ok) {
+                                        return response.text().then(function (body) { throw new Error('Failed to load volunteer conversation (' + response.status + '): ' + (body || response.statusText)); });
+                                    }
+                                    return response.json();
+                                })
+                                .then(function (data) {
+                                    threadState.lastUserId = Number(data.thread_user_id || threadState.lastUserId || 0) || null;
+                                    threadHeaderEl.textContent = 'Message Admin';
+                                    renderMessages(data.messages || []);
+                                })
+                                .catch(function (error) {
+                                    console.error('Volunteer chat history load failed', error);
+                                    if (!messagesEl.querySelector('.global-chat-message')) {
+                                        messagesEl.innerHTML = '<div class="global-chat-load-error">Unable to load this conversation. Please try again.</div>';
+                                    }
+                                });
+                        }
+                    })
+                    .catch(function () {
+                        widget.hidden = !chatEligible;
+                    });
+            }
+
+            toggle.addEventListener('click', function (event) {
+                event.stopPropagation();
+                var isOpen = panel.hidden;
+                setOpenState(isOpen);
+                if (isOpen && threadState.currentRole === 'admin') {
+                    refreshInbox();
+                }
+            });
+
+            closeBtn.addEventListener('click', function (event) {
+                event.stopPropagation();
+                closePanel();
+            });
+
+            if (inboxSearchEl) inboxSearchEl.addEventListener('input', function () { renderInbox(threadState.inboxThreads); refreshChatIcons(); });
+
+            if (backBtn) {
+                backBtn.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    showAdminInbox();
+                    refreshInbox();
+                });
+            }
+
+            document.addEventListener('click', function (event) {
+                if (isInteractionInsidePanel(event)) {
+                    return;
+                }
+                if (!panel.hidden) {
+                    closePanel();
+                }
+            });
+
+            document.addEventListener('touchstart', function (event) {
+                if (isInteractionInsidePanel(event)) {
+                    return;
+                }
+                if (!panel.hidden) {
+                    closePanel();
+                }
+            }, { passive: true });
+
+            input.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    form.requestSubmit();
+                }
+            });
+
+            input.addEventListener('input', function () {
+                input.style.height = 'auto';
+                input.style.height = Math.min(input.scrollHeight, 96) + 'px';
+            });
+
+            if (attachButton && attachmentInput) attachButton.addEventListener('click', function () { attachmentInput.click(); });
+            if (attachmentInput) attachmentInput.addEventListener('change', function () { selectedAttachment = attachmentInput.files[0] || null; renderAttachmentPreview(); });
+            document.addEventListener('click', function (event) { if (event.target.closest('[data-chat-remove-attachment]')) { selectedAttachment = null; attachmentInput.value = ''; renderAttachmentPreview(); } });
+
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                var message = input.value.trim();
+                if (editTarget) {
+                    if (!message) return;
+                    var editingId = editTarget.id;
+                    setEditTarget(null);
+                    manageMessage(editingId, 'PATCH', {message: message}).then(reloadActiveThread);
+                    return;
+                }
+                if (!message && !selectedAttachment) return;
+
+                var payload = { message: message };
+                if (replyTarget) payload.reply_to_id = replyTarget.id;
+                if (threadState.currentRole === 'admin') {
+                    if (!threadState.activeThreadId) {
+                        return;
+                    }
+                    payload.thread_user_id = threadState.activeThreadId;
+                } else {
+                    payload.thread_user_id = threadState.lastUserId || 0;
+                }
+
+                var requestBody;
+                var requestHeaders = { 'X-CSRFToken': getCookie('csrftoken') || '' };
+                if (selectedAttachment) {
+                    requestBody = new FormData();
+                    requestBody.append('message', message);
+                    requestBody.append('thread_user_id', threadState.currentRole === 'admin' ? threadState.activeThreadId : (threadState.lastUserId || 0));
+                    if (replyTarget) requestBody.append('reply_to_id', replyTarget.id);
+                    requestBody.append('attachment', selectedAttachment);
+                } else {
+                    requestBody = JSON.stringify({ message: message, thread_user_id: threadState.currentRole === 'admin' ? threadState.activeThreadId : (threadState.lastUserId || 0), ...(replyTarget ? { reply_to_id: replyTarget.id } : {}) });
+                    requestHeaders['Content-Type'] = 'application/json';
+                }
+                fetch('/chat/send/', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: requestHeaders,
+                    body: requestBody
+                })
+                    .then(function (response) {
+                        return response.text().then(function (body) {
+                            var data = null;
+                            try { data = body ? JSON.parse(body) : null; } catch (parseError) { data = null; }
+                            if (!response.ok) {
+                                var detail = data && data.error ? data.error : (body || response.statusText || 'Unknown server error');
+                                throw new Error('Chat send failed (' + response.status + '): ' + detail);
+                            }
+                            return data || {};
+                        });
+                    })
+                    .then(function (data) {
+                        if (data && data.message) {
+                            input.value = '';
+                            input.style.height = '2.8rem';
+                            setReplyTarget(null);
+                            selectedAttachment = null;
+                            if (attachmentInput) attachmentInput.value = '';
+                            renderAttachmentPreview();
+                            selectedAttachment = null;
+                            if (attachmentInput) attachmentInput.value = '';
+                            renderAttachmentPreview();
+                            playChatTone('sent');
+                            if (threadState.currentRole === 'admin') {
+                                loadThreadMessages(threadState.activeThreadId);
+                            } else {
+                                refreshVolunteerThread();
+                            }
+                        }
+                    })
+                    .catch(function (error) {
+                        console.error('Chat send failed', error);
+                        window.alert(error && error.message ? error.message : 'Unable to send message right now.');
+                    });
+            });
+
+            function schedulePolling() {
+                if (threadState.timer) {
+                    window.clearInterval(threadState.timer);
+                }
+                threadState.timer = window.setInterval(function () {
+                    fetchState();
+                    if (threadState.currentRole === 'admin' && !panel.hidden) {
+                        refreshInbox();
+                    }
+                    if (threadState.currentRole !== 'admin' && !panel.hidden) {
+                        refreshVolunteerThread();
+                    }
+                }, 5000);
+            }
+
+            refreshChatIcons();
+            fetchState();
+            schedulePolling();
+            setOpenState(false);
+        })();
+    </script>
+
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

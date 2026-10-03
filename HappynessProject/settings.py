@@ -35,20 +35,48 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
+    'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     'webapp',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'webapp.middleware.TwoFactorChallengeMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+SITE_ID = 1
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    }
+}
+
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+ACCOUNT_ADAPTER = 'webapp.adapters.RoleBasedAccountAdapter'
+SOCIALACCOUNT_ADAPTER = 'webapp.adapters.RoleBasedSocialAccountAdapter'
 
 ROOT_URLCONF = 'HappynessProject.urls'
 
@@ -62,6 +90,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'webapp.context_processors.dashboard_profile_context',
             ],
         },
     },
@@ -105,7 +134,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Manila'
 
 USE_I18N = True
 
@@ -115,9 +144,119 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / 'webapp' / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# TODO: Replace these donation placeholders with the organization's approved details.
+DONATION_CONFIG = {
+    'gcash_number': 'TODO-GCASH-NUMBER',
+    'gcash_account_name': 'TODO-GCASH-ACCOUNT-NAME',
+    'bank_name': 'TODO-BANK-NAME',
+    'bank_account_number': 'TODO-BANK-ACCOUNT-NUMBER',
+    'bank_account_name': 'TODO-BANK-ACCOUNT-NAME',
+    'verification_time': '1 to 2 days',
+    'impact_examples': [
+        {'amount': 100, 'text': 'support a child-focused learning activity'},
+        {'amount': 300, 'text': 'help provide learning materials for a child'},
+        {'amount': 500, 'text': 'support a family livelihood activity'},
+        {'amount': 1000, 'text': 'help fund a community partnership activity'},
+    ],
+    'programs': [
+        {
+            'name': 'Happy Kids',
+            'type': "Children's Development",
+            'logo': 'media/Happy kids.png',
+            'share': 40,
+            'color': '#5c8d68',
+            'who': 'Children building confidence through learning and care.',
+            'items': [
+                {'name': 'School supply set', 'amount': 300, 'icon': 'book-open'},
+                {'name': 'Learning activity', 'amount': 100, 'icon': 'pencil'},
+            ],
+        },
+        {
+            'name': 'Happy Nanays',
+            'type': 'Livelihood Training',
+            'logo': 'media/Happy nanays.png',
+            'share': 35,
+            'color': '#d28757',
+            'who': 'Mothers growing practical livelihood opportunities.',
+            'items': [
+                {'name': 'Livelihood starter materials', 'amount': 500, 'icon': 'briefcase-business'},
+                {'name': 'Skills session', 'amount': 300, 'icon': 'graduation-cap'},
+            ],
+        },
+        {
+            'name': 'Happy Hearts',
+            'type': 'Partnerships',
+            'logo': 'media/Happy hearts.png',
+            'share': 25,
+            'color': '#6885a0',
+            'who': 'Partner communities and families receiving practical support.',
+            'items': [
+                {'name': 'Community activity', 'amount': 1000, 'icon': 'heart-handshake'},
+                {'name': 'Care package', 'amount': 500, 'icon': 'package-heart'},
+            ],
+        },
+    ],
+}
+
+DONATION_RECEIPT_MAX_SIZE_BYTES = 5 * 1024 * 1024
+DONATION_RECEIPT_MIME_TYPES = {'application/pdf', 'image/jpeg', 'image/png', 'image/webp'}
+
+# Sample fallback content is used until the organization's approved figures are supplied.
+DONATION_FALLBACK_PROGRAMS = [
+    {
+        'name': 'Happy Kids',
+        'type': "Children's Development",
+        'logo': 'media/Happy kids.png',
+        'share': 40,
+        'color': '#5c8d68',
+        'who': 'Children building confidence through learning and care.',
+        'items': [
+            {'name': 'School supply set', 'amount': 300, 'icon': 'book-open'},
+            {'name': 'Learning activity', 'amount': 100, 'icon': 'pencil'},
+        ],
+    },
+    {
+        'name': 'Happy Nanays',
+        'type': 'Livelihood Training',
+        'logo': 'media/Happy nanays.png',
+        'share': 35,
+        'color': '#d28757',
+        'who': 'Mothers growing practical livelihood opportunities.',
+        'items': [
+            {'name': 'Livelihood starter materials', 'amount': 500, 'icon': 'briefcase-business'},
+            {'name': 'Skills session', 'amount': 300, 'icon': 'graduation-cap'},
+        ],
+    },
+    {
+        'name': 'Happy Hearts',
+        'type': 'Partnerships',
+        'logo': 'media/Happy hearts.png',
+        'share': 25,
+        'color': '#6885a0',
+        'who': 'Partner communities and families receiving practical support.',
+        'items': [
+            {'name': 'Community activity', 'amount': 1000, 'icon': 'heart-handshake'},
+            {'name': 'Care package', 'amount': 500, 'icon': 'package-heart'},
+        ],
+    },
+]
+
+
+# --- Email configuration (Gmail SMTP) ---
+# Replace EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, and DEFAULT_FROM_EMAIL with real
+# credentials before deploying. For Gmail, generate an App Password at:
+# https://myaccount.google.com/apppasswords (requires 2-Step Verification).
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'rodgearuta05@gmail.com'
+EMAIL_HOST_PASSWORD = 'qvzmhycmlehrszdl'
+DEFAULT_FROM_EMAIL = 'HappYness Project <rodgearuta05@gmail.com>'

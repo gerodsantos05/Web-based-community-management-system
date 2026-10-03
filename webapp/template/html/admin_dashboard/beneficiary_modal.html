@@ -1,0 +1,99 @@
+<style>
+    .ben-modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, .48); z-index: 998; display: none; }
+    .ben-modal-backdrop[data-open="true"] { display: block; }
+    .ben-modal { position: fixed; inset: 50% auto auto 50%; transform: translate(-50%, -50%); width: min(92vw, 640px); max-height: 88vh; overflow: auto; background: #fff; border-radius: 16px; box-shadow: 0 24px 60px rgba(15,23,42,.2); z-index: 999; display: none; }
+    .ben-modal[data-open="true"] { display: block; }
+    .ben-modal-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 1.2rem 1.35rem; border-bottom: 1px solid #e2e8f0; }
+    .ben-modal-eyebrow { margin: 0 0 .25rem; color: #0f766e; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+    .ben-modal-title { margin: 0; color: #14261f; font-size: 1.05rem; }
+    .ben-modal-close { border: 1px solid #cbd5e1; border-radius: 50%; background: #fff; color: #475569; width: 2rem; height: 2rem; cursor: pointer; }
+    .ben-modal-body { padding: 1.2rem 1.35rem; }
+    .ben-form-grid { display: grid; gap: 1rem; }
+    .ben-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .ben-field { display: grid; gap: .35rem; }
+    .ben-field label { color: #1a4f43; font-size: .72rem; font-weight: 700; letter-spacing: .03em; }
+    .ben-required-marker { color: #e24b4a; }
+    .ben-field input, .ben-field select, .ben-field textarea { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 10px; padding: .72rem .8rem; color: #1e293b; background: #fff; }
+    .ben-field textarea { min-height: 84px; resize: vertical; }
+    .ben-status-row { display: flex; flex-wrap: wrap; gap: .45rem; }
+    .ben-status-row label { border: 1px solid #d4e9e1; border-radius: 999px; padding: .5rem .7rem; color: #1a4f43; font-weight: 700; cursor: pointer; }
+    .ben-status-row input { position: absolute; opacity: 0; pointer-events: none; }
+    .ben-status-row input:checked + label { border-color: transparent; color: #fff; background: linear-gradient(135deg, #0f766e, #14b8a6); box-shadow: 0 8px 20px rgba(15, 118, 110, .14); }
+    .ben-modal-footer { display: flex; justify-content: flex-end; gap: .7rem; padding: 1rem 1.35rem; border-top: 1px solid #e2e8f0; }
+    .ben-modal-btn { border: 1px solid #d4e9e1; border-radius: 999px; background: #fff; color: #1b4f43; padding: .75rem 1rem; font-weight: 700; cursor: pointer; box-shadow: 0 8px 18px rgba(8, 83, 76, .06); }
+    .ben-modal-btn-primary { border-color: rgba(13, 148, 136, .28); background: linear-gradient(135deg, #0f766e, #14b8a6); color: #fff; box-shadow: 0 10px 18px rgba(15, 118, 110, .16); }
+    #ben-add-modal { overflow: hidden; flex-direction: column; }
+    #ben-add-modal[data-open="true"] { display: flex; }
+    #ben-add-modal .ben-modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+    #ben-add-modal .ben-modal-footer { flex: 0 0 auto; background: #fff; }
+    @media (max-width: 560px) { .ben-form-row { grid-template-columns: 1fr; } }
+</style>
+
+<div id="ben-modal-backdrop" class="ben-modal-backdrop" data-open="false"></div>
+<div id="ben-add-modal" class="ben-modal" role="dialog" aria-modal="true" aria-labelledby="ben-add-title" data-open="false">
+    <header class="ben-modal-header">
+        <div><p class="ben-modal-eyebrow">Beneficiary</p><h3 id="ben-add-title" class="ben-modal-title">Add new beneficiary</h3></div>
+        <button type="button" class="ben-modal-close" data-addben-close="true" aria-label="Close add beneficiary">&#215;</button>
+    </header>
+    <div class="ben-modal-body">
+        <form id="addben-form" onsubmit="return false;" class="ben-form-grid">
+            <div class="ben-form-row">
+                <div class="ben-field"><label for="addben_fullname">Full name <span class="ben-required-marker">*</span></label><input type="text" id="addben_fullname" required placeholder="e.g. Maria Santos"></div>
+                <div class="ben-field"><label for="addben_gender">Gender <span class="ben-required-marker">*</span></label><select id="addben_gender" required><option value="" disabled selected>Select gender</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option><option value="prefer_not">Prefer not to say</option></select></div>
+            </div>
+            <div class="ben-form-row">
+                <div class="ben-field"><label for="addben_email">Email <span class="ben-required-marker">*</span></label><input type="email" id="addben_email" required placeholder="email@example.com"></div>
+                <div class="ben-field"><label for="addben_phone">Phone number <span class="ben-required-marker">*</span></label><input type="tel" id="addben_phone" required placeholder="+63 9XX XXX XXXX"></div>
+            </div>
+            <div class="ben-field"><label for="addben_address">Address <span class="ben-required-marker">*</span></label><textarea id="addben_address" required placeholder="Street, Barangay, City, Province"></textarea></div>
+            <div class="ben-field"><label>Status <span class="ben-required-marker">*</span></label><div class="ben-status-row"><input type="radio" name="dashboard_addben_status" id="dashboard_addben_active" value="Active" checked><label for="dashboard_addben_active">Active</label><input type="radio" name="dashboard_addben_status" id="dashboard_addben_inactive" value="Inactive"><label for="dashboard_addben_inactive">Inactive</label><input type="radio" name="dashboard_addben_status" id="dashboard_addben_pending" value="Pending"><label for="dashboard_addben_pending">Pending</label></div></div>
+            <div class="ben-field"><label for="addben_username">Username <span class="ben-required-marker">*</span></label><input type="text" id="addben_username" required placeholder="e.g. maria.santos"></div>
+            <div class="ben-form-row">
+                <div class="ben-field"><label for="addben_passwordField">Password <span class="ben-required-marker">*</span></label><input type="password" id="addben_passwordField" required placeholder="Create a password"></div>
+                <div class="ben-field"><label for="addben_confirmField">Confirm password <span class="ben-required-marker">*</span></label><input type="password" id="addben_confirmField" required placeholder="Re-enter password"></div>
+            </div>
+        </form>
+    </div>
+    <footer class="ben-modal-footer"><button type="button" class="ben-modal-btn" data-addben-close="true">Cancel</button><button type="button" id="dashboard-addben-confirm" class="ben-modal-btn ben-modal-btn-primary">Add beneficiary</button></footer>
+</div>
+
+<script>
+(function () {
+    'use strict';
+    var modal = document.getElementById('ben-add-modal');
+    var backdrop = document.getElementById('ben-modal-backdrop');
+    var form = document.getElementById('addben-form');
+    var confirmButton = document.getElementById('dashboard-addben-confirm');
+    var trigger = document.querySelector('[data-open-add-beneficiary="true"], #ben-add-btn');
+    if (!modal || !backdrop || !form || !confirmButton || !trigger) return;
+    function getCookie(name) {
+        var value = null;
+        document.cookie.split(';').forEach(function (cookie) { var part = cookie.trim(); if (part.indexOf(name + '=') === 0) value = decodeURIComponent(part.substring(name.length + 1)); });
+        return value;
+    }
+    function closeModal() { modal.setAttribute('data-open', 'false'); backdrop.setAttribute('data-open', 'false'); document.body.style.overflow = ''; form.reset(); }
+    trigger.addEventListener('click', function () { modal.setAttribute('data-open', 'true'); backdrop.setAttribute('data-open', 'true'); document.body.style.overflow = 'hidden'; document.getElementById('addben_fullname').focus(); });
+    modal.querySelectorAll('[data-addben-close="true"]').forEach(function (button) { button.addEventListener('click', closeModal); });
+    backdrop.addEventListener('click', closeModal);
+    confirmButton.addEventListener('click', function () {
+        if (!form.reportValidity()) return;
+        var password = document.getElementById('addben_passwordField').value;
+        if (password !== document.getElementById('addben_confirmField').value) { alert('Passwords do not match.'); return; }
+        var data = new FormData();
+        data.append('full_name', document.getElementById('addben_fullname').value.trim());
+        data.append('email', document.getElementById('addben_email').value.trim());
+        data.append('phone', document.getElementById('addben_phone').value.trim());
+        data.append('address', document.getElementById('addben_address').value.trim());
+        data.append('status', (document.querySelector('input[name="dashboard_addben_status"]:checked') || {}).value || 'Active');
+        data.append('username', document.getElementById('addben_username').value.trim());
+        data.append('password', password);
+        data.append('gender', document.getElementById('addben_gender').value);
+        confirmButton.disabled = true;
+        fetch('{% url "create_beneficiary" %}', { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') }, body: data })
+            .then(function (response) { return response.json().then(function (payload) { if (!response.ok) throw payload; return payload; }); })
+            .then(function () { closeModal(); window.location.reload(); })
+            .catch(function (error) { alert(error.error || 'Failed to add beneficiary.'); })
+            .finally(function () { confirmButton.disabled = false; });
+    });
+})();
+</script>

@@ -1,0 +1,111 @@
+{% extends "volunteer_dashboard/community_volunteer.html" %}
+
+{% block extra_head %}
+{{ block.super }}
+<style>
+	.cpa-delete-backdrop { position: fixed; inset: 0; z-index: 140; display: none; align-items: center; justify-content: center; padding: 1rem; background: rgba(14, 37, 31, .58); }
+	.cpa-delete-backdrop.is-open { display: flex; }
+	.cpa-delete-dialog { display: grid; grid-template-rows: auto 1fr auto; width: min(100%, 560px); max-height: min(90vh, 600px); overflow: hidden; border: 1px solid #dcebe5; border-radius: 10px; background: #fff; box-shadow: 0 24px 70px rgba(10, 40, 31, .28); }
+	.cpa-delete-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #dcebe5; padding: 1rem 1.1rem; }
+	.cpa-delete-header h2 { margin: 0; color: #173b32; font-size: 1.05rem; font-weight: 700; }
+	.cpa-delete-close { display: inline-grid; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border: 1px solid #dcebe5; border-radius: 50%; padding: 0; background: #fff; color: #526a61; cursor: pointer; }
+	.cpa-delete-close:hover { background: #f2fbf7; }
+	.cpa-delete-close svg { width: 1rem; height: 1rem; }
+	.cpa-delete-body { display: grid; align-content: start; gap: .5rem; overflow-y: auto; padding: 1.1rem; }
+	.cpa-delete-body p { margin: 0; color: #294d43; line-height: 1.5; }
+	.cpa-delete-post-text { color: #173b32; font-weight: 700; overflow-wrap: anywhere; }
+	.cpa-delete-actions { display: flex; justify-content: flex-end; gap: .6rem; border-top: 1px solid #dcebe5; padding: .85rem 1.1rem; }
+	.cpa-delete-actions button { min-height: 2.7rem; border: 1px solid #d4e9e1; border-radius: 6px; background: #fff; padding: .55rem .9rem; color: #1b4f43; font: inherit; font-weight: 700; cursor: pointer; }
+	.cpa-delete-actions .cpa-delete-confirm { border-color: #b42318; background: #b42318; color: #fff; }
+	.cpa-delete-actions .cpa-delete-confirm:hover { border-color: #912018; background: #912018; }
+	body.cpa-delete-open { overflow: hidden; }
+	@media (max-width: 767px) {
+		.cpa-delete-backdrop { align-items: flex-start; overflow-y: auto; padding: 100px .75rem 1rem; }
+		.cpa-delete-dialog { max-height: calc(100dvh - 100px - 1rem); }
+	}
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ block.super }}
+<div id="cpa-delete-backdrop" class="cpa-delete-backdrop" aria-hidden="true">
+	<section id="cpa-delete-dialog" class="cpa-delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="cpa-delete-title" aria-describedby="cpa-delete-description" tabindex="-1">
+		<header class="cpa-delete-header">
+			<h2 id="cpa-delete-title">Delete post?</h2>
+			<button class="cpa-delete-close" type="button" data-cpa-delete-close aria-label="Close delete confirmation">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke-width="2" stroke-linecap="round" /></svg>
+			</button>
+		</header>
+		<div class="cpa-delete-body">
+			<p id="cpa-delete-description">This will permanently delete this community post. This action cannot be undone.</p>
+			<p id="cpa-delete-post-text" class="cpa-delete-post-text"></p>
+		</div>
+		<footer class="cpa-delete-actions">
+			<button type="button" data-cpa-delete-close>Cancel</button>
+			<button type="button" class="cpa-delete-confirm" id="cpa-delete-confirm">Delete post</button>
+		</footer>
+	</section>
+</div>
+<script>
+(function () {
+	var backdrop = document.getElementById("cpa-delete-backdrop");
+	var dialog = document.getElementById("cpa-delete-dialog");
+	var postText = document.getElementById("cpa-delete-post-text");
+	var confirmButton = document.getElementById("cpa-delete-confirm");
+	var pendingConfirm = null;
+	var previousFocus = null;
+
+	function closeDeleteConfirmation() {
+		if (!backdrop.classList.contains("is-open")) return;
+		backdrop.classList.remove("is-open");
+		backdrop.setAttribute("aria-hidden", "true");
+		document.body.classList.remove("cpa-delete-open");
+		pendingConfirm = null;
+		if (previousFocus) previousFocus.focus();
+	}
+
+	document.addEventListener("community-post-delete-confirm", function (event) {
+		event.preventDefault();
+		pendingConfirm = event.detail.confirm;
+		previousFocus = event.detail.trigger;
+		postText.textContent = String(event.detail.post && event.detail.post.content || "").trim();
+		backdrop.classList.add("is-open");
+		backdrop.setAttribute("aria-hidden", "false");
+		document.body.classList.add("cpa-delete-open");
+		backdrop.querySelector("[data-cpa-delete-close]").focus();
+	});
+
+	document.querySelectorAll("[data-cpa-delete-close]").forEach(function (button) {
+		button.addEventListener("click", closeDeleteConfirmation);
+	});
+	backdrop.addEventListener("click", function (event) {
+		if (event.target === backdrop) closeDeleteConfirmation();
+	});
+	confirmButton.addEventListener("click", function () {
+		var confirmAction = pendingConfirm;
+		closeDeleteConfirmation();
+		if (confirmAction) confirmAction();
+	});
+	document.addEventListener("keydown", function (event) {
+		if (!backdrop.classList.contains("is-open")) return;
+		if (event.key === "Escape") {
+			event.preventDefault();
+			closeDeleteConfirmation();
+			return;
+		}
+		if (event.key !== "Tab") return;
+		var focusable = Array.prototype.slice.call(dialog.querySelectorAll("button:not([disabled])"));
+		var first = focusable[0];
+		var last = focusable[focusable.length - 1];
+		if (event.shiftKey && document.activeElement === first) {
+			event.preventDefault();
+			last.focus();
+		} else if (!event.shiftKey && document.activeElement === last) {
+			event.preventDefault();
+			first.focus();
+		}
+	});
+})();
+</script>
+{% endblock %}
+

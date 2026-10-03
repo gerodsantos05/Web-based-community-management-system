@@ -1,0 +1,1025 @@
+{% extends "volunteer_dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Resource Library | HappYness{% endblock %}
+
+{% block extra_head %}
+<style>
+    #dashboard-content-scroll #resource-library {
+        --rl-bg: #f8fbff;
+        --rl-surface: #ffffff;
+        --rl-border: #dbe2ea;
+        --rl-text: #172033;
+        --rl-muted: #64748b;
+        --rl-primary: #0f9b8e;
+        --rl-accent: #2563eb;
+        --rl-amber: #f59e0b;
+        --rl-amber-soft: #fef3c7;
+        --rl-teal-soft: #ccfbf1;
+        --rl-blue-soft: #dbeafe;
+        --rl-green-soft: #dcfce7;
+    }
+
+    #dashboard-content-scroll #resource-library {
+        padding: 1.5rem 0;
+        display: grid;
+        gap: 1.5rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* Page Header */
+    #dashboard-content-scroll #resource-library .rl-header {
+        display: grid;
+        gap: 0.32rem;
+        margin-bottom: 0.5rem;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-title {
+        margin: 0;
+        font-size: 2rem;
+        line-height: 1.2;
+        font-weight: 800;
+        color: var(--rl-text);
+    }
+
+    #dashboard-content-scroll #resource-library .rl-subtitle {
+        margin: 0;
+        font-size: 0.96rem;
+        color: var(--rl-muted);
+    }
+
+    /* Search Bar */
+    #dashboard-content-scroll #resource-library .rl-search-wrap {
+        position: relative;
+        margin-bottom: 0.5rem;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-search-wrap input {
+        width: 100%;
+        padding: 0.75rem 1rem 0.75rem 2.5rem;
+        border: 1px solid var(--rl-border);
+        border-radius: 0.75rem;
+        background: var(--rl-surface);
+        color: var(--rl-text);
+        font-size: 0.95rem;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        transition: border-color 200ms ease, box-shadow 200ms ease;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-search-wrap input:focus {
+        outline: none;
+        border-color: var(--rl-primary);
+        box-shadow: 0 0 0 3px rgba(15, 155, 142, 0.1);
+    }
+
+    #dashboard-content-scroll #resource-library .rl-search-wrap input::placeholder {
+        color: var(--rl-muted);
+    }
+
+    #dashboard-content-scroll #resource-library .rl-search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1.3rem;
+        height: 1.3rem;
+        color: var(--rl-muted);
+        pointer-events: none;
+        flex-shrink: 0;
+    }
+
+    /* Filter Row */
+    #dashboard-content-scroll #resource-library .rl-filter-row {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.2rem;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-filter-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--rl-border);
+        border-radius: 999px;
+        background: var(--rl-surface);
+        color: var(--rl-text);
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 200ms ease;
+        white-space: nowrap;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-filter-pill:hover {
+        border-color: var(--rl-primary);
+        background: rgba(15, 155, 142, 0.05);
+    }
+
+    #dashboard-content-scroll #resource-library .rl-filter-pill.is-active {
+        background: var(--rl-primary);
+        color: #ffffff;
+        border-color: var(--rl-primary);
+    }
+
+    /* Section Label */
+    #dashboard-content-scroll #resource-library .rl-section-label {
+        margin: 0;
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--rl-muted);
+        margin-bottom: 0.75rem;
+    }
+
+    /* Resource List */
+    #dashboard-content-scroll #resource-library .rl-list {
+        display: grid;
+        gap: 0.75rem;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Resource Card */
+    #dashboard-content-scroll #resource-library .rl-card {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 1rem;
+        align-items: center;
+        padding: 1rem;
+        border: 1px solid var(--rl-border);
+        border-radius: 0.875rem;
+        background: var(--rl-surface);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: all 200ms ease;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-card:hover {
+        border-color: var(--rl-primary);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    #dashboard-content-scroll #resource-library .rl-card.hidden {
+        display: none !important;
+    }
+
+    /* Card Content */
+    #dashboard-content-scroll #resource-library .rl-card-content {
+        display: grid;
+        grid-template-columns: 3rem 1fr;
+        gap: 1rem;
+        align-items: center;
+        min-width: 0;
+    }
+
+    /* File Icon */
+    #dashboard-content-scroll #resource-library .rl-file-icon {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 0.625rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-weight: 700;
+        font-size: 0.75rem;
+        color: #ffffff;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-file-icon.pdf {
+        background: #fbbf24;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-file-icon.pdf.rag-making {
+        background: #0f9b8e;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-file-icon.pdf.teaching-kids {
+        background: #3b82f6;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-file-icon.pdf.planting,
+    #dashboard-content-scroll #resource-library .rl-file-icon.pdf.pagtatanim {
+        background: #22a447;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-file-icon.pdf.outreach {
+        background: #d97706;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-file-icon.pdf.other {
+        background: #65a30d;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-file-icon.doc {
+        background: #14b8a6;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-file-icon.video {
+        background: #3b82f6;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-file-icon.link {
+        background: #a855f7;
+    }
+
+    /* Card Info */
+    #dashboard-content-scroll #resource-library .rl-card-info {
+        display: grid;
+        gap: 0.5rem;
+        min-width: 0;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-card-title {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--rl-text);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-card-meta {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    /* Module Tag */
+    #dashboard-content-scroll #resource-library .rl-module-tag {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.3rem 0.6rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-module-tag.rag-making {
+        background: #ccfbf1;
+        color: #115e59;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-module-tag.teaching-kids {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-module-tag.pagtatanim {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-module-tag.planting {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-module-tag.outreach {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-module-tag.other {
+        background: #ecfccb;
+        color: #3f6212;
+    }
+
+    /* File Type Label */
+    #dashboard-content-scroll #resource-library .rl-file-type {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.3rem 0.6rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        white-space: nowrap;
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    /* Open Button */
+    #dashboard-content-scroll #resource-library .rl-open-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.625rem 1.25rem;
+        border: 1px solid var(--rl-primary);
+        border-radius: 0.625rem;
+        background: transparent;
+        color: var(--rl-primary);
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 200ms ease;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-open-btn:hover {
+        background: var(--rl-primary);
+        color: #ffffff;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-open-btn:active {
+        transform: scale(0.98);
+    }
+
+    /* Empty State */
+    #dashboard-content-scroll #resource-library .rl-empty {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        background: var(--rl-surface);
+        border: 2px dashed var(--rl-border);
+        border-radius: 1rem;
+    }
+
+    #dashboard-content-scroll #resource-library .rl-empty-icon {
+        width: 4rem;
+        height: 4rem;
+        margin: 0 auto 1rem;
+        color: var(--rl-muted);
+    }
+
+    #dashboard-content-scroll #resource-library .rl-empty-title {
+        margin: 0 0 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--rl-text);
+    }
+
+    #dashboard-content-scroll #resource-library .rl-empty-desc {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--rl-muted);
+    }
+
+    /* Preview Modal */
+    .rl-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.58);
+        backdrop-filter: blur(2px);
+        z-index: 220;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 200ms ease, visibility 200ms ease;
+    }
+
+    .rl-modal-overlay.is-open {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .rl-modal-card {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        max-height: 80vh;
+        overflow-y: auto;
+        border-radius: 1rem;
+        background: #ffffff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
+        z-index: 230;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+    }
+
+    @media (min-width: 768px) {
+        .rl-modal-overlay {
+            align-items: center;
+        }
+
+        .rl-modal-card {
+            width: min(700px, 90vw);
+            max-height: 85vh;
+            border-radius: 1rem;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .rl-modal-card {
+            top: 100px;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(700px, calc(100vw - 1rem));
+            height: auto;
+            max-height: none;
+            overflow: hidden;
+            border-radius: 1rem;
+        }
+
+        .rl-modal-body { min-height: 0; }
+    }
+
+    /* Modal Header */
+    .rl-modal-header {
+        position: relative;
+        gap: 1rem;
+        padding: 1.25rem 4rem 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--rl-border);
+        background: #ffffff;
+        flex-shrink: 0;
+    }
+
+    .rl-modal-title {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--rl-text);
+        line-height: 1.4;
+    }
+
+    .rl-modal-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        border: 1px solid #dbe2ea;
+        border-radius: 50%;
+        background: #ffffff;
+        color: #667085;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 200ms ease;
+    }
+
+    .rl-modal-close:hover {
+        background: #f1f5f9;
+        border-color: var(--rl-primary);
+    }
+
+    /* Modal Body */
+    .rl-modal-body {
+        display: grid;
+        gap: 1.5rem;
+        min-height: 0;
+        padding: 1.5rem;
+        overflow-y: auto;
+        background: #ffffff;
+    }
+
+    /* Preview Area */
+    .rl-preview-area {
+        width: 100%;
+        height: 300px;
+        border: 1px solid #e5eaf0;
+        border-radius: 0.875rem;
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        font-size: 0.9rem;
+        color: #94a3b8;
+    }
+
+    .rl-preview-area img,
+    .rl-preview-area video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .rl-preview-area iframe {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #ffffff;
+    }
+
+    .rl-preview-area audio {
+        width: min(100%, 480px);
+    }
+
+    .rl-preview-message {
+        display: grid;
+        justify-items: center;
+        gap: .6rem;
+        padding: 1rem;
+        color: #64748b;
+        text-align: center;
+    }
+
+    .rl-preview-message strong { color: #334155; }
+    .rl-preview-message a { color: var(--rl-primary); font-weight: 700; }
+    }
+
+    .rl-preview-area-pdf {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 0.75rem;
+        color: #94a3b8;
+        text-align: center;
+        padding: 1rem;
+    }
+
+    .rl-preview-area-icon {
+        width: 3.25rem;
+        height: 3.25rem;
+        opacity: 0.22;
+    }
+
+    .rl-preview-area-pdf strong {
+        font-size: 0.98rem;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    .rl-preview-area-pdf span {
+        font-size: 0.9rem;
+        color: #94a3b8;
+    }
+
+    /* Modal Details */
+    .rl-modal-meta-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+
+    .rl-file-type-inline {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #64748b;
+        letter-spacing: 0.01em;
+    }
+
+    /* Description */
+    .rl-modal-description {
+        padding: 1rem;
+        border-radius: 0.875rem;
+        background: #f8fafc;
+        border: 1px solid var(--rl-border);
+    }
+
+    .rl-modal-description-label {
+        margin: 0 0 0.5rem;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+        color: var(--rl-muted);
+    }
+
+    .rl-modal-description-text {
+        margin: 0;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        color: var(--rl-text);
+    }
+
+    /* Modal Footer */
+    .rl-modal-footer {
+        display: flex;
+        gap: 0.75rem;
+        padding: 1.5rem;
+        border-top: 1px solid #dbe2ea;
+        background: #ffffff;
+        flex-shrink: 0;
+    }
+
+    .rl-modal-footer-btn {
+        flex: 1;
+        padding: 0.75rem 1.5rem;
+        border: 1px solid #dbe2ea;
+        border-radius: 0.625rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 200ms ease;
+        white-space: nowrap;
+    }
+
+    .rl-modal-footer-btn.close {
+        background: #ffffff;
+        color: #172033;
+    }
+
+    .rl-modal-footer-btn.close:hover,
+    .rl-modal-footer-btn.close:focus-visible {
+        border-color: #9fd7c7;
+        background: #e2f5ee;
+        color: #0b6e5b;
+    }
+
+    .rl-modal-footer-btn.action {
+        background: #0f9b8e;
+        color: #ffffff;
+        border-color: #0f9b8e;
+    }
+
+    .rl-modal-footer-btn.action:hover,
+    .rl-modal-footer-btn.action:focus-visible {
+        background: #096c62;
+        border-color: #096c62;
+        color: #ffffff;
+    }
+
+    @media (max-width: 640px) {
+        #dashboard-content-scroll #resource-library .rl-card {
+            box-sizing: border-box;
+            min-width: 0;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        #dashboard-content-scroll #resource-library .rl-file-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+        }
+
+        #dashboard-content-scroll #resource-library .rl-open-btn {
+            width: 100%;
+        }
+
+        .rl-modal-card {
+            border-radius: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section id="resource-library" class="ud-panel" aria-label="Resource Library">
+    <!-- Header -->
+    <div class="rl-header">
+        <h1 class="rl-title">Resource Library</h1>
+        <p class="rl-subtitle">Reference materials and files for your assigned tasks</p>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="rl-search-wrap">
+        <svg class="rl-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <input id="rl-search-input" type="search" placeholder="Search materials..." aria-label="Search resources" />
+    </div>
+
+    <!-- Filter Row -->
+    <div class="rl-filter-row" role="tablist" aria-label="Resource filters">
+        <button type="button" class="rl-filter-pill is-active" data-rl-filter="all" aria-selected="true">All</button>
+        <button type="button" class="rl-filter-pill" data-rl-filter="rag-making" aria-selected="false">Rag-making</button>
+        <button type="button" class="rl-filter-pill" data-rl-filter="teaching-kids" aria-selected="false">Teaching Kids</button>
+        <button type="button" class="rl-filter-pill" data-rl-filter="planting" aria-selected="false">Planting</button>
+        <button type="button" class="rl-filter-pill" data-rl-filter="outreach" aria-selected="false">Outreach</button>
+        <button type="button" class="rl-filter-pill" data-rl-filter="other" aria-selected="false">Other</button>
+    </div>
+
+    <!-- Section Label -->
+    <p class="rl-section-label">All materials</p>
+
+    <!-- Resource List -->
+    <ul class="rl-list" id="rl-resource-list">
+        {% for material in resource_library_materials %}
+            <li class="rl-card" data-rl-module="{{ material.category }}" data-rl-title="{{ material.title }}" data-rl-file-type="{{ material.file_type_label }}" data-rl-description="{{ material.description }}" data-rl-preview-kind="{{ material.preview_kind }}" data-rl-source-url="{% if material.preview_kind == 'pdf' %}{% url 'volunteer_resource_library_pdf_preview' material.pk %}{% else %}{{ material.source_url }}{% endif %}">
+                <div class="rl-card-content">
+                    <div class="rl-file-icon {% if material.file_type_label == 'LINK' %}link{% elif material.file_type_label == 'VIDEO' %}video{% elif material.file_type_label == 'PDF' %}pdf{% else %}doc{% endif %} {{ material.category }}">{% if material.file_type_label == 'VIDEO' %}VID{% else %}{{ material.file_type_label }}{% endif %}</div>
+                    <div class="rl-card-info">
+                        <h3 class="rl-card-title">{{ material.title }}</h3>
+                        <div class="rl-card-meta">
+                            <span class="rl-module-tag {{ material.category }}">{{ material.category_label }}</span>
+                            <span class="rl-file-type">{{ material.file_type_label }}</span>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="rl-open-btn" data-rl-action="open" aria-label="Open {{ material.title }}">Open</button>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <!-- Empty State (hidden by default) -->
+    <div id="rl-empty" class="rl-empty hidden">
+        <svg class="rl-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <h3 class="rl-empty-title">No resources found</h3>
+        <p class="rl-empty-desc">No published materials are available right now.</p>
+    </div>
+</section>
+
+<!-- Preview Modal -->
+<div id="rl-modal-overlay" class="rl-modal-overlay" aria-hidden="true"></div>
+<article id="rl-modal" class="rl-modal-card hidden" role="dialog" aria-modal="true" aria-labelledby="rl-modal-title">
+    <!-- Header -->
+    <header class="rl-modal-header">
+        <h2 id="rl-modal-title" class="rl-modal-title">Resource Title</h2>
+        <button type="button" id="rl-modal-close" class="rl-modal-close" aria-label="Close modal">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </header>
+
+    <!-- Body -->
+    <div class="rl-modal-body">
+        <!-- Preview Area -->
+        <div id="rl-preview-area" class="rl-preview-area">
+            <div class="rl-preview-area-pdf">
+                <svg class="rl-preview-area-icon" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 2a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V4a2 2 0 00-2-2H7z"></path>
+                </svg>
+                <span>Preview not available</span>
+            </div>
+        </div>
+
+        <!-- Details -->
+        <div class="rl-modal-meta-row">
+            <span id="rl-modal-module" class="rl-module-tag">Module</span>
+            <span id="rl-modal-type" class="rl-file-type-inline">PDF</span>
+        </div>
+
+        <!-- Description -->
+        <div class="rl-modal-description">
+            <p class="rl-modal-description-label">Description</p>
+            <p id="rl-modal-description" class="rl-modal-description-text">Sample description</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="rl-modal-footer">
+        <button type="button" id="rl-modal-close-footer" class="rl-modal-footer-btn close">Close</button>
+        <button type="button" id="rl-modal-action" class="rl-modal-footer-btn action">Download</button>
+    </footer>
+</article>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function initResourceLibrary() {
+    "use strict";
+
+    // Elements
+    var searchInput = document.getElementById("rl-search-input");
+    var filterPills = Array.prototype.slice.call(document.querySelectorAll("[data-rl-filter]"));
+    var resourceCards = Array.prototype.slice.call(document.querySelectorAll(".rl-card"));
+    var emptyState = document.getElementById("rl-empty");
+    var resourceList = document.getElementById("rl-resource-list");
+
+    var modalOverlay = document.getElementById("rl-modal-overlay");
+    var modal = document.getElementById("rl-modal");
+    var modalTitle = document.getElementById("rl-modal-title");
+    var modalClose = document.getElementById("rl-modal-close");
+    var modalCloseFooter = document.getElementById("rl-modal-close-footer");
+    var modalAction = document.getElementById("rl-modal-action");
+    var previewArea = document.getElementById("rl-preview-area");
+    var modalModule = document.getElementById("rl-modal-module");
+    var modalType = document.getElementById("rl-modal-type");
+    var modalDescription = document.getElementById("rl-modal-description");
+
+    var currentFilter = "all";
+    var currentSearch = "";
+    var currentSourceUrl = "";
+    var currentPreviewKind = "";
+
+    if (!searchInput || !filterPills.length || !resourceList) {
+        return;
+    }
+
+    // Helper Functions
+    function normalizeString(str) {
+        return String(str || "").toLowerCase().trim();
+    }
+
+    function getModuleLabel(moduleKey) {
+        var moduleName = String(moduleKey || "").trim();
+        if (!moduleName) {
+            return "Module";
+        }
+
+        return moduleName.split("-").map(function (part) {
+            return part ? part.charAt(0).toUpperCase() + part.slice(1) : part;
+        }).join(" ");
+    }
+
+    function showPreviewMessage(title, description, linkUrl) {
+        var message = document.createElement("div");
+        message.className = "rl-preview-message";
+
+        var heading = document.createElement("strong");
+        heading.textContent = title;
+        message.appendChild(heading);
+
+        var details = document.createElement("span");
+        details.textContent = description;
+        message.appendChild(details);
+
+        if (linkUrl) {
+            var link = document.createElement("a");
+            link.href = linkUrl;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.textContent = "Open linked resource";
+            message.appendChild(link);
+        }
+
+        previewArea.replaceChildren(message);
+    }
+
+    function renderResourcePreview(kind, sourceUrl, title) {
+        previewArea.replaceChildren();
+
+        if (kind === "pdf") {
+            var pdfFrame = document.createElement("iframe");
+            var pdfUrl = new URL(sourceUrl, window.location.href);
+            pdfUrl.hash = "page=1&pagemode=none";
+            pdfFrame.src = pdfUrl.toString();
+            pdfFrame.title = title + " PDF preview";
+            pdfFrame.loading = "lazy";
+            previewArea.appendChild(pdfFrame);
+            return;
+        }
+
+        if (kind === "image") {
+            var image = document.createElement("img");
+            image.src = sourceUrl;
+            image.alt = title;
+            image.loading = "lazy";
+            previewArea.appendChild(image);
+            return;
+        }
+
+        if (kind === "video") {
+            var video = document.createElement("video");
+            video.src = sourceUrl;
+            video.controls = true;
+            video.playsInline = true;
+            video.preload = "metadata";
+            previewArea.appendChild(video);
+            return;
+        }
+
+        if (kind === "audio") {
+            var audio = document.createElement("audio");
+            audio.src = sourceUrl;
+            audio.controls = true;
+            audio.preload = "metadata";
+            previewArea.appendChild(audio);
+            return;
+        }
+
+        if (kind === "link") {
+            showPreviewMessage("External resource", "This resource opens in a new tab.", sourceUrl);
+            return;
+        }
+
+        showPreviewMessage("Preview unavailable", "This file type can’t be previewed here. Download it to view the contents.");
+    }
+
+    function openModalFromCard(card) {
+        var resourceTitle = card.getAttribute("data-rl-title") || "Resource";
+        var moduleKey = card.getAttribute("data-rl-module") || "";
+        var fileType = card.getAttribute("data-rl-file-type") || "PDF";
+        var description = card.getAttribute("data-rl-description") || "No description available.";
+        currentPreviewKind = card.getAttribute("data-rl-preview-kind") || "document";
+        currentSourceUrl = card.getAttribute("data-rl-source-url") || "";
+
+        modalTitle.textContent = resourceTitle;
+        modalModule.textContent = getModuleLabel(moduleKey);
+        modalModule.className = "rl-module-tag " + moduleKey;
+        modalType.textContent = fileType;
+        modalDescription.textContent = description;
+        renderResourcePreview(currentPreviewKind, currentSourceUrl, resourceTitle);
+        modalAction.textContent = currentPreviewKind === "link" ? "Open Link" : "Download";
+
+        modal.classList.remove("hidden");
+        modalOverlay.classList.add("is-open");
+        document.body.classList.add("overflow-hidden");
+    }
+
+    function updateVisibility() {
+        var visibleCount = 0;
+
+        resourceCards.forEach(function(card) {
+            var cardModule = normalizeString(card.getAttribute("data-rl-module"));
+            var cardTitle = normalizeString(card.getAttribute("data-rl-title"));
+            
+            var matchesFilter = currentFilter === "all" || cardModule === normalizeString(currentFilter);
+            var matchesSearch = !currentSearch || cardTitle.indexOf(currentSearch) !== -1;
+            
+            var shouldShow = matchesFilter && matchesSearch;
+            card.classList.toggle("hidden", !shouldShow);
+            
+            if (shouldShow) {
+                visibleCount++;
+            }
+        });
+
+        emptyState.classList.toggle("hidden", visibleCount > 0);
+    }
+
+    // Filter Event Listeners
+    filterPills.forEach(function(pill) {
+        pill.addEventListener("click", function() {
+            currentFilter = pill.getAttribute("data-rl-filter") || "all";
+            
+            filterPills.forEach(function(p) {
+                var isActive = p.getAttribute("data-rl-filter") === currentFilter;
+                p.classList.toggle("is-active", isActive);
+                p.setAttribute("aria-selected", isActive ? "true" : "false");
+            });
+            
+            updateVisibility();
+        });
+    });
+
+    // Search Event Listener
+    searchInput.addEventListener("input", function() {
+        currentSearch = normalizeString(this.value);
+        updateVisibility();
+    });
+
+    // Modal Functions
+    function closeModal() {
+        var media = previewArea.querySelectorAll("video, audio");
+        media.forEach(function (player) {
+            player.pause();
+            player.removeAttribute("src");
+            player.load();
+        });
+        previewArea.replaceChildren();
+        modal.classList.add("hidden");
+        modalOverlay.classList.remove("is-open");
+        document.body.classList.remove("overflow-hidden");
+    }
+
+    // Modal Event Listeners
+    modalClose.addEventListener("click", closeModal);
+    modalCloseFooter.addEventListener("click", closeModal);
+    
+    modalOverlay.addEventListener("click", function(e) {
+        if (e.target === modalOverlay) {
+            closeModal();
+        }
+    });
+
+    // Card Open Button Listeners
+    resourceList.addEventListener("click", function (event) {
+        var openBtn = event.target.closest("[data-rl-action='open']");
+        if (!openBtn || !resourceList.contains(openBtn)) {
+            return;
+        }
+
+        var card = openBtn.closest(".rl-card");
+        if (!card) {
+            return;
+        }
+
+        openModalFromCard(card);
+    });
+
+    // Modal Action Button
+    modalAction.addEventListener("click", function() {
+        var fileType = normalizeString(modalType.textContent);
+        if (!currentSourceUrl) {
+            return;
+        }
+
+        if (fileType === "link" || fileType === "video") {
+            window.open(currentSourceUrl, "_blank", "noopener,noreferrer");
+        } else {
+            var downloadLink = document.createElement("a");
+            downloadLink.href = currentSourceUrl;
+            downloadLink.download = "";
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            downloadLink.remove();
+        }
+    });
+
+    // Keyboard: Close modal on Escape
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+            closeModal();
+        }
+    });
+
+    // Initial setup
+    updateVisibility();
+})();
+</script>
+{% endblock %}

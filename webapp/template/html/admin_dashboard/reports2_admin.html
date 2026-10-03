@@ -1,0 +1,16 @@
+{% extends "admin_dashboard/reports.html" %}
+
+{% block title %}Analytics - Reports Preview 2 | HappYness{% endblock %}
+
+{% block extra_head %}
+{{ block.super }}
+<style data-admin-panel-style="admin-reports-preview2">
+#dashboard-shell.admin-page > main > section[aria-label="Page content"] {
+    background: #ffffff !important;
+    background-image: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+}
+</style>
+{% endblock %}

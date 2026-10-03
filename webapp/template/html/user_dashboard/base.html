@@ -1,0 +1,3309 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}HappYness{% endblock %}</title>
+
+    <script>
+        (function initDashboardThemeBoot() {
+            var key = "theme_preference";
+            var fontKey = "dashboard_font_size_preference";
+            var isDark = false;
+            var fontSize = "medium";
+
+            try {
+                isDark = localStorage.getItem(key) === "dark";
+                var storedFont = String(localStorage.getItem(fontKey) || "").toLowerCase();
+                if (storedFont === "small" || storedFont === "large") {
+                    fontSize = storedFont;
+                }
+            } catch (e) {
+                isDark = false;
+                fontSize = "medium";
+            }
+
+            document.documentElement.classList.toggle("dark-mode", isDark);
+            document.documentElement.classList.remove("dashboard-font-small", "dashboard-font-medium", "dashboard-font-large");
+            document.documentElement.classList.add("dashboard-font-" + fontSize);
+
+            // Early boot: Font Type preference
+            var fontTypeKey = "dashboard_font_type_preference";
+            var fontType = "sans-serif";
+            try {
+                var storedFontType = String(localStorage.getItem(fontTypeKey) || "").toLowerCase();
+                var validFontTypes = ["system", "serif", "sans-serif", "monospace"];
+                if (validFontTypes.indexOf(storedFontType) !== -1) {
+                    fontType = storedFontType;
+                }
+            } catch (e) {
+                fontType = "sans-serif";
+            }
+
+            document.documentElement.classList.remove("dashboard-font-system", "dashboard-font-serif", "dashboard-font-sans-serif", "dashboard-font-monospace");
+            document.documentElement.classList.add("dashboard-font-" + fontType);
+        })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'css/index.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/admin-fixes.css' %}" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <style>
+        /* Dashboard-wide readability scaling for text and icons */
+        :root {
+            --dash-text-xs: 0.75rem;
+            --dash-text-sm: 1rem;
+            --dash-text-md: 1.08rem;
+            --dash-text-lg: 1.22rem;
+            --dash-text-xl: 1.25rem;
+            --dash-text-2xl: 1.5rem;
+            --dash-text-3xl: 1.875rem;
+            --dash-icon-size: 1.3rem;
+            --dash-font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        #dashboard-shell, 
+        #dashboard-shell *,
+        #dashboard-main-wrapper,
+        #dashboard-main-wrapper * {
+            font-family: var(--dash-font-family) !important;
+        }
+
+        html.dashboard-font-small {
+            --dash-text-xs: 0.68rem;
+            --dash-text-sm: 0.9rem;
+            --dash-text-md: 0.98rem;
+            --dash-text-lg: 1.1rem;
+            --dash-text-xl: 1.15rem;
+            --dash-text-2xl: 1.35rem;
+            --dash-text-3xl: 1.7rem;
+            --dash-icon-size: 1.15rem;
+        }
+
+        html.dashboard-font-medium {
+            --dash-text-xs: 0.75rem;
+            --dash-text-sm: 1rem;
+            --dash-text-md: 1.08rem;
+            --dash-text-lg: 1.22rem;
+            --dash-text-xl: 1.25rem;
+            --dash-text-2xl: 1.5rem;
+            --dash-text-3xl: 1.875rem;
+            --dash-icon-size: 1.3rem;
+        }
+
+        html.dashboard-font-large {
+            --dash-text-xs: 0.82rem;
+            --dash-text-sm: 1.1rem;
+            --dash-text-md: 1.2rem;
+            --dash-text-lg: 1.34rem;
+            --dash-text-xl: 1.4rem;
+            --dash-text-2xl: 1.75rem;
+            --dash-text-3xl: 2.1rem;
+            --dash-icon-size: 1.45rem;
+        }
+
+        /* Font Type Styles */
+        html.dashboard-font-system {
+            --dash-font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        html.dashboard-font-serif {
+            --dash-font-family: "Georgia", "Times New Roman", Times, serif;
+        }
+
+        html.dashboard-font-sans-serif {
+            --dash-font-family: Arial, Helvetica, sans-serif;
+        }
+
+        html.dashboard-font-monospace {
+            --dash-font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        }
+
+        /* Apply font size to ALL text elements */
+        #dashboard-shell,
+        #dashboard-shell *,
+        #dashboard-main-wrapper,
+        #dashboard-main-wrapper * {
+            font-size: inherit;
+        }
+
+        #dashboard-shell .text-xs,
+        html.dashboard-font-small #dashboard-shell .text-xs {
+            font-size: var(--dash-text-xs) !important;
+            line-height: 1.35rem !important;
+        }
+
+        #dashboard-shell .text-sm,
+        html.dashboard-font-small #dashboard-shell .text-sm {
+            font-size: var(--dash-text-sm) !important;
+            line-height: 1.45rem !important;
+        }
+
+        #dashboard-shell .text-base,
+        html.dashboard-font-small #dashboard-shell .text-base {
+            font-size: var(--dash-text-md) !important;
+            line-height: 1.52rem !important;
+        }
+
+        #dashboard-shell .text-lg,
+        html.dashboard-font-small #dashboard-shell .text-lg {
+            font-size: var(--dash-text-lg) !important;
+            line-height: 1.72rem !important;
+        }
+
+        #dashboard-shell .text-xl,
+        html.dashboard-font-small #dashboard-shell .text-xl {
+            font-size: var(--dash-text-xl) !important;
+            line-height: 1.75rem !important;
+        }
+
+        #dashboard-shell .text-2xl,
+        html.dashboard-font-small #dashboard-shell .text-2xl {
+            font-size: var(--dash-text-2xl) !important;
+            line-height: 2rem !important;
+        }
+
+        #dashboard-shell .text-3xl,
+        html.dashboard-font-small #dashboard-shell .text-3xl {
+            font-size: var(--dash-text-3xl) !important;
+            line-height: 2.25rem !important;
+        }
+
+        /* Sidebar specific */
+        #dashboard-shell .sidebar-link {
+            font-size: var(--dash-text-sm) !important;
+        }
+
+        #dashboard-shell .sidebar-brand-text .text-sm {
+            font-size: 1.05rem !important;
+        }
+
+        #dashboard-shell .sidebar-brand-text .text-xs {
+            font-size: var(--dash-text-xs) !important;
+        }
+
+        #dashboard-shell .sidebar-icon-wrap svg {
+            width: var(--dash-icon-size) !important;
+            height: var(--dash-icon-size) !important;
+        }
+
+        /* Header specific */
+        #dashboard-shell #app-header h1 {
+            font-size: var(--dash-text-lg) !important;
+            line-height: 1.35 !important;
+        }
+
+        #dashboard-shell #app-header p {
+            font-size: var(--dash-text-sm) !important;
+        }
+
+        #dashboard-shell #app-header #dashboard-search {
+            font-size: var(--dash-text-sm) !important;
+        }
+
+        #dashboard-shell #app-header button svg,
+        #dashboard-shell #app-header .user-item__icon svg,
+        #dashboard-shell #app-header .notif-type-icon svg {
+            width: var(--dash-icon-size) !important;
+            height: var(--dash-icon-size) !important;
+        }
+
+        #dashboard-shell #header-notifications,
+        #dashboard-shell #sidebar-toggle-mobile,
+        #dashboard-shell #sidebar-toggle-desktop {
+            width: 2.6rem;
+            height: 2.6rem;
+        }
+
+        #dashboard-shell #header-profile {
+            min-height: 2.6rem;
+            font-size: var(--dash-text-sm) !important;
+        }
+
+        /* Apply to all headings and paragraphs */
+        #dashboard-shell h1, #dashboard-shell h2, #dashboard-shell h3, 
+        #dashboard-shell h4, #dashboard-shell h5, #dashboard-shell h6 {
+            font-size: var(--dash-text-lg) !important;
+        }
+
+        #dashboard-shell p, #dashboard-shell span, #dashboard-shell a,
+        #dashboard-shell li, #dashboard-shell td, #dashboard-shell th {
+            font-size: var(--dash-text-sm) !important;
+        }
+
+        #dashboard-shell button, #dashboard-shell input, #dashboard-shell select,
+        #dashboard-shell textarea {
+            font-size: var(--dash-text-sm) !important;
+        }
+
+        #dashboard-shell #header-profile > span.inline-flex {
+            width: 2.15rem;
+            height: 2.15rem;
+            font-size: 0.92rem;
+        }
+
+        @media (max-width: 1024px) {
+            #dashboard-shell {
+                --dash-text-sm: 0.95rem;
+                --dash-text-md: 1rem;
+                --dash-text-lg: 1.14rem;
+                --dash-icon-size: 1.2rem;
+            }
+
+            #dashboard-shell #app-header {
+                box-shadow: none !important;
+            }
+
+            #dashboard-shell #app-header h1 {
+                font-size: 1.16rem !important;
+            }
+        }
+    </style>
+
+    <style>
+        html.dark-mode #dashboard-shell {
+            --dm-bg-base: #0D0D0D;
+            --dm-bg-primary: #141414;
+            --dm-bg-card: #1E1E1E;
+            --dm-bg-elevated: #252525;
+            --dm-bg-subtle: #2C2C2C;
+
+            --dm-text-primary: #F0F0F0;
+            --dm-text-secondary: #9A9A9A;
+            --dm-text-muted: #5C5C5C;
+
+            --dm-border: rgba(255, 255, 255, 0.07);
+            --dm-border-strong: rgba(255, 255, 255, 0.12);
+
+            --dm-accent: #1D9E75;
+            --dm-accent-text: #2ECFA0;
+            --dm-accent-subtle: #0F2E22;
+        }
+
+        html.dark-mode,
+        html.dark-mode body,
+        body.dark-mode {
+            background-color: #0D0D0D;
+            color: #F0F0F0;
+            color-scheme: dark;
+            transition: background-color 0.25s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+
+        html.dark-mode #dashboard-shell,
+        body.dark-mode #dashboard-shell,
+        html.dark-mode #dashboard-main-wrapper,
+        body.dark-mode #dashboard-main-wrapper,
+        html.dark-mode #dashboard-content-scroll,
+        body.dark-mode #dashboard-content-scroll {
+            background: var(--dm-bg-primary);
+            color: var(--dm-text-primary);
+        }
+
+        html.dark-mode #dashboard-content-scroll section[aria-label="Page content"],
+        body.dark-mode #dashboard-content-scroll section[aria-label="Page content"] {
+            background: var(--dm-bg-primary);
+        }
+
+        html.dark-mode #dashboard-shell #dashboard-sidebar,
+        body.dark-mode #dashboard-shell #dashboard-sidebar {
+            background: #111111 !important;
+            border-color: rgba(255, 255, 255, 0.07) !important;
+        }
+
+        html.dark-mode #dashboard-shell #app-header,
+        body.dark-mode #dashboard-shell #app-header {
+            background: #111111 !important;
+            border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+        }
+
+        html.dark-mode #dashboard-shell #dashboard-search,
+        body.dark-mode #dashboard-shell #dashboard-search {
+            background: #1E1E1E !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            color: var(--dm-text-primary) !important;
+        }
+
+        html.dark-mode #dashboard-shell #dashboard-search::placeholder,
+        body.dark-mode #dashboard-shell #dashboard-search::placeholder {
+            color: var(--dm-text-muted) !important;
+        }
+
+        html.dark-mode #dashboard-shell #dashboard-sidebar,
+        body.dark-mode #dashboard-shell #dashboard-sidebar,
+        html.dark-mode #dashboard-shell #app-header,
+        body.dark-mode #dashboard-shell #app-header,
+        html.dark-mode #dashboard-shell .sysset-card,
+        body.dark-mode #dashboard-shell .sysset-card,
+        html.dark-mode #dashboard-shell .sysset-tabs-wrap,
+        body.dark-mode #dashboard-shell .sysset-tabs-wrap,
+        html.dark-mode #dashboard-shell .dropdown-card,
+        body.dark-mode #dashboard-shell .dropdown-card,
+        html.dark-mode #dashboard-shell .notification-panel,
+        body.dark-mode #dashboard-shell .notification-panel,
+        html.dark-mode #dashboard-shell .user-dropdown,
+        body.dark-mode #dashboard-shell .user-dropdown,
+        html.dark-mode #dashboard-shell .sysset-input,
+        body.dark-mode #dashboard-shell .sysset-input,
+        html.dark-mode #dashboard-shell .sysset-select,
+        body.dark-mode #dashboard-shell .sysset-select,
+        html.dark-mode #dashboard-shell .sysset-textarea,
+        body.dark-mode #dashboard-shell .sysset-textarea,
+        html.dark-mode #dashboard-shell input,
+        body.dark-mode #dashboard-shell input,
+        html.dark-mode #dashboard-shell select,
+        body.dark-mode #dashboard-shell select,
+        html.dark-mode #dashboard-shell textarea,
+        body.dark-mode #dashboard-shell textarea,
+        html.dark-mode #dashboard-shell .sidebar-link,
+        body.dark-mode #dashboard-shell .sidebar-link,
+        html.dark-mode #dashboard-shell :is(.card, [class*="card"], [class*="panel"], [class*="modal"]),
+        body.dark-mode #dashboard-shell :is(.card, [class*="card"], [class*="panel"], [class*="modal"]) {
+            transition: background-color 0.25s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+
+        html.dark-mode #dashboard-shell :is(.sysset-card, .sysset-tabs-wrap, .dropdown-card, .notification-panel, .user-dropdown, .ch-card, .ch-post, .ud-panel, .scheduled-modal-card, .event-detail-sheet),
+        body.dark-mode #dashboard-shell :is(.sysset-card, .sysset-tabs-wrap, .dropdown-card, .notification-panel, .user-dropdown, .ch-card, .ch-post, .ud-panel, .scheduled-modal-card, .event-detail-sheet) {
+            background: var(--dm-bg-card) !important;
+            border: 0.5px solid var(--dm-border) !important;
+        }
+
+        html.dark-mode #dashboard-shell :is(.sysset-card, .ch-card, .ch-post, .ud-panel, .scheduled-modal-card, .event-detail-sheet):hover,
+        body.dark-mode #dashboard-shell :is(.sysset-card, .ch-card, .ch-post, .ud-panel, .scheduled-modal-card, .event-detail-sheet):hover {
+            background: var(--dm-bg-elevated) !important;
+            border-color: var(--dm-border-strong) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-input,
+        body.dark-mode #dashboard-shell .sysset-input,
+        html.dark-mode #dashboard-shell .sysset-select,
+        body.dark-mode #dashboard-shell .sysset-select,
+        html.dark-mode #dashboard-shell .sysset-textarea,
+        body.dark-mode #dashboard-shell .sysset-textarea,
+        html.dark-mode #dashboard-shell input:not([type="checkbox"]):not([type="radio"]),
+        body.dark-mode #dashboard-shell input:not([type="checkbox"]):not([type="radio"]),
+        html.dark-mode #dashboard-shell select,
+        body.dark-mode #dashboard-shell select,
+        html.dark-mode #dashboard-shell textarea,
+        body.dark-mode #dashboard-shell textarea {
+            background: var(--dm-bg-elevated) !important;
+            border: 0.5px solid rgba(255, 255, 255, 0.1) !important;
+            color: var(--dm-text-primary) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-input::placeholder,
+        body.dark-mode #dashboard-shell .sysset-input::placeholder,
+        html.dark-mode #dashboard-shell .sysset-textarea::placeholder,
+        body.dark-mode #dashboard-shell .sysset-textarea::placeholder,
+        html.dark-mode #dashboard-shell input::placeholder,
+        body.dark-mode #dashboard-shell input::placeholder,
+        html.dark-mode #dashboard-shell textarea::placeholder,
+        body.dark-mode #dashboard-shell textarea::placeholder {
+            color: var(--dm-text-muted) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-input:focus,
+        body.dark-mode #dashboard-shell .sysset-input:focus,
+        html.dark-mode #dashboard-shell .sysset-select:focus,
+        body.dark-mode #dashboard-shell .sysset-select:focus,
+        html.dark-mode #dashboard-shell .sysset-textarea:focus,
+        body.dark-mode #dashboard-shell .sysset-textarea:focus,
+        html.dark-mode #dashboard-shell input:focus,
+        body.dark-mode #dashboard-shell input:focus,
+        html.dark-mode #dashboard-shell select:focus,
+        body.dark-mode #dashboard-shell select:focus,
+        html.dark-mode #dashboard-shell textarea:focus,
+        body.dark-mode #dashboard-shell textarea:focus {
+            border-color: var(--dm-accent) !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        html.dark-mode #dashboard-shell .sidebar-link,
+        body.dark-mode #dashboard-shell .sidebar-link {
+            color: var(--dm-text-secondary) !important;
+            border-left: 2px solid transparent;
+            border-radius: 0.5rem;
+        }
+
+        html.dark-mode #dashboard-shell .sidebar-icon-wrap,
+        body.dark-mode #dashboard-shell .sidebar-icon-wrap {
+            color: var(--dm-text-muted) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sidebar-link.is-active,
+        body.dark-mode #dashboard-shell .sidebar-link.is-active {
+            background: #1E1E1E !important;
+            border-left-color: var(--dm-accent) !important;
+            color: var(--dm-text-primary) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sidebar-link.is-active .sidebar-icon-wrap,
+        body.dark-mode #dashboard-shell .sidebar-link.is-active .sidebar-icon-wrap {
+            color: var(--dm-accent-text) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sidebar-link:hover,
+        body.dark-mode #dashboard-shell .sidebar-link:hover,
+        html.dark-mode #dashboard-shell .sidebar-link:focus-visible,
+        body.dark-mode #dashboard-shell .sidebar-link:focus-visible {
+            background: var(--dm-bg-elevated) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-toggle-track,
+        body.dark-mode #dashboard-shell .sysset-toggle-track {
+            background: #3A3A3A !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-toggle input:checked + .sysset-toggle-track,
+        body.dark-mode #dashboard-shell .sysset-toggle input:checked + .sysset-toggle-track {
+            background: var(--dm-accent) !important;
+        }
+
+        html.dark-mode #dashboard-shell :is(.sysset-history-item, .udc-metric-card, .kpi-card),
+        body.dark-mode #dashboard-shell :is(.sysset-history-item, .udc-metric-card, .kpi-card) {
+            background: var(--dm-bg-elevated) !important;
+            border-color: var(--dm-border) !important;
+        }
+
+        html.dark-mode #dashboard-shell :is(.sysset-history-label, .udc-metric-label, [class*="metric-meta"], [class*="stat-label"]),
+        body.dark-mode #dashboard-shell :is(.sysset-history-label, .udc-metric-label, [class*="metric-meta"], [class*="stat-label"]) {
+            color: var(--dm-text-secondary) !important;
+        }
+
+        html.dark-mode #dashboard-shell :is(.sysset-history-value, .udc-metric-value, [class*="metric-value"], [class*="stat-value"]),
+        body.dark-mode #dashboard-shell :is(.sysset-history-value, .udc-metric-value, [class*="metric-value"], [class*="stat-value"]) {
+            color: var(--dm-text-primary) !important;
+        }
+
+        html.dark-mode #dashboard-shell :is(progress, .progress-track, [role="progressbar"]),
+        body.dark-mode #dashboard-shell :is(progress, .progress-track, [role="progressbar"]) {
+            background: var(--dm-bg-subtle) !important;
+            border-color: var(--dm-border) !important;
+        }
+
+        html.dark-mode #dashboard-shell :is(.badge, .pill, [class*="badge"], [class*="pill"]),
+        body.dark-mode #dashboard-shell :is(.badge, .pill, [class*="badge"], [class*="pill"]) {
+            background: var(--dm-bg-elevated) !important;
+            color: var(--dm-text-secondary) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        }
+
+        html.dark-mode #dashboard-shell :is(.badge-success, .pill-success, [class*="confirmed"], [class*="success"]),
+        body.dark-mode #dashboard-shell :is(.badge-success, .pill-success, [class*="confirmed"], [class*="success"]) {
+            background: var(--dm-accent-subtle) !important;
+            color: var(--dm-accent-text) !important;
+            border-color: var(--dm-accent) !important;
+        }
+
+        html.dark-mode #dashboard-shell :is(.badge-pending, .pill-pending, .status-pending, .sl-flow-status.is-pending),
+        body.dark-mode #dashboard-shell :is(.badge-pending, .pill-pending, .status-pending, .sl-flow-status.is-pending) {
+            background: #2C2200 !important;
+            color: #F0A500 !important;
+            border-color: #A07000 !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-subsection-title,
+        body.dark-mode #dashboard-shell .sysset-subsection-title,
+        html.dark-mode #dashboard-shell .sysset-card-title .accent,
+        body.dark-mode #dashboard-shell .sysset-card-title .accent {
+            color: var(--dm-accent-text) !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-tab,
+        body.dark-mode #dashboard-shell .sysset-tab,
+        html.dark-mode #dashboard-shell .sysset-label,
+        body.dark-mode #dashboard-shell .sysset-label,
+        html.dark-mode #dashboard-shell .sysset-hover-label,
+        body.dark-mode #dashboard-shell .sysset-hover-label,
+        html.dark-mode #dashboard-shell .sysset-help,
+        body.dark-mode #dashboard-shell .sysset-help,
+        html.dark-mode #dashboard-shell .sysset-card-desc,
+        body.dark-mode #dashboard-shell .sysset-card-desc,
+        html.dark-mode #dashboard-shell .text-ink-600,
+        body.dark-mode #dashboard-shell .text-ink-600,
+        html.dark-mode #dashboard-shell .text-ink-500,
+        body.dark-mode #dashboard-shell .text-ink-500,
+        html.dark-mode #dashboard-shell .sidebar-label,
+        body.dark-mode #dashboard-shell .sidebar-label {
+            color: var(--dm-text-secondary) !important;
+        }
+
+        html.dark-mode #dashboard-shell .text-ink-900,
+        body.dark-mode #dashboard-shell .text-ink-900,
+        html.dark-mode #dashboard-shell .text-ink-800,
+        body.dark-mode #dashboard-shell .text-ink-800,
+        html.dark-mode #dashboard-shell .text-ink-700,
+        body.dark-mode #dashboard-shell .text-ink-700,
+        html.dark-mode #dashboard-shell .sysset-card-title,
+        body.dark-mode #dashboard-shell .sysset-card-title,
+        html.dark-mode #dashboard-shell .sysset-toggle-title,
+        body.dark-mode #dashboard-shell .sysset-toggle-title,
+        html.dark-mode #dashboard-shell .user-item__label,
+        body.dark-mode #dashboard-shell .user-item__label {
+            color: var(--dm-text-primary) !important;
+        }
+
+        html.dark-mode #dashboard-shell .border-brand-100,
+        body.dark-mode #dashboard-shell .border-brand-100,
+        html.dark-mode #dashboard-shell .border-brand-100\/60,
+        body.dark-mode #dashboard-shell .border-brand-100\/60,
+        html.dark-mode #dashboard-shell .border-brand-100\/70,
+        body.dark-mode #dashboard-shell .border-brand-100\/70,
+        html.dark-mode #dashboard-shell .border-brand-100\/80,
+        body.dark-mode #dashboard-shell .border-brand-100\/80 {
+            border-color: var(--dm-border) !important;
+        }
+
+        html.dark-mode #dashboard-shell .bg-brand-50,
+        body.dark-mode #dashboard-shell .bg-brand-50,
+        html.dark-mode #dashboard-shell .bg-brand-50\/70,
+        body.dark-mode #dashboard-shell .bg-brand-50\/70,
+        html.dark-mode #dashboard-shell .bg-white,
+        body.dark-mode #dashboard-shell .bg-white,
+        html.dark-mode #dashboard-shell .bg-white\/85,
+        body.dark-mode #dashboard-shell .bg-white\/85 {
+            background-color: var(--dm-bg-card) !important;
+        }
+
+        html.dark-mode #dashboard-shell a,
+        body.dark-mode #dashboard-shell a,
+        html.dark-mode #dashboard-shell .text-brand-700,
+        body.dark-mode #dashboard-shell .text-brand-700 {
+            color: var(--dm-accent-text);
+        }
+
+        html.dark-mode #dashboard-shell :is(#dropdown-notifications .notification-title, #dropdown-notifications .notif-title, #dropdown-profile .user-title, #dropdown-profile .user-item__label),
+        body.dark-mode #dashboard-shell :is(#dropdown-notifications .notification-title, #dropdown-notifications .notif-title, #dropdown-profile .user-title, #dropdown-profile .user-item__label) {
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell :is(#dropdown-notifications .notif-meta, #dropdown-notifications .notif-group-title, #dropdown-profile .user-role),
+        body.dark-mode #dashboard-shell :is(#dropdown-notifications .notif-meta, #dropdown-notifications .notif-group-title, #dropdown-profile .user-role) {
+            color: #9A9A9A !important;
+        }
+
+        html.dark-mode #dashboard-shell :is(#dropdown-notifications .notif-type-icon, #dropdown-notifications .notif-type-icon svg, #dropdown-profile .user-item__icon, #dropdown-profile .user-item__icon svg, #dropdown-profile .user-item__chevron, #dropdown-profile .user-item__chevron svg, #dropdown-profile .user-shortcut, #dropdown-profile .user-shortcut svg),
+        body.dark-mode #dashboard-shell :is(#dropdown-notifications .notif-type-icon, #dropdown-notifications .notif-type-icon svg, #dropdown-profile .user-item__icon, #dropdown-profile .user-item__icon svg, #dropdown-profile .user-item__chevron, #dropdown-profile .user-item__chevron svg, #dropdown-profile .user-shortcut, #dropdown-profile .user-shortcut svg) {
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell :is(#dropdown-notifications .notif-btn-secondary, #dropdown-profile .user-signout),
+        body.dark-mode #dashboard-shell :is(#dropdown-notifications .notif-btn-secondary, #dropdown-profile .user-signout) {
+            color: #F0F0F0 !important;
+            border-color: rgba(255, 255, 255, 0.14) !important;
+            background: #252525 !important;
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+
+    <style>
+        /* Keep user dashboard panel text consistent and slightly compact. */
+        #dashboard-content-scroll section[aria-label="Page content"] {
+            --dash-panel-font-size: 0.92rem;
+        }
+
+        #dashboard-content-scroll section[aria-label="Page content"] :where(
+            h1, h2, h3, h4, h5, h6,
+            p, span, a, button, label,
+            input, select, textarea,
+            li, dt, dd, th, td, small, strong, em
+        ) {
+            font-size: var(--dash-panel-font-size) !important;
+            line-height: 1.5 !important;
+        }
+    </style>
+
+    <style>
+        /* Final dark-mode pass: loaded after page-specific styles to prevent light overrides. */
+        html.dark-mode #dashboard-shell .sysset-page,
+        body.dark-mode #dashboard-shell .sysset-page {
+            --sysset-text: #F0F0F0;
+            --sysset-muted: #9A9A9A;
+            --sysset-border: rgba(255, 255, 255, 0.07);
+            --sysset-accent: #1D9E75;
+            --sysset-accent-soft: #0F2E22;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-toggle,
+        body.dark-mode #dashboard-shell .sysset-toggle,
+        html.dark-mode #dashboard-shell .sysset-check-chip,
+        body.dark-mode #dashboard-shell .sysset-check-chip,
+        html.dark-mode #dashboard-shell .sysset-btn,
+        body.dark-mode #dashboard-shell .sysset-btn,
+        html.dark-mode #dashboard-shell .sysset-btn-ghost,
+        body.dark-mode #dashboard-shell .sysset-btn-ghost,
+        html.dark-mode #dashboard-shell .sysset-day-btn,
+        body.dark-mode #dashboard-shell .sysset-day-btn,
+        html.dark-mode #dashboard-shell .sysset-upload,
+        body.dark-mode #dashboard-shell .sysset-upload,
+        html.dark-mode #dashboard-shell .sysset-card-icon,
+        body.dark-mode #dashboard-shell .sysset-card-icon,
+        html.dark-mode #dashboard-shell .sysset-avatar-preview,
+        body.dark-mode #dashboard-shell .sysset-avatar-preview {
+            background: #252525 !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-day-btn[aria-pressed="true"],
+        body.dark-mode #dashboard-shell .sysset-day-btn[aria-pressed="true"] {
+            background: #0F2E22 !important;
+            border-color: #1D9E75 !important;
+            color: #2ECFA0 !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-card-title,
+        body.dark-mode #dashboard-shell .sysset-card-title,
+        html.dark-mode #dashboard-shell .sysset-toggle-title,
+        body.dark-mode #dashboard-shell .sysset-toggle-title,
+        html.dark-mode #dashboard-shell .sysset-check-chip-title,
+        body.dark-mode #dashboard-shell .sysset-check-chip-title,
+        html.dark-mode #dashboard-shell .sysset-history-value,
+        body.dark-mode #dashboard-shell .sysset-history-value,
+        html.dark-mode #dashboard-shell .sysset-label,
+        body.dark-mode #dashboard-shell .sysset-label,
+        html.dark-mode #dashboard-shell .sysset-hover-label,
+        body.dark-mode #dashboard-shell .sysset-hover-label,
+        html.dark-mode #dashboard-shell .sysset-meta-value,
+        body.dark-mode #dashboard-shell .sysset-meta-value,
+        html.dark-mode #dashboard-shell .sysset-save-state,
+        body.dark-mode #dashboard-shell .sysset-save-state {
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-card-desc,
+        body.dark-mode #dashboard-shell .sysset-card-desc,
+        html.dark-mode #dashboard-shell .sysset-help,
+        body.dark-mode #dashboard-shell .sysset-help,
+        html.dark-mode #dashboard-shell .sysset-toggle-desc,
+        body.dark-mode #dashboard-shell .sysset-toggle-desc,
+        html.dark-mode #dashboard-shell .sysset-meta-label,
+        body.dark-mode #dashboard-shell .sysset-meta-label,
+        html.dark-mode #dashboard-shell .sysset-history-label,
+        body.dark-mode #dashboard-shell .sysset-history-label,
+        html.dark-mode #dashboard-shell .sysset-upload-name,
+        body.dark-mode #dashboard-shell .sysset-upload-name,
+        html.dark-mode #dashboard-shell .sysset-upload-clear,
+        body.dark-mode #dashboard-shell .sysset-upload-clear {
+            color: #9A9A9A !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-subsection-title,
+        body.dark-mode #dashboard-shell .sysset-subsection-title {
+            color: #2ECFA0 !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-tab[aria-selected="true"],
+        body.dark-mode #dashboard-shell .sysset-tab[aria-selected="true"] {
+            background: #0F2E22 !important;
+            border-color: #1D9E75 !important;
+            color: #2ECFA0 !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-toggle-track,
+        body.dark-mode #dashboard-shell .sysset-toggle-track {
+            background: #3A3A3A !important;
+        }
+
+        html.dark-mode #dashboard-shell .sysset-toggle input:checked + .sysset-toggle-track,
+        body.dark-mode #dashboard-shell .sysset-toggle input:checked + .sysset-toggle-track {
+            background: #1D9E75 !important;
+        }
+
+        html.dark-mode #dashboard-shell #dashboard-overview,
+        body.dark-mode #dashboard-shell #dashboard-overview {
+            background: #141414 !important;
+            border-color: rgba(255, 255, 255, 0.07) !important;
+        }
+
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-card,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-card,
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-card.udc-metric-card,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-card.udc-metric-card {
+            background: #1E1E1E !important;
+            border-color: rgba(255, 255, 255, 0.07) !important;
+        }
+
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-card:hover,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-card:hover {
+            background: #252525 !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
+        }
+
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-greeting,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-greeting,
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-card-title,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-card-title,
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-metric-label,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-metric-label,
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-metric-value,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-metric-value,
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-pickup-date,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-pickup-date,
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-skill-name,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-skill-name,
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-announcement-item,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-announcement-item,
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-progress-label-row,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-progress-label-row,
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-empty-title,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-empty-title,
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-empty-copy,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-empty-copy {
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-subtitle,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-subtitle,
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-metric-meta,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-metric-meta,
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-pickup-meta,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-pickup-meta {
+            color: #9A9A9A !important;
+        }
+
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-progress-track,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-progress-track {
+            background: #2C2C2C !important;
+        }
+
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-badge.is-enrolled,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-badge.is-enrolled {
+            color: #2ECFA0 !important;
+            border-color: #1D9E75 !important;
+            background: #0F2E22 !important;
+        }
+
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-badge.is-learn,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-badge.is-learn {
+            color: #F0F0F0 !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
+            background: #252525 !important;
+        }
+
+        html.dark-mode #dashboard-shell #dashboard-overview .udc-greeting span,
+        body.dark-mode #dashboard-shell #dashboard-overview .udc-greeting span {
+            color: #2ECFA0 !important;
+        }
+
+        html.dark-mode body :is(#scheduled-modal, #event-detail-sheet),
+        body.dark-mode :is(#scheduled-modal, #event-detail-sheet) {
+            background: #1E1E1E !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode body :is(#scheduled-modal, #event-detail-sheet) :is(.bg-white, .border-brand-100),
+        body.dark-mode :is(#scheduled-modal, #event-detail-sheet) :is(.bg-white, .border-brand-100) {
+            background: #252525 !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        html.dark-mode body :is(#scheduled-modal, #event-detail-sheet) :is(.ud-panel-title, .ud-panel-subtitle, .text-ink-900, .text-ink-800, .text-ink-700, .text-ink-600, .text-ink-500, .text-sm.font-semibold),
+        body.dark-mode :is(#scheduled-modal, #event-detail-sheet) :is(.ud-panel-title, .ud-panel-subtitle, .text-ink-900, .text-ink-800, .text-ink-700, .text-ink-600, .text-ink-500, .text-sm.font-semibold) {
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode body :is(#scheduled-modal, #event-detail-sheet) :is(#scheduled-modal-close, #event-detail-close),
+        body.dark-mode :is(#scheduled-modal, #event-detail-sheet) :is(#scheduled-modal-close, #event-detail-close) {
+            background: #111111 !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode body :is(#scheduled-modal, #event-detail-sheet) :is(#scheduled-modal-action, #event-detail-action),
+        body.dark-mode :is(#scheduled-modal, #event-detail-sheet) :is(#scheduled-modal-action, #event-detail-action) {
+            color: #ffffff !important;
+        }
+
+        html.dark-mode #dashboard-shell #distribution-outreach .ud-panel-title,
+        body.dark-mode #dashboard-shell #distribution-outreach .ud-panel-title,
+        html.dark-mode #dashboard-shell #distribution-outreach .text-2xl.font-semibold,
+        body.dark-mode #dashboard-shell #distribution-outreach .text-2xl.font-semibold,
+        html.dark-mode #dashboard-shell #distribution-outreach .text-sm.font-semibold,
+        body.dark-mode #dashboard-shell #distribution-outreach .text-sm.font-semibold,
+        html.dark-mode #dashboard-shell #distribution-outreach .text-ink-900,
+        body.dark-mode #dashboard-shell #distribution-outreach .text-ink-900,
+        html.dark-mode #dashboard-shell #distribution-outreach .text-ink-800,
+        body.dark-mode #dashboard-shell #distribution-outreach .text-ink-800,
+        html.dark-mode #dashboard-shell #distribution-outreach .text-ink-700,
+        body.dark-mode #dashboard-shell #distribution-outreach .text-ink-700 {
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #distribution-outreach .ud-panel-subtitle,
+        body.dark-mode #dashboard-shell #distribution-outreach .ud-panel-subtitle,
+        html.dark-mode #dashboard-shell #distribution-outreach .text-ink-600,
+        body.dark-mode #dashboard-shell #distribution-outreach .text-ink-600,
+        html.dark-mode #dashboard-shell #distribution-outreach .text-ink-500,
+        body.dark-mode #dashboard-shell #distribution-outreach .text-ink-500,
+        html.dark-mode #dashboard-shell #distribution-outreach label,
+        body.dark-mode #dashboard-shell #distribution-outreach label {
+            color: #9A9A9A !important;
+        }
+
+        html.dark-mode #dashboard-shell #distribution-outreach .text-teal-700,
+        body.dark-mode #dashboard-shell #distribution-outreach .text-teal-700,
+        html.dark-mode #dashboard-shell #distribution-outreach .hover\:text-teal-800:hover,
+        body.dark-mode #dashboard-shell #distribution-outreach .hover\:text-teal-800:hover {
+            color: #2ECFA0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #distribution-events-all :is(.ud-panel-title, .ud-panel-subtitle, .events-group-title, .event-row-title, .event-row-meta, .event-row-location, .text-ink-900, .text-ink-800, .text-ink-700, .text-ink-600, .text-ink-500, .text-amber-700, .text-emerald-700, .text-sky-700, .text-violet-700, .text-slate-500),
+        body.dark-mode #dashboard-shell #distribution-events-all :is(.ud-panel-title, .ud-panel-subtitle, .events-group-title, .event-row-title, .event-row-meta, .event-row-location, .text-ink-900, .text-ink-800, .text-ink-700, .text-ink-600, .text-ink-500, .text-amber-700, .text-emerald-700, .text-sky-700, .text-violet-700, .text-slate-500) {
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #distribution-events-all :is(.scheduled-event-card, .distribution-event-row),
+        body.dark-mode #dashboard-shell #distribution-events-all :is(.scheduled-event-card, .distribution-event-row) {
+            background: #1E1E1E !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        html.dark-mode #dashboard-shell #distribution-events-all .distribution-event-row.is-completed,
+        body.dark-mode #dashboard-shell #distribution-events-all .distribution-event-row.is-completed {
+            background: #252525 !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #distribution-events-all .events-tab-btn,
+        body.dark-mode #dashboard-shell #distribution-events-all .events-tab-btn {
+            background: #111111 !important;
+            border-color: rgba(255, 255, 255, 0.14) !important;
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #distribution-events-all .events-tab-btn.is-active,
+        body.dark-mode #dashboard-shell #distribution-events-all .events-tab-btn.is-active {
+            background: #000000 !important;
+            border-color: #2ECFA0 !important;
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #distribution-events-all .event-pill,
+        body.dark-mode #dashboard-shell #distribution-events-all .event-pill {
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #distribution-events-all .inline-flex.h-9.w-9.items-center.justify-center.rounded-xl.bg-amber-100,
+        body.dark-mode #dashboard-shell #distribution-events-all .inline-flex.h-9.w-9.items-center.justify-center.rounded-xl.bg-amber-100 {
+            background: #fef3c7 !important;
+            color: #c2410c !important;
+        }
+
+        html.dark-mode #dashboard-shell #distribution-events-all .inline-flex.h-9.w-9.items-center.justify-center.rounded-xl.bg-emerald-100,
+        body.dark-mode #dashboard-shell #distribution-events-all .inline-flex.h-9.w-9.items-center.justify-center.rounded-xl.bg-emerald-100 {
+            background: #d1fae5 !important;
+            color: #047857 !important;
+        }
+
+        html.dark-mode #dashboard-shell #distribution-events-all .inline-flex.h-9.w-9.items-center.justify-center.rounded-xl.bg-sky-100,
+        body.dark-mode #dashboard-shell #distribution-events-all .inline-flex.h-9.w-9.items-center.justify-center.rounded-xl.bg-sky-100 {
+            background: #dbeafe !important;
+            color: #0369a1 !important;
+        }
+
+        html.dark-mode #dashboard-shell #distribution-events-all .inline-flex.h-9.w-9.items-center.justify-center.rounded-xl.bg-violet-100,
+        body.dark-mode #dashboard-shell #distribution-events-all .inline-flex.h-9.w-9.items-center.justify-center.rounded-xl.bg-violet-100 {
+            background: #ede9fe !important;
+            color: #7c3aed !important;
+        }
+
+        html.dark-mode #dashboard-shell #distribution-events-all .inline-flex.h-9.w-9.items-center.justify-center.rounded-xl.bg-slate-200,
+        body.dark-mode #dashboard-shell #distribution-events-all .inline-flex.h-9.w-9.items-center.justify-center.rounded-xl.bg-slate-200 {
+            background: #e2e8f0 !important;
+            color: #64748b !important;
+        }
+
+        html.dark-mode #dashboard-shell #distribution-events-all .inline-flex.h-9.w-9.items-center.justify-center.rounded-xl :is(svg, i),
+        body.dark-mode #dashboard-shell #distribution-events-all .inline-flex.h-9.w-9.items-center.justify-center.rounded-xl :is(svg, i) {
+            color: currentColor !important;
+        }
+
+        html.dark-mode #dashboard-shell #community,
+        body.dark-mode #dashboard-shell #community {
+            --ch-bg: #141414 !important;
+            --ch-card: #1E1E1E !important;
+            --ch-text: #F0F0F0 !important;
+            --ch-muted: #9A9A9A !important;
+            --ch-soft: #9A9A9A !important;
+            --ch-shadow: none !important;
+            background: #141414 !important;
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #community :is(.ch-card, .ch-post, .ch-comment, .ch-chatbox, .ch-chat-attachment-card),
+        body.dark-mode #dashboard-shell #community :is(.ch-card, .ch-post, .ch-comment, .ch-chatbox, .ch-chat-attachment-card) {
+            background: #1E1E1E !important;
+            border-color: rgba(255, 255, 255, 0.07) !important;
+            box-shadow: none !important;
+        }
+
+        html.dark-mode #dashboard-shell #community :is(.ch-post-author, .ch-post-title, .ch-comment-author, .ch-attachment-name, .ch-post-action-count, .ch-chatbox-title),
+        body.dark-mode #dashboard-shell #community :is(.ch-post-author, .ch-post-title, .ch-comment-author, .ch-attachment-name, .ch-post-action-count, .ch-chatbox-title) {
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #community :is(.ch-post-content, .ch-post-time, .ch-post-separator, .ch-comment-time, .ch-comment-text, .ch-comment-item, .ch-comment-empty, .ch-attachment-size, .ch-action-btn, .ch-post-action, .ch-feed-count),
+        body.dark-mode #dashboard-shell #community :is(.ch-post-content, .ch-post-time, .ch-post-separator, .ch-comment-time, .ch-comment-text, .ch-comment-item, .ch-comment-empty, .ch-attachment-size, .ch-action-btn, .ch-post-action, .ch-feed-count) {
+            color: #9A9A9A !important;
+        }
+
+        html.dark-mode #dashboard-shell #community :is(.ch-widget-label, .ch-widget-toggle),
+        body.dark-mode #dashboard-shell #community :is(.ch-widget-label, .ch-widget-toggle) {
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #community .ch-widget-card:not(.is-expanded) :is(.ch-widget-icon-wrap, .ch-widget-icon-wrap .ch-icon, .ch-widget-chevron),
+        body.dark-mode #dashboard-shell #community .ch-widget-card:not(.is-expanded) :is(.ch-widget-icon-wrap, .ch-widget-icon-wrap .ch-icon, .ch-widget-chevron) {
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #community .ch-widget-card.is-expanded :is(.ch-widget-icon-wrap, .ch-widget-icon-wrap .ch-icon),
+        body.dark-mode #dashboard-shell #community .ch-widget-card.is-expanded :is(.ch-widget-icon-wrap, .ch-widget-icon-wrap .ch-icon) {
+            color: #2ECFA0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #community .ch-list-item,
+        body.dark-mode #dashboard-shell #community .ch-list-item {
+            color: #9A9A9A !important;
+        }
+
+        html.dark-mode #dashboard-shell #community :is(.ch-comment-item strong),
+        body.dark-mode #dashboard-shell #community :is(.ch-comment-item strong) {
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #community :is(.ch-tag, .ch-tag-type-discussions, .ch-tag-type-tips, .ch-tag-type-announcements),
+        body.dark-mode #dashboard-shell #community :is(.ch-tag, .ch-tag-type-discussions, .ch-tag-type-tips, .ch-tag-type-announcements) {
+            background: #252525 !important;
+            color: #F0F0F0 !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        html.dark-mode #dashboard-shell #community :is(.ch-post-action.is-active, .ch-action-btn.is-active),
+        body.dark-mode #dashboard-shell #community :is(.ch-post-action.is-active, .ch-action-btn.is-active) {
+            background: #0F2E22 !important;
+            color: #2ECFA0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #community :is(.ch-comment-input, .ch-chatbox-input, .ch-chatbox textarea, .ch-chatbox input),
+        body.dark-mode #dashboard-shell #community :is(.ch-comment-input, .ch-chatbox-input, .ch-chatbox textarea, .ch-chatbox input) {
+            background: #252525 !important;
+            color: #F0F0F0 !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        html.dark-mode #dashboard-shell #community :is(.ch-comment-input::placeholder, .ch-chatbox-input::placeholder, .ch-chatbox textarea::placeholder, .ch-chatbox input::placeholder),
+        body.dark-mode #dashboard-shell #community :is(.ch-comment-input::placeholder, .ch-chatbox-input::placeholder, .ch-chatbox textarea::placeholder, .ch-chatbox input::placeholder) {
+            color: #5C5C5C !important;
+        }
+
+        html.dark-mode #dashboard-shell #community :is(.ch-comment-submit, .ch-link-btn),
+        body.dark-mode #dashboard-shell #community :is(.ch-comment-submit, .ch-link-btn) {
+            color: #2ECFA0 !important;
+            border-color: #1D9E75 !important;
+        }
+
+        html.dark-mode #dashboard-shell #community :is(.ch-announcement-list, .ch-actions, .ch-comment-preview),
+        body.dark-mode #dashboard-shell #community :is(.ch-announcement-list, .ch-actions, .ch-comment-preview) {
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        html.dark-mode #dashboard-shell #community .ch-chatbox,
+        body.dark-mode #dashboard-shell #community .ch-chatbox,
+        html.dark-mode #dashboard-shell #community .ch-chatbox-controls,
+        body.dark-mode #dashboard-shell #community .ch-chatbox-controls {
+            background: #1E1E1E !important;
+        }
+
+        html.dark-mode #dashboard-shell #skill-learning :is(.sl-topic-card, .sl-topic-empty, .sl-create-preview, .sl-course-main-section, .sl-course-side-block, .sl-side-widget.is-expanded),
+        body.dark-mode #dashboard-shell #skill-learning :is(.sl-topic-card, .sl-topic-empty, .sl-create-preview, .sl-course-main-section, .sl-course-side-block, .sl-side-widget.is-expanded) {
+            background: #1E1E1E !important;
+            border-color: rgba(255, 255, 255, 0.07) !important;
+            box-shadow: none !important;
+        }
+
+        html.dark-mode #dashboard-shell #skill-learning :is(.sl-course-view, .sl-course-hero, .sl-topic-view, .sl-flow-item, .sl-material--compact),
+        body.dark-mode #dashboard-shell #skill-learning :is(.sl-course-view, .sl-course-hero, .sl-topic-view, .sl-flow-item, .sl-material--compact) {
+            background: #1E1E1E !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        html.dark-mode #dashboard-shell #skill-learning :is(.sl-flow-item:hover, .sl-flow-item.is-expanded),
+        body.dark-mode #dashboard-shell #skill-learning :is(.sl-flow-item:hover, .sl-flow-item.is-expanded) {
+            background: #252525 !important;
+            border-color: rgba(255, 255, 255, 0.14) !important;
+        }
+
+        html.dark-mode #dashboard-shell #skill-learning :is(.sl-topic-card:hover, .sl-topic-card:focus-visible),
+        body.dark-mode #dashboard-shell #skill-learning :is(.sl-topic-card:hover, .sl-topic-card:focus-visible) {
+            background: #252525 !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
+        }
+
+        html.dark-mode #dashboard-shell #skill-learning :is(.sl-topic-title, .sl-topic-cta-label, .sl-course-main-title, .sl-side-widget-label, .sl-flow-title, .sl-course-overview-list dd, .sl-flow-action, .sl-back-link),
+        body.dark-mode #dashboard-shell #skill-learning :is(.sl-topic-title, .sl-topic-cta-label, .sl-course-main-title, .sl-side-widget-label, .sl-flow-title, .sl-course-overview-list dd, .sl-flow-action, .sl-back-link) {
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #skill-learning .sl-side-widget:not(.is-expanded) :is(.sl-side-widget-icon-wrap, .sl-side-widget-icon-wrap .sl-side-widget-icon, .sl-side-widget-chevron),
+        body.dark-mode #dashboard-shell #skill-learning .sl-side-widget:not(.is-expanded) :is(.sl-side-widget-icon-wrap, .sl-side-widget-icon-wrap .sl-side-widget-icon, .sl-side-widget-chevron) {
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #skill-learning .sl-side-widget.is-expanded :is(.sl-side-widget-icon-wrap, .sl-side-widget-icon-wrap .sl-side-widget-icon),
+        body.dark-mode #dashboard-shell #skill-learning .sl-side-widget.is-expanded :is(.sl-side-widget-icon-wrap, .sl-side-widget-icon-wrap .sl-side-widget-icon) {
+            color: #0f766e !important;
+        }
+
+        html.dark-mode #dashboard-shell #skill-learning :is(.sl-topic-desc, .sl-topic-meta-inline, .sl-topic-meta-item, .sl-topic-meta-sep, .sl-course-main-description, .sl-course-meta-item, .sl-topic-empty, .sl-flow-meta-token, .sl-flow-meta-dot, .sl-course-overview-list dt, .sl-course-side-list li, .sl-flow-thumb-label),
+        body.dark-mode #dashboard-shell #skill-learning :is(.sl-topic-desc, .sl-topic-meta-inline, .sl-topic-meta-item, .sl-topic-meta-sep, .sl-course-main-description, .sl-course-meta-item, .sl-topic-empty, .sl-flow-meta-token, .sl-flow-meta-dot, .sl-course-overview-list dt, .sl-course-side-list li, .sl-flow-thumb-label) {
+            color: #9A9A9A !important;
+        }
+
+        html.dark-mode #dashboard-shell #skill-learning :is(.sl-topic-cta, .sl-filter-select, .sl-search-toggle, #sl-topic-search, #sl-topic-filter),
+        body.dark-mode #dashboard-shell #skill-learning :is(.sl-topic-cta, .sl-filter-select, .sl-search-toggle, #sl-topic-search, #sl-topic-filter) {
+            background: #252525 !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #skill-learning :is(.sl-flow-action.is-primary, .sl-open-material),
+        body.dark-mode #dashboard-shell #skill-learning :is(.sl-flow-action.is-primary, .sl-open-material) {
+            background: #252525 !important;
+            border-color: rgba(255, 255, 255, 0.14) !important;
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #skill-learning :is(.sl-flow-marker, .sl-flow-thumb),
+        body.dark-mode #dashboard-shell #skill-learning :is(.sl-flow-marker, .sl-flow-thumb) {
+            background: #141414 !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
+            color: #F0F0F0 !important;
+        }
+
+        html.dark-mode #dashboard-shell #skill-learning .sl-flow-step:not(:first-child)::before,
+        html.dark-mode #dashboard-shell #skill-learning .sl-flow-step:not(:last-child)::after,
+        body.dark-mode #dashboard-shell #skill-learning .sl-flow-step:not(:first-child)::before,
+        body.dark-mode #dashboard-shell #skill-learning .sl-flow-step:not(:last-child)::after {
+            background: #3A3A3A !important;
+        }
+
+        html.dark-mode #dashboard-shell #skill-learning .sl-course-side-list li::before,
+        body.dark-mode #dashboard-shell #skill-learning .sl-course-side-list li::before {
+            background: #7A7A7A !important;
+        }
+
+        html.dark-mode #dashboard-shell #skill-learning :is(#sl-topic-search::placeholder),
+        body.dark-mode #dashboard-shell #skill-learning :is(#sl-topic-search::placeholder) {
+            color: #5C5C5C !important;
+        }
+
+        html.dark-mode #dashboard-shell #skill-learning .sl-topic-thumb,
+        body.dark-mode #dashboard-shell #skill-learning .sl-topic-thumb {
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+    </style>
+</head>
+<body class="bg-brand-50 text-ink-900 antialiased overflow-x-hidden">
+    <script>
+        (function syncBodyThemeClass() {
+            var isDark = false;
+
+            try {
+                isDark = localStorage.getItem("theme_preference") === "dark";
+            } catch (e) {
+                isDark = false;
+            }
+
+            document.body.classList.toggle("dark-mode", isDark);
+        })();
+    </script>
+    <div id="dashboard-shell" data-sidebar="expanded" class="admin-page min-h-screen sidebar-booting">
+        <script>
+            (function () {
+                var key = "dashboard-sidebar-state";
+                var state = "expanded";
+                try {
+                    var saved = localStorage.getItem(key);
+                    if (saved === "collapsed" || saved === "expanded") {
+                        state = saved;
+                    }
+                } catch (e) {
+                    state = "expanded";
+                }
+
+                var shell = document.getElementById("dashboard-shell");
+                if (shell) {
+                    shell.setAttribute("data-sidebar", state);
+                }
+            })();
+        </script>
+
+        {% include "user_dashboard/_sidebar.html" %}
+        <div id="mobile-overlay" data-mobile-overlay="{% if dashboard_scope == 'volunteer' %}volunteer{% elif dashboard_scope == 'beneficiary' %}beneficiary{% else %}user{% endif %}" data-open="false" class="hidden fixed inset-0 z-40" aria-hidden="true"></div>
+
+        <div id="dashboard-main-wrapper" class="min-w-0">
+            {% include "user_dashboard/_header.html" %}
+
+            <main id="dashboard-content-scroll" class="min-w-0" aria-label="Page content area">
+                <section class="px-6 pt-9 pb-16" aria-label="Page content">
+                    {% block content %}{% endblock %}
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="{% static 'js/index.js' %}"></script>
+    <script src="{% static 'js/admin-panel-animations.js' %}"></script>
+    <script src="{% static 'js/sidebar-state.js' %}"></script>
+    <script src="{% static 'js/sidebar-animations.js' %}"></script>
+
+    <div id="global-chat-widget" class="global-chat-widget" {% if dashboard_scope != "volunteer" and not user.is_superuser %}hidden{% endif %}>
+        <button id="global-chat-toggle" class="global-chat-toggle" type="button" aria-expanded="false" aria-controls="global-chat-panel" aria-label="Open volunteer support chat">
+            <span class="global-chat-toggle__icon"><i data-lucide="message-circle" aria-hidden="true"></i><svg class="global-chat-toggle__fallback-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></span>
+            <span id="global-chat-unread" class="global-chat-unread" hidden>0</span>
+        </button>
+
+        <div id="global-chat-panel" class="global-chat-panel" aria-live="polite" hidden>
+            <div class="global-chat-header">
+                <div class="global-chat-header-main">
+                    <button id="global-chat-back" class="global-chat-back" type="button" aria-label="Back to inbox" hidden><i data-lucide="arrow-left" aria-hidden="true"></i></button>
+                    <h3 id="global-chat-title">Inbox</h3>
+                    <div id="global-chat-header-person" class="global-chat-header-person" hidden>
+                        <span id="global-chat-header-avatar" class="global-chat-header-avatar"><span id="global-chat-header-avatar-initials">A</span><img id="global-chat-header-avatar-image" alt="" hidden></span>
+                        <span id="global-chat-header-name"></span>
+                    </div>
+                </div>
+                <div class="global-chat-header-actions">
+                    <button id="global-chat-close" type="button" class="global-chat-close" aria-label="Close chat"><i data-lucide="x" aria-hidden="true"></i></button>
+                </div>
+            </div>
+
+            <div id="global-chat-body" class="global-chat-body">
+                <aside id="global-chat-inbox" class="global-chat-inbox" hidden>
+                    <div class="global-chat-inbox-search"><i data-lucide="search" aria-hidden="true"></i><input id="global-chat-inbox-search-input" type="search" placeholder="Search volunteers" aria-label="Search volunteers"></div>
+                    <div id="global-chat-thread-list" class="global-chat-thread-list"></div>
+                </aside>
+
+                <div id="global-chat-thread" class="global-chat-thread" hidden>
+                    <span id="global-chat-thread-header" hidden></span>
+                    <div id="global-chat-messages" class="global-chat-messages"></div>
+                    <div id="global-chat-toast" class="global-chat-toast" hidden></div>
+                    <div id="global-chat-delete-modal" class="global-chat-delete-modal" hidden role="dialog" aria-modal="true" aria-labelledby="global-chat-delete-title">
+                        <strong id="global-chat-delete-title">Delete this message?</strong>
+                        <span>This can't be undone.</span>
+                        <div><button type="button" data-chat-delete-cancel>Cancel</button><button type="button" data-chat-delete-confirm>Delete</button></div>
+                    </div>
+                    <div id="global-chat-image-lightbox" class="global-chat-image-lightbox" hidden role="dialog" aria-modal="true" aria-label="Image preview">
+                        <button type="button" data-chat-close-image aria-label="Close image preview"><i data-lucide="x" aria-hidden="true"></i></button>
+                        <img id="global-chat-image-lightbox-image" src="" alt="">
+                    </div>
+                    <form id="global-chat-form" class="global-chat-form">
+                        <div id="global-chat-reply-preview" class="global-chat-reply-preview" hidden></div>
+                        <div id="global-chat-attachment-preview" class="global-chat-attachment-preview" hidden></div>
+                        <div id="global-chat-edit-preview" class="global-chat-edit-preview" hidden><span>Editing message</span><button type="button" data-chat-cancel-edit aria-label="Cancel editing"><i data-lucide="x" aria-hidden="true"></i></button></div>
+                        <div class="global-chat-compose-row">
+                            <button type="button" id="global-chat-attach" class="global-chat-attach" aria-label="Attach a file" title="Attach a file"><i data-lucide="paperclip" aria-hidden="true"></i></button>
+                            <input id="global-chat-attachment-input" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip" hidden>
+                            <textarea id="global-chat-input" class="global-chat-input" rows="2" placeholder="Type a message..." aria-label="Type a message"></textarea>
+                            <button type="submit" aria-label="Send message" title="Send message"><i data-lucide="send" aria-hidden="true"></i></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .global-chat-widget {
+            position: fixed;
+            right: 1.25rem;
+            bottom: 1.25rem;
+            z-index: 70;
+            font-family: "Poppins", sans-serif;
+        }
+
+        .global-chat-toggle {
+            position: relative;
+            width: 4rem;
+            height: 4rem;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1d9e75, #0f766e);
+            box-shadow: 0 14px 30px rgba(16, 124, 110, 0.32);
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 180ms ease, box-shadow 180ms ease;
+        }
+
+        .global-chat-toggle:hover,
+        .global-chat-toggle:focus-visible {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 0 18px 34px rgba(16, 124, 110, 0.38);
+        }
+
+        .global-chat-toggle:active { transform: scale(0.94); }
+
+        .global-chat-toggle__icon {
+            font-size: 1.65rem;
+            line-height: 1;
+        }
+
+        .global-chat-toggle__icon svg,
+        .global-chat-close svg,
+        .global-chat-back svg,
+        .global-chat-form button svg,
+        .global-chat-message-action svg { width: 1rem; height: 1rem; }
+
+        .global-chat-toggle__fallback-icon { display: none; }
+        .global-chat-toggle__icon > svg:not(.global-chat-toggle__fallback-icon) + .global-chat-toggle__fallback-icon { display: none; }
+        .global-chat-toggle__icon > i + .global-chat-toggle__fallback-icon { display: inline-block; }
+
+        .global-chat-unread {
+            position: absolute;
+            top: -0.35rem;
+            right: -0.2rem;
+            min-width: 1.3rem;
+            height: 1.3rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0.25rem;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.64rem;
+            font-weight: 700;
+        }
+
+        #global-chat-widget:has(.global-chat-unread:not([hidden])) .global-chat-unread { animation: global-chat-unread-pulse 2.4s ease-in-out infinite; }
+        @keyframes global-chat-unread-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+        .global-chat-panel {
+            position: absolute;
+            right: 0;
+            bottom: 4.5rem;
+            width: min(38rem, calc(100vw - 2rem));
+            height: min(38rem, calc(100vh - 4.5rem));
+            max-height: min(38rem, calc(100vh - 4.5rem));
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 1.35rem;
+            box-shadow: 0 25px 60px rgba(15, 23, 42, 0.18);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transform: translateY(0.6rem) scale(0.97);
+            transition: opacity 200ms ease, transform 200ms ease;
+        }
+
+        .global-chat-panel.is-open { opacity: 1; transform: translateY(0) scale(1); }
+
+        .global-chat-widget[hidden],
+        .global-chat-panel[hidden],
+        .global-chat-thread[hidden],
+        .global-chat-inbox[hidden],
+        .global-chat-unread[hidden],
+        .global-chat-toast[hidden],
+        .global-chat-delete-modal[hidden],
+        .global-chat-edit-preview[hidden],
+        .global-chat-reply-preview[hidden] {
+            display: none !important;
+        }
+
+        .global-chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 4.5rem;
+            padding: 1rem 1.1rem;
+            background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .global-chat-eyebrow {
+            margin: 0;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #0f766e;
+            font-weight: 700;
+        }
+
+        .global-chat-header-main {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .global-chat-header-main h3 { margin: 0; }
+        .global-chat-header-person {
+            min-width: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.65rem;
+            color: #0f172a;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+        .global-chat-header-person > span:last-child { min-width: 0; max-width: min(16rem, calc(100vw - 10rem)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .global-chat-header-person[hidden] { display: none !important; }
+        .global-chat-header-avatar {
+            width: 40px;
+            height: 40px;
+            flex: 0 0 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1d9e75, #14b8a6);
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+        .global-chat-header-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        .global-chat-header h3 {
+            margin: 0.1rem 0 0;
+            font-size: 1rem;
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        .global-chat-close {
+            width: 1.8rem;
+            height: 1.8rem;
+            border: 0;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.18);
+            color: #475569;
+            font-size: 1rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .global-chat-header-actions { display: flex; align-items: center; gap: 0.25rem; }
+
+        .global-chat-body {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            background: #f8fafc;
+        }
+
+        .global-chat-inbox {
+            width: 100%;
+            height: auto;
+            min-height: 0;
+            overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            border-right: 0;
+            background: #fff;
+        }
+
+        .global-chat-inbox::-webkit-scrollbar,
+        .global-chat-thread-list::-webkit-scrollbar { width: 0; height: 0; }
+
+        .global-chat-inbox-header {
+            padding: 0.8rem 0.9rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .global-chat-inbox-search { display: flex; align-items: center; gap: 0.5rem; margin: 0.8rem 0.9rem 0.55rem; padding: 0.55rem 0.7rem; border: 1px solid rgba(15, 23, 42, 0.1); border-radius: 0.7rem; background: #f8fafc; color: #64748b; }
+        .global-chat-inbox-search:focus-within { border-color: #1d9e75; box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.12); }
+        .global-chat-inbox-search svg { width: 0.95rem; height: 0.95rem; flex: 0 0 auto; }
+        .global-chat-inbox-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: #0f172a; font: inherit; font-size: 0.78rem; }
+        .global-chat-inbox-search input::placeholder { color: #94a3b8; }
+        .global-chat-inbox-empty { padding: 0.8rem 0.9rem; color: #64748b; font-size: 0.75rem; }
+
+        .global-chat-thread-list {
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .global-chat-thread-item {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            min-height: 4.25rem;
+            padding: 0.65rem 0.8rem;
+            border: none;
+            background: transparent;
+            text-align: left;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+        }
+
+        .global-chat-thread-item.is-active {
+            background: #ecfdf5;
+        }
+
+        .global-chat-thread-summary {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .global-chat-thread-avatar {
+            width: 44px !important;
+            height: 44px !important;
+            flex: 0 0 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1d9e75, #14b8a6);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .global-chat-thread-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: inherit;
+        }
+
+        .global-chat-thread-meta {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .global-chat-thread-name {
+            display: block;
+            color: #0f172a;
+            font-size: 0.78rem;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .global-chat-thread-preview {
+            display: block;
+            margin-top: 0.15rem;
+            color: #64748b;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .global-chat-thread-badge {
+            min-width: 1.15rem;
+            height: 1.15rem;
+            padding: 0 0.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.6rem;
+            font-weight: 700;
+        }
+
+        .global-chat-thread {
+            width: 100%;
+            height: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            background: #fff;
+        }
+
+        .global-chat-back {
+            margin-right: 0.55rem;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: #0f766e;
+            font-size: 1.4rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .global-chat-messages {
+            flex: 1;
+            min-height: 0;
+            padding: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            overflow-y: auto;
+            background: linear-gradient(to bottom, #fff, #f8fafc);
+        }
+
+        .global-chat-message {
+            position: relative;
+            width: fit-content;
+            max-width: 78%;
+            align-self: flex-start;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.2rem;
+            padding: 0;
+            background: transparent !important;
+            box-shadow: none;
+        }
+        .global-chat-message > .global-chat-bubble,
+        .global-chat-message > .global-chat-bubble {
+            position: relative;
+            width: fit-content;
+            max-width: 100%;
+            padding: 0.75rem 0.85rem;
+            border-radius: 1rem;
+            line-height: 1.45;
+            font-size: 0.92rem;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+            word-break: break-word;
+            animation: global-chat-message-in 200ms ease both;
+        }
+
+        @keyframes global-chat-message-in {
+            from { opacity: 0; transform: translateY(0.35rem); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .global-chat-message-actions {
+            display: flex;
+            gap: 0.2rem;
+            opacity: 0;
+            transition: opacity 150ms ease;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            white-space: nowrap;
+        }
+
+        .global-chat-message:hover .global-chat-message-actions,
+        .global-chat-message.is-actions-visible .global-chat-message-actions { opacity: 1; }
+        .global-chat-message.is-self .global-chat-message-actions { right: calc(100% + 0.35rem); }
+        .global-chat-message:not(.is-self) .global-chat-message-actions { left: calc(100% + 0.35rem); }
+        .global-chat-message.is-deleting { opacity: 0; transform: scale(0.96); transition: opacity 200ms ease, transform 200ms ease; }
+        .global-chat-message.is-finalizing { opacity: 0; transform: scale(0.96); max-height: 0; margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; overflow: hidden; transition: opacity 300ms ease, transform 300ms ease, max-height 300ms ease, margin 300ms ease, padding 300ms ease; }
+        .global-chat-message-quote { padding: 0.25rem 0.4rem; margin-bottom: 0.35rem; border-left: 2px solid #1d9e75; opacity: 0.8; font-size: 0.68rem; }
+        .global-chat-message-action,
+        .global-chat-edit-save,
+        .global-chat-edit-cancel,
+        .global-chat-delete-confirm,
+        .global-chat-delete-cancel {
+            border: 0; background: transparent; color: #0f766e; cursor: pointer; font-size: 0.68rem; padding: 0.2rem;
+        }
+        .global-chat-edit { width: 100%; min-width: 12rem; border: 1px solid rgba(15, 118, 110, 0.35); border-radius: 0.4rem; padding: 0.35rem; font: inherit; }
+        .global-chat-message-tools { margin-top: 0.25rem; }
+        .global-chat-delete-confirm { color: #dc2626; }
+        .global-chat-reply-preview { flex-basis: 100%; padding: 0.4rem 0.55rem; border-left: 3px solid #1d9e75; background: #ecfdf5; color: #475569; font-size: 0.72rem; }
+        .global-chat-reply-preview button { float: right; border: 0; background: transparent; cursor: pointer; color: #64748b; }
+        .global-chat-toast { position: absolute; left: 0.8rem; right: 0.8rem; bottom: 0.8rem; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0.8rem; border-radius: 0.7rem; background: rgba(15, 23, 42, 0.92); color: #fff; font-size: 0.75rem; animation: global-chat-toast-in 180ms ease both; }
+        .global-chat-toast button { border: 0; background: transparent; color: #a7f3d0; cursor: pointer; font-weight: 700; }
+        @keyframes global-chat-toast-in { from { opacity: 0; transform: translateY(0.3rem); } to { opacity: 1; transform: translateY(0); } }
+
+        .global-chat-message.is-self { align-self: flex-end; align-items: flex-end; }
+        .global-chat-message.is-self > .global-chat-bubble {
+            background: linear-gradient(135deg, #10b981, #0f766e);
+            color: #fff;
+            border-bottom-right-radius: 0.3rem;
+        }
+
+        .global-chat-message:not(.is-self) > .global-chat-bubble {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-bottom-left-radius: 0.3rem;
+        }
+        .global-chat-message > .global-chat-image-shell { padding: 0; background: transparent; box-shadow: none; }
+        .global-chat-message.is-self > .global-chat-image-shell { background: transparent; color: inherit; }
+        .global-chat-message:not(.is-self) > .global-chat-image-shell { background: transparent; color: inherit; }
+        .global-chat-image-caption { margin-top: 0.35rem; padding: 0.65rem 0.75rem; border-radius: 0.8rem; line-height: 1.45; }
+        .global-chat-message.is-self .global-chat-image-caption { background: linear-gradient(135deg, #10b981, #0f766e); color: #fff; border-bottom-right-radius: 0.3rem; }
+        .global-chat-message:not(.is-self) .global-chat-image-caption { background: #f1f5f9; color: #0f172a; border-bottom-left-radius: 0.3rem; }
+
+        .global-chat-message-time {
+            display: block;
+            align-self: flex-start;
+            font-size: 0.63rem;
+            color: #94a3b8;
+            white-space: nowrap;
+            transition: opacity 150ms ease, transform 150ms ease;
+        }
+        .global-chat-message.is-self .global-chat-message-time { align-self: flex-end; }
+        .global-chat-message.is-actions-visible .global-chat-message-actions { transform: translateY(0); }
+        .global-chat-message.is-self .global-chat-message-actions { right: 0; }
+        .global-chat-message:not(.is-self) .global-chat-message-actions { left: 0; }
+        .global-chat-message.is-deleting { opacity: 0.35; transition: opacity 200ms ease; }
+
+        .global-chat-form textarea:focus { border-color: #1d9e75; box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.12); }
+        .global-chat-form.is-editing textarea { border-color: #0f766e; box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12); }
+        .global-chat-edit-preview { flex: 0 0 100%; order: -1; display: flex; align-items: center; justify-content: space-between; padding: 0.35rem 0.55rem; border-left: 3px solid #0f766e; background: #ecfdf5; color: #0f766e; font-size: 0.72rem; }
+        .global-chat-edit-preview button { border: 0; background: transparent; color: #64748b; cursor: pointer; }
+        .global-chat-delete-modal { position: absolute; left: 50%; top: 50%; z-index: 5; width: min(18rem, calc(100% - 2rem)); transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 0.45rem; padding: 1rem; border-radius: 0.8rem; background: #fff; color: #0f172a; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.24); font-size: 0.78rem; }
+        .global-chat-delete-modal span { color: #64748b; font-size: 0.72rem; }
+        .global-chat-delete-modal div { display: flex; justify-content: flex-end; gap: 0.45rem; margin-top: 0.35rem; }
+        .global-chat-delete-modal button { border: 0; border-radius: 0.45rem; padding: 0.4rem 0.65rem; cursor: pointer; font-size: 0.72rem; }
+        .global-chat-delete-modal button:first-child { background: #e2e8f0; color: #334155; }
+        .global-chat-delete-modal button:last-child { background: #dc2626; color: #fff; }
+
+        .global-chat-form button {
+            align-self: flex-end;
+            border: none;
+            border-radius: 0.8rem;
+            padding: 0.8rem 1rem;
+            background: linear-gradient(135deg, #1d9e75, #0f766e);
+            color: #fff;
+            cursor: pointer;
+            font-weight: 700;
+            transition: transform 150ms ease;
+        }
+
+        .global-chat-form button:active { transform: scale(0.96); }
+
+        .global-chat-reply-preview { flex: 0 0 100% !important; order: -1; }
+        .global-chat-attachment-preview { flex: 0 0 100%; order: -1; display: flex; flex-wrap: wrap; gap: 0.42rem; margin: 0; padding: 0.35rem; font-size: 0.72rem; }
+        .global-chat-attachment-preview .ch-chat-selected-label { position: relative; width: 56px; height: 56px; padding: 0; margin: 0; background: transparent; border: 0; box-shadow: none; overflow: visible; }
+        .global-chat-attachment-preview .ch-chat-selected-thumb,
+        .global-chat-attachment-preview .ch-chat-selected-file { width: 56px; height: 56px; border-radius: 8px; display: block; }
+        .global-chat-attachment-preview .ch-chat-selected-thumb { object-fit: cover; background: #eef3f8; border: 1px solid #d7e0ea; }
+        .global-chat-attachment-preview .ch-chat-selected-file { display: inline-flex; align-items: center; justify-content: center; background: #eef3f8; border: 1px solid #dde6f0; color: #6a7d94; }
+        .global-chat-attachment-preview .ch-chat-selected-remove { position: absolute; top: -6px; right: -6px; margin: 0; border: 1px solid #d8e0ea; background: #fff; color: #6c7e93; width: 18px; height: 18px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.68rem; line-height: 1; cursor: pointer; padding: 0; box-shadow: 0 1px 5px rgba(15, 23, 42, 0.14); }
+        .global-chat-attachment-preview .community-attachment-name { align-self: center; max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .global-chat-attach { flex: 0 0 2.8rem; width: 2.8rem; height: 2.8rem; padding: 0; border: 0; border-radius: 50%; background: #ecfdf5; color: #0f766e; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .global-chat-form { border-top: 1px solid rgba(15, 23, 42, 0.08); padding: 0.75rem 0.8rem 0.85rem; background: #fff; }
+        .global-chat-form { display: flex !important; flex-wrap: wrap !important; align-items: flex-end !important; gap: 0.6rem !important; }
+        .global-chat-compose-row { display: flex; align-items: flex-end; gap: 0.6rem; width: 100%; min-width: 0; }
+        .global-chat-compose-row textarea { min-width: 0; }
+        .global-chat-form textarea { flex: 1 1 auto !important; min-width: 0 !important; }
+        .global-chat-form button { flex: 0 0 2.8rem !important; width: 2.8rem; height: 2.8rem; padding: 0 !important; display: inline-flex !important; align-items: center; justify-content: center; }
+        .global-chat-message-actions { top: 50% !important; bottom: auto !important; left: auto !important; right: auto !important; transform: translateY(-50%) !important; padding: 0.2rem 0.3rem !important; border-radius: 0.6rem; background: #fff; box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14); }
+        .global-chat-message:hover .global-chat-message-actions { opacity: 0 !important; }
+        .global-chat-message.is-actions-visible .global-chat-message-actions { opacity: 1 !important; transform: translateY(0) !important; }
+        .global-chat-message.is-self .global-chat-message-actions { right: calc(100% + 0.35rem) !important; }
+        .global-chat-message:not(.is-self) .global-chat-message-actions { left: calc(100% + 0.35rem) !important; }
+        .global-chat-form textarea { box-sizing: border-box !important; height: 2.8rem; overflow-y: auto; }
+        .global-chat-form textarea { appearance: none; -webkit-appearance: none; resize: none; scrollbar-width: none; -ms-overflow-style: none; }
+        .global-chat-form textarea::-webkit-scrollbar { width: 0; height: 0; display: none; }
+        .global-chat-form button { border-radius: 50%; }
+        .global-chat-image { display: block; max-width: 16rem; max-height: 16rem; border-radius: 0.8rem; object-fit: cover; }
+        .global-chat-image-wrap { position: relative; display: inline-block; max-width: 100%; }
+        .global-chat-image-options { position: absolute; right: 0.45rem; bottom: 0.45rem; width: 1.9rem; height: 1.9rem; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 50%; background: rgba(15, 23, 42, 0.72); color: #fff; cursor: pointer; }
+        .global-chat-image-options svg { width: 1rem; height: 1rem; }
+        .global-chat-file { display: flex; align-items: center; gap: 0.4rem; color: inherit; text-decoration: none; font-size: 0.75rem; }
+        .global-chat-file small { opacity: 0.7; }
+        .global-chat-attachment-error { color: #dc2626; font-size: 0.72rem; }
+        .global-chat-messages { scrollbar-width: none; -ms-overflow-style: none; }
+        .global-chat-messages::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+        @media (max-width: 768px) {
+            .global-chat-widget {
+                right: 0.75rem;
+                bottom: 0.75rem;
+            }
+
+            .global-chat-panel {
+                width: calc(100vw - 1.25rem);
+                height: calc(100vh - 9rem);
+                max-height: calc(100vh - 9rem);
+            }
+
+            .global-chat-body {
+                flex-direction: column;
+                min-height: 21rem;
+            }
+
+            .global-chat-inbox {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+                max-height: none;
+                overflow-y: auto;
+            }
+
+            .global-chat-body { min-height: 0; }
+            .global-chat-thread { min-height: 0; height: auto; overflow: hidden; }
+            .global-chat-messages { min-height: 0; overflow-y: auto; }
+            .global-chat-image-options { width: 2.5rem; height: 2.5rem; right: 0.35rem; bottom: 0.35rem; }
+            #global-chat-panel .global-chat-image-lightbox button { width: 2.2rem; height: 2.2rem; }
+            .global-chat-toggle { width: 4.25rem; height: 4.25rem; }
+            .global-chat-toggle__icon { font-size: 1.75rem; }
+            .global-chat-message { max-width: calc(100% - 6.5rem); }
+        }
+
+        .global-chat-body,
+        .global-chat-thread,
+        .global-chat-messages,
+        .global-chat-form {
+            border-bottom: 0;
+            box-shadow: none;
+        }
+
+        .global-chat-form {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .global-chat-form::before,
+        .global-chat-form::after {
+            display: none !important;
+            content: none !important;
+        }
+
+        #global-chat-panel { width: 380px !important; font-size: 14px; }
+        #global-chat-panel .global-chat-header h3,
+        #global-chat-panel .global-chat-thread-header { font-size: 15px !important; }
+        #global-chat-panel .global-chat-eyebrow,
+        #global-chat-panel .global-chat-inbox-header { font-size: 12px !important; }
+        #global-chat-panel .global-chat-thread-name { font-size: 15px !important; font-weight: 600; }
+        #global-chat-panel .global-chat-thread-preview { font-size: 14px !important; }
+        #global-chat-panel .global-chat-message > .global-chat-bubble,
+        #global-chat-panel .global-chat-message-content { font-size: 14px !important; }
+        #global-chat-panel .global-chat-message-time { font-size: 12px !important; }
+        #global-chat-panel .global-chat-file { font-size: 14px !important; }
+        #global-chat-panel .global-chat-load-error { align-self: center; margin: auto; padding: 1rem; color: #64748b; font-size: 14px; text-align: center; }
+        #global-chat-panel .global-chat-image-lightbox[hidden] { display: none !important; }
+        #global-chat-panel .global-chat-image-lightbox { position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(15, 23, 42, 0.82); }
+        #global-chat-panel .global-chat-image-lightbox img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 0.6rem; }
+        #global-chat-panel .global-chat-image-lightbox button { position: absolute; top: 0.75rem; right: 0.75rem; z-index: 1; width: 1.9rem; height: 1.9rem; border: 0; border-radius: 50%; background: rgba(15, 23, 42, 0.78); color: #fff; cursor: pointer; }
+        @media (max-width: 768px) {
+            #global-chat-panel { width: calc(100vw - 1.25rem) !important; }
+        }
+    </style>
+
+    <link rel="stylesheet" href="{% static 'css/global-chat.css' %}">
+
+    <script>
+        (function () {
+            function getCookie(name) {
+                var cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    var cookies = document.cookie.split(';');
+                    for (var i = 0; i < cookies.length; i += 1) {
+                        var cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            var widget = document.getElementById('global-chat-widget');
+            var toggle = document.getElementById('global-chat-toggle');
+            var panel = document.getElementById('global-chat-panel');
+            var closeBtn = document.getElementById('global-chat-close');
+            var unreadEl = document.getElementById('global-chat-unread');
+            var form = document.getElementById('global-chat-form');
+            var input = document.getElementById('global-chat-input');
+            var attachmentInput = document.getElementById('global-chat-attachment-input');
+            var attachmentPreview = document.getElementById('global-chat-attachment-preview');
+            var editPreview = document.getElementById('global-chat-edit-preview');
+            var deleteModal = document.getElementById('global-chat-delete-modal');
+            var imageLightbox = document.getElementById('global-chat-image-lightbox');
+            var imageLightboxImage = document.getElementById('global-chat-image-lightbox-image');
+            var attachButton = document.getElementById('global-chat-attach');
+            var messagesEl = document.getElementById('global-chat-messages');
+            var replyPreviewEl = document.getElementById('global-chat-reply-preview');
+            var threadEl = document.getElementById('global-chat-thread');
+            var backBtn = document.getElementById('global-chat-back');
+            var threadHeaderEl = document.getElementById('global-chat-thread-header');
+            var threadListEl = document.getElementById('global-chat-thread-list');
+            var inboxSearchEl = document.getElementById('global-chat-inbox-search-input');
+            var inboxEl = document.getElementById('global-chat-inbox');
+            var chatTitleEl = document.getElementById('global-chat-title');
+            var headerPersonEl = document.getElementById('global-chat-header-person');
+            var headerNameEl = document.getElementById('global-chat-header-name');
+            var headerAvatarInitialsEl = document.getElementById('global-chat-header-avatar-initials');
+            var headerAvatarImageEl = document.getElementById('global-chat-header-avatar-image');
+            var panelCloseTimer = null;
+            var chatEligible = {% if dashboard_scope == "volunteer" or user.is_superuser %}true{% else %}false{% endif %};
+            var chatIsVolunteerPage = {% if dashboard_scope == "volunteer" %}true{% else %}false{% endif %};
+            var threadState = {
+                activeThreadId: null,
+                activeThreadName: '',
+                activeThreadAvatar: '',
+                activeThreadInitials: '',
+                currentRole: null,
+                timer: null,
+                lastUserId: null,
+                inboxThreads: []
+            };
+            var replyTarget = null;
+            var editTarget = null;
+            var deleteTarget = null;
+            var renderedMessages = {};
+            var selectedAttachment = null;
+            var audioContext = null;
+            var soundMuted = false;
+            var lastUnreadCount = null;
+            var messageBaselineReady = false;
+
+            if (!widget || !toggle || !panel || !form || !messagesEl || !threadEl || !threadHeaderEl || !threadListEl) {
+                return;
+            }
+
+            function setHeaderIdentity(name, avatarUrl, initials, showBack) {
+                var hasIdentity = Boolean(name);
+                if (chatTitleEl) {
+                    chatTitleEl.hidden = hasIdentity;
+                    chatTitleEl.textContent = hasIdentity ? '' : 'Inbox';
+                }
+                if (headerPersonEl) headerPersonEl.hidden = !hasIdentity;
+                if (headerNameEl) headerNameEl.textContent = name || '';
+                if (headerAvatarInitialsEl) {
+                    headerAvatarInitialsEl.textContent = initials || 'A';
+                    headerAvatarInitialsEl.hidden = Boolean(avatarUrl);
+                }
+                if (headerAvatarImageEl) {
+                    headerAvatarImageEl.hidden = !avatarUrl;
+                    if (avatarUrl) headerAvatarImageEl.src = avatarUrl;
+                    else headerAvatarImageEl.removeAttribute('src');
+                }
+                if (backBtn) backBtn.hidden = !showBack;
+            }
+
+            if (chatIsVolunteerPage) {
+                inboxEl.hidden = true;
+                threadEl.hidden = false;
+                setHeaderIdentity('Admin', '', 'A', false);
+                threadHeaderEl.textContent = 'Message Admin';
+                messagesEl.innerHTML = '<div class="global-chat-loading" style="align-self:center; color:#64748b;">Loading messages...</div>';
+            }
+
+            function updateUnreadBadge(count) {
+                if (!unreadEl) return;
+                var total = Number(count) || 0;
+                if (total > 0) {
+                    unreadEl.hidden = false;
+                    unreadEl.textContent = String(total);
+                } else {
+                    unreadEl.hidden = true;
+                    unreadEl.textContent = '0';
+                }
+            }
+
+            function ensureAudioContext() {
+                if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioContext.state === 'suspended') audioContext.resume();
+                return audioContext;
+            }
+
+            function playChatTone(kind) {
+                if (soundMuted || !window.AudioContext && !window.webkitAudioContext) return;
+                var context = ensureAudioContext();
+                var oscillator = context.createOscillator();
+                var gain = context.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.value = kind === 'sent' ? 660 : 880;
+                gain.gain.setValueAtTime(0.0001, context.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.035, context.currentTime + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.14);
+                oscillator.connect(gain); gain.connect(context.destination);
+                oscillator.start(); oscillator.stop(context.currentTime + 0.15);
+            }
+
+            function setOpenState(isOpen) {
+                if (panelCloseTimer) window.clearTimeout(panelCloseTimer);
+                if (isOpen) {
+                    panel.hidden = false;
+                    window.requestAnimationFrame(function () { panel.classList.add('is-open'); });
+                } else {
+                    panel.classList.remove('is-open');
+                    panelCloseTimer = window.setTimeout(function () { panel.hidden = true; }, 200);
+                }
+                toggle.setAttribute('aria-expanded', String(isOpen));
+            }
+
+            function refreshChatIcons() {
+                if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+            }
+
+            function closePanel() {
+                if (threadState.currentRole === 'admin') {
+                    showAdminInbox();
+                }
+                setOpenState(false);
+            }
+
+            function showAdminInbox() {
+                threadState.activeThreadId = null;
+                threadState.activeThreadName = '';
+                threadState.activeThreadAvatar = '';
+                threadState.activeThreadInitials = '';
+                setHeaderIdentity('', '', '', false);
+                applyAdminView();
+            }
+
+            function applyAdminView() {
+                var conversationSelected = Boolean(threadState.activeThreadId);
+                inboxEl.hidden = conversationSelected;
+                threadEl.hidden = !conversationSelected;
+                if (backBtn) backBtn.hidden = !conversationSelected;
+            }
+
+            function isInteractionInsidePanel(event) {
+                if (!event) return false;
+                var target = event.target;
+                if (!(target instanceof Element)) {
+                    return false;
+                }
+                return panel.contains(target) || toggle.contains(target);
+            }
+
+            function formatMessageTime(value) {
+                if (!value) return '';
+                var date = new Date(value);
+                if (Number.isNaN(date.getTime())) return '';
+                return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            }
+
+            function escapeHtml(value) {
+                return String(value || '').replace(/[&<>'"]/g, function (character) {
+                    return {'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[character];
+                });
+            }
+
+            function formatFileSize(bytes) { return bytes < 1048576 ? Math.max(1, Math.round(bytes / 1024)) + ' KB' : (bytes / 1048576).toFixed(1) + ' MB'; }
+            function renderAttachmentPreview() {
+                if (!attachmentPreview) return;
+                if (selectedAttachment && selectedAttachment.size > 5 * 1024 * 1024) {
+                    attachmentPreview.hidden = false;
+                    attachmentPreview.innerHTML = '<span class="global-chat-attachment-error">Attachment must be 5 MB or smaller.</span>';
+                    selectedAttachment = null;
+                    if (attachmentInput) attachmentInput.value = '';
+                    return;
+                }
+                attachmentPreview.hidden = !selectedAttachment;
+                if (!selectedAttachment) { attachmentPreview.innerHTML = ''; return; }
+                var isImage = selectedAttachment.type.indexOf('image/') === 0 || /\.(jpg|jpeg|jfif|png|gif|webp|bmp|svg|heic|heif)$/i.test(selectedAttachment.name || '');
+                var media = isImage ? '<img class="ch-chat-selected-thumb" src="' + URL.createObjectURL(selectedAttachment) + '" alt="">' : '<span class="ch-chat-selected-file" aria-hidden="true"><i data-lucide="paperclip"></i></span>';
+                var name = isImage ? '' : '<span class="community-attachment-name">' + escapeHtml(selectedAttachment.name) + ' (' + formatFileSize(selectedAttachment.size) + ')</span>';
+                attachmentPreview.innerHTML = '<article class="ch-chat-selected-label">' + media + name + '<button type="button" class="ch-chat-selected-remove" data-chat-remove-attachment aria-label="Remove attachment">&#10005;</button></article>';
+                refreshChatIcons();
+            }
+
+            function setReplyTarget(message) {
+                replyTarget = message || null;
+                if (!replyPreviewEl) return;
+                replyPreviewEl.hidden = !replyTarget;
+                replyPreviewEl.innerHTML = replyTarget ? '<span>Replying to: ' + escapeHtml(replyTarget.message.slice(0, 120)) + '</span><button type="button" data-chat-cancel-reply aria-label="Cancel reply"><i data-lucide="x"></i></button>' : '';
+                refreshChatIcons();
+            }
+
+            function setEditTarget(message) {
+                editTarget = message || null;
+                form.classList.toggle('is-editing', Boolean(editTarget));
+                if (editPreview) editPreview.hidden = !editTarget;
+                input.value = editTarget ? (editTarget.message || '') : '';
+                input.style.height = 'auto';
+                input.style.height = Math.min(input.scrollHeight, 96) + 'px';
+                if (editTarget) { input.focus(); input.selectionStart = input.value.length; input.selectionEnd = input.value.length; }
+            }
+
+            function closeDeleteModal() { deleteTarget = null; if (deleteModal) deleteModal.hidden = true; }
+            function openDeleteModal(messageId) { deleteTarget = messageId; if (deleteModal) { deleteModal.hidden = false; deleteModal.querySelector('[data-chat-delete-cancel]').focus(); } }
+            function closeImagePreview() { if (imageLightbox) imageLightbox.hidden = true; if (imageLightboxImage) imageLightboxImage.src = ''; }
+            function openImagePreview(url) { if (!imageLightbox || !imageLightboxImage) return; imageLightboxImage.src = url; imageLightbox.hidden = false; }
+            if (imageLightbox) imageLightbox.addEventListener('click', function (event) { if (event.target === imageLightbox || event.target.closest('[data-chat-close-image]')) closeImagePreview(); });
+
+            function renderMessages(messages) {
+                var incoming = {};
+                var changed = false;
+                var newIncomingMessage = false;
+                renderedMessages = {};
+                Array.prototype.forEach.call(messagesEl.querySelectorAll('.global-chat-loading, .global-chat-load-error'), function (status) { status.remove(); });
+                (messages || []).forEach(function (message) { incoming[String(message.id)] = message; renderedMessages[String(message.id)] = message; });
+                Array.prototype.slice.call(messagesEl.querySelectorAll('.global-chat-message[data-message-id]')).forEach(function (wrap) {
+                    var id = wrap.dataset.messageId;
+                    if (!incoming[id]) wrap.remove();
+                });
+                Object.keys(incoming).forEach(function (id) {
+                    var message = incoming[id];
+                    var signature = JSON.stringify([message.message, message.is_edited, message.reply_to && message.reply_to.id]);
+                    var wrap = messagesEl.querySelector('[data-message-id="' + id + '"]');
+                    if (!wrap) { wrap = document.createElement('div'); wrap.dataset.messageId = id; messagesEl.appendChild(wrap); changed = true; }
+                    if (!wrap.dataset.signature && messageBaselineReady && !message.is_self && !panel.hidden) newIncomingMessage = true;
+                    if (wrap.dataset.signature !== signature) {
+                        wrap.className = 'global-chat-message' + (message.is_self ? ' is-self' : '');
+                        var quoted = message.reply_to ? '<div class="global-chat-message-quote">' + escapeHtml(message.reply_to.sender_name) + ': ' + escapeHtml(message.reply_to.message.slice(0, 120)) + '</div>' : '';
+                        var isImageAttachment = Boolean(message.attachment && message.attachment.is_image);
+                        var mediaOptions = isImageAttachment ? '<button type="button" class="global-chat-image-options" data-chat-media-options="' + id + '" aria-label="More image actions"><i data-lucide="more-horizontal"></i></button>' : '';
+                        var attachment = message.attachment ? (isImageAttachment ? '<span class="global-chat-image-wrap"><a class="global-chat-image-link" href="' + message.attachment.url + '" data-chat-image-preview="' + escapeHtml(message.attachment.url) + '" aria-label="Open image preview"><img class="global-chat-image" src="' + message.attachment.url + '" alt=""></a>' + mediaOptions + '</span>' : '<a class="global-chat-file" href="' + message.attachment.url + '" download><i data-lucide="file"></i><span>' + escapeHtml(message.attachment.name) + '</span><small>' + formatFileSize(message.attachment.size) + '</small></a>') : '';
+                        var actions = '<div class="global-chat-message-actions"><button type="button" class="global-chat-message-action" data-chat-reply="' + id + '" aria-label="Reply"><i data-lucide="reply"></i></button>' + (message.is_self && !isImageAttachment ? '<button type="button" class="global-chat-message-action" data-chat-edit="' + id + '" aria-label="Edit"><i data-lucide="pencil"></i></button>' : '') + '<button type="button" class="global-chat-message-action" data-chat-delete="' + id + '" aria-label="Delete"><i data-lucide="trash-2"></i></button></div>';
+                        var messageContent = message.message ? '<div class="global-chat-message-content">' + escapeHtml(message.message).replace(/\n/g, '<br>') + '</div>' : '';
+                        var imageMessage = isImageAttachment ? '<div class="global-chat-bubble global-chat-image-shell">' + attachment + (message.message || quoted ? '<div class="global-chat-image-caption">' + quoted + messageContent + '</div>' : '') + actions + '</div>' : '<div class="global-chat-bubble">' + quoted + attachment + messageContent + actions + '</div>';
+                        wrap.innerHTML = imageMessage + '<span class="global-chat-message-time">' + formatMessageTime(message.created_at) + (message.is_edited ? ' <em>(edited)</em>' : '') + '</span>';
+                        wrap.dataset.signature = signature;
+                        changed = true;
+                    }
+                });
+                var empty = messagesEl.querySelector('.global-chat-empty');
+                if (!(messages || []).length && !empty) messagesEl.innerHTML = '<div class="global-chat-empty" style="align-self:center; background:#f8fafc; color:#64748b;">No messages yet.</div>';
+                if ((messages || []).length && empty) empty.remove();
+                if (changed) messagesEl.scrollTop = messagesEl.scrollHeight;
+                if (changed) refreshChatIcons();
+                if (newIncomingMessage) playChatTone('received');
+                messageBaselineReady = true;
+            }
+
+            function renderChatStatus(message, className) {
+                if (!messagesEl) return;
+                messagesEl.innerHTML = '<div class="' + (className || 'global-chat-empty') + '" style="align-self:center; color:#64748b;">' + escapeHtml(message) + '</div>';
+            }
+
+            function reloadActiveThread() {
+                loadThreadMessages(threadState.currentRole === 'admin' ? threadState.activeThreadId : threadState.lastUserId);
+            }
+
+            function manageMessage(messageId, method, body) {
+                return fetch('/chat/message/' + encodeURIComponent(messageId) + '/', { method: method, credentials: 'same-origin', headers: Object.assign({'X-CSRFToken': getCookie('csrftoken') || ''}, body ? {'Content-Type': 'application/json'} : {}), body: body ? JSON.stringify(body) : undefined }).then(function (response) {
+                    if (!response.ok) throw new Error('Unable to update message');
+                    return response.json();
+                });
+            }
+
+            function confirmDelete() { if (!deleteTarget) return; var messageId = deleteTarget; closeDeleteModal(); manageMessage(messageId, 'DELETE').then(reloadActiveThread); }
+
+            messagesEl.addEventListener('click', function (event) {
+                var action = event.target.closest('[data-chat-reply], [data-chat-edit], [data-chat-delete], [data-chat-media-options]');
+                if (!action) return;
+                event.stopPropagation();
+                var message = renderedMessages[String(action.dataset.chatReply || action.dataset.chatEdit || action.dataset.chatDelete || action.dataset.chatMediaOptions)];
+                if (!message) return;
+                action.closest('.global-chat-message').classList.add('is-actions-visible');
+                if (action.dataset.chatMediaOptions) {
+                    return;
+                } else if (action.dataset.chatReply) {
+                    setReplyTarget(message);
+                    input.focus();
+                } else if (action.dataset.chatEdit) {
+                    setEditTarget(message);
+                } else {
+                    openDeleteModal(action.dataset.chatDelete);
+                }
+            });
+
+            messagesEl.addEventListener('click', function (event) {
+                var wrap = event.target.closest('.global-chat-message');
+                if (!wrap) return;
+                if (event.target.closest('.global-chat-image-link')) return;
+                if (!event.target.closest('button, textarea')) {
+                    wrap.classList.toggle('is-actions-visible');
+                    return;
+                }
+            });
+
+            if (replyPreviewEl) replyPreviewEl.addEventListener('click', function (event) { if (event.target.closest('[data-chat-cancel-reply]')) setReplyTarget(null); });
+
+            document.addEventListener('click', function (event) {
+                var image = event.target.closest('.global-chat-image');
+                if (image) { event.preventDefault(); openImagePreview(image.currentSrc || image.src); return; }
+                if (event.target.closest('[data-chat-delete-cancel]')) { event.stopPropagation(); closeDeleteModal(); return; }
+                if (event.target.closest('[data-chat-delete-confirm]')) { event.stopPropagation(); confirmDelete(); return; }
+                if (event.target.closest('[data-chat-cancel-edit]')) { event.stopPropagation(); setEditTarget(null); return; }
+                if (!event.target.closest('.global-chat-message')) Array.prototype.forEach.call(messagesEl.querySelectorAll('.is-actions-visible'), function (item) { item.classList.remove('is-actions-visible'); });
+            });
+
+            function renderInbox(threads) {
+                threadListEl.innerHTML = '';
+                threadState.inboxThreads = threads || [];
+                var query = inboxSearchEl ? inboxSearchEl.value.trim().toLowerCase() : '';
+                var filteredThreads = threadState.inboxThreads.filter(function (thread) {
+                    return !query || String(thread.name || '').toLowerCase().indexOf(query) !== -1;
+                });
+                if (!filteredThreads.length) {
+                    threadListEl.innerHTML = '<div class="global-chat-inbox-empty">No volunteers found.</div>';
+                    return;
+                }
+
+                filteredThreads.forEach(function (thread) {
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'global-chat-thread-item' + (Number(thread.user_id) === Number(threadState.activeThreadId) ? ' is-active' : '');
+                    button.innerHTML = `
+                        <span class="global-chat-thread-summary">
+                            <span class="global-chat-thread-avatar">${thread.avatar_url ? '<img src="' + escapeHtml(thread.avatar_url) + '" alt="">' : escapeHtml(thread.initials || 'U')}</span>
+                            <span class="global-chat-thread-meta">
+                                <span class="global-chat-thread-name">${thread.name || 'Volunteer'}</span>
+                                <span class="global-chat-thread-preview">${thread.preview || 'No messages yet'}</span>
+                            </span>
+                        </span>
+                        ${Number(thread.unread_count) > 0 ? '<span class="global-chat-thread-badge">' + thread.unread_count + '</span>' : ''}
+                    `;
+                    button.addEventListener('click', function () {
+                        threadState.activeThreadId = thread.user_id;
+                        threadState.activeThreadName = thread.name || 'Volunteer';
+                        threadState.activeThreadAvatar = thread.avatar_url || '';
+                        threadState.activeThreadInitials = thread.initials || 'U';
+                        setHeaderIdentity(threadState.activeThreadName, threadState.activeThreadAvatar, threadState.activeThreadInitials, true);
+                        threadHeaderEl.textContent = thread.name || 'Volunteer';
+                        messageBaselineReady = false;
+                        applyAdminView();
+                        loadThreadMessages(thread.user_id);
+                    });
+                    threadListEl.appendChild(button);
+                });
+            }
+
+            function loadThreadMessages(threadUserId) {
+                if (!threadUserId) return;
+                fetch('/chat/messages/' + encodeURIComponent(threadUserId) + '/', { credentials: 'same-origin' })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            return response.text().then(function (body) { throw new Error('Failed to load messages (' + response.status + '): ' + (body || response.statusText)); });
+                        }
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        threadHeaderEl.textContent = data.thread_user_name || 'Conversation';
+                        renderMessages(data.messages || []);
+                        if (threadState.currentRole === 'admin') {
+                            refreshInbox();
+                        }
+                    })
+                    .catch(function (error) {
+                        console.error('Chat history load failed', error);
+                        if (!messagesEl.querySelector('.global-chat-message')) {
+                            messagesEl.innerHTML = '<div class="global-chat-load-error">Unable to load this conversation. Please try again.</div>';
+                        }
+                    });
+            }
+
+            function refreshInbox() {
+                fetch('/chat/conversations/', { credentials: 'same-origin' })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error('Failed to load conversations');
+                        }
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        var threads = data.threads || [];
+                        renderInbox(threads);
+                        applyAdminView();
+
+                        if (threadState.activeThreadId && threads.length) {
+                            var stillExists = threads.some(function (thread) {
+                                return Number(thread.user_id) === Number(threadState.activeThreadId);
+                            });
+                            if (!stillExists) {
+                                showAdminInbox();
+                            }
+                        }
+                    })
+                    .catch(function () {
+                        threadListEl.innerHTML = '<div style="padding:1rem;color:#64748b;font-size:0.75rem;">Unable to load inbox.</div>';
+                    });
+            }
+
+            function refreshVolunteerThread() {
+                fetch('/chat/messages/' + encodeURIComponent(threadState.lastUserId || 0) + '/', { credentials: 'same-origin' })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            return null;
+                        }
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        if (!data || !data.messages) return;
+                        threadHeaderEl.textContent = 'Message Admin';
+                        renderMessages(data.messages || []);
+                    })
+                    .catch(function () {});
+            }
+
+            function fetchState() {
+                fetch('/chat/widget-state/', { credentials: 'same-origin' })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            return null;
+                        }
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        if (!data || !data.enabled) {
+                            widget.hidden = true;
+                            return;
+                        }
+
+                        widget.hidden = false;
+                        threadState.currentRole = data.role || 'volunteer';
+                        var unreadCount = Number(data.unread_count) || 0;
+                        var shouldPlayUnreadTone = panel.hidden || (threadState.currentRole === 'admin' && !threadState.activeThreadId);
+                        if (lastUnreadCount !== null && unreadCount > lastUnreadCount && shouldPlayUnreadTone) playChatTone('received');
+                        lastUnreadCount = unreadCount;
+                        updateUnreadBadge(data.unread_count || 0);
+
+                        if (threadState.currentRole === 'admin') {
+                            if (threadState.activeThreadId) {
+                                applyAdminView();
+                            } else {
+                                showAdminInbox();
+                            }
+                            refreshInbox();
+                        } else {
+                            inboxEl.hidden = true;
+                            threadEl.hidden = false;
+                            threadState.lastUserId = Number(data.user_id || 0) || null;
+                            threadHeaderEl.textContent = 'Message Admin';
+                            if (!threadState.lastUserId) {
+                                renderMessages([]);
+                                return;
+                            }
+                            fetch('/chat/messages/' + encodeURIComponent(threadState.lastUserId) + '/', { credentials: 'same-origin' })
+                                .then(function (response) {
+                                    if (!response.ok) {
+                                        return response.text().then(function (body) { throw new Error('Failed to load volunteer conversation (' + response.status + '): ' + (body || response.statusText)); });
+                                    }
+                                    return response.json();
+                                })
+                                .then(function (data) {
+                                    threadState.lastUserId = Number(data.thread_user_id || threadState.lastUserId || 0) || null;
+                                    threadHeaderEl.textContent = 'Message Admin';
+                                    renderMessages(data.messages || []);
+                                })
+                                .catch(function (error) {
+                                    console.error('Volunteer chat history load failed', error);
+                                    if (!messagesEl.querySelector('.global-chat-message')) {
+                                        messagesEl.innerHTML = '<div class="global-chat-load-error">Unable to load this conversation. Please try again.</div>';
+                                    }
+                                });
+                        }
+                    })
+                    .catch(function () {
+                        if (chatIsVolunteerPage) {
+                            renderChatStatus('Unable to load messages. Please try again.', 'global-chat-load-error');
+                        }
+                        widget.hidden = !chatEligible;
+                    });
+            }
+
+            toggle.addEventListener('click', function (event) {
+                event.stopPropagation();
+                event.__globalChatHandled = true;
+                var isOpen = panel.hidden;
+                setOpenState(isOpen);
+                if (isOpen && threadState.currentRole === 'admin') {
+                    refreshInbox();
+                }
+                if (isOpen && chatIsVolunteerPage && threadState.lastUserId) {
+                    refreshVolunteerThread();
+                }
+            });
+
+            closeBtn.addEventListener('click', function (event) {
+                event.stopPropagation();
+                closePanel();
+            });
+
+            if (inboxSearchEl) inboxSearchEl.addEventListener('input', function () { renderInbox(threadState.inboxThreads); refreshChatIcons(); });
+
+            if (backBtn) {
+                backBtn.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    showAdminInbox();
+                    refreshInbox();
+                });
+            }
+
+            document.addEventListener('click', function (event) {
+                if (isInteractionInsidePanel(event)) {
+                    return;
+                }
+                if (!panel.hidden) {
+                    closePanel();
+                }
+            });
+
+            document.addEventListener('touchstart', function (event) {
+                if (isInteractionInsidePanel(event)) {
+                    return;
+                }
+                if (!panel.hidden) {
+                    closePanel();
+                }
+            }, { passive: true });
+
+            input.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    form.requestSubmit();
+                }
+            });
+
+            input.addEventListener('input', function () {
+                input.style.height = 'auto';
+                input.style.height = Math.min(input.scrollHeight, 96) + 'px';
+            });
+
+            if (attachButton && attachmentInput) attachButton.addEventListener('click', function () { attachmentInput.click(); });
+            if (attachmentInput) attachmentInput.addEventListener('change', function () { selectedAttachment = attachmentInput.files[0] || null; renderAttachmentPreview(); });
+            document.addEventListener('click', function (event) { if (event.target.closest('[data-chat-remove-attachment]')) { selectedAttachment = null; attachmentInput.value = ''; renderAttachmentPreview(); } });
+
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                var message = input.value.trim();
+                if (editTarget) {
+                    if (!message) return;
+                    var editingId = editTarget.id;
+                    setEditTarget(null);
+                    manageMessage(editingId, 'PATCH', {message: message}).then(reloadActiveThread);
+                    return;
+                }
+                if (!message && !selectedAttachment) return;
+
+                var requestBody;
+                var requestHeaders = { 'X-CSRFToken': getCookie('csrftoken') || '' };
+                if (selectedAttachment) {
+                    requestBody = new FormData();
+                    requestBody.append('message', message);
+                    if (replyTarget) requestBody.append('reply_to_id', replyTarget.id);
+                } else {
+                    requestBody = { message: message };
+                    if (replyTarget) requestBody.reply_to_id = replyTarget.id;
+                }
+                if (threadState.currentRole === 'admin') {
+                    if (!threadState.activeThreadId) {
+                        return;
+                    }
+                    if (selectedAttachment) requestBody.append('thread_user_id', threadState.activeThreadId);
+                    else requestBody.thread_user_id = threadState.activeThreadId;
+                } else {
+                    if (selectedAttachment) requestBody.append('thread_user_id', threadState.lastUserId || 0);
+                    else requestBody.thread_user_id = threadState.lastUserId || 0;
+                }
+                if (selectedAttachment) {
+                    requestBody.append('attachment', selectedAttachment);
+                } else {
+                    requestBody = JSON.stringify(requestBody);
+                    requestHeaders['Content-Type'] = 'application/json';
+                }
+
+                fetch('/chat/send/', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: requestHeaders,
+                    body: requestBody
+                })
+                    .then(function (response) {
+                        return response.text().then(function (body) {
+                            var data = null;
+                            try { data = body ? JSON.parse(body) : null; } catch (parseError) { data = null; }
+                            if (!response.ok) {
+                                var detail = data && data.error ? data.error : (body || response.statusText || 'Unknown server error');
+                                throw new Error('Chat send failed (' + response.status + '): ' + detail);
+                            }
+                            return data || {};
+                        });
+                    })
+                    .then(function (data) {
+                        if (data && data.message) {
+                            input.value = '';
+                            input.style.height = '2.8rem';
+                            setReplyTarget(null);
+                            selectedAttachment = null;
+                            attachmentInput.value = '';
+                            renderAttachmentPreview();
+                            playChatTone('sent');
+                            if (threadState.currentRole === 'admin') {
+                                loadThreadMessages(threadState.activeThreadId);
+                            } else {
+                                refreshVolunteerThread();
+                            }
+                        }
+                    })
+                    .catch(function (error) {
+                        console.error('Chat send failed', error);
+                        window.alert(error && error.message ? error.message : 'Unable to send message right now.');
+                    });
+            });
+
+            function schedulePolling() {
+                if (threadState.timer) {
+                    window.clearInterval(threadState.timer);
+                }
+                threadState.timer = window.setInterval(function () {
+                    fetchState();
+                    if (threadState.currentRole === 'admin' && !panel.hidden) {
+                        refreshInbox();
+                    }
+                    if (threadState.currentRole !== 'admin' && !panel.hidden) {
+                        refreshVolunteerThread();
+                    }
+                }, 5000);
+            }
+
+            refreshChatIcons();
+            fetchState();
+            schedulePolling();
+            setOpenState(false);
+        })();
+    </script>
+
+    <script>
+        (function ensureGlobalChatToggle() {
+            var toggle = document.getElementById('global-chat-toggle');
+            var panel = document.getElementById('global-chat-panel');
+            var messages = document.getElementById('global-chat-messages');
+            if (!toggle || !panel || toggle.dataset.fallbackBound === 'true') return;
+            toggle.dataset.fallbackBound = 'true';
+
+            function showStatus(text) {
+                if (messages && !messages.querySelector('.global-chat-message')) {
+                    messages.innerHTML = '<div class="global-chat-load-error" style="align-self:center;color:#64748b;">' + text + '</div>';
+                }
+            }
+
+            function loadVolunteerThread() {
+                {% if dashboard_scope == "volunteer" %}
+                fetch('/chat/widget-state/', { credentials: 'same-origin' })
+                    .then(function (response) {
+                        if (!response.ok) throw new Error('Unable to load chat state');
+                        return response.json();
+                    })
+                    .then(function (state) {
+                        if (!state.enabled || !state.user_id) throw new Error('Chat is unavailable');
+                        return fetch('/chat/messages/' + encodeURIComponent(state.user_id) + '/', { credentials: 'same-origin' });
+                    })
+                    .then(function (response) {
+                        if (!response.ok) throw new Error('Unable to load conversation');
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        if (!messages || messages.querySelector('.global-chat-message')) return;
+                        messages.innerHTML = '';
+                        if (!data.messages || !data.messages.length) {
+                            showStatus('No messages yet.');
+                            return;
+                        }
+                        data.messages.forEach(function (message) {
+                            var wrap = document.createElement('div');
+                            wrap.className = 'global-chat-message' + (message.is_self ? ' is-self' : '');
+                            var bubble = document.createElement('div');
+                            bubble.className = 'global-chat-bubble';
+                            bubble.textContent = message.message || '(Attachment)';
+                            var time = document.createElement('span');
+                            time.className = 'global-chat-message-time';
+                            time.textContent = message.created_at ? new Date(message.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+                            wrap.appendChild(bubble);
+                            wrap.appendChild(time);
+                            messages.appendChild(wrap);
+                        });
+                        messages.scrollTop = messages.scrollHeight;
+                    })
+                    .catch(function () { showStatus('Unable to load messages. Please try again.'); });
+                {% endif %}
+            }
+
+            loadVolunteerThread();
+            toggle.addEventListener('click', function (event) {
+                if (event.__globalChatHandled) return;
+                event.stopPropagation();
+                var shouldOpen = panel.hidden;
+                panel.hidden = !shouldOpen;
+                panel.classList.toggle('is-open', shouldOpen);
+                toggle.setAttribute('aria-expanded', String(shouldOpen));
+                if (shouldOpen) loadVolunteerThread();
+            });
+        })();
+    </script>
+
+    <script>
+        (function initDashboardLanguageEngine() {
+            "use strict";
+
+            var storageKey = "ui_language_preference";
+            var root = document.getElementById("dashboard-shell");
+            if (!root) {
+                return;
+            }
+
+            var dictionary = {
+                "Dashboard": "Dashboard",
+                "Community operations snapshot": "Buod ng mga gawain sa komunidad",
+                "HappYness Project": "Proyektong HappYness",
+                "Search resources, events...": "Maghanap ng mga mapagkukunan, aktibidad...",
+                "Notifications": "Mga Notipikasyon",
+                "Today": "Ngayon",
+                "Earlier": "Mas Maaga",
+                "View all notifications": "Tingnan lahat ng notipikasyon",
+                "Mark all as read": "Markahan lahat bilang nabasa",
+                "Profile": "Profile",
+                "My Profile": "Aking Profile",
+                "Account Settings": "Mga Setting ng Account",
+                "Organization Settings": "Mga Setting ng Organisasyon",
+                "Sign out": "Mag-sign out",
+                "Settings": "Mga Setting",
+                "General": "Pangkalahatan",
+                "Security": "Seguridad",
+                "Preferences": "Mga Kagustuhan",
+                "Save Changes": "I-save ang mga Pagbabago",
+                "Discard": "Ibalik",
+                "No unsaved changes": "Walang hindi nai-save na pagbabago",
+                "Unsaved changes": "May hindi pa nai-save na pagbabago",
+                "Personal Information": "Personal na Impormasyon",
+                "Address & Emergency Contact": "Address at Pang-emergency na Kontak",
+                "First Name": "Pangalan",
+                "Last Name": "Apelyido",
+                "Email": "Email",
+                "Phone Number": "Numero ng Telepono",
+                "Birthdate": "Araw ng Kapanganakan",
+                "Civil Status": "Katayuang Sibil",
+                "Address": "Address",
+                "Barangay": "Barangay",
+                "City": "Lungsod",
+                "Emergency Contact": "Pang-emergency na Kontak",
+                "Full Name": "Buong Pangalan",
+                "Relationship": "Relasyon",
+                "Role / Position": "Tungkulin / Posisyon",
+                "Assigned Chapter / Area": "Itinalagang Kabanata / Lugar",
+                "Household Size": "Laki ng Sambahayan",
+                "Dependents": "Mga Umaasa",
+                "Primary Occupation": "Pangunahing Hanapbuhay",
+                "Income Range": "Saklaw ng Kita",
+                "Preferred Contact Method": "Pinipiling Paraan ng Pakikipag-ugnayan",
+                "Preferred Service Area": "Pinipiling Lugar ng Serbisyo",
+                "Languages Spoken": "Mga Wikang Sinasalita",
+                "Available Days": "Mga Araw na Available",
+                "Preferred Time Slot": "Pinipiling Oras",
+                "Max Hours Per Week": "Pinakamaraming Oras Bawat Linggo",
+                "Volunteer Summary": "Buod ng Boluntaryo",
+                "Tasks Done": "Natapos na Gawain",
+                "Hours Logged": "Naitalang Oras",
+                "OJT Status": "Estado ng OJT",
+                "In Progress": "Kasalukuyang Isinasagawa",
+                "Household Details": "Detalye ng Sambahayan",
+                "Assistance Preferences": "Mga Kagustuhan sa Tulong",
+                "Preferred Assistance Types": "Pinipiling Uri ng Tulong",
+                "Assistance Summary": "Buod ng Tulong",
+                "Last Assistance Date": "Huling Araw ng Tulong",
+                "Total Assistance (12 Months)": "Kabuuang Tulong (12 Buwan)",
+                "Current Request Status": "Kasalukuyang Estado ng Kahilingan",
+                "Under Review": "Sinusuri",
+                "Notification Types": "Mga Uri ng Notipikasyon",
+                "Delivery Methods": "Mga Paraan ng Paghahatid",
+                "Notification Frequency": "Dalas ng Notipikasyon",
+                "Change Password": "Palitan ang Password",
+                "Current Password": "Kasalukuyang Password",
+                "New Password": "Bagong Password",
+                "Confirm New Password": "Kumpirmahin ang Bagong Password",
+                "Account Protection": "Proteksyon ng Account",
+                "Log Out All Devices": "I-log Out ang Lahat ng Device",
+                "Last Login": "Huling Pag-login",
+                "IP Address": "IP Address",
+                "Location": "Lokasyon",
+                "Device": "Device",
+                "Language": "Wika",
+                "English": "Ingles",
+                "Filipino": "Filipino",
+                "Dark Mode": "Madilim na Tema",
+                "Font Size": "Laki ng Font",
+                "Small": "Maliit",
+                "Medium": "Katamtaman",
+                "Large": "Malaki",
+                "Interface and Locale": "Interface at Lokalisasyon",
+                "Customize dashboard density, theme, and localization options.": "I-customize ang siksik ng dashboard, tema, at lokalisasyon.",
+                "Profile Visibility": "Pagiging Visible ng Profile",
+                "Privacy and Consent": "Privacy at Pahintulot",
+                "Admin Contact Consent": "Pahintulot sa Pakikipag-ugnayan ng Admin",
+                "Data Sharing Consent": "Pahintulot sa Pagbabahagi ng Data",
+                "Timezone": "Timezone",
+                "Date Format": "Pormat ng Petsa",
+                "Dashboard": "Dashboard",
+                "OJT Monitoring": "Pagsubaybay sa OJT",
+                "Skill-Building & Learning": "Paglinang ng Kasanayan at Pagkatuto",
+                "Skill-Building & Learning": "Paglinang ng Kasanayan at Pagkatuto",
+                "Resource Library": "Aklatan ng Mapagkukunan",
+                "Community": "Komunidad",
+                "Logout": "Mag-logout",
+                "Community Feed": "Feed ng Komunidad",
+                "Upcoming Events": "Mga Paparating na Aktibidad",
+                "Announcements": "Mga Anunsyo",
+                "Community Highlights": "Mga Tampok ng Komunidad",
+                "Send": "Ipadala",
+                "Write a comment...": "Magsulat ng komento...",
+                "Share something with the community...": "Magbahagi ng mensahe sa komunidad...",
+                "No changes to save.": "Walang pagbabagong ise-save.",
+                "All fields reverted.": "Naibalik ang lahat ng field.",
+                "Unable to save settings.": "Hindi ma-save ang mga setting.",
+                "Settings updated.": "Na-update ang mga setting.",
+                "Settings saved at": "Na-save ang mga setting noong",
+                "Please choose a valid image file.": "Mangyaring pumili ng wastong image file.",
+                "Profile photo must be 2MB or smaller.": "Dapat 2MB o mas maliit ang larawan sa profile.",
+                "You have been signed out of all other devices.": "Naka-sign out ka na sa lahat ng iba pang device.",
+                "Good Day": "Magandang Araw",
+                "Good Morning": "Magandang Umaga",
+                "Good Afternoon": "Magandang Hapon",
+                "Good Evening": "Magandang Gabi",
+                "Welcome back": "Maligayang pagbabalik",
+                "Packages received": "Mga natanggap na pakete",
+                "Events attended": "Mga dinaluhang aktibidad",
+                "Assistance provided": "Tulong na ibinigay",
+                "My Requests": "Mga Kahilingan Ko",
+                "Recent Activity": "Kamakailang Aktibidad",
+                "Quick Actions": "Mga Mabilis na Aksyon",
+                "Overview": "Pangkalahatang Tanaw",
+                "Community Feed": "Feed ng Komunidad",
+                "Announcements": "Mga Anunsyo",
+                "Upcoming Events": "Mga Paparating na Aktibidad",
+                "View All": "Tingnan Lahat",
+                "See More": "Tingnan Pa",
+                "Learn More": "Matuto Pa",
+                "Read More": "Basahin Pa",
+                "Submit": "Isumite",
+                "Cancel": "Kanselahin",
+                "Confirm": "Kumpirmahin",
+                "Delete": "Burahin",
+                "Edit": "I-edit",
+                "Add": "Magdagdag",
+                "Remove": "Alisin",
+                "Search": "Maghanap",
+                "Filter": "Salain",
+                "Sort": "Pagsunurin",
+                "Clear": "Linisin",
+                "Reset": "I-reset",
+                "Apply": "Ilapat",
+                "Close": "Isara",
+                "Open": "Bukas",
+                "Loading": "Naglo-load",
+                "Processing": "Pinoproseso",
+                "Success": "Tagumpay",
+                "Error": "Error",
+                "Warning": "Babala",
+                "Info": "Impormasyon",
+                "Required": "Kailangan",
+                "Optional": "Opsyonal",
+                "Active": "Aktibo",
+                "Inactive": "Hindi Aktibo",
+                "Pending": "Nakapending",
+                "Approved": "Aprubado",
+                "Rejected": "Tinanggihan",
+                "Completed": "Nakompleto",
+                "Cancelled": "Nakansela",
+                "On Hold": "Naka-hold",
+                "Select Option": "Pumili ng Opsyon",
+                "Choose": "Pumili",
+                "None": "Wala",
+                "All": "Lahat",
+                "Yes": "Oo",
+                "No": "Hindi",
+                "OK": "OK",
+                "Back": "Bumalik",
+                "Next": "Susunod",
+                "Previous": "Nakaraang",
+                "First": "Unang",
+                "Last": "Huling",
+                "Page": "Pahina",
+                "of": "ng",
+                "Showing": "Ipinapakita",
+                "results": "resulta",
+                "No results found": "Walang resulta",
+                "No data available": "Walang data",
+                "Refresh": "I-refresh",
+                "Update": "I-update",
+                "Save": "I-save",
+                "Create": "Gumawa",
+                "Copy": "Kopyahin",
+                "Download": "I-download",
+                "Upload": "Mag-upload",
+                "Export": "I-export",
+                "Import": "I-import",
+                "Print": "I-print",
+                "Share": "Ibahagi",
+                "Like": "Gusto",
+                "Comment": "Komento",
+                "Reply": "Sagutin",
+                "Follow": "Sundin",
+                "Unfollow": "Hindi Sundin",
+                "Subscribe": "Mag-subscribe",
+                "Unsubscribe": "Mag-unsubscribe",
+                "Join": "Sumali",
+                "Leave": "Umalis",
+                "Register": "Magparehistro",
+                "Login": "Mag-login",
+                "Logout": "Mag-logout",
+                "Sign Up": "Mag-sign up",
+                "Sign In": "Mag-sign in",
+                "Sign Out": "Mag-sign out",
+                "Forgot Password": "Nakalimutan ang Password",
+                "Reset Password": "I-reset ang Password",
+                "Change Password": "Palitan ang Password",
+                "Update Password": "I-update ang Password",
+                "Verify Email": "I-verify ang Email",
+                "Verify Phone": "I-verify ang Phone",
+                "Email Verified": "Verified na Email",
+                "Phone Verified": "Verified na Phone",
+                "Account Verified": "Verified na Account",
+                "Pending Verification": "Naka-pending na Verification",
+                "Resend Code": "Ipadala Ulit ang Code",
+                "Verify Code": "I-verify ang Code",
+                "Enter Code": "Ilagay ang Code",
+                "Code Expired": "Nag-expire na ang Code",
+                "Invalid Code": "Hindi Valid na Code",
+                "Too Many Attempts": "Sobrang dami ng pagtatangka",
+                "Please try again later": "Mangyaring subukan ulit mamaya",
+                "Connection Error": "Error sa Koneksyon",
+                "Network Error": "Error sa Network",
+                "Server Error": "Error sa Server",
+                "Timeout": "Timeout",
+                "Try Again": "Subukan Ulit",
+                "Contact Support": "Kontakin ang Support",
+                "Help": "Tulong",
+                "FAQ": "FAQ",
+                "Documentation": "Dokumentasyon",
+                "Terms of Service": "Mga Tuntunin ng Serbisyo",
+                "Privacy Policy": "Patakaran sa Privacy",
+                "Cookie Policy": "Patakaran sa Cookie",
+                "Accept": "Tanggapin",
+                "Decline": "Tanggihan",
+                "Agree": "Sang-ayon",
+                "Disagree": "Hindi Sang-ayon",
+                "I agree": "Sumasang-ayon ako",
+                "I disagree": "Hindi ako sumasang-ayon",
+                "By clicking": "Sa pag-click",
+                "you agree to": "sumasang-ayon ka sa",
+                "Continue": "Magpatuloy",
+                "Start": "Simulan",
+                "End": "Tapusin",
+                "Pause": "I-pause",
+                "Resume": "I-resume",
+                "Stop": "Itigil",
+                "Play": "Mag-play",
+                "Pause": "I-pause",
+                "OJT Hours Logged": "Mga Oras ng OJT na Naitala",
+                "Tasks Assigned": "Mga Gawain na Itinalaga",
+                "Skills Enrolled": "Mga Kasanayan na Nakapag-enroll",
+                "of": "ng",
+                "required hours": "kinakailangang oras",
+                "pending this week": "nakapending sa linggong ito",
+                "available modules": "available na modules",
+                "Today is": "Ngayon ay",
+                "Member": "Miembro",
+                "Skill": "Kasanayan",
+                "Module": "Module",
+                "Lesson": "Aralin",
+                "Course": "Kurso",
+                "Progress": "Progress",
+                "Completed": "Nakompleto",
+                "In Progress": "Kasalukuyang Isinasagawa",
+                "Not Started": "Hindi Pa Nagsisimula",
+                "Enroll": "Mag-enroll",
+                "Start": "Simulan",
+                "Continue": "Magpatuloy",
+                "Finish": "Tapusin",
+                "Certificate": "Sertipiko",
+                "Quiz": "Quiz",
+                "Exam": "Exam",
+                "Assignment": "Assignment",
+                "Material": "Materyal",
+                "Resource": "Mapagkukunan",
+                "Video": "Video",
+                "Document": "Dokumento",
+                "Image": "Larawan",
+                "Download": "I-download",
+                "View": "Tingnan",
+                "Details": "Detalye",
+                "Description": "Deskripsyon",
+                "Status": "Estado",
+                "Date": "Petsa",
+                "Time": "Oras",
+                "Location": "Lokasyon",
+                "Organizer": "Organizer",
+                "Attendees": "Mga Attendee",
+                "Register": "Magparehistro",
+                "Registered": "Nakarehistro",
+                "Cancel Registration": "Kanselahin ang Registration",
+                "Event Details": "Detalye ng Event",
+                "Event Date": "Petsa ng Event",
+                "Event Time": "Oras ng Event",
+                "Event Location": "Lokasyon ng Event",
+                "RSVP": "RSVP",
+                "Maybe": "Marahil",
+                "Going": "Pupunta",
+                "Not Going": "Hindi Pupunta",
+                "Invitations": "Mga Imbitasyon",
+                "Pending Invitations": "Mga Pending na Imbitasyon",
+                "Accept": "Tanggapin",
+                "Decline": "Tanggihan",
+                "Invited": "Imbitado",
+                "Host": "Host",
+                "Co-Host": "Co-Host",
+                "Guest": "Bisita",
+                "Participants": "Mga Participant",
+                "Comments": "Mga Komento",
+                "Likes": "Mga Like",
+                "Shares": "Mga Share",
+                "Views": "Mga View",
+                "Reactions": "Mga Reaksyon",
+                "Love": "Love",
+                "Care": "Care",
+                "Haha": "Haha",
+                "Wow": "Wow",
+                "Sad": "Sad",
+                "Angry": "Angry",
+                "Post": "Post",
+                "Update": "I-update",
+                "Photo": "Larawan",
+                "Video": "Video",
+                "Album": "Album",
+                "File": "File",
+                "Attachment": "Attachment",
+                "Poll": "Poll",
+                "Survey": "Survey",
+                "Form": "Form",
+                "Question": "Tanong",
+                "Answer": "Sagot",
+                "Vote": "Boto",
+                "Result": "Resulta",
+                "Statistics": "Estadistika",
+                "Analytics": "Analytics",
+                "Report": "Report",
+                "Summary": "Buod",
+                "Details": "Detalye",
+                "Timeline": "Timeline",
+                "History": "Kasaysayan",
+                "Activity": "Aktibidad",
+                "Log": "Log",
+                "Entry": "Entry",
+                "Exit": "Exit",
+                "In": "Sa loob",
+                "Out": "Sa labas",
+                "Up": "Taas",
+                "Down": "Baba",
+                "Open": "Bukas",
+                "Close": "Isara",
+                "Expand": "Palawakin",
+                "Collapse": "I-collapse",
+                "Show": "Ipakita",
+                "Hide": "Itago",
+                "Enable": "Paganahin",
+                "Disable": "Hindi Paganahin",
+                "On": "On",
+                "Off": "Off",
+                "True": "Totoo",
+                "False": "Hindi Totoo",
+                "Allowed": "Pinapayagan",
+                "Not Allowed": "Hindi Pinapayagan",
+                "Mandatory": "Mandatory",
+                "Recommended": "Inirerekomenda",
+                "Important": "Mahalaga",
+                "Urgent": "Madali",
+                "New": "Bago",
+                "Old": "Luma",
+                "Latest": "Pinakabago",
+                "Recent": "Kamakailan",
+                "Popular": "Popular",
+                "Trending": "Trending",
+                "Featured": "Featured",
+                "Related": "May Kaugnayan",
+                "Similar": "Katulad",
+                "Different": "Magkaiba",
+                "Some": "Ilan",
+                "Many": "Maraming",
+                "Few": "Ilan",
+                "Several": "Marami",
+                "Various": "Iba't ibang",
+                "Multiple": "Marami",
+                "Single": "Isa",
+                "Double": "Dalawa",
+                "Triple": "Tatlo",
+                "Half": "Kalahati",
+                "Full": "Buo",
+                "Partial": "Bahagi",
+                "Complete": "Kumpleto",
+                "Total": "Kabuuan",
+                "Subtotal": "Subtotal",
+                "Grand Total": "Grand Total",
+                "Amount": "Amount",
+                "Quantity": "Quantity",
+                "Price": "Presyo",
+                "Cost": "Gastos",
+                "Fee": "Fee",
+                "Charge": "Charge",
+                "Payment": "Payment",
+                "Transaction": "Transaction",
+                "Invoice": "Invoice",
+                "Receipt": "Receipt",
+                "Refund": "Refund",
+                "Discount": "Discount",
+                "Tax": "Tax",
+                "Balance": "Balance",
+                "Credit": "Credit",
+                "Debit": "Debit",
+                "Account": "Account",
+                "Wallet": "Wallet",
+                "Card": "Card",
+                "Bank": "Bank",
+                "Transfer": "Transfer",
+                "Withdraw": "Withdraw",
+                "Deposit": "Deposit",
+                "Top Up": "Top Up",
+                "Buy": "Bumili",
+                "Sell": "Magbenta",
+                "Order": "Order",
+                "Cart": "Cart",
+                "Checkout": "Checkout",
+                "Shipping": "Shipping",
+                "Delivery": "Delivery",
+                "Tracking": "Tracking",
+                "Return": "Return",
+                "Exchange": "Exchange",
+                "Return Policy": "Return Policy",
+                "Terms": "Mga Tuntunin",
+                "Conditions": "Mga Kondisyon",
+                "Policy": "Patakaran",
+                "Rule": "Patakaran",
+                "Regulation": "Regulation",
+                "Guideline": "Guideline",
+                "Standard": "Standard",
+                "Requirement": "Kahilingan",
+                "Specification": "Specification",
+                "Feature": "Feature",
+                "Function": "Function",
+                "Tool": "Tool",
+                "Option": "Opsyon",
+                "Setting": "Setting",
+                "Configuration": "Configuration",
+                "System": "System",
+                "Application": "Application",
+                "Platform": "Platform",
+                "Service": "Serbisyo",
+                "Product": "Produkto",
+                "Item": "Item",
+                "Package": "Package",
+                "Bundle": "Bundle",
+                "Deal": "Deal",
+                "Offer": "Alok",
+                "Promotion": "Promotion",
+                "Campaign": "Campaign",
+                "Announcement": "Anunsyo",
+                "Notice": "Notice",
+                "Alert": "Alert",
+                "Reminder": "Reminder",
+                "Message": "Mensahe",
+                "Notification": "Notipikasyon",
+                "News": "Balita",
+                "Blog": "Blog",
+                "Article": "Artikulo",
+                "Story": "Story",
+                "Content": "Content",
+                "Media": "Media",
+                "Picture": "Larawan",
+                "Graphic": "Graphic",
+                "Icon": "Icon",
+                "Logo": "Logo",
+                "Brand": "Brand",
+                "Title": "Titulo",
+                "Heading": "Heading",
+                "Subheading": "Subheading",
+                "Caption": "Caption",
+                "Label": "Label",
+                "Tag": "Tag",
+                "Category": "Category",
+                "Type": "Uri",
+                "Kind": "Uri",
+                "Class": "Klase",
+                "Group": "Grupo",
+                "Team": "Team",
+                "User": "User",
+                "Admin": "Admin",
+                "Moderator": "Moderator",
+                "Staff": "Staff",
+                "Manager": "Manager",
+                "Leader": "Leader",
+                "Owner": "May-ari",
+                "Creator": "Creator",
+                "Author": "Author",
+                "Editor": "Editor",
+                "Publisher": "Publisher",
+                "Contributor": "Contributor",
+                "Volunteer": "Boluntaryo",
+                "Donor": "Donor",
+                "Beneficiary": "Beneficiary",
+                "Partner": "Partner",
+                "Sponsor": "Sponsor",
+                "Stakeholder": "Stakeholder",
+                "Audience": "Audience",
+                "Visitor": "Visitor",
+                "Customer": "Customer",
+                "Client": "Client",
+                "Here's your community overview for": "Narito ang iyong pangkalahatang view ng komunidad para sa",
+                "this quarter": "sa quarter na ito",
+                "out of": "ng",
+                "available": "available",
+                "Skills enrolled": "Mga Kasanayan na Nakapag-enroll",
+                "Packages received": "Mga natanggap na pakete",
+                "this quarter": "sa quarter na ito",
+                "Events attended": "Mga dinaluhang aktibidad",
+                "out of 0 available": "ng 0 available",
+                "0 available": "0 available",
+                "Skills enrolled": "Mga Kasanayan na Nakapag-enroll",
+                "Next Pickup": "Susunod na Pickup",
+                "Community overview": "Pangkalahatang view ng komunidad",
+                "out of 0 available": "ng 0 available",
+                "0 available": "0 available",
+                "this week": "sa linggong ito",
+                "pending": "nakapending",
+                "available modules": "available na modules",
+                "Today is {{ current_date }}": "Ngayon ay {{ current_date }}",
+                "of 80 required hours": "ng 80 kinakailangang oras",
+                "3 pending this week": "3 nakapending sa linggong ito",
+                "2 available modules": "2 available na modules",
+                "vd-greeting": "vd-greeting",
+                "vd-date": "vd-date",
+                "vd-metric-label": "vd-metric-label",
+                "vd-metric-value": "vd-metric-value",
+                "vd-metric-desc": "vd-metric-desc"
+            };
+
+            var tokenDictionary = {
+                "Dashboard": "Dashboard",
+                "Settings": "Mga Setting",
+                "Profile": "Profile",
+                "Community": "Komunidad",
+                "Security": "Seguridad",
+                "Preferences": "Mga Kagustuhan",
+                "Notification": "Notipikasyon",
+                "Notifications": "Mga Notipikasyon",
+                "Save": "I-save",
+                "Changes": "Mga Pagbabago",
+                "Discard": "Ibalik",
+                "Language": "Wika",
+                "Dark Mode": "Madilim na Tema",
+                "Search": "Maghanap",
+                "Filter": "Salain",
+                "Submit": "Isumite",
+                "Cancel": "Kanselahin",
+                "Upload": "Mag-upload",
+                "Download": "I-download",
+                "Distribution": "Pamamahagi",
+                "Learning": "Pagkatuto",
+                "Skill": "Kasanayan",
+                "Resource": "Mapagkukunan"
+            };
+
+            var textOriginals = new WeakMap();
+            var attrOriginals = new WeakMap();
+            var currentLanguage = "english";
+            var isApplying = false;
+            var observerTicking = false;
+
+            function normalizeLanguage(value) {
+                var raw = String(value || "").trim().toLowerCase();
+                if (raw === "filipino" || raw === "fil") {
+                    return "filipino";
+                }
+                return "english";
+            }
+
+            function translate(value) {
+                var source = String(value || "");
+                var trimmed = source.trim();
+                if (!trimmed) {
+                    return source;
+                }
+
+                if (dictionary[trimmed]) {
+                    return source.replace(trimmed, dictionary[trimmed]);
+                }
+
+                var translated = trimmed;
+                Object.keys(tokenDictionary).forEach(function (token) {
+                    translated = translated.replace(new RegExp("\\b" + token.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&") + "\\b", "g"), tokenDictionary[token]);
+                });
+
+                return source.replace(trimmed, translated);
+            }
+
+            function isInsideCommunityFeedPosts(element) {
+                if (!element || !element.closest) {
+                    return false;
+                }
+
+                return !!element.closest("#community-feed");
+            }
+
+            function collectTextNodes(scopeRoot) {
+                var nodes = [];
+                var walker = document.createTreeWalker(scopeRoot || root, NodeFilter.SHOW_TEXT, {
+                    acceptNode: function (node) {
+                        if (!node || !node.nodeValue || !node.nodeValue.trim()) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        var parent = node.parentElement;
+                        if (!parent) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        var tag = (parent.tagName || "").toLowerCase();
+                        if (tag === "script" || tag === "style") {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        if (isInsideCommunityFeedPosts(parent)) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        return NodeFilter.FILTER_ACCEPT;
+                    }
+                });
+
+                while (walker.nextNode()) {
+                    nodes.push(walker.currentNode);
+                }
+
+                return nodes;
+            }
+
+            function collectAttrNodes(scopeRoot) {
+                var list = [];
+                Array.prototype.forEach.call(
+                    (scopeRoot || root).querySelectorAll("[placeholder], [aria-label], [title], [value]"),
+                    function (element) {
+                        if (isInsideCommunityFeedPosts(element)) {
+                            return;
+                        }
+
+                        ["placeholder", "aria-label", "title", "value"].forEach(function (attr) {
+                            if (!element.hasAttribute(attr)) {
+                                return;
+                            }
+
+                            var current = element.getAttribute(attr);
+                            if (!current || !current.trim()) {
+                                return;
+                            }
+
+                            list.push({
+                                element: element,
+                                attr: attr,
+                                current: current
+                            });
+                        });
+                    }
+                );
+
+                return list;
+            }
+
+            function applyLanguage(language) {
+                var normalized = normalizeLanguage(language);
+                currentLanguage = normalized;
+                isApplying = true;
+
+                var textNodes = collectTextNodes(root);
+                var attrNodes = collectAttrNodes(root);
+
+                if (normalized === "filipino") {
+                    textNodes.forEach(function (node) {
+                        if (!textOriginals.has(node)) {
+                            textOriginals.set(node, node.nodeValue);
+                        }
+                        node.nodeValue = translate(textOriginals.get(node));
+                    });
+
+                    attrNodes.forEach(function (item) {
+                        var bucket = attrOriginals.get(item.element);
+                        if (!bucket) {
+                            bucket = {};
+                            attrOriginals.set(item.element, bucket);
+                        }
+                        if (!Object.prototype.hasOwnProperty.call(bucket, item.attr)) {
+                            bucket[item.attr] = item.current;
+                        }
+                        item.element.setAttribute(item.attr, translate(bucket[item.attr]));
+                    });
+                    document.documentElement.setAttribute("lang", "fil");
+                } else {
+                    textNodes.forEach(function (node) {
+                        if (textOriginals.has(node)) {
+                            node.nodeValue = textOriginals.get(node);
+                        }
+                    });
+
+                    attrNodes.forEach(function (item) {
+                        var bucket = attrOriginals.get(item.element);
+                        if (bucket && Object.prototype.hasOwnProperty.call(bucket, item.attr)) {
+                            item.element.setAttribute(item.attr, bucket[item.attr]);
+                        }
+                    });
+                    document.documentElement.setAttribute("lang", "en");
+                }
+
+                isApplying = false;
+
+                try {
+                    localStorage.setItem(storageKey, normalized);
+                } catch (e) {}
+            }
+
+            function getStoredLanguage() {
+                try {
+                    return normalizeLanguage(localStorage.getItem(storageKey));
+                } catch (e) {
+                    return "english";
+                }
+            }
+
+            window.dashboardApplyLanguage = applyLanguage;
+            window.dashboardGetStoredLanguage = getStoredLanguage;
+
+            applyLanguage(getStoredLanguage());
+
+            var observer = new MutationObserver(function () {
+                if (isApplying || currentLanguage !== "filipino") {
+                    return;
+                }
+                if (observerTicking) {
+                    return;
+                }
+
+                observerTicking = true;
+                window.requestAnimationFrame(function () {
+                    observerTicking = false;
+                    applyLanguage(currentLanguage);
+                });
+            });
+
+            observer.observe(root, {
+                subtree: true,
+                childList: true,
+                characterData: true,
+                attributes: true,
+                attributeFilter: ["placeholder", "aria-label", "title", "value"]
+            });
+        })();
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

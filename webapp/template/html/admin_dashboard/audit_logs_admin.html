@@ -1,0 +1,1166 @@
+{% extends "base.html" %}
+
+{% block title %}System - Audit Logs | HappYness{% endblock %}
+
+{% block extra_head %}
+<style data-admin-panel-style="admin-audit-logs">
+    .al-page {
+        --al-card: #ffffff;
+        --al-border: rgba(15, 118, 110, 0.15);
+        --al-shadow: 0 12px 24px rgba(8, 83, 76, 0.09);
+        --al-ink: #173a31;
+        --al-sub: #55746b;
+        --al-accent: #0f766e;
+        display: grid;
+        gap: 0.9rem;
+    }
+
+    .al-card {
+        background: var(--al-card);
+        border: 1px solid var(--al-border);
+        border-radius: 14px;
+        box-shadow: var(--al-shadow);
+        min-width: 0;
+    }
+
+    .al-head {
+        padding: 0.88rem 0.95rem;
+        border-bottom: 1px solid #deefe8;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.7rem;
+    }
+
+    .al-title {
+        margin: 0;
+        font-size: 0.97rem;
+        font-weight: 800;
+        color: var(--al-ink);
+    }
+
+    .al-subtitle {
+        margin: 0.16rem 0 0;
+        color: var(--al-sub);
+        font-size: 0.73rem;
+    }
+
+    .al-head-actions {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .al-btn {
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        background: #ffffff;
+        color: #1b4f43;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.42rem 0.66rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.28rem;
+        cursor: pointer;
+        line-height: 1.2;
+    }
+
+    .al-btn:hover {
+        background: #f5fcf9;
+    }
+
+    .al-btn-primary {
+        border-color: rgba(15, 118, 110, 0.26);
+        background: linear-gradient(180deg, #17b388, #119c77);
+        color: #ffffff;
+    }
+
+    .al-btn-primary:hover {
+        box-shadow: 0 8px 16px rgba(17, 156, 119, 0.24);
+    }
+
+    .al-live {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 999px;
+        padding: 0.3rem 0.56rem;
+        background: #f9fefb;
+    }
+
+    .al-live input {
+        accent-color: #119c77;
+        width: 0.95rem;
+        height: 0.95rem;
+    }
+
+    .al-live span {
+        color: #2d5d50;
+        font-size: 0.71rem;
+        font-weight: 700;
+    }
+
+    .al-filter-bar {
+        padding: 0.84rem 0.95rem;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.56rem;
+    }
+
+    .al-field {
+        display: grid;
+        gap: 0.28rem;
+        min-width: 0;
+    }
+
+    .al-field label {
+        margin: 0;
+        color: #58766c;
+        font-size: 0.67rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: 700;
+    }
+
+    .al-input,
+    .al-select {
+        width: 100%;
+        min-height: 2.15rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        padding: 0.46rem 0.62rem;
+        font-size: 0.79rem;
+        color: #1b4f43;
+        background: #ffffff;
+    }
+
+    .al-input:focus,
+    .al-select:focus,
+    .al-btn:focus-visible,
+    .al-detail-btn:focus-visible,
+    .al-close-btn:focus-visible {
+        outline: 2px solid #14b8a6;
+        outline-offset: 2px;
+    }
+
+    .al-filter-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        align-items: end;
+    }
+
+    .al-table-shell {
+        padding: 0.88rem 0.95rem;
+        display: grid;
+        gap: 0.58rem;
+    }
+
+    .al-table-meta {
+        margin: 0;
+        color: var(--al-sub);
+        font-size: 0.74rem;
+        font-weight: 600;
+    }
+
+    .al-table-wrap {
+        width: 100%;
+        overflow: auto;
+        border: 1px solid #deefe8;
+        border-radius: 11px;
+    }
+
+    .al-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 1040px;
+    }
+
+    .al-table th,
+    .al-table td {
+        padding: 0.56rem 0.66rem;
+        font-size: 0.78rem;
+        vertical-align: top;
+        border-bottom: 1px solid #e7f2ed;
+        text-align: left;
+    }
+
+    .al-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        white-space: nowrap;
+        background: rgba(236, 253, 245, 0.92);
+        color: #2f6659;
+        font-weight: 800;
+        letter-spacing: 0.01em;
+    }
+
+    .al-table tbody tr {
+        background: #ffffff;
+    }
+
+    .al-table tbody tr:hover {
+        background: rgba(236, 253, 245, 0.43);
+    }
+
+    .al-row-critical {
+        box-shadow: inset 3px 0 0 #ef4444;
+        background: #fff8f8;
+    }
+
+    .al-row-new {
+        animation: rowPulse 2.4s ease;
+    }
+
+    @keyframes rowPulse {
+        0% { background: #ecfdf5; }
+        100% { background: transparent; }
+    }
+
+    .al-badge {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        padding: 0.16rem 0.48rem;
+        font-size: 0.67rem;
+        font-weight: 800;
+        white-space: nowrap;
+        text-transform: capitalize;
+    }
+
+    .al-status-success {
+        color: #14532d;
+        background: #dcfce7;
+        border-color: #bbf7d0;
+    }
+
+    .al-status-failed {
+        color: #9f1239;
+        background: #ffe4e6;
+        border-color: #fecdd3;
+    }
+
+    .al-action-create {
+        color: #0f766e;
+        background: #ccfbf1;
+        border-color: #99f6e4;
+    }
+
+    .al-action-update {
+        color: #1d4ed8;
+        background: #dbeafe;
+        border-color: #bfdbfe;
+    }
+
+    .al-action-delete {
+        color: #991b1b;
+        background: #fee2e2;
+        border-color: #fecaca;
+    }
+
+    .al-action-login {
+        color: #7c3aed;
+        background: #ede9fe;
+        border-color: #ddd6fe;
+    }
+
+    .al-action-critical {
+        box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.22) inset;
+    }
+
+    .al-desc {
+        color: #355d52;
+        max-width: 360px;
+        line-height: 1.35;
+    }
+
+    .al-muted {
+        color: #5f7d73;
+    }
+
+    .al-detail-btn {
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        padding: 0.32rem 0.48rem;
+        background: #ffffff;
+        color: #1f5a4d;
+        font-size: 0.71rem;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .al-empty {
+        text-align: center;
+        padding: 1.4rem 0.9rem;
+        color: #5f7d73;
+        font-size: 0.8rem;
+    }
+
+    .al-drawer-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.36);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 180ms ease, visibility 180ms ease;
+        z-index: 90;
+    }
+
+    .al-drawer-backdrop[data-open="true"] {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .al-drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(94vw, 510px);
+        background: #ffffff;
+        border-left: 1px solid #d3e8df;
+        box-shadow: -20px 0 32px rgba(8, 83, 76, 0.18);
+        transform: translateX(102%);
+        transition: transform 220ms ease;
+        z-index: 91;
+        display: grid;
+        grid-template-rows: auto 1fr;
+    }
+
+    .al-drawer[data-open="true"] {
+        transform: translateX(0);
+    }
+
+    .al-drawer-head {
+        padding: 0.88rem 0.94rem;
+        border-bottom: 1px solid #deefe8;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.65rem;
+    }
+
+    .al-drawer-title {
+        margin: 0;
+        color: #16372e;
+        font-size: 0.94rem;
+        font-weight: 800;
+    }
+
+    .al-drawer-subtitle {
+        margin: 0.18rem 0 0;
+        color: #5f7d73;
+        font-size: 0.73rem;
+    }
+
+    .al-close-btn {
+        border: 1px solid #d4e9e1;
+        border-radius: 9px;
+        width: 2rem;
+        height: 2rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        color: #2d5d50;
+        cursor: pointer;
+    }
+
+    .al-drawer-body {
+        overflow: auto;
+        padding: 0.86rem 0.94rem 1.1rem;
+        display: grid;
+        gap: 0.72rem;
+    }
+
+    .al-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .al-meta-row {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 0.46rem;
+        align-items: start;
+    }
+
+    .al-meta-row dt {
+        margin: 0;
+        color: #58766c;
+        font-size: 0.67rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: 700;
+    }
+
+    .al-meta-row dd {
+        margin: 0;
+        color: #1a4a3e;
+        font-size: 0.77rem;
+    }
+
+    .al-code-card {
+        border: 1px solid #deefe8;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .al-code-head {
+        padding: 0.5rem 0.62rem;
+        background: #f6fcf9;
+        border-bottom: 1px solid #deefe8;
+        color: #2f6659;
+        font-size: 0.69rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .al-code {
+        margin: 0;
+        padding: 0.6rem;
+        max-height: 220px;
+        overflow: auto;
+        background: #ffffff;
+        color: #1f5a4d;
+        font-size: 0.7rem;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    @media (min-width: 760px) {
+        .al-filter-bar {
+            grid-template-columns: 1.4fr repeat(2, minmax(0, 1fr));
+        }
+
+        .al-field-date-start,
+        .al-field-date-end,
+        .al-field-user,
+        .al-field-action,
+        .al-field-module {
+            min-width: 0;
+        }
+    }
+
+    @media (min-width: 1080px) {
+        .al-filter-bar {
+            grid-template-columns: 1.7fr 0.95fr 0.95fr 1fr 1fr 1fr auto;
+            align-items: end;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="audit-logs-page" class="al-page">
+    <section class="al-card" aria-label="Audit logs header">
+        <header class="al-head">
+            <div>
+                <h1 class="al-title">System Audit Logs</h1>
+                <p class="al-subtitle">Track user activity, data changes, and authentication events in a compact, readable table.</p>
+            </div>
+            <div class="al-head-actions">
+                <label class="al-live" for="al-live-toggle">
+                    <input id="al-live-toggle" type="checkbox" checked />
+                    <span>Live updates</span>
+                </label>
+                <button id="al-export-btn" class="al-btn al-btn-primary" type="button">Export CSV</button>
+            </div>
+        </header>
+
+        <div class="al-filter-bar" aria-label="Audit log filters">
+            <div class="al-field">
+                <label for="al-search">Search</label>
+                <input id="al-search" class="al-input" type="search" placeholder="Search user, action, module, description, or IP" />
+            </div>
+            <div class="al-field al-field-date-start">
+                <label for="al-date-start">From</label>
+                <input id="al-date-start" class="al-input" type="date" />
+            </div>
+            <div class="al-field al-field-date-end">
+                <label for="al-date-end">To</label>
+                <input id="al-date-end" class="al-input" type="date" />
+            </div>
+            <div class="al-field al-field-user">
+                <label for="al-user">User</label>
+                <select id="al-user" class="al-select">
+                    <option value="">All users</option>
+                </select>
+            </div>
+            <div class="al-field al-field-action">
+                <label for="al-action">Action Type</label>
+                <select id="al-action" class="al-select">
+                    <option value="">All actions</option>
+                    <option value="create">Create</option>
+                    <option value="update">Update</option>
+                    <option value="delete">Delete</option>
+                    <option value="login">Login</option>
+                </select>
+            </div>
+            <div class="al-field al-field-module">
+                <label for="al-module">Module</label>
+                <select id="al-module" class="al-select">
+                    <option value="">All modules</option>
+                </select>
+            </div>
+            <div class="al-filter-actions">
+                <button id="al-reset-btn" class="al-btn" type="button">Reset</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="al-card al-table-shell" aria-label="Audit log table">
+        <p id="al-table-meta" class="al-table-meta" aria-live="polite">0 logs shown</p>
+        <div class="al-table-wrap">
+            <table class="al-table" aria-describedby="al-table-meta">
+                <thead>
+                    <tr>
+                        <th scope="col">Timestamp</th>
+                        <th scope="col">User</th>
+                        <th scope="col">Action</th>
+                        <th scope="col">Module</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">IP Address</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Details</th>
+                    </tr>
+                </thead>
+                <tbody id="al-table-body"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <div id="al-drawer-backdrop" class="al-drawer-backdrop" data-open="false" aria-hidden="true"></div>
+    <aside id="al-drawer" class="al-drawer" data-open="false" aria-hidden="true" aria-label="Audit log details">
+        <header class="al-drawer-head">
+            <div>
+                <h2 id="al-drawer-title" class="al-drawer-title">Log Details</h2>
+                <p id="al-drawer-subtitle" class="al-drawer-subtitle">Select a log entry to inspect full metadata and change details.</p>
+            </div>
+            <button id="al-close-drawer" class="al-close-btn" type="button" aria-label="Close details panel">&#10005;</button>
+        </header>
+        <div class="al-drawer-body">
+            <dl class="al-grid">
+                <div class="al-meta-row"><dt>Timestamp</dt><dd id="al-detail-timestamp">-</dd></div>
+                <div class="al-meta-row"><dt>User</dt><dd id="al-detail-user">-</dd></div>
+                <div class="al-meta-row"><dt>Action</dt><dd id="al-detail-action">-</dd></div>
+                <div class="al-meta-row"><dt>Module</dt><dd id="al-detail-module">-</dd></div>
+                <div class="al-meta-row"><dt>Status</dt><dd id="al-detail-status">-</dd></div>
+                <div class="al-meta-row"><dt>IP Address</dt><dd id="al-detail-ip">-</dd></div>
+                <div class="al-meta-row"><dt>Description</dt><dd id="al-detail-description">-</dd></div>
+                <div class="al-meta-row"><dt>Device</dt><dd id="al-detail-device">-</dd></div>
+                <div class="al-meta-row"><dt>Browser</dt><dd id="al-detail-browser">-</dd></div>
+                <div class="al-meta-row"><dt>Session ID</dt><dd id="al-detail-session">-</dd></div>
+            </dl>
+
+            <section class="al-code-card" aria-label="Before change data">
+                <div class="al-code-head">Before</div>
+                <pre id="al-detail-before" class="al-code">No change snapshot.</pre>
+            </section>
+
+            <section class="al-code-card" aria-label="After change data">
+                <div class="al-code-head">After</div>
+                <pre id="al-detail-after" class="al-code">No change snapshot.</pre>
+            </section>
+        </div>
+    </aside>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    "use strict";
+
+    var LOGS = [
+        {
+            id: 201,
+            timestamp: "2026-04-12T09:54:17",
+            user: "Maria Santos",
+            action: "delete",
+            module: "Inventory",
+            description: "Deleted product record SKU-HK-240 after duplicate detection.",
+            ipAddress: "203.177.18.42",
+            status: "success",
+            device: "Windows 11 Desktop",
+            browser: "Chrome 124",
+            sessionId: "SES-7184-AXP",
+            before: {
+                sku: "SKU-HK-240",
+                name: "Hygiene Kit - Family Pack",
+                quantity: 14,
+                warehouse: "Central"
+            },
+            after: null
+        },
+        {
+            id: 202,
+            timestamp: "2026-04-12T09:36:09",
+            user: "Daniel Cruz",
+            action: "update",
+            module: "Payments",
+            description: "Updated payout schedule from weekly to bi-weekly for partner PH-18.",
+            ipAddress: "203.177.19.10",
+            status: "success",
+            device: "macOS Laptop",
+            browser: "Safari 17",
+            sessionId: "SES-5119-MKD",
+            before: {
+                partner: "PH-18",
+                payoutSchedule: "weekly"
+            },
+            after: {
+                partner: "PH-18",
+                payoutSchedule: "bi-weekly"
+            }
+        },
+        {
+            id: 203,
+            timestamp: "2026-04-12T09:22:55",
+            user: "Leah Mendoza",
+            action: "login",
+            module: "Authentication",
+            description: "Failed login attempt due to invalid 2FA token.",
+            ipAddress: "112.199.67.143",
+            status: "failed",
+            device: "Android Phone",
+            browser: "Mobile Chrome",
+            sessionId: "SES-9942-TFK",
+            before: null,
+            after: {
+                reason: "Invalid OTP",
+                lockoutAfter: "3 attempts"
+            }
+        },
+        {
+            id: 204,
+            timestamp: "2026-04-12T08:58:11",
+            user: "Rico Valdez",
+            action: "create",
+            module: "Volunteers",
+            description: "Created volunteer profile: John P. Albarico (Region IV-A).",
+            ipAddress: "203.177.18.73",
+            status: "success",
+            device: "Windows 10 Laptop",
+            browser: "Edge 123",
+            sessionId: "SES-7723-NWS",
+            before: null,
+            after: {
+                volunteerId: "VOL-983",
+                status: "Onboarding",
+                assignedProgram: "Community Kitchen"
+            }
+        },
+        {
+            id: 205,
+            timestamp: "2026-04-12T08:44:29",
+            user: "Camille Navarro",
+            action: "update",
+            module: "Announcements",
+            description: "Edited headline and publish date for barangay medical mission post.",
+            ipAddress: null,
+            status: "success",
+            device: "Windows 11 Desktop",
+            browser: "Firefox 125",
+            sessionId: "SES-4451-XDL",
+            before: {
+                title: "Medical Mission - Tondo",
+                publishDate: "2026-04-15"
+            },
+            after: {
+                title: "Medical Mission - Tondo District",
+                publishDate: "2026-04-18"
+            }
+        },
+        {
+            id: 206,
+            timestamp: "2026-04-12T08:31:50",
+            user: "Maria Santos",
+            action: "login",
+            module: "Authentication",
+            description: "Admin login completed with security key verification.",
+            ipAddress: "203.177.18.42",
+            status: "success",
+            device: "Windows 11 Desktop",
+            browser: "Chrome 124",
+            sessionId: "SES-7111-QZD",
+            before: null,
+            after: {
+                mfa: "security-key",
+                riskScore: "low"
+            }
+        },
+        {
+            id: 207,
+            timestamp: "2026-04-12T08:07:03",
+            user: "Daniel Cruz",
+            action: "delete",
+            module: "Reports",
+            description: "Removed scheduled export job REP-13 after retention policy violation.",
+            ipAddress: "203.177.19.10",
+            status: "success",
+            device: "macOS Laptop",
+            browser: "Safari 17",
+            sessionId: "SES-5100-RTA",
+            before: {
+                jobId: "REP-13",
+                recurrence: "daily",
+                destination: "external-ftp"
+            },
+            after: null
+        },
+        {
+            id: 208,
+            timestamp: "2026-04-11T21:17:41",
+            user: "Leah Mendoza",
+            action: "create",
+            module: "Beneficiaries",
+            description: "Registered beneficiary household record HH-12391.",
+            ipAddress: "112.199.67.143",
+            status: "success",
+            device: "Android Phone",
+            browser: "Mobile Chrome",
+            sessionId: "SES-9931-WPL",
+            before: null,
+            after: {
+                householdId: "HH-12391",
+                barangay: "San Isidro",
+                members: 5
+            }
+        },
+        {
+            id: 209,
+            timestamp: "2026-04-11T20:59:16",
+            user: "Rico Valdez",
+            action: "update",
+            module: "Moderation",
+            description: "Changed post status from pending to approved for post CP-8872.",
+            ipAddress: "203.177.18.73",
+            status: "success",
+            device: "Windows 10 Laptop",
+            browser: "Edge 123",
+            sessionId: "SES-7690-BNF",
+            before: {
+                postId: "CP-8872",
+                status: "pending"
+            },
+            after: {
+                postId: "CP-8872",
+                status: "approved"
+            }
+        },
+        {
+            id: 210,
+            timestamp: "2026-04-11T20:25:08",
+            user: "Camille Navarro",
+            action: "login",
+            module: "Authentication",
+            description: "Failed login attempt due to expired password.",
+            ipAddress: "180.191.61.202",
+            status: "failed",
+            device: "Windows 11 Desktop",
+            browser: "Firefox 125",
+            sessionId: "SES-4402-LPG",
+            before: null,
+            after: {
+                reason: "Expired password",
+                resetRequired: true
+            }
+        }
+    ];
+
+    var LIVE_QUEUE = [
+        {
+            id: 211,
+            timestamp: "2026-04-12T10:01:21",
+            user: "Maria Santos",
+            action: "update",
+            module: "Settings",
+            description: "Updated password policy minimum length from 10 to 12.",
+            ipAddress: "203.177.18.42",
+            status: "success",
+            device: "Windows 11 Desktop",
+            browser: "Chrome 124",
+            sessionId: "SES-7202-HRL",
+            before: { minLength: 10 },
+            after: { minLength: 12 }
+        },
+        {
+            id: 212,
+            timestamp: "2026-04-12T10:03:49",
+            user: "Leah Mendoza",
+            action: "delete",
+            module: "Community Posts",
+            description: "Deleted community post CP-8914 after moderation escalation.",
+            ipAddress: "112.199.67.143",
+            status: "success",
+            device: "Android Phone",
+            browser: "Mobile Chrome",
+            sessionId: "SES-9955-DQX",
+            before: { postId: "CP-8914", status: "flagged" },
+            after: null
+        }
+    ];
+
+    var ACTION_LABELS = {
+        create: "Create",
+        update: "Update",
+        delete: "Delete",
+        login: "Login"
+    };
+
+    var searchInput = document.getElementById("al-search");
+    var startDateInput = document.getElementById("al-date-start");
+    var endDateInput = document.getElementById("al-date-end");
+    var userSelect = document.getElementById("al-user");
+    var actionSelect = document.getElementById("al-action");
+    var moduleSelect = document.getElementById("al-module");
+    var resetBtn = document.getElementById("al-reset-btn");
+    var exportBtn = document.getElementById("al-export-btn");
+    var tableBody = document.getElementById("al-table-body");
+    var tableMeta = document.getElementById("al-table-meta");
+
+    var liveToggle = document.getElementById("al-live-toggle");
+    var drawer = document.getElementById("al-drawer");
+    var drawerBackdrop = document.getElementById("al-drawer-backdrop");
+    var closeDrawerBtn = document.getElementById("al-close-drawer");
+
+    var activeDetailId = null;
+    var newestRowId = null;
+
+    function esc(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function formatTimestamp(value) {
+        var date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return "-";
+        }
+        return date.toLocaleString(undefined, {
+            month: "short",
+            day: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    }
+
+    function toComparableDate(value) {
+        var d = new Date(value);
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function isCritical(log) {
+        return log.action === "delete" || (log.action === "login" && log.status === "failed");
+    }
+
+    function statusClass(status) {
+        return status === "failed" ? "al-status-failed" : "al-status-success";
+    }
+
+    function actionClass(log) {
+        var actionBase = "al-action-" + log.action;
+        if (isCritical(log)) {
+            return actionBase + " al-action-critical";
+        }
+        return actionBase;
+    }
+
+    function sortedLogs(list) {
+        return list.slice().sort(function (a, b) {
+            return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+        });
+    }
+
+    function getFilters() {
+        return {
+            search: searchInput.value.trim().toLowerCase(),
+            startDate: startDateInput.value,
+            endDate: endDateInput.value,
+            user: userSelect.value,
+            action: actionSelect.value,
+            module: moduleSelect.value
+        };
+    }
+
+    function filterLogs() {
+        var filters = getFilters();
+        return sortedLogs(LOGS).filter(function (log) {
+            if (filters.search) {
+                var haystack = [
+                    log.user,
+                    ACTION_LABELS[log.action] || log.action,
+                    log.module,
+                    log.description,
+                    log.ipAddress || ""
+                ].join(" ").toLowerCase();
+
+                if (haystack.indexOf(filters.search) === -1) {
+                    return false;
+                }
+            }
+
+            if (filters.user && log.user !== filters.user) {
+                return false;
+            }
+
+            if (filters.action && log.action !== filters.action) {
+                return false;
+            }
+
+            if (filters.module && log.module !== filters.module) {
+                return false;
+            }
+
+            if (filters.startDate) {
+                var start = toComparableDate(filters.startDate + "T00:00:00");
+                var current = toComparableDate(log.timestamp);
+                if (!start || !current || current < start) {
+                    return false;
+                }
+            }
+
+            if (filters.endDate) {
+                var end = toComparableDate(filters.endDate + "T23:59:59");
+                var logDate = toComparableDate(log.timestamp);
+                if (!end || !logDate || logDate > end) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    }
+
+    function populateFilterOptions() {
+        var users = Array.from(new Set(LOGS.map(function (log) { return log.user; }))).sort();
+        var modules = Array.from(new Set(LOGS.map(function (log) { return log.module; }))).sort();
+
+        userSelect.innerHTML = "<option value=\"\">All users</option>" + users.map(function (name) {
+            return "<option value=\"" + esc(name) + "\">" + esc(name) + "</option>";
+        }).join("");
+
+        moduleSelect.innerHTML = "<option value=\"\">All modules</option>" + modules.map(function (name) {
+            return "<option value=\"" + esc(name) + "\">" + esc(name) + "</option>";
+        }).join("");
+    }
+
+    function renderTable() {
+        var rows = filterLogs();
+
+        if (!rows.length) {
+            tableBody.innerHTML = "<tr><td colspan=\"8\" class=\"al-empty\">No logs match your current filters.</td></tr>";
+            tableMeta.textContent = "0 logs shown";
+            return;
+        }
+
+        tableBody.innerHTML = rows.map(function (log) {
+            var rowClasses = [];
+            if (isCritical(log)) {
+                rowClasses.push("al-row-critical");
+            }
+            if (newestRowId === log.id) {
+                rowClasses.push("al-row-new");
+            }
+
+            var displayAction = ACTION_LABELS[log.action] || log.action;
+            var rowClassAttr = rowClasses.length ? " class=\"" + rowClasses.join(" ") + "\"" : "";
+
+            return ""
+                + "<tr" + rowClassAttr + ">"
+                + "<td>" + esc(formatTimestamp(log.timestamp)) + "</td>"
+                + "<td><strong>" + esc(log.user) + "</strong></td>"
+                + "<td><span class=\"al-badge " + esc(actionClass(log)) + "\">" + esc(displayAction) + "</span></td>"
+                + "<td>" + esc(log.module) + "</td>"
+                + "<td class=\"al-desc\">" + esc(log.description) + "</td>"
+                + "<td class=\"al-muted\">" + esc(log.ipAddress || "N/A") + "</td>"
+                + "<td><span class=\"al-badge " + esc(statusClass(log.status)) + "\">" + esc(log.status) + "</span></td>"
+                + "<td><button type=\"button\" class=\"al-detail-btn\" data-log-id=\"" + esc(log.id) + "\">View Details</button></td>"
+                + "</tr>";
+        }).join("");
+
+        var criticalCount = rows.filter(isCritical).length;
+        tableMeta.textContent = rows.length + " logs shown" + (criticalCount ? " • " + criticalCount + " critical" : "");
+    }
+
+    function toPrettyJson(data) {
+        if (data === null || typeof data === "undefined") {
+            return "No change snapshot.";
+        }
+        try {
+            return JSON.stringify(data, null, 2);
+        } catch (e) {
+            return "Could not parse change snapshot.";
+        }
+    }
+
+    function setText(id, value) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.textContent = value;
+        }
+    }
+
+    function openDrawer(log) {
+        activeDetailId = log.id;
+
+        setText("al-drawer-title", (ACTION_LABELS[log.action] || log.action) + " in " + log.module);
+        setText("al-drawer-subtitle", "Full event context including metadata and field-level changes.");
+        setText("al-detail-timestamp", formatTimestamp(log.timestamp));
+        setText("al-detail-user", log.user);
+        setText("al-detail-action", ACTION_LABELS[log.action] || log.action);
+        setText("al-detail-module", log.module);
+        setText("al-detail-status", log.status);
+        setText("al-detail-ip", log.ipAddress || "N/A");
+        setText("al-detail-description", log.description);
+        setText("al-detail-device", log.device || "Unknown device");
+        setText("al-detail-browser", log.browser || "Unknown browser");
+        setText("al-detail-session", log.sessionId || "N/A");
+        setText("al-detail-before", toPrettyJson(log.before));
+        setText("al-detail-after", toPrettyJson(log.after));
+
+        drawer.setAttribute("data-open", "true");
+        drawer.setAttribute("aria-hidden", "false");
+        drawerBackdrop.setAttribute("data-open", "true");
+        drawerBackdrop.setAttribute("aria-hidden", "false");
+    }
+
+    function closeDrawer() {
+        activeDetailId = null;
+        drawer.setAttribute("data-open", "false");
+        drawer.setAttribute("aria-hidden", "true");
+        drawerBackdrop.setAttribute("data-open", "false");
+        drawerBackdrop.setAttribute("aria-hidden", "true");
+    }
+
+    function onTableClick(event) {
+        var target = event.target;
+        if (!(target instanceof HTMLElement)) {
+            return;
+        }
+        var button = target.closest(".al-detail-btn");
+        if (!button) {
+            return;
+        }
+        var logId = Number(button.getAttribute("data-log-id"));
+        var log = LOGS.find(function (item) { return item.id === logId; });
+        if (log) {
+            openDrawer(log);
+        }
+    }
+
+    function resetFilters() {
+        searchInput.value = "";
+        startDateInput.value = "";
+        endDateInput.value = "";
+        userSelect.value = "";
+        actionSelect.value = "";
+        moduleSelect.value = "";
+        renderTable();
+    }
+
+    function csvEscape(value) {
+        var str = String(value == null ? "" : value);
+        return '"' + str.replace(/"/g, '""') + '"';
+    }
+
+    function exportCsv() {
+        var rows = filterLogs();
+        if (!rows.length) {
+            return;
+        }
+
+        var header = ["Timestamp", "User", "Action", "Module", "Description", "IP Address", "Status"];
+        var csvRows = [header.map(csvEscape).join(",")];
+
+        rows.forEach(function (log) {
+            csvRows.push([
+                formatTimestamp(log.timestamp),
+                log.user,
+                ACTION_LABELS[log.action] || log.action,
+                log.module,
+                log.description,
+                log.ipAddress || "N/A",
+                log.status
+            ].map(csvEscape).join(","));
+        });
+
+        var blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.href = url;
+        link.download = "audit-logs-export.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    function pushLiveUpdate() {
+        if (!liveToggle.checked || !LIVE_QUEUE.length) {
+            return;
+        }
+
+        var next = LIVE_QUEUE.shift();
+        if (!next) {
+            return;
+        }
+
+        LOGS.unshift(next);
+        newestRowId = next.id;
+        populateFilterOptions();
+        renderTable();
+
+        if (activeDetailId === next.id) {
+            openDrawer(next);
+        }
+
+        window.setTimeout(function () {
+            newestRowId = null;
+            renderTable();
+        }, 2600);
+    }
+
+    function bindEvents() {
+        [searchInput, startDateInput, endDateInput, userSelect, actionSelect, moduleSelect].forEach(function (element) {
+            element.addEventListener("input", renderTable);
+            element.addEventListener("change", renderTable);
+        });
+
+        resetBtn.addEventListener("click", resetFilters);
+        exportBtn.addEventListener("click", exportCsv);
+        tableBody.addEventListener("click", onTableClick);
+        closeDrawerBtn.addEventListener("click", closeDrawer);
+        drawerBackdrop.addEventListener("click", closeDrawer);
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" && drawer.getAttribute("data-open") === "true") {
+                closeDrawer();
+            }
+        });
+    }
+
+    populateFilterOptions();
+    bindEvents();
+    renderTable();
+    window.setInterval(pushLiveUpdate, 20000);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% load static %}
+
+<div class="sidebar-header">
+    <div class="sidebar-brand-row">
+        <span class="sidebar-brand-icon brand-dot" aria-hidden="true">
+            <img class="sidebar-brand-image" src="{% static 'media/Happyness Project.jpg' %}" alt="">
+        </span>
+        <div class="sidebar-brand-copy sidebar-brand-text">
+            <p class="sidebar-brand-title">{{ admin_system_name|default:"HappYness Project" }}</p>
+            {% if dashboard_scope == "volunteer" or user.userprofile.account_role == "volunteer" %}
+                <p class="sidebar-brand-subtitle sidebar-brand-subtitle-volunteer">Volunteer Dashboard</p>
+            {% elif dashboard_scope == "beneficiary" %}
+                <p class="sidebar-brand-subtitle sidebar-brand-subtitle-beneficiary">Beneficiary Dashboard</p>
+            {% else %}
+                <p class="sidebar-brand-subtitle sidebar-brand-subtitle-admin">Admin Dashboard</p>
+            {% endif %}
+        </div>
+    </div>
+</div>

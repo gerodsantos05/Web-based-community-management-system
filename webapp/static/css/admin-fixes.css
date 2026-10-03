@@ -1,0 +1,1181 @@
+/* Admin page bottom-space fixes: remove oversized decorative tails and force content-driven page end. */
+
+/* 1) PRIMARY FIX: Keep dashboard-shell at full viewport height with proper grid/flex layout */
+#dashboard-shell.admin-page {
+    min-height: 100vh !important;
+    display: grid !important;
+    grid-template-columns: 280px 1fr !important;
+    grid-auto-rows: 1fr !important;
+}
+
+@media (min-width: 1025px) {
+    #dashboard-shell.admin-page #dashboard-sidebar {
+        width: 280px !important;
+    }
+
+    #dashboard-shell.admin-page[data-sidebar="collapsed"] #dashboard-sidebar {
+        width: 82px !important;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    #dashboard-shell.admin-page #app-header > div {
+        height: 4.8rem !important;
+    }
+}
+
+@media (max-width: 767px) {
+    html,
+    body {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+    }
+
+    #dashboard-shell.admin-page {
+        grid-template-columns: 1fr !important;
+        min-width: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+    }
+
+    #dashboard-shell.admin-page #app-header {
+        box-shadow: none !important;
+    }
+
+    #dashboard-shell.admin-page #dashboard-sidebar {
+        position: fixed !important;
+        top: 4rem !important;
+        left: 0 !important;
+        height: calc(100vh - 4rem) !important;
+        width: 260px !important;
+        max-width: 82vw !important;
+        transform: translateX(-110%) !important;
+        transition: transform 0.25s ease !important;
+        display: flex !important;
+        z-index: 50 !important;
+        box-shadow: 14px 0 30px rgba(6, 46, 42, 0.18) !important;
+    }
+
+    #dashboard-shell.admin-page #dashboard-sidebar[data-mobile-open="true"] {
+        transform: translateX(0) !important;
+    }
+
+    #dashboard-shell.admin-page #dashboard-main-wrapper,
+    #dashboard-shell.admin-page #dashboard-content-scroll,
+    #dashboard-shell.admin-page #dashboard-content-scroll > section[aria-label="Page content"] {
+        min-width: 0 !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        box-sizing: border-box !important;
+    }
+
+    #dashboard-shell.admin-page #dashboard-content-scroll > section[aria-label="Page content"] {
+        padding-left: 0.8rem !important;
+        padding-right: 0.8rem !important;
+    }
+
+    #dashboard-shell.admin-page .ops-dashboard,
+    #dashboard-shell.admin-page .vol-page,
+    #dashboard-shell.admin-page .ben-page,
+    #dashboard-shell.admin-page .act-page,
+    #dashboard-shell.admin-page .don-page,
+    #dashboard-shell.admin-page .inv-page,
+    #dashboard-shell.admin-page .pay-page,
+    #dashboard-shell.admin-page .ra-page,
+    #dashboard-shell.admin-page .al-page {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
+    #dashboard-shell.admin-page .ops-card,
+    #dashboard-shell.admin-page .vol-card,
+    #dashboard-shell.admin-page .ben-card,
+    #dashboard-shell.admin-page .act-card,
+    #dashboard-shell.admin-page .don-card,
+    #dashboard-shell.admin-page .inv-card,
+    #dashboard-shell.admin-page .pay-card,
+    #dashboard-shell.admin-page .ra-card,
+    #dashboard-shell.admin-page .al-card {
+        min-width: 0 !important;
+        overflow: visible !important;
+    }
+
+    #dashboard-shell.admin-page .vol-summary-grid,
+    #dashboard-shell.admin-page .ben-summary,
+    #dashboard-shell.admin-page .inv-summary,
+    #dashboard-shell.admin-page .ops-kpi-grid,
+    #dashboard-shell.admin-page .ops-main-grid,
+    #dashboard-shell.admin-page .ops-analytics-grid,
+    #dashboard-shell.admin-page .ops-lower-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    #dashboard-shell.admin-page .ops-row,
+    #dashboard-shell.admin-page .act-upcoming-item,
+    #dashboard-shell.admin-page .vol-row,
+    #dashboard-shell.admin-page .ben-row,
+    #dashboard-shell.admin-page .don-row,
+    #dashboard-shell.admin-page .pay-row {
+        grid-template-columns: auto minmax(0, 1fr) auto !important;
+        min-width: 0 !important;
+    }
+
+    #dashboard-shell.admin-page .ops-row > div,
+    #dashboard-shell.admin-page .ops-row strong,
+    #dashboard-shell.admin-page .ops-row small,
+    #dashboard-shell.admin-page .vol-person,
+    #dashboard-shell.admin-page .ben-name,
+    #dashboard-shell.admin-page .don-donor-wrap,
+    #dashboard-shell.admin-page .act-upcoming-meta,
+    #dashboard-shell.admin-page .pay-person {
+        min-width: 0 !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
+    }
+
+    #dashboard-shell.admin-page .vol-table,
+    #dashboard-shell.admin-page .ben-table,
+    #dashboard-shell.admin-page .inv-table,
+    #dashboard-shell.admin-page .don-table,
+    #dashboard-shell.admin-page .pay-table,
+    #dashboard-shell.admin-page .ra-table,
+    #dashboard-shell.admin-page .al-table {
+        min-width: 700px !important;
+        width: 100% !important;
+    }
+
+    #dashboard-shell.admin-page .don-table {
+        min-width: 1140px !important;
+    }
+
+    #dashboard-shell.admin-page .inv-table {
+        min-width: 1250px !important;
+    }
+
+    #dashboard-shell.admin-page .pay-table {
+        min-width: 1050px !important;
+    }
+
+    #dashboard-shell.admin-page .pay-table.pay-columns-expanded {
+        min-width: 1450px !important;
+    }
+
+    #dashboard-shell.admin-page .vol-table {
+        min-width: 1180px !important;
+    }
+
+    #dashboard-shell.admin-page .ben-table {
+        min-width: 1040px !important;
+    }
+
+    #dashboard-shell.admin-page .vol-table-wrap,
+    #dashboard-shell.admin-page .ben-table-wrap,
+    #dashboard-shell.admin-page .inv-table-wrap,
+    #dashboard-shell.admin-page .don-table-wrap,
+    #dashboard-shell.admin-page .pay-table-wrap,
+    #dashboard-shell.admin-page .ra-table-wrap,
+    #dashboard-shell.admin-page .al-table-wrap {
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
+    #dashboard-shell.admin-page .vol-status-filter,
+    #dashboard-shell.admin-page .ben-status-filter,
+    #dashboard-shell.admin-page .inv-status-filter,
+    #dashboard-shell.admin-page .pay-status-filter,
+    #dashboard-shell.admin-page .ra-status-filter,
+    #dashboard-shell.admin-page .al-status-filter,
+    #dashboard-shell.admin-page select {
+        position: relative !important;
+        z-index: 20 !important;
+    }
+
+    #dashboard-shell.admin-page .vol-table th,
+    #dashboard-shell.admin-page .vol-table td,
+    #dashboard-shell.admin-page .ben-table th,
+    #dashboard-shell.admin-page .ben-table td,
+    #dashboard-shell.admin-page .inv-table th,
+    #dashboard-shell.admin-page .inv-table td,
+    #dashboard-shell.admin-page .don-table th,
+    #dashboard-shell.admin-page .don-table td,
+    #dashboard-shell.admin-page .pay-table th,
+    #dashboard-shell.admin-page .pay-table td,
+    #dashboard-shell.admin-page .ra-table th,
+    #dashboard-shell.admin-page .ra-table td,
+    #dashboard-shell.admin-page .al-table th,
+    #dashboard-shell.admin-page .al-table td {
+        white-space: normal !important;
+        word-break: break-word !important;
+    }
+
+    #dashboard-shell.admin-page .don-table th,
+    #dashboard-shell.admin-page .don-table td {
+        white-space: nowrap !important;
+        word-break: normal !important;
+    }
+
+    #dashboard-shell.admin-page .don-table .don-donor-wrap,
+    #dashboard-shell.admin-page .don-table .don-donor strong,
+    #dashboard-shell.admin-page .don-table .don-donor small {
+        overflow-wrap: normal !important;
+        word-break: normal !important;
+    }
+
+    #dashboard-shell.admin-page .inv-table th,
+    #dashboard-shell.admin-page .inv-table td {
+        white-space: nowrap !important;
+        word-break: normal !important;
+    }
+
+    #dashboard-shell.admin-page .pay-table th,
+    #dashboard-shell.admin-page .pay-table td,
+    #dashboard-shell.admin-page .pay-table .pay-person,
+    #dashboard-shell.admin-page .pay-table .pay-product-cell {
+        white-space: nowrap !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
+    }
+
+    #dashboard-shell.admin-page .vol-table th,
+    #dashboard-shell.admin-page .vol-table td {
+        white-space: nowrap !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
+    }
+
+    #dashboard-shell.admin-page .ben-table th,
+    #dashboard-shell.admin-page .ben-table td {
+        white-space: nowrap !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
+    }
+
+    #dashboard-shell.admin-page .vol-table th:last-child,
+    #dashboard-shell.admin-page .vol-table td:last-child,
+    #dashboard-shell.admin-page .ben-table th:last-child,
+    #dashboard-shell.admin-page .ben-table td:last-child,
+    #dashboard-shell.admin-page .inv-table th:last-child,
+    #dashboard-shell.admin-page .inv-table td:last-child {
+        min-width: 4.2rem !important;
+        width: 4.2rem !important;
+        white-space: nowrap !important;
+        text-align: right !important;
+    }
+}
+
+@media (max-width: 420px) {
+    #dashboard-shell.admin-page #dashboard-content-scroll > section[aria-label="Page content"] {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+
+    #dashboard-shell.admin-page .ops-dashboard,
+    #dashboard-shell.admin-page .vol-page,
+    #dashboard-shell.admin-page .ben-page,
+    #dashboard-shell.admin-page .act-page,
+    #dashboard-shell.admin-page .don-page {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    #dashboard-shell.admin-page .ops-title,
+    #dashboard-shell.admin-page .vol-title,
+    #dashboard-shell.admin-page .ben-title,
+    #dashboard-shell.admin-page .act-card-title,
+    #dashboard-shell.admin-page .don-title {
+        font-size: 0.96rem !important;
+        line-height: 1.3 !important;
+    }
+}
+
+/* 1a) Ensure main content area fills available space */
+#dashboard-shell.admin-page > main {
+    min-height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+#dashboard-shell.admin-page main > section[aria-label="Page content"] {
+    flex: 1 1 auto !important;
+}
+
+/* 2) Remove known spacer/decorative elements if present */
+#dashboard-shell.admin-page .page-bg,
+#dashboard-shell.admin-page .page-bg-gradient,
+#dashboard-shell.admin-page .background-spacer,
+#dashboard-shell.admin-page .bottom-hero,
+#dashboard-shell.admin-page .page-gradient--abs,
+#dashboard-shell.admin-page .decorative-gradient {
+    display: none !important;
+    max-height: 220px !important;
+    overflow: hidden !important;
+}
+
+/* 3) Fallback for pages using content-wrapper */
+.admin-page .content-wrapper,
+.admin-page .dashboard-wrapper {
+    min-height: auto !important;
+    height: auto !important;
+    padding-bottom: 24px !important;
+    margin-bottom: 0 !important;
+}
+
+/* 4) Remove any bottom spacer elements */
+.admin-page .page-bg,
+.admin-page .background-spacer,
+.admin-page .decorative-gradient {
+    display: none !important;
+}
+
+/* 5) Prevent any inherited oversized background from creating visual tail */
+body.admin-page,
+html.admin-page {
+    background-size: auto !important;
+    background-position: top center !important;
+}
+
+/* 6) Footer safety: keep static flow if a footer exists */
+.admin-page .site-footer {
+    position: static !important;
+    margin-top: 0 !important;
+}
+
+/* 7) Operations panel surface normalization
+   Some shared utility/background rules can tint panel surfaces on these pages.
+   Keep these operation panels locked to pure white. */
+#dashboard-shell.admin-page #donations-page,
+#dashboard-shell.admin-page #inventory-page,
+#dashboard-shell.admin-page #payments-page {
+    background: #ffffff !important;
+    background-image: none !important;
+}
+
+#dashboard-shell.admin-page #donations-page > section,
+#dashboard-shell.admin-page #inventory-page > section,
+#dashboard-shell.admin-page #payments-page > section,
+#dashboard-shell.admin-page #donations-page > section > article,
+#dashboard-shell.admin-page #inventory-page > section > article,
+#dashboard-shell.admin-page #payments-page > section > article,
+#dashboard-shell.admin-page #donations-page article[class*="kpi"],
+#dashboard-shell.admin-page #inventory-page article[class*="kpi"],
+#dashboard-shell.admin-page #payments-page article[class*="kpi"] {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border-bottom-left-radius: 16px !important;
+    border-bottom-right-radius: 16px !important;
+    overflow: hidden !important;
+}
+
+/* 7a) Remove seam tint inside card rows (grid gap should stay pure white). */
+#dashboard-shell.admin-page #donations-page .don-summary,
+#dashboard-shell.admin-page #donations-page .don-layout-two,
+#dashboard-shell.admin-page #donations-page section.grid,
+#dashboard-shell.admin-page #inventory-page .inv-summary,
+#dashboard-shell.admin-page #inventory-page section.grid,
+#dashboard-shell.admin-page #payments-page .pay-summary,
+#dashboard-shell.admin-page #payments-page .pay-grid-four,
+#dashboard-shell.admin-page #payments-page section.grid {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+}
+
+#dashboard-shell.admin-page #donations-page .don-card,
+#dashboard-shell.admin-page #inventory-page .inv-card,
+#dashboard-shell.admin-page #payments-page .pay-card {
+    border-bottom-left-radius: 16px !important;
+    border-bottom-right-radius: 16px !important;
+    overflow: visible !important;
+}
+
+#dashboard-shell.admin-page > main > section[aria-label="Page content"].admin-ops-surface {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+}
+
+#dashboard-shell.admin-page #donations-page .don-card,
+#dashboard-shell.admin-page #donations-page .don-kpi,
+#dashboard-shell.admin-page #donations-page .don-toolbar,
+#dashboard-shell.admin-page #donations-page .don-bulk-bar,
+#dashboard-shell.admin-page #donations-page .don-table-wrap,
+#dashboard-shell.admin-page #donations-page .don-alert,
+#dashboard-shell.admin-page #donations-page .don-list-item,
+#dashboard-shell.admin-page #donations-page .don-block,
+#dashboard-shell.admin-page #donations-page .don-modal,
+#dashboard-shell.admin-page #inventory-page .inv-card,
+#dashboard-shell.admin-page #inventory-page .inv-kpi,
+#dashboard-shell.admin-page #inventory-page .inv-grid,
+#dashboard-shell.admin-page #inventory-page .inv-table-wrap,
+#dashboard-shell.admin-page #inventory-page .inv-list-item,
+#dashboard-shell.admin-page #inventory-page .inv-block,
+#dashboard-shell.admin-page #inventory-page .inv-modal,
+#dashboard-shell.admin-page #payments-page .pay-card,
+#dashboard-shell.admin-page #payments-page .pay-kpi,
+#dashboard-shell.admin-page #payments-page .pay-filters,
+#dashboard-shell.admin-page #payments-page .pay-table-wrap,
+#dashboard-shell.admin-page #payments-page .pay-list-item,
+#dashboard-shell.admin-page #payments-page .pay-block,
+#dashboard-shell.admin-page #payments-page .pay-modal {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+}
+
+/* Unified admin scrollbar: thin, white, and minimal across panel surfaces */
+html.admin-page,
+body.admin-page {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+}
+
+#dashboard-shell.admin-page,
+#dashboard-shell.admin-page * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(226, 232, 240, 0.96) rgba(241, 245, 249, 0.84);
+}
+
+#dashboard-shell.admin-page {
+    scrollbar-gutter: stable;
+}
+
+#dashboard-shell.admin-page::-webkit-scrollbar,
+#dashboard-shell.admin-page *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+#dashboard-shell.admin-page::-webkit-scrollbar-track,
+#dashboard-shell.admin-page *::-webkit-scrollbar-track {
+    background: rgba(241, 245, 249, 0.9);
+    border-radius: 999px;
+}
+
+#dashboard-shell.admin-page::-webkit-scrollbar-thumb,
+#dashboard-shell.admin-page *::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(226, 232, 240, 0.98), rgba(203, 213, 225, 0.98));
+    border: 1px solid rgba(148, 163, 184, 0.56);
+    border-radius: 999px;
+}
+
+#dashboard-shell.admin-page::-webkit-scrollbar-thumb:hover,
+#dashboard-shell.admin-page *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(203, 213, 225, 0.98), rgba(148, 163, 184, 0.95));
+    border-color: rgba(100, 116, 139, 0.5);
+}
+
+/* Compact table defaults for admin panels */
+.admin-table-compact {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.admin-table-compact th,
+.admin-table-compact td {
+    padding: 0.52rem 0.6rem;
+    vertical-align: middle;
+}
+
+.admin-table-compact th:not(:first-child):not(:last-child),
+.admin-table-compact td:not(:first-child):not(:last-child) {
+    max-width: 170px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-table-compact td > * {
+    min-width: 0;
+}
+
+.admin-table-compact th:first-child,
+.admin-table-compact td:first-child {
+    width: 2.8rem;
+}
+
+.admin-table-compact th:last-child,
+.admin-table-compact td:last-child {
+    width: 4.8rem;
+    overflow: visible;
+}
+
+/* Shared overflow row actions */
+.table-actions {
+    position: relative;
+    display: inline-flex;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.table-actions-menu-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid rgba(148, 163, 184, 0.45);
+    background: #ffffff;
+    color: var(--ink-700, #334155);
+    cursor: pointer;
+    transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.table-actions-menu-trigger svg {
+    width: 16px;
+    height: 16px;
+}
+
+.table-actions-menu-trigger:hover,
+.table-actions-menu-trigger:focus-visible {
+    background: rgba(236, 253, 245, 0.85);
+    border-color: rgba(15, 118, 110, 0.36);
+    color: var(--teal-700, #0f766e);
+    outline: none;
+}
+
+.table-actions-popover {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    min-width: 144px;
+    padding: 0.28rem;
+    border-radius: 0.7rem;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+    backdrop-filter: blur(2px);
+    display: none;
+    z-index: 80;
+}
+
+.table-actions[data-open="true"] .table-actions-popover {
+    display: grid;
+    gap: 0.2rem;
+}
+
+.table-actions-popover .table-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: 100%;
+    min-width: 0;
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--ink-700, #334155);
+    padding: 0.42rem 0.48rem;
+    font-size: 0.79rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.table-actions-popover .table-action-btn:hover,
+.table-actions-popover .table-action-btn:focus-visible {
+    background: rgba(236, 253, 245, 0.78);
+    border-color: rgba(15, 118, 110, 0.28);
+    color: var(--teal-700, #0f766e);
+    outline: none;
+}
+
+.table-action-icon {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+}
+
+.table-actions-popover .table-action-btn.table-action-danger:hover,
+.table-actions-popover .table-action-btn.table-action-danger:focus-visible {
+    background: rgba(254, 242, 242, 0.9);
+    border-color: rgba(239, 68, 68, 0.28);
+    color: #b91c1c;
+}
+
+/* Prevent main content from forcing horizontal reflow when sidebar changes */
+#dashboard-shell > main {
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+@media (max-width: 1024px) {
+    #dashboard-shell.admin-page,
+    #dashboard-shell.admin-page[data-sidebar="expanded"],
+    #dashboard-shell.admin-page[data-sidebar="collapsed"] {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    #dashboard-shell.admin-page > main {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+}
+
+#dashboard-shell {
+    transition: grid-template-columns 180ms ease;
+}
+
+/* Admin panel page transitions on sidebar navigation */
+#dashboard-shell.admin-page > main > section[aria-label="Page content"] {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+}
+
+#dashboard-shell.admin-page > main > section[aria-label="Page content"].admin-panel-enter {
+    opacity: 1;
+}
+
+#dashboard-shell.admin-page > main > section[aria-label="Page content"].admin-panel-exit {
+    pointer-events: none;
+    display: none;
+}
+
+/* Unified KPI card system across admin dashboard panels */
+.admin-kpi-grid {
+    gap: 1rem;
+}
+
+.admin-kpi-card {
+    border-radius: 1rem;
+    border: 1px solid rgba(15, 118, 110, 0.14);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 8px 20px rgba(8, 83, 76, 0.08);
+    min-height: 102px;
+    padding: 0.85rem;
+    transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.admin-kpi-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(16, 185, 129, 0.35);
+    box-shadow: 0 14px 28px rgba(8, 83, 76, 0.13);
+}
+
+.admin-kpi-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.admin-kpi-label {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-500, #64748b);
+}
+
+.admin-kpi-icon {
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    color: var(--teal-700, #0f766e);
+    background: linear-gradient(145deg, rgba(16, 185, 129, 0.14), rgba(20, 184, 166, 0.2));
+    border: 1px solid rgba(16, 185, 129, 0.22);
+}
+
+.admin-kpi-value {
+    margin: 0.4rem 0 0;
+    color: var(--ink-900, #0f172a);
+    font-weight: 800;
+    line-height: 1.1;
+    font-size: clamp(1.55rem, 2.2vw, 1.95rem);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-kpi-card {
+        transition: none !important;
+    }
+}
+
+#dashboard-shell.sidebar-booting {
+    transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #dashboard-shell {
+        transition: none !important;
+    }
+}
+
+/* Premium SaaS settings layout (mint/teal family). */
+.settings-shell {
+    --brand-700: var(--teal-700, #2e3d30);
+    --brand-600: var(--teal-600, #497b56);
+    --brand-500: var(--teal-500, #5a8f65);
+    --brand-100: rgba(61, 107, 71, 0.12);
+    --settings-card-bg: #ffffff;
+    --settings-muted: var(--ink-500, #6b7280);
+    --settings-border: rgba(46, 61, 48, 0.1);
+    --settings-shadow: 0 8px 18px rgba(8, 83, 76, 0.06);
+    --settings-radius-lg: 1rem;
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 1.5rem;
+    padding: 1.5rem;
+}
+
+.settings-nav {
+    padding: 0.25rem;
+}
+
+.settings-nav-card {
+    border-radius: var(--settings-radius-lg);
+    border: 1px solid var(--settings-border);
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: var(--settings-shadow);
+    padding: 1rem 0.85rem;
+}
+
+.settings-nav-title {
+    margin: 0 0 0.7rem;
+    padding: 0 0.45rem;
+    font-size: 0.95rem;
+    color: var(--brand-700);
+}
+
+.settings-nav-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.25rem;
+}
+
+.settings-nav .nav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.54rem 0.65rem;
+    border-radius: 0.7rem;
+    border-left: 2px solid transparent;
+    color: var(--ink-700, #334155);
+    text-decoration: none;
+    transition: background-color 160ms ease, color 160ms ease;
+}
+
+.settings-nav .nav-item:hover {
+    background: rgba(236, 253, 245, 0.7);
+    color: var(--brand-700);
+}
+
+.settings-nav .nav-item.active,
+.settings-nav .nav-item[aria-current="page"] {
+    background: var(--brand-100);
+    border-left-color: rgba(46, 61, 48, 0.55);
+    color: var(--brand-700);
+    font-weight: 600;
+}
+
+.settings-nav .nav-icon {
+    width: 15px;
+    height: 15px;
+    opacity: 0.82;
+    flex: 0 0 auto;
+}
+
+.settings-main {
+    max-width: 1040px;
+    width: 100%;
+    margin: 0 auto;
+    min-width: 0;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.2rem 0;
+}
+
+.settings-title {
+    margin: 0;
+    color: var(--ink-900, #0f172a);
+    font-size: clamp(1.15rem, 1.65vw, 1.5rem);
+}
+
+.settings-muted {
+    margin: 0.4rem 0 0;
+    color: var(--settings-muted);
+    font-size: 0.92rem;
+}
+
+.settings-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.settings-dirty {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--brand-700);
+}
+
+.settings-shell .btn-primary,
+.settings-shell .btn-ghost {
+    border-radius: 0.65rem;
+    padding: 0.6rem 0.95rem;
+    font: inherit;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.settings-shell .btn-primary {
+    background: var(--brand-600);
+    border-color: rgba(46, 61, 48, 0.4);
+    color: #ffffff;
+}
+
+.settings-shell .btn-primary:hover:not(:disabled) {
+    background: var(--brand-700);
+}
+
+.settings-shell .btn-primary:disabled {
+    opacity: 0.58;
+    cursor: not-allowed;
+}
+
+.settings-shell .btn-ghost {
+    background: #ffffff;
+    border-color: var(--settings-border);
+    color: var(--brand-700);
+}
+
+.settings-shell .btn-ghost:hover:not(:disabled) {
+    background: rgba(236, 253, 245, 0.75);
+}
+
+.settings-shell .btn-primary:focus-visible,
+.settings-shell .btn-ghost:focus-visible,
+.settings-form .input:focus-visible,
+.settings-nav .nav-item:focus-visible {
+    outline: 2px solid var(--brand-600);
+    outline-offset: 2px;
+}
+
+.settings-card {
+    background: var(--settings-card-bg);
+    border: 1px solid var(--settings-border);
+    border-radius: var(--settings-radius-lg);
+    padding: 0.9rem 1rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--settings-shadow);
+}
+
+.settings-card-head {
+    margin-bottom: 0.95rem;
+}
+
+.settings-card-head h2 {
+    margin: 0;
+    color: var(--ink-900, #0f172a);
+    font-size: 1.02rem;
+}
+
+.settings-card-desc {
+    margin: 0.3rem 0 0;
+    color: var(--settings-muted);
+    font-size: 0.84rem;
+}
+
+/* ============================================================================
+   SIDEBAR CLICK ANIMATIONS & TRANSITIONS
+   ============================================================================ */
+
+@keyframes sidebar-icon-scale {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.08);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Enhanced sidebar navigation links with smooth transitions */
+#dashboard-sidebar .sidebar-link {
+    position: relative;
+    overflow: hidden;
+    transition: background-color 220ms ease, color 220ms ease, transform 220ms ease;
+    will-change: background-color, color, transform;
+}
+
+/* Smooth transition for active state */
+#dashboard-sidebar .sidebar-link[aria-current="page"],
+#dashboard-sidebar .sidebar-link.active {
+    transition: background-color 220ms ease, color 220ms ease;
+}
+
+/* Click animation - apply via :active pseudo-class */
+#dashboard-sidebar .sidebar-link:active {
+    background-color: rgba(16, 185, 129, 0.12);
+    transform: translateX(1px);
+}
+
+#dashboard-sidebar .sidebar-link.is-clicked {
+    background-color: rgba(16, 185, 129, 0.1);
+    transform: translateX(1px);
+}
+
+/* Reports-related links should not flash in a pressed state during navigation */
+#dashboard-sidebar .sidebar-link[data-no-click-animation="true"]:active,
+#dashboard-sidebar .sidebar-link[data-no-click-animation="true"].is-clicked,
+#dashboard-sidebar .sidebar-submenu-link[data-no-click-animation="true"]:active,
+#dashboard-sidebar .sidebar-submenu-link[data-no-click-animation="true"].is-clicked {
+    background-color: transparent;
+    transform: none;
+}
+
+#dashboard-sidebar .sidebar-link[data-no-click-animation="true"],
+#dashboard-sidebar .sidebar-submenu-link[data-no-click-animation="true"] {
+    transition: none;
+}
+
+#dashboard-sidebar .sidebar-link[data-no-click-animation="true"] .sidebar-icon-wrap,
+#dashboard-sidebar .sidebar-submenu-link[data-no-click-animation="true"] .sidebar-icon-wrap {
+    animation: none !important;
+    transition: none;
+}
+
+/* Icon scaling on interaction */
+#dashboard-sidebar .sidebar-link:active .sidebar-icon {
+    animation: sidebar-icon-scale 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Enhanced visual feedback for hover state */
+#dashboard-sidebar .sidebar-link:not([aria-current="page"]):not(.active):hover {
+    transform: translateX(2px);
+    background-color: rgba(16, 185, 129, 0.08);
+}
+
+/* Better focus styles with smooth animation */
+#dashboard-sidebar .sidebar-link:focus-visible {
+    outline: 2px solid var(--teal-500);
+    outline-offset: 2px;
+}
+
+/* Icon wrapper animations */
+#dashboard-sidebar .sidebar-icon-wrap {
+    transition: all 240ms cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform, color;
+}
+
+/* Smooth color transition for active icon */
+#dashboard-sidebar .sidebar-link[aria-current="page"] .sidebar-icon-wrap,
+#dashboard-sidebar .sidebar-link.active .sidebar-icon-wrap {
+    animation: sidebar-icon-scale 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Label fade-in animation */
+#dashboard-sidebar .sidebar-label {
+    transition: all 240ms cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1;
+}
+
+/* Smooth transitions for collapsed state */
+#dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-link {
+    transition: all 240ms cubic-bezier(0.4, 0, 0.2, 1);
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    justify-content: center;
+    border-radius: 0.375rem;
+}
+
+#dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-link:hover {
+    background: rgba(16, 185, 129, 0.1);
+    transform: scale(1.05);
+}
+
+#dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-link:active {
+    background: rgba(16, 185, 129, 0.14);
+    transform: scale(1.02);
+}
+
+/* Sidebar brand animation on page load */
+#dashboard-sidebar .sidebar-brand-icon {
+    animation: sidebar-icon-scale 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Smooth indicator animation for active state */
+#dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-link[aria-current="page"]::before,
+#dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-link.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 3px;
+    height: 60%;
+    background: var(--teal-500);
+    border-radius: 0 2px 2px 0;
+    transform: translateY(-50%);
+}
+
+/* Smooth transition for sidebar nav container */
+#dashboard-sidebar nav {
+    transition: all 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced transition for section labels */
+#dashboard-sidebar .sidebar-section-label {
+    transition: all 240ms ease;
+    letter-spacing: 0.18em;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.82rem 0.95rem;
+}
+
+.settings-field {
+    display: grid;
+    gap: 0.3rem;
+}
+
+.settings-field-full {
+    grid-column: 1 / -1;
+}
+
+.settings-field label {
+    color: var(--ink-900, #0f172a);
+    font-size: 0.83rem;
+    font-weight: 500;
+}
+
+.settings-form .input {
+    width: 100%;
+    min-height: 40px;
+    border-radius: 0.7rem;
+    border: 1px solid rgba(46, 61, 48, 0.2);
+    background: #ffffff;
+    color: var(--ink-900, #0f172a);
+    padding: 0.55rem 0.72rem;
+    font: inherit;
+}
+
+.settings-form .input::placeholder {
+    color: rgba(100, 116, 139, 0.75);
+}
+
+.settings-help {
+    margin: 0;
+    color: var(--settings-muted);
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+
+.settings-help-on-focus {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 140ms ease, opacity 140ms ease;
+}
+
+.settings-field[data-focus-help]:focus-within .settings-help-on-focus {
+    max-height: 2.8rem;
+    opacity: 1;
+}
+
+.settings-preview {
+    color: rgba(46, 61, 48, 0.62);
+}
+
+.settings-inline-status {
+    min-height: 1.25rem;
+    margin: 0.35rem 0 0;
+    color: var(--brand-700);
+    font-size: 0.86rem;
+}
+
+.settings-toast {
+    position: fixed;
+    right: 1.2rem;
+    bottom: 1.2rem;
+    z-index: 60;
+    background: rgba(13, 148, 136, 0.96);
+    color: #ffffff;
+    border-radius: 0.72rem;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2);
+    padding: 0.74rem 0.95rem;
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.settings-toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@media (max-width: 1080px) {
+    .settings-shell {
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 900px) {
+    .settings-shell {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+
+    .settings-nav {
+        order: 2;
+    }
+
+    .settings-main {
+        order: 1;
+    }
+
+    .settings-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgba(243, 247, 244, 0.97);
+        backdrop-filter: blur(6px);
+        padding: 0.35rem 0;
+    }
+
+    .settings-header-actions {
+        position: sticky;
+        bottom: 0;
+        background: rgba(243, 247, 244, 0.97);
+        border: 1px solid var(--settings-border);
+        border-radius: 0.75rem;
+        padding: 0.4rem;
+    }
+
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+}

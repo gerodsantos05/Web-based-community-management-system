@@ -1,0 +1,67 @@
+{% load static %}
+<style>
+.vol-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:94;display:none}.vol-modal-backdrop[data-open="true"]{display:block}.vol-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(94vw,820px);max-height:88vh;overflow:auto;background:#fff;border:1px solid rgba(15,118,110,.22);border-radius:14px;box-shadow:0 24px 34px rgba(8,83,76,.25);display:none;z-index:95}.vol-modal[data-open="true"]{display:block}.vol-profile-modal[data-open="true"]{display:flex;flex-direction:column}.vol-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.2rem;border-bottom:1px solid #deefe8}.vol-profile-eyebrow{margin:0;color:#0f766e;font-size:.72rem;font-weight:700;text-transform:uppercase}.vol-title{margin:0;color:#14352d;font-size:1rem}.vol-modal-header-actions{display:flex;align-items:start;gap:.5rem}.vol-modal-close-icon{width:2rem;height:2rem;border-radius:999px;border:1px solid #d4e9e1;background:#fff;color:#48665d;display:grid;place-items:center;padding:0;line-height:1;cursor:pointer}.vol-profile-body{padding:1rem;overflow:auto}.vol-form-grid{display:grid;gap:.95rem}.vol-assist-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.vol-field{display:grid;gap:.35rem}.vol-field-label{font-size:.72rem;font-weight:700;color:#1a4f43;letter-spacing:.03em}.vol-field input,.vol-field select,.vol-field textarea{width:100%;box-sizing:border-box;border:1px solid #d4e9e1;border-radius:9px;background:#fff;color:#173a31;font-size:.8rem;padding:.58rem .7rem}.vol-status-row{display:flex;gap:.45rem;flex-wrap:wrap}.vol-status-opt{position:absolute;opacity:0}.vol-status-opt+label{border:1px solid #d4e9e1;border-radius:999px;padding:.5rem .7rem;cursor:pointer}.vol-status-opt:checked+label{border-color:#0f766e;background:#ecfdf5;color:#0f766e}.vol-form-actions{display:flex;justify-content:flex-end;gap:.7rem;padding:1rem 1.2rem;border-top:1px solid #deefe8}.vol-form-btn{border:1px solid #d4e9e1;border-radius:999px;background:#fff;color:#1b4f43;padding:.75rem 1rem;font-weight:700;cursor:pointer}.vol-save-btn{background:#0f766e;color:#fff;border-color:#0f766e}@media(max-width:560px){.vol-assist-grid{grid-template-columns:1fr}}
+</style>
+<style>.vol-profile-eyebrow{color:#14352d}</style>
+<style>
+#vol-add-modal .vol-profile-eyebrow {
+	color: #14352d;
+}
+
+#vol-add-modal {
+	top: 100px;
+	bottom: 16px;
+	height: calc(100vh - 116px);
+	max-height: none;
+	overflow: hidden;
+	transform: translateX(-50%);
+}
+
+#vol-add-modal[data-open="true"] {
+	display: flex;
+}
+
+#vol-add-modal > .vol-head {
+	flex: 0 0 auto;
+}
+
+#vol-add-modal .vol-profile-body {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	display: block;
+}
+
+#vol-add-modal .vol-form-grid,
+#vol-add-modal .vol-assist-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+}
+
+#vol-add-modal .vol-profile-body > form {
+	min-height: max-content;
+}
+
+#vol-add-modal .required-marker {
+	color: #e24b4a;
+}
+
+#vol-add-modal > .vol-form-actions {
+	flex: 0 0 auto;
+	background: #ffffff;
+}
+</style>
+<div id="vol-add-backdrop" class="vol-modal-backdrop" data-open="false"></div>
+<div id="vol-add-modal" class="vol-modal vol-profile-modal" role="dialog" aria-modal="true" aria-labelledby="vol-add-title" data-open="false">
+<header class="vol-head"><div><p class="vol-profile-eyebrow">Volunteer</p><h3 id="vol-add-title" class="vol-title">Add new volunteer</h3></div><div class="vol-modal-header-actions"><button type="button" class="vol-modal-close-icon" data-vol-add-close="true" aria-label="Close add volunteer">×</button></div></header>
+<div class="vol-profile-body"><form id="addvol-form" onsubmit="return false;"><div class="vol-form-grid">
+<div class="vol-assist-grid"><div class="vol-field"><label class="vol-field-label">Full name <span class="required-marker">*</span></label><input type="text" id="addvol_fullname" required placeholder="e.g. Chris Shawne Bertillo"></div><div class="vol-field"><label class="vol-field-label">Availability <span class="required-marker">*</span></label><select id="addvol_availability" required><option value="" disabled selected>Select availability</option><option>Weekdays</option><option>Weekends</option><option>Weekday evenings</option><option>Flexible / Anytime</option></select></div></div>
+<div class="vol-assist-grid"><div class="vol-field"><label class="vol-field-label">Email <span class="required-marker">*</span></label><input type="email" id="addvol_email" required placeholder="email@example.com"></div><div class="vol-field"><label class="vol-field-label">Phone number <span class="required-marker">*</span></label><input type="tel" id="addvol_phone" required placeholder="+63 9XX XXX XXXX"></div></div>
+<div class="vol-field"><label class="vol-field-label">Status <span class="required-marker">*</span></label><div class="vol-status-row"><input class="vol-status-opt" type="radio" name="addvol_status" id="addvol_s_active" value="Active" checked><label for="addvol_s_active">Active</label><input class="vol-status-opt" type="radio" name="addvol_status" id="addvol_s_inactive" value="Inactive"><label for="addvol_s_inactive">Inactive</label><input class="vol-status-opt" type="radio" name="addvol_status" id="addvol_s_pending" value="Pending"><label for="addvol_s_pending">Pending</label></div></div>
+<div class="vol-field"><strong style="color:#1a4f43">Account credentials</strong></div><div class="vol-field"><label class="vol-field-label">Username <span class="required-marker">*</span></label><input type="text" id="addvol_username" required placeholder="e.g. chris.bertillo"></div>
+<div class="vol-assist-grid"><div class="vol-field"><label class="vol-field-label">Password <span class="required-marker">*</span></label><input type="password" id="addvol_passwordField" required placeholder="Create a password"></div><div class="vol-field"><label class="vol-field-label">Confirm password <span class="required-marker">*</span></label><input type="password" id="addvol_confirmField" required placeholder="Re-enter password"></div></div>
+</div></form></div><footer class="vol-form-actions"><button type="button" class="vol-form-btn" data-vol-add-close="true">Cancel</button><button type="button" id="addvol-confirm" class="vol-form-btn vol-save-btn">Add volunteer</button></footer>
+</div>
+<script>
+(function(){"use strict";var trigger=document.querySelector('[data-open-add-volunteer="true"]'),modal=document.getElementById("vol-add-modal"),backdrop=document.getElementById("vol-add-backdrop"),form=document.getElementById("addvol-form"),save=document.getElementById("addvol-confirm");if(!trigger||!modal||!backdrop||!form||!save)return;function close(){modal.setAttribute("data-open","false");backdrop.setAttribute("data-open","false");document.body.style.overflow="";form.reset()}function open(){modal.setAttribute("data-open","true");backdrop.setAttribute("data-open","true");document.body.style.overflow="hidden";document.getElementById("addvol_fullname").focus()}trigger.addEventListener("click",open);modal.querySelectorAll("[data-vol-add-close]").forEach(function(b){b.addEventListener("click",close)});backdrop.addEventListener("click",close);save.addEventListener("click",function(){if(!form.reportValidity())return;var password=document.getElementById("addvol_passwordField").value;if(password!==document.getElementById("addvol_confirmField").value){alert("Passwords do not match.");return}var data=new FormData();data.append("full_name",document.getElementById("addvol_fullname").value.trim());data.append("availability",document.getElementById("addvol_availability").value);data.append("email",document.getElementById("addvol_email").value.trim());data.append("phone",document.getElementById("addvol_phone").value.trim());data.append("status",(document.querySelector('input[name="addvol_status"]:checked')||{}).value||"Active");data.append("username",document.getElementById("addvol_username").value.trim());data.append("password",password);save.disabled=true;fetch("{% url 'create_volunteer' %}",{method:"POST",headers:{"X-CSRFToken":document.cookie.split(";").reduce(function(v,c){c=c.trim();return c.indexOf("csrftoken=")===0?decodeURIComponent(c.substring(10)):v},"")},body:data}).then(function(r){return r.json().then(function(d){if(!r.ok)throw d;return d})}).then(function(){close();window.location.reload()}).catch(function(e){alert(e.error||"Failed to add volunteer.")}).finally(function(){save.disabled=false})})})();
+</script>

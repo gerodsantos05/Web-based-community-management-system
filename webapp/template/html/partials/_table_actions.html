@@ -1,0 +1,45 @@
+{# Reusable row controls using a single overflow trigger. Replace __ROW_ID__ in JS when rows are rendered client-side. #}
+<div class="table-actions" role="group" aria-label="Row actions" data-open="false">
+    <button
+        type="button"
+        class="table-actions-menu-trigger"
+        aria-label="Open actions menu"
+        aria-haspopup="menu"
+        aria-expanded="false"
+        title="Actions"
+    >
+        <span class="sr-only">Row actions</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="12" cy="5" r="1.75"></circle>
+            <circle cx="12" cy="12" r="1.75"></circle>
+            <circle cx="12" cy="19" r="1.75"></circle>
+        </svg>
+    </button>
+
+    <div class="table-actions-popover" role="menu" aria-label="Row actions menu">
+        <button type="button" class="table-action-btn" data-action="view" data-id="__ROW_ID__" role="menuitem">
+            <svg class="table-action-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+                <path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6-10-6-10-6z"></path>
+                <circle cx="12" cy="12" r="2.5"></circle>
+            </svg>
+            <span>View</span>
+        </button>
+        <button type="button" class="table-action-btn" data-action="edit" data-id="__ROW_ID__" role="menuitem">
+            <svg class="table-action-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+                <path d="M3 21h4l11-11-4-4L3 17v4z"></path>
+                <path d="M14 6l4 4"></path>
+            </svg>
+            <span>Edit</span>
+        </button>
+        <button type="button" class="table-action-btn table-action-danger" data-action="delete" data-id="__ROW_ID__" role="menuitem">
+            <svg class="table-action-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+                <path d="M3 6h18"></path>
+                <path d="M8 6V4h8v2"></path>
+                <path d="M6 6l1 14h10l1-14"></path>
+                <path d="M10 10v7"></path>
+                <path d="M14 10v7"></path>
+            </svg>
+            <span>Delete</span>
+        </button>
+    </div>
+</div>

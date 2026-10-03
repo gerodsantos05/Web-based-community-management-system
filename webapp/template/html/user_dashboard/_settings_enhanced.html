@@ -1,0 +1,2726 @@
+{% load static %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
+<link rel="stylesheet" href="{% static 'css/profile-photo-cropper.css' %}">
+<style data-admin-panel-style="beneficiary-settings-saas">
+    .sysset-page {
+        --sysset-border: rgba(15, 118, 110, 0.14);
+        --sysset-muted: #64748b;
+        --sysset-text: #0f172a;
+        --sysset-accent: #0f766e;
+        --sysset-accent-soft: rgba(15, 118, 110, 0.12);
+        display: grid;
+        gap: 0.9rem;
+        min-width: 0;
+    }
+
+    .sysset-focus:focus-visible {
+        outline: 2px solid #14b8a6;
+        outline-offset: 2px;
+    }
+
+    .sysset-tabs-wrap,
+    .sysset-card {
+        background: #ffffff;
+        border: 1px solid var(--sysset-border);
+        border-radius: 1rem;
+    }
+
+    .sysset-toolbar-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex: 0 0 auto;
+        justify-self: end;
+        position: relative;
+        z-index: 3;
+    }
+
+    .sysset-tabs-wrap {
+        padding: 0.55rem;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 0.62rem;
+    }
+
+    .sysset-tabs {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        gap: 0.45rem;
+        overflow-x: auto;
+        min-width: 0;
+    }
+
+    .sysset-tabs li {
+        flex: 0 0 auto;
+    }
+
+    .sysset-tab {
+        border: 1px solid transparent;
+        border-radius: 999px;
+        background: transparent;
+        color: #475569;
+        font: inherit;
+        font-size: 0.82rem;
+        font-weight: 700;
+        padding: 0.48rem 0.78rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.36rem;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .sysset-tab[aria-selected="true"] {
+        background: rgba(16, 185, 129, 0.18);
+        border-color: rgba(5, 150, 105, 0.34);
+        color: #065f46;
+    }
+
+    .tab-icon {
+        width: 15px;
+        height: 15px;
+    }
+
+    .sysset-panel {
+        display: grid;
+        gap: 0.85rem;
+        min-width: 0;
+    }
+
+    .sysset-panel[hidden] {
+        display: none !important;
+    }
+
+    .sysset-grid,
+    .sysset-fields,
+    .sysset-check-grid,
+    .sysset-history-grid {
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        min-width: 0;
+    }
+
+    .sysset-card {
+        padding: 0.9rem;
+        display: grid;
+        gap: 0.74rem;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .sysset-card-full,
+    .sysset-field-full {
+        grid-column: 1 / -1;
+    }
+
+    .sysset-card-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.7rem;
+        min-width: 0;
+    }
+
+    .sysset-card-head > div {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .sysset-card-title {
+        margin: 0;
+        color: var(--sysset-text);
+        font-size: 0.95rem;
+        font-weight: 800;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .sysset-card-desc {
+        margin: 0.2rem 0 0;
+        color: var(--sysset-muted);
+        font-size: 0.76rem;
+        line-height: 1.45;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .sysset-card-icon {
+        width: 1.95rem;
+        height: 1.95rem;
+        border-radius: 0.62rem;
+        border: 1px solid rgba(16, 185, 129, 0.24);
+        background: #f0fdf9;
+        color: #0f766e;
+        display: grid;
+        place-items: center;
+        flex: 0 0 auto;
+    }
+
+    .sysset-sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .sysset-hover-label {
+        display: block;
+        margin: 0;
+        color: #64748b;
+        font-size: 0.67rem;
+        font-weight: 400;
+        line-height: 1.1;
+        letter-spacing: 0.01em;
+    }
+
+    .sysset-general-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.9rem;
+        align-items: stretch;
+    }
+
+    .sysset-general-grid > .sysset-card {
+        height: 100%;
+        min-height: 27rem;
+        align-content: start;
+    }
+
+    .sysset-card-split {
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(220px, 0.92fr);
+        gap: 0.95rem;
+        align-items: start;
+        min-width: 0;
+    }
+
+    .sysset-column-main,
+    .sysset-column-side {
+        display: grid;
+        gap: 0.68rem;
+        min-width: 0;
+    }
+
+    .sysset-column-side {
+        align-content: start;
+    }
+
+    .sysset-address-stack {
+        grid-template-columns: 1fr;
+        gap: 0.78rem;
+    }
+
+    .sysset-subsection-title {
+        margin: 0;
+        color: #0f172a;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+
+    .sysset-compact-fields,
+    .sysset-address-fields,
+    .sysset-contact-fields {
+        gap: 0.66rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sysset-input::placeholder {
+        color: #94a3b8;
+    }
+
+    .sysset-field {
+        position: relative;
+        display: grid;
+        gap: 0.26rem;
+        min-width: 0;
+    }
+
+    .sysset-fieldset {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .sysset-label,
+    .sysset-fieldset legend {
+        color: #334155;
+        font-size: 0.73rem;
+        font-weight: 400;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .sysset-help {
+        margin: 0;
+        color: var(--sysset-muted);
+        font-size: 0.7rem;
+        line-height: 1.4;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .sysset-input,
+    .sysset-select,
+    .sysset-textarea {
+        width: 100%;
+        border: 1px solid rgba(148, 163, 184, 0.36);
+        border-radius: 0.72rem;
+        background: #ffffff;
+        color: #0f172a;
+        padding: 0.46rem 0.58rem;
+        font: inherit;
+        font-size: 0.8rem;
+        min-height: 39px;
+    }
+
+    .sysset-textarea {
+        min-height: 84px;
+        resize: vertical;
+    }
+
+    .sysset-avatar-grid {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        gap: 0.78rem;
+    }
+
+    .sysset-avatar-preview {
+        width: 4.4rem;
+        height: 4.4rem;
+        border-radius: 999px;
+        border: 2px solid rgba(15, 118, 110, 0.24);
+        background: linear-gradient(145deg, #ecfeff 0%, #f0fdf9 100%);
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+    }
+
+    .sysset-avatar-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: none;
+    }
+
+    .sysset-avatar-preview[data-has-image="true"] img {
+        display: block;
+    }
+
+    .sysset-avatar-preview[data-has-image="true"] .sysset-avatar-initials {
+        display: none;
+    }
+
+    .sysset-avatar-initials {
+        color: #0f766e;
+        font-size: 1.12rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+    }
+
+    .sysset-photo-minimal {
+        border: 1px dashed rgba(148, 163, 184, 0.58);
+        border-radius: 0.82rem;
+        background: linear-gradient(180deg, #f9fffd 0%, #ffffff 100%);
+        padding: 0.56rem;
+        display: grid;
+        gap: 0.42rem;
+        max-width: 15.8rem;
+    }
+
+    .sysset-photo-label {
+        margin: 0;
+        color: #475569;
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+
+    .sysset-personal-layout {
+        display: grid;
+        gap: 0.72rem;
+        align-content: start;
+    }
+
+    .sysset-personal-avatar-wrap {
+        display: grid;
+        justify-items: center;
+        text-align: center;
+        gap: 0.34rem;
+        padding-top: 0;
+    }
+
+    .sysset-avatar-upload-control {
+        position: relative;
+        display: inline-grid;
+        place-items: center;
+    }
+
+    .sysset-avatar-preview-personal {
+        width: 6.6rem;
+        height: 6.6rem;
+        border-width: 1px;
+    }
+
+    .sysset-avatar-preview-personal .sysset-avatar-initials {
+        font-size: 1.38rem;
+    }
+
+    .sysset-avatar-camera-btn {
+        position: absolute;
+        right: -0.26rem;
+        bottom: -0.26rem;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.46);
+        background: #ffffff;
+        color: #0f766e;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        transition: background-color 140ms ease, color 140ms ease;
+    }
+
+    .sysset-avatar-camera-btn svg {
+        width: 1.08rem;
+        height: 1.08rem;
+    }
+
+    .sysset-photo-action-wrap {
+        display: grid;
+        justify-items: center;
+        gap: 0.18rem;
+        border: 0;
+        background: transparent;
+        padding: 0;
+    }
+
+    .sysset-photo-action-wrap .sysset-upload-row {
+        min-height: 0;
+        display: grid;
+        justify-items: center;
+        gap: 0.2rem;
+    }
+
+    .sysset-photo-action {
+        border: 0;
+        background: transparent;
+        color: #0f766e;
+        font-size: 0.74rem;
+        font-weight: 700;
+        padding: 0;
+        cursor: pointer;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .sysset-photo-action-wrap .sysset-upload-name {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.7rem;
+        white-space: normal;
+        text-overflow: clip;
+        text-align: center;
+        max-width: 16rem;
+    }
+
+    .sysset-photo-action-wrap .sysset-upload-clear {
+        border: 0;
+        background: transparent;
+        color: #64748b;
+        padding: 0;
+        font-size: 0.69rem;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .sysset-photo-action-wrap .sysset-help {
+        font-size: 0.68rem;
+        text-align: center;
+    }
+
+    .sysset-personal-fields {
+        margin-top: 0.16rem;
+    }
+
+    .sysset-avatar-grid-compact {
+        grid-template-columns: 1fr;
+        gap: 0.42rem;
+        justify-items: start;
+    }
+
+    .sysset-avatar-preview-compact {
+        width: 3.35rem;
+        height: 3.35rem;
+        border-width: 1px;
+    }
+
+    .sysset-avatar-preview-compact .sysset-avatar-initials {
+        font-size: 0.88rem;
+    }
+
+    .sysset-upload-compact {
+        width: 100%;
+        padding: 0.42rem;
+        border-radius: 0.68rem;
+        gap: 0.36rem;
+    }
+
+    .sysset-upload-compact .sysset-upload-row {
+        min-height: 0;
+        gap: 0.34rem;
+        flex-wrap: wrap;
+    }
+
+    .sysset-upload-compact .sysset-upload-btn {
+        padding: 0.34rem 0.54rem;
+        font-size: 0.71rem;
+    }
+
+    .sysset-upload-compact .sysset-upload-clear {
+        padding: 0.31rem 0.48rem;
+        font-size: 0.68rem;
+    }
+
+    .sysset-upload-compact .sysset-upload-name {
+        width: 100%;
+        order: 3;
+        font-size: 0.7rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .sysset-upload {
+        border: 1px solid rgba(148, 163, 184, 0.36);
+        border-radius: 0.78rem;
+        background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+        padding: 0.5rem;
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .sysset-upload:focus-within {
+        border-color: rgba(15, 118, 110, 0.44);
+    }
+
+    .sysset-file-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .sysset-upload-row {
+        display: flex;
+        align-items: center;
+        gap: 0.46rem;
+        min-height: 2.2rem;
+    }
+
+    .sysset-upload-btn {
+        border: 1px solid rgba(15, 118, 110, 0.32);
+        background: #f0fdfa;
+        color: #0f766e;
+        border-radius: 0.62rem;
+        padding: 0.42rem 0.64rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        cursor: pointer;
+        flex: 0 0 auto;
+    }
+
+    .sysset-upload-name {
+        margin: 0;
+        color: #475569;
+        font-size: 0.76rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .sysset-upload-clear {
+        border: 1px solid rgba(148, 163, 184, 0.4);
+        background: #ffffff;
+        color: #475569;
+        border-radius: 0.55rem;
+        padding: 0.36rem 0.52rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        cursor: pointer;
+        flex: 0 0 auto;
+    }
+
+    .sysset-upload[data-has-file="true"] {
+        border-color: rgba(16, 185, 129, 0.28);
+        background: linear-gradient(180deg, #f8fffc 0%, #ffffff 100%);
+    }
+
+    .sysset-check-chip {
+        border: 1px solid rgba(148, 163, 184, 0.26);
+        border-radius: 0.76rem;
+        padding: 0.5rem 0.56rem;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 0.52rem;
+        cursor: pointer;
+        min-height: 40px;
+    }
+
+    .sysset-check-chip input {
+        width: 0.95rem;
+        height: 0.95rem;
+        margin: 0;
+        accent-color: #0f766e;
+        flex: 0 0 auto;
+    }
+
+    .sysset-check-chip-title {
+        color: #0f172a;
+        font-size: 0.77rem;
+        font-weight: 600;
+    }
+
+    .sysset-household-setup-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.9rem;
+        min-width: 0;
+        align-items: start;
+    }
+
+    .sysset-household-column {
+        display: grid;
+        gap: 0.72rem;
+        min-width: 0;
+    }
+
+    .sysset-household-fields {
+        grid-template-columns: 1fr;
+        gap: 0.62rem;
+    }
+
+    .sysset-assistance-chip-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+        min-width: 0;
+    }
+
+    .sysset-assistance-chip-grid .sysset-check-chip {
+        min-height: 38px;
+    }
+
+    .sysset-assistance-summary-inline {
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.82rem;
+        align-items: start;
+        border-top: 1px solid rgba(148, 163, 184, 0.22);
+        padding-top: 0.44rem;
+        min-width: 0;
+    }
+
+    .sysset-assistance-summary-stat {
+        margin: 0;
+        display: grid;
+        gap: 0.2rem;
+        min-width: 0;
+    }
+
+    .sysset-assistance-summary-stat + .sysset-assistance-summary-stat {
+        border-left: 1px solid rgba(148, 163, 184, 0.22);
+        padding-left: 0.82rem;
+    }
+
+    .sysset-assistance-summary-label {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.69rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .sysset-assistance-summary-value {
+        margin: 0;
+        color: #0f172a;
+        font-size: 0.93rem;
+        font-weight: 700;
+        line-height: 1.3;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .sysset-assistance-summary-value.is-status {
+        color: #0f766e;
+    }
+
+    .sysset-toggle-list {
+        display: grid;
+        gap: 0.52rem;
+    }
+
+    .sysset-toggle {
+        border: 1px solid rgba(148, 163, 184, 0.26);
+        border-radius: 0.76rem;
+        padding: 0.52rem 0.56rem;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 0.56rem;
+        cursor: pointer;
+    }
+
+    .sysset-toggle input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .sysset-toggle-track {
+        width: 2.2rem;
+        height: 1.26rem;
+        border-radius: 999px;
+        background: #cbd5e1;
+        position: relative;
+        transition: background-color 170ms ease;
+        flex: 0 0 auto;
+    }
+
+    .sysset-toggle-track::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 0.94rem;
+        height: 0.94rem;
+        border-radius: 999px;
+        background: #ffffff;
+        transition: transform 170ms ease;
+    }
+
+    .sysset-toggle input:checked + .sysset-toggle-track {
+        background: #14b8a6;
+    }
+
+    .sysset-toggle input:checked + .sysset-toggle-track::after {
+        transform: translateX(0.94rem);
+    }
+
+    .sysset-toggle-copy {
+        min-width: 0;
+        display: grid;
+        gap: 0.12rem;
+    }
+
+    .sysset-toggle-title {
+        color: #0f172a;
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .sysset-toggle-desc {
+        color: #64748b;
+        font-size: 0.71rem;
+        margin: 0;
+    }
+
+    .sysset-history-item {
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        border-radius: 0.76rem;
+        padding: 0.55rem 0.6rem;
+        background: #f8fafc;
+    }
+
+    .sysset-history-label {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .sysset-history-value {
+        margin: 0.28rem 0 0;
+        color: #0f172a;
+        font-size: 0.9rem;
+        font-weight: 800;
+    }
+
+    .sysset-day-picker {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.44rem;
+    }
+
+    .sysset-day-btn {
+        border: 1px solid rgba(148, 163, 184, 0.4);
+        background: #ffffff;
+        color: #334155;
+        border-radius: 999px;
+        padding: 0.34rem 0.58rem;
+        font-size: 0.73rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .sysset-day-btn[aria-pressed="true"] {
+        border-color: rgba(5, 150, 105, 0.38);
+        background: rgba(16, 185, 129, 0.16);
+        color: #065f46;
+    }
+
+    .sysset-meta-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.38rem;
+    }
+
+    .sysset-meta-item {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.6rem;
+    }
+
+    .sysset-meta-label {
+        color: #64748b;
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+
+    .sysset-meta-value {
+        color: #0f172a;
+        font-size: 0.76rem;
+        text-align: right;
+        font-weight: 600;
+    }
+
+    .sysset-input:focus-visible,
+    .sysset-select:focus-visible,
+    .sysset-textarea:focus-visible,
+    .sysset-btn:focus-visible,
+    .sysset-tab:focus-visible,
+    .sysset-upload-btn:focus-visible,
+    .sysset-upload-clear:focus-visible,
+    .sysset-check-chip:focus-within {
+        outline: 2px solid rgba(15, 118, 110, 0.34);
+        outline-offset: 2px;
+    }
+
+    .sysset-save-state {
+        margin: 0;
+        color: #0f766e;
+        font-size: 0.75rem;
+        border: 1px solid rgba(15, 118, 110, 0.24);
+        background: var(--sysset-accent-soft);
+        border-radius: 999px;
+        padding: 0.26rem 0.58rem;
+    }
+
+    .sysset-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.46rem;
+    }
+
+    .sysset-btn {
+        border-radius: 0.7rem;
+        border: 1px solid transparent;
+        padding: 0.47rem 0.74rem;
+        font: inherit;
+        font-size: 0.78rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .sysset-btn[disabled] {
+        cursor: not-allowed;
+        opacity: 0.55;
+    }
+
+    .sysset-btn-ghost {
+        border-color: rgba(148, 163, 184, 0.36);
+        background: #ffffff;
+        color: #334155;
+    }
+
+    .sysset-btn-primary {
+        border-color: #0f766e;
+        background: #0f766e;
+        color: #ffffff;
+    }
+
+    .sysset-inline-status {
+        margin: 0;
+        color: var(--sysset-accent);
+        font-size: 0.78rem;
+        min-height: 1rem;
+    }
+
+    @media (max-width: 980px) {
+        .sysset-grid,
+        .sysset-fields,
+        .sysset-check-grid,
+        .sysset-history-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .sysset-general-grid > .sysset-card {
+            min-height: 0;
+        }
+
+        .sysset-card-split {
+            grid-template-columns: 1fr;
+            gap: 0.78rem;
+        }
+
+        .sysset-household-setup-grid {
+            grid-template-columns: 1fr;
+            gap: 0.76rem;
+        }
+
+        .sysset-photo-minimal {
+            max-width: 100%;
+        }
+
+        .sysset-card-full,
+        .sysset-field-full {
+            grid-column: auto;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .sysset-page {
+            gap: 0.7rem;
+        }
+
+        .sysset-tabs-wrap {
+            padding: 0.4rem;
+            border-radius: 0.85rem;
+            overflow: hidden;
+            position: relative;
+            background: #ffffff;
+            grid-template-columns: 1fr;
+            gap: 0.45rem;
+        }
+
+        .sysset-tabs-wrap::before,
+        .sysset-tabs-wrap::after {
+            display: none;
+        }
+
+        .sysset-toolbar-actions {
+            justify-self: end;
+        }
+
+        .sysset-tabs {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 0.34rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 0 0.08rem 0.34rem;
+            overscroll-behavior-x: contain;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x proximity;
+            scroll-padding-inline: 0.16rem;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(148, 163, 184, 0.55) transparent;
+        }
+
+        .sysset-tabs::-webkit-scrollbar {
+            height: 5px;
+            display: block;
+        }
+
+        .sysset-tabs::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sysset-tabs::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.52);
+            border-radius: 999px;
+        }
+
+        .sysset-tabs li {
+            min-width: max-content;
+            flex: 0 0 auto;
+            scroll-snap-align: start;
+        }
+
+        .sysset-tab {
+            width: auto;
+            min-height: 2.15rem;
+            padding: 0.42rem 0.6rem;
+            font-size: 0.76rem;
+            gap: 0.28rem;
+            justify-content: flex-start;
+            text-align: left;
+            white-space: nowrap;
+            line-height: 1.2;
+        }
+
+        .sysset-tab span {
+            white-space: nowrap;
+        }
+
+        .sysset-card {
+            padding: 0.72rem;
+            gap: 0.62rem;
+            border-radius: 0.85rem;
+        }
+
+        .sysset-card-head {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.46rem;
+        }
+
+        .sysset-card-icon {
+            width: 1.7rem;
+            height: 1.7rem;
+        }
+
+        .sysset-card-title {
+            font-size: 0.9rem;
+        }
+
+        .sysset-card-desc {
+            font-size: 0.73rem;
+            line-height: 1.38;
+        }
+
+        .sysset-label,
+        .sysset-fieldset legend {
+            font-size: 0.82rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .sysset-help {
+            font-size: 0.74rem;
+            line-height: 1.42;
+        }
+
+        .sysset-fields,
+        .sysset-check-grid,
+        .sysset-history-grid {
+            gap: 0.66rem;
+        }
+
+        .sysset-assistance-chip-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .sysset-assistance-summary-inline {
+            grid-template-columns: 1fr;
+            gap: 0.56rem;
+            padding-top: 0.28rem;
+        }
+
+        .sysset-assistance-summary-stat + .sysset-assistance-summary-stat {
+            border-left: 0;
+            border-top: 1px solid rgba(148, 163, 184, 0.22);
+            padding-left: 0;
+            padding-top: 0.5rem;
+        }
+
+        .sysset-input,
+        .sysset-select,
+        .sysset-textarea {
+            font-size: 16px;
+            min-height: 41px;
+            padding: 0.44rem 0.56rem;
+            line-height: 1.35;
+        }
+
+        .sysset-upload {
+            padding: 0.46rem;
+        }
+
+        .sysset-upload-row {
+            width: 100%;
+            align-items: stretch;
+            gap: 0.34rem;
+        }
+
+        .sysset-upload-btn,
+        .sysset-upload-clear {
+            justify-content: center;
+        }
+
+        .sysset-upload-btn {
+            width: 100%;
+        }
+
+        .sysset-upload-clear {
+            width: auto;
+            align-self: flex-start;
+        }
+
+        .sysset-avatar-grid {
+            grid-template-columns: 1fr;
+            justify-items: start;
+        }
+
+        .sysset-photo-minimal {
+            padding: 0.5rem;
+        }
+
+        .sysset-avatar-preview-compact {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        .sysset-avatar-preview-personal {
+            width: 5.5rem;
+            height: 5.5rem;
+        }
+
+        .sysset-avatar-camera-btn {
+            width: 1.78rem;
+            height: 1.78rem;
+            right: -0.18rem;
+            bottom: -0.18rem;
+        }
+
+        .sysset-upload-row {
+            flex-wrap: wrap;
+        }
+
+        .sysset-upload-name {
+            width: 100%;
+            order: 3;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .sysset-actions {
+            width: auto;
+            justify-content: flex-end;
+            gap: 0.38rem;
+        }
+
+        .sysset-btn {
+            min-width: 0;
+            flex: 0 0 auto;
+        }
+
+        body.sysset-modal-open {
+            overflow: hidden;
+        }
+
+        .sysset-2fa-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1200;
+            display: grid;
+            place-items: center;
+            padding: 1rem;
+        }
+
+        .sysset-2fa-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 17, 0.48);
+            backdrop-filter: blur(6px);
+        }
+
+        .sysset-2fa-card {
+            position: relative;
+            width: min(100%, 420px);
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 32px 80px rgba(13, 32, 20, 0.24);
+            padding: 1.4rem;
+            z-index: 1;
+        }
+
+        .sysset-2fa-close {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.85rem;
+            border: 0;
+            background: transparent;
+            color: #6d7c74;
+            font-size: 1.75rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .sysset-2fa-title {
+            margin: 0 0 0.45rem;
+            font-size: 1.3rem;
+            line-height: 1.2;
+        }
+
+        .sysset-2fa-message,
+        .sysset-2fa-error {
+            margin: 0 0 0.85rem;
+            color: #4a5a52;
+            line-height: 1.5;
+        }
+
+        .sysset-2fa-error {
+            color: #a11d2d;
+            min-height: 1.25rem;
+        }
+
+        .sysset-2fa-row {
+            margin-bottom: 0.9rem;
+        }
+
+        .sysset-2fa-input {
+            text-align: center;
+            letter-spacing: 0.25em;
+        }
+
+        .sysset-2fa-actions {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .sysset-2fa-actions .sysset-btn {
+            flex: 1 1 0;
+        }
+
+        @media (max-width: 540px) {
+            .sysset-2fa-card {
+                padding: 1.2rem;
+                border-radius: 20px;
+            }
+
+            .sysset-2fa-actions .sysset-btn {
+                flex-basis: 100%;
+            }
+        }
+    }
+</style>
+
+<form id="sysset-form" class="sysset-page" novalidate data-profile-endpoint="{% url 'dashboard_profile_update' %}" data-settings-state-endpoint="{% url 'dashboard_settings_state_update' %}" data-two-factor-endpoint="{% url 'dashboard_two_factor_setup' %}">
+    {% csrf_token %}
+
+    <div class="sysset-tabs-wrap">
+        <ul id="sysset-tabs" class="sysset-tabs" role="tablist" aria-label="{% if dashboard_scope == 'volunteer' %}Volunteer settings tabs{% else %}Beneficiary settings tabs{% endif %}">
+            <li><button type="button" class="sysset-tab sysset-focus" role="tab" aria-selected="true" aria-controls="panel-general" id="tab-general" data-target="general" tabindex="0"><i data-lucide="user-round" class="tab-icon" aria-hidden="true"></i><span>General</span></button></li>
+            <li><button type="button" class="sysset-tab sysset-focus" role="tab" aria-selected="false" aria-controls="panel-household-assistance" id="tab-household-assistance" data-target="household-assistance" tabindex="-1"><i data-lucide="{% if dashboard_scope == 'volunteer' %}clipboard-list{% else %}house{% endif %}" class="tab-icon" aria-hidden="true"></i><span>{% if dashboard_scope == "volunteer" %}Volunteer Profile{% else %}Household &amp; Assistance{% endif %}</span></button></li>
+            <li><button type="button" class="sysset-tab sysset-focus" role="tab" aria-selected="false" aria-controls="panel-notifications" id="tab-notifications" data-target="notifications" tabindex="-1"><i data-lucide="bell" class="tab-icon" aria-hidden="true"></i><span>Notifications</span></button></li>
+            <li><button type="button" class="sysset-tab sysset-focus" role="tab" aria-selected="false" aria-controls="panel-security" id="tab-security" data-target="security" tabindex="-1"><i data-lucide="shield-check" class="tab-icon" aria-hidden="true"></i><span>Security</span></button></li>
+            <li><button type="button" class="sysset-tab sysset-focus" role="tab" aria-selected="false" aria-controls="panel-preferences" id="tab-preferences" data-target="preferences" tabindex="-1"><i data-lucide="sliders-horizontal" class="tab-icon" aria-hidden="true"></i><span>Preferences</span></button></li>
+        </ul>
+        <div class="sysset-toolbar-actions">
+            <p id="sysset-save-state" class="sysset-save-state sysset-sr-only" role="status" aria-live="polite">No unsaved changes</p>
+            <div class="sysset-actions">
+                <button type="button" id="sysset-discard" class="sysset-btn sysset-btn-ghost sysset-focus">Discard</button>
+                <button type="button" id="sysset-save" class="sysset-btn sysset-btn-primary sysset-focus" disabled>Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <section class="sysset-panel" id="panel-general" role="tabpanel" aria-labelledby="tab-general" data-panel="general">
+        <div class="sysset-grid sysset-general-grid">
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Personal Information</h2>
+                        <p class="sysset-card-desc">Core profile details for volunteer identity and coordination.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="id-card"></i></span>
+                </header>
+                <div class="sysset-personal-layout">
+                    <div class="sysset-personal-avatar-wrap">
+                        <div id="sysset-photo-upload" class="sysset-avatar-upload-control" data-has-file="false">
+                            <div id="sysset-avatar-preview" class="sysset-avatar-preview sysset-avatar-preview-personal" data-has-image="{% if user_avatar_url %}true{% else %}false{% endif %}" aria-hidden="true">
+                                <img id="sysset-avatar-image" {% if user_avatar_url %}src="{{ user_avatar_url }}" alt="{{ user_display_name|default:'User' }} profile photo"{% else %}alt=""{% endif %}>
+                                <span id="sysset-avatar-initials" class="sysset-avatar-initials">{{ user_initials|default:'U' }}</span>
+                            </div>
+                            <input id="profile_photo" name="profile_photo" class="sysset-file-input" type="file" accept="image/*">
+                            <label for="profile_photo" class="sysset-avatar-camera-btn sysset-focus" aria-label="Upload or change profile photo"><i data-lucide="camera" aria-hidden="true"></i></label>
+                        </div>
+                    </div>
+
+                        <div class="sysset-fields sysset-compact-fields sysset-personal-fields">
+                        <div class="sysset-field"><label class="sysset-hover-label" for="first_name">First Name</label><input id="first_name" name="first_name" class="sysset-input" type="text" value="{{ request.user.first_name|default:'' }}" placeholder="First name" autocomplete="given-name"></div>
+                        <div class="sysset-field"><label class="sysset-hover-label" for="last_name">Last Name</label><input id="last_name" name="last_name" class="sysset-input" type="text" value="{{ request.user.last_name|default:'' }}" placeholder="Last name" autocomplete="family-name"></div>
+                        <div class="sysset-field"><label class="sysset-hover-label" for="email">Email</label><input id="email" name="email" class="sysset-input" type="email" value="{{ request.user.email|default:'' }}" placeholder="Email address" autocomplete="email"></div>
+                        <div class="sysset-field"><label class="sysset-hover-label" for="phone">Phone Number</label><input id="phone" name="phone" class="sysset-input" type="tel" value="{{ profile.phone|default:'' }}" placeholder="Phone number" autocomplete="tel"></div>
+                        <div class="sysset-field"><label class="sysset-hover-label" for="birthdate">Birthdate</label><input id="birthdate" name="birthdate" class="sysset-input" type="date" value="{% if profile.birthdate %}{{ profile.birthdate|date:'Y-m-d' }}{% endif %}" autocomplete="bday"></div>
+                        {% if dashboard_scope != "volunteer" %}
+                        <div class="sysset-field"><label class="sysset-hover-label" for="civil_status">Civil Status</label><select id="civil_status" name="civil_status" class="sysset-select"><option value="" {% if not profile.civil_status %}selected{% endif %}>Civil status</option><option value="Single" {% if profile.civil_status == 'Single' %}selected{% endif %}>Single</option><option value="Married" {% if profile.civil_status == 'Married' %}selected{% endif %}>Married</option><option value="Widowed" {% if profile.civil_status == 'Widowed' %}selected{% endif %}>Widowed</option><option value="Separated" {% if profile.civil_status == 'Separated' %}selected{% endif %}>Separated</option></select></div>
+                        {% endif %}
+                        {% if dashboard_scope == "volunteer" %}
+                        <div class="sysset-field sysset-field-full">
+                            <h3 class="sysset-subsection-title">Volunteer identity</h3>
+                        </div>
+                        <div class="sysset-field"><label class="sysset-hover-label" for="volunteer_role">Role / Position</label><select id="volunteer_role" name="volunteer_role" class="sysset-select"><option value="Community volunteer" {% if profile.volunteer_role == 'Community volunteer' or not profile.volunteer_role %}selected{% endif %}>Community volunteer</option><option value="OJT intern" {% if profile.volunteer_role == 'OJT intern' %}selected{% endif %}>OJT intern</option></select></div>
+                        <div class="sysset-field"><label class="sysset-hover-label" for="assigned_chapter_area">Assigned Chapter / Area</label><input id="assigned_chapter_area" name="assigned_chapter_area" class="sysset-input" type="text" value="{{ profile.assigned_chapter_area|default:'' }}" placeholder="Assigned chapter or area"></div>
+                        {% endif %}
+                    </div>
+                </div>
+            </article>
+
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Address &amp; Emergency Contact</h2>
+                        <p class="sysset-card-desc">Structured location and emergency details for faster coordination.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="map-pin"></i></span>
+                </header>
+                <div class="sysset-card-split sysset-address-stack">
+                    <div class="sysset-column-main">
+                        <h3 class="sysset-subsection-title">Address</h3>
+                        <div class="sysset-fields sysset-address-fields">
+                            <div class="sysset-field sysset-field-full"><label class="sysset-hover-label" for="address_line">Street, Block, Lot</label><input id="address_line" name="address_line" class="sysset-input" type="text" value="{{ profile.address_line|default:'' }}" placeholder="Street / Block / Lot" autocomplete="street-address"></div>
+                            <div class="sysset-field"><label class="sysset-hover-label" for="barangay">Barangay</label><input id="barangay" name="barangay" class="sysset-input" type="text" value="{{ profile.barangay|default:'' }}" placeholder="Barangay"></div>
+                            <div class="sysset-field"><label class="sysset-hover-label" for="city_municipality">City</label><input id="city_municipality" name="city_municipality" class="sysset-input" type="text" value="{{ profile.city_municipality|default:'' }}" placeholder="City"></div>
+                        </div>
+                    </div>
+
+                    <aside class="sysset-column-side">
+                        <h3 class="sysset-subsection-title">Emergency Contact</h3>
+                        <div class="sysset-fields sysset-contact-fields">
+                            <div class="sysset-field"><label class="sysset-hover-label" for="emergency_contact_name">Full Name</label><input id="emergency_contact_name" name="emergency_contact_name" class="sysset-input" type="text" value="{{ profile.emergency_contact_name|default:'' }}" placeholder="Full name" autocomplete="name"></div>
+                            <div class="sysset-field"><label class="sysset-hover-label" for="emergency_contact_relationship">Relationship</label><input id="emergency_contact_relationship" name="emergency_contact_relationship" class="sysset-input" type="text" value="{{ profile.emergency_contact_relationship|default:'' }}" placeholder="Relationship"></div>
+                            <div class="sysset-field sysset-field-full"><label class="sysset-hover-label" for="emergency_contact_phone">Phone Number</label><input id="emergency_contact_phone" name="emergency_contact_phone" class="sysset-input" type="tel" value="{{ profile.emergency_contact_phone|default:'' }}" placeholder="Phone number" autocomplete="tel"></div>
+                        </div>
+                    </aside>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="sysset-panel" id="panel-household-assistance" role="tabpanel" aria-labelledby="tab-household-assistance" data-panel="household-assistance" hidden>
+        {% if dashboard_scope == "volunteer" %}
+        <div class="sysset-grid">
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Skills &amp; Service Areas</h2>
+                        <p class="sysset-card-desc">Highlight where you can best support field operations and community programs.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="briefcase"></i></span>
+                </header>
+                <fieldset class="sysset-fieldset">
+                    <legend>Volunteer Skills</legend>
+                    <div class="sysset-check-grid">
+                        <label class="sysset-check-chip"><input type="checkbox" name="volunteer_skill" value="first_aid" checked><span class="sysset-check-chip-title">First aid</span></label>
+                        <label class="sysset-check-chip"><input type="checkbox" name="volunteer_skill" value="food_distribution" checked><span class="sysset-check-chip-title">Food distribution</span></label>
+                        <label class="sysset-check-chip"><input type="checkbox" name="volunteer_skill" value="community_counseling"><span class="sysset-check-chip-title">Community counseling</span></label>
+                        <label class="sysset-check-chip"><input type="checkbox" name="volunteer_skill" value="livelihood_coaching"><span class="sysset-check-chip-title">Livelihood coaching</span></label>
+                        <label class="sysset-check-chip"><input type="checkbox" name="volunteer_skill" value="data_encoding" checked><span class="sysset-check-chip-title">Data encoding</span></label>
+                        <label class="sysset-check-chip"><input type="checkbox" name="volunteer_skill" value="education_tutoring"><span class="sysset-check-chip-title">Education tutoring</span></label>
+                    </div>
+                </fieldset>
+                <div class="sysset-fields">
+                    <div class="sysset-field"><label class="sysset-label" for="preferred_service_area">Preferred Service Area</label><select id="preferred_service_area" name="preferred_service_area" class="sysset-select"><option selected>Barangay San Isidro</option><option>Barangay Bagong Silang</option><option>Any assigned area</option></select></div>
+                    <div class="sysset-field"><label class="sysset-label" for="languages_spoken">Languages Spoken</label><input id="languages_spoken" name="languages_spoken" class="sysset-input" type="text" value="English, Filipino" placeholder="Languages spoken"></div>
+                </div>
+            </article>
+
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Availability</h2>
+                        <p class="sysset-card-desc">Set your preferred volunteer schedule and weekly commitment.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="calendar-clock"></i></span>
+                </header>
+                <div class="sysset-field sysset-field-full">
+                    <label class="sysset-label" for="available_days_value">Available Days</label>
+                    <div class="sysset-day-picker" role="group" aria-label="Available days">
+                        <button type="button" class="sysset-day-btn sysset-focus" data-day="Mon" aria-pressed="true">Mon</button>
+                        <button type="button" class="sysset-day-btn sysset-focus" data-day="Tue" aria-pressed="true">Tue</button>
+                        <button type="button" class="sysset-day-btn sysset-focus" data-day="Wed" aria-pressed="true">Wed</button>
+                        <button type="button" class="sysset-day-btn sysset-focus" data-day="Thu" aria-pressed="false">Thu</button>
+                        <button type="button" class="sysset-day-btn sysset-focus" data-day="Fri" aria-pressed="false">Fri</button>
+                        <button type="button" class="sysset-day-btn sysset-focus" data-day="Sat" aria-pressed="false">Sat</button>
+                        <button type="button" class="sysset-day-btn sysset-focus" data-day="Sun" aria-pressed="false">Sun</button>
+                    </div>
+                    <input id="available_days_value" name="available_days_value" type="hidden" value="Mon,Tue,Wed">
+                </div>
+                <div class="sysset-fields">
+                    <div class="sysset-field"><label class="sysset-label" for="preferred_time_slot">Preferred Time Slot</label><select id="preferred_time_slot" name="preferred_time_slot" class="sysset-select"><option selected>Morning 8AM-12PM</option><option>Afternoon 1PM-5PM</option><option>Full day</option><option>Flexible</option></select></div>
+                    <div class="sysset-field"><label class="sysset-label" for="max_hours_week">Max Hours Per Week</label><select id="max_hours_week" name="max_hours_week" class="sysset-select"><option selected>Up to 8 hrs</option><option>Up to 16 hrs</option><option>Up to 24 hrs</option><option>No limit</option></select></div>
+                </div>
+                <div class="sysset-card-head">
+                    <div>
+                        <h3 class="sysset-card-title">Volunteer Summary</h3>
+                        <p class="sysset-card-desc">Read-only progress snapshot for your volunteer contributions.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="bar-chart-3"></i></span>
+                </div>
+                <div class="sysset-history-grid" aria-label="Volunteer summary snapshot">
+                    <article class="sysset-history-item">
+                        <p class="sysset-history-label">Tasks Done</p>
+                        <p class="sysset-history-value">18</p>
+                    </article>
+                    <article class="sysset-history-item">
+                        <p class="sysset-history-label">Hours Logged</p>
+                        <p class="sysset-history-value">74 hrs</p>
+                    </article>
+                    <article class="sysset-history-item">
+                        <p class="sysset-history-label">OJT Status</p>
+                        <p class="sysset-history-value">In Progress</p>
+                    </article>
+                </div>
+            </article>
+        </div>
+        {% else %}
+        <div class="sysset-grid sysset-household-hover-grid">
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Household Details</h2>
+                        <p class="sysset-card-desc">Provide household context to improve assistance matching and prioritization.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="users-round"></i></span>
+                </header>
+                <div class="sysset-fields">
+                    <div class="sysset-field"><label class="sysset-hover-label" for="household_size">Household Size</label><input id="household_size" name="household_size" class="sysset-input" type="number" min="1" value="5"></div>
+                    <div class="sysset-field"><label class="sysset-hover-label" for="dependents">Dependents</label><input id="dependents" name="dependents" class="sysset-input" type="number" min="0" value="2"></div>
+                    <div class="sysset-field"><label class="sysset-hover-label" for="occupation">Primary Occupation</label><input id="occupation" name="occupation" class="sysset-input" type="text" value="Household helper"></div>
+                    <div class="sysset-field"><label class="sysset-hover-label" for="income_range">Income Range</label><select id="income_range" name="income_range" class="sysset-select"><option>Below PHP 5,000</option><option selected>PHP 5,001 - 10,000</option><option>PHP 10,001 - 20,000</option><option>Above PHP 20,000</option></select></div>
+                </div>
+            </article>
+
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Assistance Preferences</h2>
+                        <p class="sysset-card-desc">Tell us what support you usually need and your preferred way to be contacted.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="hand-heart"></i></span>
+                </header>
+                <fieldset class="sysset-fieldset">
+                    <legend>Preferred Assistance Types</legend>
+                    <div class="sysset-check-grid">
+                        <label class="sysset-check-chip"><input type="checkbox" name="assist_type" value="food" checked><span class="sysset-check-chip-title">Food Pack</span></label>
+                        <label class="sysset-check-chip"><input type="checkbox" name="assist_type" value="medicine" checked><span class="sysset-check-chip-title">Medical Aid</span></label>
+                        <label class="sysset-check-chip"><input type="checkbox" name="assist_type" value="livelihood"><span class="sysset-check-chip-title">Livelihood Support</span></label>
+                        <label class="sysset-check-chip"><input type="checkbox" name="assist_type" value="education"><span class="sysset-check-chip-title">Education Support</span></label>
+                    </div>
+                </fieldset>
+                <div class="sysset-fields">
+                    <div class="sysset-field sysset-field-full"><label class="sysset-hover-label" for="preferred_contact_method">Preferred Contact Method</label><select id="preferred_contact_method" name="preferred_contact_method" class="sysset-select"><option selected>Phone Call</option><option>SMS</option><option>Email</option><option>In-app Message</option></select></div>
+                </div>
+            </article>
+
+            <article class="sysset-card sysset-card-full">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Assistance Summary</h2>
+                        <p class="sysset-card-desc">Read-only snapshot of recent assistance activity.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="bar-chart-3"></i></span>
+                </header>
+                <dl class="sysset-assistance-summary-inline" aria-label="Assistance summary snapshot">
+                    <div class="sysset-assistance-summary-stat">
+                        <dt class="sysset-assistance-summary-label">Last Assistance Date</dt>
+                        <dd class="sysset-assistance-summary-value">Mar 22, 2026</dd>
+                    </div>
+                    <div class="sysset-assistance-summary-stat">
+                        <dt class="sysset-assistance-summary-label">Total Assistance (12 Months)</dt>
+                        <dd class="sysset-assistance-summary-value">6</dd>
+                    </div>
+                    <div class="sysset-assistance-summary-stat">
+                        <dt class="sysset-assistance-summary-label">Current Request Status</dt>
+                        <dd class="sysset-assistance-summary-value is-status">Under Review</dd>
+                    </div>
+                </dl>
+            </article>
+        </div>
+        {% endif %}
+    </section>
+
+    <section class="sysset-panel" id="panel-notifications" role="tabpanel" aria-labelledby="tab-notifications" data-panel="notifications" hidden>
+        <div class="sysset-grid">
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Notification Types</h2>
+                        <p class="sysset-card-desc">Choose which in-app updates you want to receive.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="megaphone"></i></span>
+                </header>
+                <div class="sysset-toggle-list">
+                    {% if dashboard_scope == "volunteer" %}
+                    <label class="sysset-toggle"><input type="checkbox" name="notify_volunteer_assignments" checked><span class="sysset-toggle-track"></span><span class="sysset-toggle-copy"><span class="sysset-toggle-title">Task &amp; Shift Assignments</span><span class="sysset-toggle-desc">Get notified when you are assigned a task or shift.</span></span></label>
+                    {% else %}
+                    <label class="sysset-toggle"><input type="checkbox" name="notify_beneficiary_application_decisions" checked><span class="sysset-toggle-track"></span><span class="sysset-toggle-copy"><span class="sysset-toggle-title">Application Decisions</span><span class="sysset-toggle-desc">Get notified when your application is approved or rejected.</span></span></label>
+                    {% endif %}
+                </div>
+            </article>
+
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Delivery Methods</h2>
+                        <p class="sysset-card-desc">Only in-app alerts are active for now.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="send"></i></span>
+                </header>
+                <div class="sysset-toggle-list">
+                    <label class="sysset-toggle"><input type="checkbox" name="notify_email" checked><span class="sysset-toggle-track"></span><span class="sysset-toggle-copy"><span class="sysset-toggle-title">Email notifications</span><span class="sysset-toggle-desc">Send a short email copy for the same updates.</span></span></label>
+                </div>
+                <p class="sysset-help">In-app alerts stay on. Email copies can be turned off here.</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="sysset-panel" id="panel-security" role="tabpanel" aria-labelledby="tab-security" data-panel="security" hidden>
+        <div class="sysset-grid">
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Change Password</h2>
+                        <p class="sysset-card-desc">Update your password regularly to keep your {% if dashboard_scope == 'volunteer' %}volunteer{% else %}beneficiary{% endif %} account secure.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="key-round"></i></span>
+                </header>
+                <div class="sysset-fields">
+                    <div class="sysset-field sysset-field-full"><label class="sysset-label" for="current_password">Current Password</label><input id="current_password" name="current_password" class="sysset-input" type="password" autocomplete="current-password"></div>
+                    <div class="sysset-field"><label class="sysset-label" for="new_password">New Password</label><input id="new_password" name="new_password" class="sysset-input" type="password" autocomplete="new-password"></div>
+                    <div class="sysset-field"><label class="sysset-label" for="confirm_password">Confirm New Password</label><input id="confirm_password" name="confirm_password" class="sysset-input" type="password" autocomplete="new-password"></div>
+                </div>
+                <p class="sysset-help">Use at least 12 characters with a mix of letters, numbers, and symbols.</p>
+            </article>
+
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Account Protection</h2>
+                        <p class="sysset-card-desc">Manage sessions, optional two-factor authentication, and login activity.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="shield"></i></span>
+                </header>
+                <div class="sysset-toggle-list">
+                    <label class="sysset-toggle"><input id="security_2fa_enabled" type="checkbox" name="security_2fa_enabled"><span class="sysset-toggle-track"></span><span class="sysset-toggle-copy"><span class="sysset-toggle-title">Enable Two-Factor Authentication</span><span class="sysset-toggle-desc">We will send a code to your email each time you sign in.</span></span></label>
+                </div>
+                <p class="sysset-help">{% if settings_state.security_2fa_enabled and not settings_state.security_2fa_confirmed %}Two-factor authentication is waiting for email confirmation.{% elif settings_state.security_2fa_enabled %}Email code sign-in is on for this account.{% else %}You can turn this on anytime for extra account protection.{% endif %}</p>
+                <button id="sysset-logout-all" type="button" class="sysset-btn sysset-btn-ghost sysset-focus">Log Out All Devices</button>
+                <ul class="sysset-meta-list" aria-label="Last login information">
+                    <li class="sysset-meta-item"><span class="sysset-meta-label">Last Login</span><span class="sysset-meta-value">Apr 17, 2026 at 8:42 PM</span></li>
+                    <li class="sysset-meta-item"><span class="sysset-meta-label">IP Address</span><span class="sysset-meta-value">203.177.34.21</span></li>
+                    <li class="sysset-meta-item"><span class="sysset-meta-label">Location</span><span class="sysset-meta-value">Quezon City, PH</span></li>
+                    <li class="sysset-meta-item"><span class="sysset-meta-label">Device</span><span class="sysset-meta-value">Chrome on Windows</span></li>
+                </ul>
+            </article>
+        </div>
+    </section>
+
+    <section class="sysset-panel" id="panel-preferences" role="tabpanel" aria-labelledby="tab-preferences" data-panel="preferences" hidden>
+        <div class="sysset-grid">
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Interface and Locale</h2>
+                        <p class="sysset-card-desc">Customize dashboard density, theme, and localization options.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="layout-grid"></i></span>
+                </header>
+                <div class="sysset-toggle-list">
+                    <label class="sysset-toggle"><input id="pref_dark_mode" type="checkbox" name="pref_dark_mode"><span class="sysset-toggle-track"></span><span class="sysset-toggle-copy"><span class="sysset-toggle-title">Dark Mode</span><span class="sysset-toggle-desc">Use a low-light dashboard theme.</span></span></label>
+                    <label class="sysset-toggle"><input id="pref_animations" type="checkbox" name="pref_animations" checked><span class="sysset-toggle-track"></span><span class="sysset-toggle-copy"><span class="sysset-toggle-title">Animations</span><span class="sysset-toggle-desc">Enable UI animations and transitions.</span></span></label>
+                </div>
+                <div class="sysset-fields">
+                    <div class="sysset-field"><label class="sysset-label" for="pref_font_size">Font Size</label><select id="pref_font_size" name="pref_font_size" class="sysset-select"><option value="small">Small</option><option value="medium" selected>Medium</option><option value="large">Large</option></select></div>
+                    <div class="sysset-field"><label class="sysset-label" for="pref_font_type">Font Type</label><select id="pref_font_type" name="pref_font_type" class="sysset-select"><option value="system">System Default</option><option value="serif">Serif</option><option value="sans-serif" selected>Sans-Serif</option><option value="monospace">Monospace</option></select></div>
+                    <div class="sysset-field"><label class="sysset-label" for="pref_language">Language</label><select id="pref_language" name="pref_language" class="sysset-select"><option value="english" selected>English</option><option value="filipino">Filipino</option></select></div>
+                    <div class="sysset-field"><label class="sysset-label" for="pref_date_format">Date Format</label><select id="pref_date_format" name="pref_date_format" class="sysset-select"><option selected>MMM DD, YYYY</option><option>DD/MM/YYYY</option><option>YYYY-MM-DD</option></select></div>
+                </div>
+            </article>
+
+            <article class="sysset-card">
+                <header class="sysset-card-head">
+                    <div>
+                        <h2 class="sysset-card-title">Privacy and Consent</h2>
+                        <p class="sysset-card-desc">Set profile visibility and your consent choices for outreach and data sharing.</p>
+                    </div>
+                    <span class="sysset-card-icon" aria-hidden="true"><i data-lucide="lock"></i></span>
+                </header>
+                <div class="sysset-fields">
+                    <div class="sysset-field sysset-field-full"><label class="sysset-label" for="profile_visibility">Profile Visibility</label><select id="profile_visibility" name="profile_visibility" class="sysset-select">{% if dashboard_scope == 'volunteer' %}<option selected>Visible to program admins only</option><option>Visible to all volunteers</option>{% else %}<option selected>Visible to assigned case workers</option><option>Visible to all program admins</option><option>Private unless verified request</option>{% endif %}</select></div>
+                </div>
+                <div class="sysset-toggle-list">
+                    <label class="sysset-toggle"><input type="checkbox" name="consent_admin_contact" checked><span class="sysset-toggle-track"></span><span class="sysset-toggle-copy"><span class="sysset-toggle-title">Admin Contact Consent</span><span class="sysset-toggle-desc">{% if dashboard_scope == 'volunteer' %}Allow program admins to contact you for coordination.{% else %}Allow program admins to contact you for assistance verification.{% endif %}</span></span></label>
+                    <label class="sysset-toggle"><input type="checkbox" name="consent_data_sharing"><span class="sysset-toggle-track"></span><span class="sysset-toggle-copy"><span class="sysset-toggle-title">Data Sharing Consent</span><span class="sysset-toggle-desc">{% if dashboard_scope == 'volunteer' %}Allow anonymized volunteer data for program reporting.{% else %}Allow anonymized data for service improvement reporting.{% endif %}</span></span></label>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <p id="sysset-inline-status" class="sysset-inline-status" role="status" aria-live="polite"></p>
+
+    <div id="sysset-2fa-modal" class="sysset-2fa-modal" hidden>
+        <div class="sysset-2fa-backdrop" data-close-two-factor="true"></div>
+        <section class="sysset-2fa-card" role="dialog" aria-modal="true" aria-labelledby="sysset-2fa-title">
+            <button type="button" class="sysset-2fa-close" id="sysset-2fa-close" aria-label="Close verification dialog">&times;</button>
+            <h2 id="sysset-2fa-title" class="sysset-2fa-title">Check your email</h2>
+            <p id="sysset-2fa-modal-message" class="sysset-2fa-message">We sent a 6-digit code to your email. Type it here to turn on email code sign-in.</p>
+            <p id="sysset-2fa-modal-error" class="sysset-2fa-error" role="alert" aria-live="polite" hidden></p>
+            <div class="sysset-2fa-row">
+                <input id="sysset-2fa-code" class="sysset-input sysset-2fa-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+            </div>
+            <div class="sysset-2fa-actions">
+                <button type="button" class="sysset-btn sysset-btn-primary sysset-focus" id="sysset-2fa-verify">Confirm code</button>
+                <button type="button" class="sysset-btn sysset-btn-ghost sysset-focus" id="sysset-2fa-resend">Send new code</button>
+            </div>
+        </section>
+    </div>
+
+</form>
+
+{{ settings_state|json_script:"sysset-saved-state" }}
+
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<script src="{% static 'js/profile-photo-cropper.js' %}"></script>
+<script>
+(function initBeneficiarySettingsPage() {
+    "use strict";
+
+    var form = document.getElementById("sysset-form");
+    if (!form || form.dataset.bound === "true") {
+        return;
+    }
+    form.dataset.bound = "true";
+
+    var tabs = Array.from(form.querySelectorAll(".sysset-tab"));
+    var panels = Array.from(form.querySelectorAll(".sysset-panel"));
+    var saveButton = form.querySelector("#sysset-save");
+    var discardButton = form.querySelector("#sysset-discard");
+    var saveState = form.querySelector("#sysset-save-state");
+    var inlineStatus = form.querySelector("#sysset-inline-status");
+    var logoutAllButton = form.querySelector("#sysset-logout-all");
+    var twoFactorToggle = form.querySelector("#security_2fa_enabled");
+    var darkModeToggle = form.querySelector("#pref_dark_mode");
+    var animationsToggle = form.querySelector("#pref_animations");
+    var fontSizeSelect = form.querySelector("#pref_font_size");
+    var fontTypeSelect = form.querySelector("#pref_font_type");
+    var languageSelect = form.querySelector("#pref_language");
+    var photoInput = form.querySelector("#profile_photo");
+    var photoUpload = form.querySelector("#sysset-photo-upload");
+    var avatarPreview = form.querySelector("#sysset-avatar-preview");
+    var avatarImage = form.querySelector("#sysset-avatar-image");
+    var avatarInitials = form.querySelector("#sysset-avatar-initials");
+    var firstNameInput = form.querySelector("#first_name");
+    var lastNameInput = form.querySelector("#last_name");
+    var dayButtons = Array.from(form.querySelectorAll(".sysset-day-btn"));
+    var availableDaysInput = form.querySelector("#available_days_value");
+    var defaultInitials = avatarInitials ? avatarInitials.textContent : "U";
+    var isDirty = false;
+    var croppedPhotoFile = null;
+    var profileEndpoint = form.getAttribute("data-profile-endpoint") || "";
+    var settingsStateEndpoint = form.getAttribute("data-settings-state-endpoint") || "";
+    var twoFactorEndpoint = form.getAttribute("data-two-factor-endpoint") || "";
+    var csrfInput = form.querySelector("input[name='csrfmiddlewaretoken']");
+    var csrfToken = csrfInput ? csrfInput.value : "";
+    var initialFormState = new FormData(form);
+    var nonGeneralFields = [
+        "volunteer_skill",
+        "preferred_service_area",
+        "languages_spoken",
+        "available_days_value",
+        "preferred_time_slot",
+        "max_hours_week",
+        "household_size",
+        "dependents",
+        "occupation",
+        "income_range",
+        "assist_type",
+        "preferred_contact_method",
+        "notify_beneficiary_application_decisions",
+        "notify_volunteer_assignments",
+        "notify_email",
+        "security_2fa_enabled",
+        "pref_font_size",
+        "pref_font_type",
+        "pref_dark_mode",
+        "pref_language",
+        "pref_timezone",
+        "pref_date_format",
+        "profile_visibility",
+        "consent_admin_contact",
+        "consent_data_sharing"
+    ];
+    var themeStorageKey = "theme_preference";
+    var fontSizeStorageKey = "dashboard_font_size_preference";
+    var fontTypeStorageKey = "dashboard_font_type_preference";
+    var darkThemeClass = "dark-mode";
+    var twoFactorSetupActive = false;
+    var twoFactorSetupConfirmed = false;
+    var twoFactorSetupPendingState = null;
+    var twoFactorSetupHadDirtyState = false;
+    var twoFactorSetupRequestInFlight = false;
+    var twoFactorSetupSuppressChange = false;
+    var twoFactorModal = form.querySelector("#sysset-2fa-modal");
+    var twoFactorModalMessage = form.querySelector("#sysset-2fa-modal-message");
+    var twoFactorModalError = form.querySelector("#sysset-2fa-modal-error");
+    var twoFactorModalInput = form.querySelector("#sysset-2fa-code");
+    var twoFactorModalVerifyButton = form.querySelector("#sysset-2fa-verify");
+    var twoFactorModalResendButton = form.querySelector("#sysset-2fa-resend");
+    var twoFactorModalCloseButton = form.querySelector("#sysset-2fa-close");
+
+    function activateTab(target, shouldFocusTab) {
+        var activeTab = null;
+
+        tabs.forEach(function (tab) {
+            var selected = tab.getAttribute("data-target") === target;
+            tab.setAttribute("aria-selected", selected ? "true" : "false");
+            tab.tabIndex = selected ? 0 : -1;
+            if (selected) {
+                activeTab = tab;
+            }
+        });
+
+        panels.forEach(function (panel) {
+            panel.hidden = panel.getAttribute("data-panel") !== target;
+        });
+
+        if (shouldFocusTab && activeTab) {
+            activeTab.focus();
+        }
+    }
+
+    function normalizeTabKey(raw) {
+        var value = (raw || "").toLowerCase();
+        var legacyMap = {
+            "activity-preferences": "household-assistance",
+            "assist": "household-assistance",
+            "household": "household-assistance"
+        };
+        return legacyMap[value] || value;
+    }
+
+    function normalizeLanguageValue(value) {
+        var raw = String(value || "").trim().toLowerCase();
+        return raw === "filipino" || raw === "fil" ? "filipino" : "english";
+    }
+
+    function normalizeFontSizeValue(value) {
+        var raw = String(value || "").trim().toLowerCase();
+        if (raw === "small" || raw === "large") {
+            return raw;
+        }
+        return "medium";
+    }
+
+    function applyFontSizePreference(fontSize) {
+        var normalized = normalizeFontSizeValue(fontSize);
+        var classes = ["dashboard-font-small", "dashboard-font-medium", "dashboard-font-large"];
+
+        document.documentElement.classList.remove.apply(document.documentElement.classList, classes);
+        document.body.classList.remove.apply(document.body.classList, classes);
+        document.documentElement.classList.add("dashboard-font-" + normalized);
+        document.body.classList.add("dashboard-font-" + normalized);
+
+        if (fontSizeSelect) {
+            fontSizeSelect.value = normalized;
+        }
+    }
+
+    function saveFontSizePreference(fontSize) {
+        try {
+            localStorage.setItem(fontSizeStorageKey, normalizeFontSizeValue(fontSize));
+        } catch (error) {}
+    }
+
+    function readFontSizePreference() {
+        try {
+            return normalizeFontSizeValue(localStorage.getItem(fontSizeStorageKey));
+        } catch (error) {
+            return "medium";
+        }
+    }
+
+    function normalizeFontTypeValue(value) {
+        var raw = String(value || "").trim().toLowerCase();
+        var validTypes = ["system", "serif", "sans-serif", "monospace"];
+        return validTypes.indexOf(raw) !== -1 ? raw : "sans-serif";
+    }
+
+    function applyFontTypePreference(fontType) {
+        var normalized = normalizeFontTypeValue(fontType);
+        var classes = ["dashboard-font-system", "dashboard-font-serif", "dashboard-font-sans-serif", "dashboard-font-monospace"];
+
+        document.documentElement.classList.remove.apply(document.documentElement.classList, classes);
+        document.body.classList.remove.apply(document.body.classList, classes);
+        document.documentElement.classList.add("dashboard-font-" + normalized);
+        document.body.classList.add("dashboard-font-" + normalized);
+
+        if (fontTypeSelect) {
+            fontTypeSelect.value = normalized;
+        }
+    }
+
+    function saveFontTypePreference(fontType) {
+        try {
+            localStorage.setItem(fontTypeStorageKey, normalizeFontTypeValue(fontType));
+        } catch (error) {}
+    }
+
+    function readFontTypePreference() {
+        try {
+            return normalizeFontTypeValue(localStorage.getItem(fontTypeStorageKey));
+        } catch (error) {
+            return "sans-serif";
+        }
+    }
+
+    function applyLanguagePreference(language) {
+        var normalized = normalizeLanguageValue(language);
+
+        if (languageSelect) {
+            languageSelect.value = normalized;
+        }
+
+        if (typeof window.dashboardApplyLanguage === "function") {
+            window.dashboardApplyLanguage(normalized);
+            return;
+        }
+
+        try {
+            localStorage.setItem("ui_language_preference", normalized);
+        } catch (error) {}
+    }
+
+    function setInlineStatus(message) {
+        if (inlineStatus) {
+            inlineStatus.textContent = message;
+        }
+    }
+
+    function setTwoFactorModalError(message) {
+        if (!twoFactorModalError) {
+            return;
+        }
+
+        if (!message) {
+            twoFactorModalError.textContent = "";
+            twoFactorModalError.hidden = true;
+            return;
+        }
+
+        twoFactorModalError.textContent = message;
+        twoFactorModalError.hidden = false;
+    }
+
+    function setTwoFactorModalMessage(message) {
+        if (twoFactorModalMessage) {
+            twoFactorModalMessage.textContent = message;
+        }
+    }
+
+    function focusTwoFactorCode() {
+        if (twoFactorModalInput) {
+            window.setTimeout(function () {
+                twoFactorModalInput.focus();
+                twoFactorModalInput.select();
+            }, 0);
+        }
+    }
+
+    function openTwoFactorModal(message) {
+        if (!twoFactorModal) {
+            return;
+        }
+
+        if (message) {
+            setTwoFactorModalMessage(message);
+        }
+
+        setTwoFactorModalError("");
+        twoFactorModal.hidden = false;
+        document.body.classList.add("sysset-modal-open");
+        focusTwoFactorCode();
+    }
+
+    function closeTwoFactorModal(revertToggle) {
+        if (!twoFactorModal) {
+            return;
+        }
+
+        twoFactorModal.hidden = true;
+        document.body.classList.remove("sysset-modal-open");
+        setTwoFactorModalError("");
+        if (twoFactorModalInput) {
+            twoFactorModalInput.value = "";
+        }
+
+        if (revertToggle && twoFactorToggle) {
+            twoFactorSetupSuppressChange = true;
+            twoFactorToggle.checked = false;
+            twoFactorSetupSuppressChange = false;
+        }
+
+        twoFactorSetupActive = false;
+        twoFactorSetupPendingState = null;
+        twoFactorSetupRequestInFlight = false;
+        twoFactorSetupHadDirtyState = false;
+    }
+
+    function syncTwoFactorSavedState(stateOverride, confirmed, shouldRefreshSnapshot) {
+        var state = parseSavedState();
+
+        if (stateOverride && typeof stateOverride === "object" && !Array.isArray(stateOverride)) {
+            state = stateOverride;
+        } else {
+            state.security_2fa_enabled = !!stateOverride;
+            state.security_2fa_confirmed = !!confirmed;
+        }
+
+        var node = document.getElementById("sysset-saved-state");
+        if (node) {
+            node.textContent = JSON.stringify(state);
+        }
+
+        applySavedSettingsState(state);
+
+        if (shouldRefreshSnapshot !== false) {
+            refreshInitialStateSnapshot();
+        }
+    }
+
+    function requestTwoFactorStart() {
+        if (!twoFactorEndpoint || !twoFactorToggle) {
+            return Promise.reject(new Error("Two-factor setup is not available right now."));
+        }
+
+        twoFactorSetupRequestInFlight = true;
+        return fetch(twoFactorEndpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
+            },
+            credentials: "same-origin",
+            body: JSON.stringify({ action: "start" })
+        }).then(function (response) {
+            return response.json().then(function (data) {
+                if (!response.ok) {
+                    var message = data && data.error ? data.error : "Unable to send a verification code.";
+                    throw new Error(message);
+                }
+                return data;
+            });
+        }).finally(function () {
+            twoFactorSetupRequestInFlight = false;
+        });
+    }
+
+    function verifyTwoFactorCode() {
+        if (!twoFactorEndpoint) {
+            return Promise.reject(new Error("Two-factor setup is not available right now."));
+        }
+
+        var code = twoFactorModalInput ? String(twoFactorModalInput.value || "").trim() : "";
+        if (!code) {
+            return Promise.reject(new Error("Enter the 6-digit code from your email."));
+        }
+
+        return fetch(twoFactorEndpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
+            },
+            credentials: "same-origin",
+            body: JSON.stringify({
+                action: "verify",
+                verification_code: code
+            })
+        }).then(function (response) {
+            return response.json().then(function (data) {
+                if (!response.ok) {
+                    var message = data && data.error ? data.error : "That code was not correct.";
+                    throw new Error(message);
+                }
+                return data;
+            });
+        });
+    }
+
+    function resendTwoFactorCode() {
+        if (!twoFactorEndpoint) {
+            return Promise.reject(new Error("Two-factor setup is not available right now."));
+        }
+
+        return fetch(twoFactorEndpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
+            },
+            credentials: "same-origin",
+            body: JSON.stringify({ action: "resend" })
+        }).then(function (response) {
+            return response.json().then(function (data) {
+                if (!response.ok) {
+                    var message = data && data.error ? data.error : "Unable to send a new code.";
+                    throw new Error(message);
+                }
+                return data;
+            });
+        });
+    }
+
+    function beginTwoFactorSetup() {
+        if (!twoFactorToggle || twoFactorSetupRequestInFlight || twoFactorSetupActive) {
+            return;
+        }
+
+        twoFactorSetupActive = true;
+        twoFactorSetupConfirmed = false;
+        twoFactorSetupHadDirtyState = isDirty;
+        twoFactorSetupPendingState = collectNonGeneralState();
+        openTwoFactorModal("We sent a 6-digit code to your email. Type it here to finish turning on email code sign-in.");
+        setInlineStatus("A code was sent to your email.");
+
+        requestTwoFactorStart().then(function () {
+            setTwoFactorModalError("");
+            setTwoFactorModalMessage("We sent a 6-digit code to your email. Type it here to finish turning on email code sign-in.");
+            focusTwoFactorCode();
+        }).catch(function (error) {
+            setTwoFactorModalError(error && error.message ? error.message : "We could not send a code right now.");
+        });
+    }
+
+    function markDirty() {
+        if (isDirty) {
+            return;
+        }
+
+        isDirty = true;
+        saveButton.disabled = false;
+        saveState.textContent = "Unsaved changes";
+        setInlineStatus("");
+    }
+
+    function markClean(message) {
+        isDirty = false;
+        saveButton.disabled = true;
+        saveState.textContent = "All changes saved";
+        setInlineStatus(message || "Settings updated.");
+    }
+
+    function refreshInitialStateSnapshot() {
+        initialFormState = new FormData(form);
+    }
+
+    function parseSavedState() {
+        var node = document.getElementById("sysset-saved-state");
+        if (!node) {
+            return {};
+        }
+
+        try {
+            var parsed = JSON.parse(node.textContent || "{}");
+            return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    function syncDayButtonsFromInput() {
+        if (!availableDaysInput || !dayButtons.length) {
+            return;
+        }
+
+        var selectedDays = String(availableDaysInput.value || "").split(",").map(function (value) {
+            return value.trim();
+        }).filter(Boolean);
+
+        dayButtons.forEach(function (button) {
+            var day = button.getAttribute("data-day") || "";
+            button.setAttribute("aria-pressed", selectedDays.indexOf(day) !== -1 ? "true" : "false");
+        });
+    }
+
+    function applySavedSettingsState(state) {
+        if (!state || typeof state !== "object") {
+            return;
+        }
+
+        nonGeneralFields.forEach(function (name) {
+            var controls = Array.from(form.querySelectorAll("[name='" + name + "']"));
+            if (!controls.length || !Object.prototype.hasOwnProperty.call(state, name)) {
+                return;
+            }
+
+            var value = state[name];
+
+            if (controls[0].type === "checkbox") {
+                var selected = Array.isArray(value) ? value.map(String) : [];
+                controls.forEach(function (checkbox) {
+                    checkbox.checked = selected.indexOf(String(checkbox.value || "on")) !== -1;
+                });
+                return;
+            }
+
+            if (controls[0].type === "radio") {
+                controls.forEach(function (radio) {
+                    radio.checked = String(value) === String(radio.value);
+                });
+                return;
+            }
+
+            controls[0].value = Array.isArray(value) ? String(value[0] || "") : String(value || "");
+        });
+
+        syncDayButtonsFromInput();
+        syncThemeToggleState();
+        if (Object.prototype.hasOwnProperty.call(state, "pref_font_size")) {
+            applyFontSizePreference(state.pref_font_size);
+            saveFontSizePreference(state.pref_font_size);
+        }
+        if (Object.prototype.hasOwnProperty.call(state, "pref_font_type")) {
+            applyFontTypePreference(state.pref_font_type);
+            saveFontTypePreference(state.pref_font_type);
+        }
+        if (Object.prototype.hasOwnProperty.call(state, "pref_language")) {
+            applyLanguagePreference(state.pref_language);
+        }
+    }
+
+    function collectNonGeneralState() {
+        var state = {};
+
+        nonGeneralFields.forEach(function (name) {
+            var controls = Array.from(form.querySelectorAll("[name='" + name + "']"));
+            if (!controls.length) {
+                return;
+            }
+
+            if (controls[0].type === "checkbox") {
+                state[name] = controls.filter(function (checkbox) {
+                    return checkbox.checked;
+                }).map(function (checkbox) {
+                    return checkbox.value || "on";
+                });
+                return;
+            }
+
+            if (controls[0].type === "radio") {
+                var checked = controls.find(function (radio) {
+                    return radio.checked;
+                });
+                state[name] = checked ? checked.value : "";
+                return;
+            }
+
+            state[name] = controls[0].value || "";
+        });
+
+        return state;
+    }
+
+    function persistNonGeneralState() {
+        if (!settingsStateEndpoint) {
+            return Promise.resolve();
+        }
+
+        return fetch(settingsStateEndpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
+            },
+            credentials: "same-origin",
+            body: JSON.stringify({
+                state: collectNonGeneralState()
+            })
+        }).then(function (response) {
+            return response.json().then(function (data) {
+                if (!response.ok) {
+                    var message = data && data.error ? data.error : "Unable to save settings state.";
+                    throw new Error(message);
+                }
+                return data;
+            });
+        });
+    }
+
+    function isInGeneralPanel(element) {
+        var panel = element && element.closest ? element.closest(".sysset-panel") : null;
+        return !!(panel && panel.getAttribute("data-panel") === "general");
+    }
+
+    function restoreSnapshot() {
+        Array.from(form.elements).forEach(function (element) {
+            if (!element.name || element.type === "file") {
+                return;
+            }
+
+            var values = initialFormState.getAll(element.name);
+
+            if (element.type === "checkbox" || element.type === "radio") {
+                element.checked = values.indexOf(element.value) !== -1;
+                return;
+            }
+
+            if (element.tagName === "SELECT" && element.multiple) {
+                Array.from(element.options).forEach(function (option) {
+                    option.selected = values.indexOf(option.value) !== -1;
+                });
+                return;
+            }
+
+            element.value = values.length ? values[0] : "";
+        });
+    }
+
+    function updateHeaderProfile(profileData) {
+        var userData = profileData && profileData.user ? profileData.user : {};
+        var userProfile = profileData && profileData.profile ? profileData.profile : {};
+        var displayName = String(userData.display_name || "User");
+        var initials = String(userData.initials || "U");
+        var avatarUrl = String(userProfile.avatar_url || "");
+
+        var displayNameNode = document.getElementById("header-profile-display-name");
+        if (displayNameNode) {
+            displayNameNode.textContent = displayName;
+        }
+
+        var headerNameNode = document.getElementById("header-profile-name");
+        if (headerNameNode) {
+            headerNameNode.textContent = displayName;
+        }
+
+        var topAvatarInitials = document.getElementById("header-profile-avatar-initials");
+        var topAvatarImage = document.getElementById("header-profile-avatar-image");
+        var dropAvatarInitials = document.getElementById("dropdown-profile-avatar-initials");
+        var dropAvatarImage = document.getElementById("dropdown-profile-avatar-image");
+
+        [topAvatarInitials, dropAvatarInitials].forEach(function (node) {
+            if (node) {
+                node.textContent = initials;
+                node.hidden = !!avatarUrl;
+            }
+        });
+
+        [topAvatarImage, dropAvatarImage].forEach(function (node) {
+            if (!node) {
+                return;
+            }
+
+            if (avatarUrl) {
+                node.src = avatarUrl;
+                node.removeAttribute("hidden");
+            } else {
+                node.removeAttribute("src");
+                node.setAttribute("hidden", "");
+            }
+        });
+
+        try {
+            localStorage.setItem("dashboard_profile_name", displayName);
+            localStorage.setItem("dashboard_profile_initials", initials);
+            localStorage.setItem("dashboard_profile_avatar_url", avatarUrl);
+        } catch (error) {}
+    }
+
+    function readThemePreference() {
+        try {
+            return localStorage.getItem(themeStorageKey) === "dark";
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function applyThemePreference(isDark) {
+        document.documentElement.classList.toggle(darkThemeClass, isDark);
+        document.body.classList.toggle(darkThemeClass, isDark);
+
+        if (darkModeToggle) {
+            darkModeToggle.checked = isDark;
+        }
+    }
+
+    function saveThemePreference(isDark) {
+        try {
+            localStorage.setItem(themeStorageKey, isDark ? "dark" : "light");
+        } catch (error) {}
+    }
+
+    function syncThemeToggleState() {
+        applyThemePreference(readThemePreference());
+    }
+
+    function syncFontSizeSelectState() {
+        applyFontSizePreference(readFontSizePreference());
+    }
+
+    function syncFontTypeSelectState() {
+        applyFontTypePreference(readFontTypePreference());
+    }
+
+    function syncLanguageSelectState() {
+        if (!languageSelect) {
+            return;
+        }
+
+        var language = "english";
+
+        if (typeof window.dashboardGetStoredLanguage === "function") {
+            language = window.dashboardGetStoredLanguage();
+        } else {
+            try {
+                language = normalizeLanguageValue(localStorage.getItem("ui_language_preference"));
+            } catch (error) {
+                language = "english";
+            }
+        }
+
+        applyLanguagePreference(language);
+    }
+
+    function syncAvailableDaysValue() {
+        if (!availableDaysInput || !dayButtons.length) {
+            return;
+        }
+
+        var selected = dayButtons.filter(function (button) {
+            return button.getAttribute("aria-pressed") === "true";
+        }).map(function (button) {
+            return button.getAttribute("data-day") || "";
+        }).filter(Boolean);
+
+        availableDaysInput.value = selected.join(",");
+    }
+
+    function initialsFromName() {
+        var first = firstNameInput && firstNameInput.value ? firstNameInput.value.trim().charAt(0) : "";
+        var last = lastNameInput && lastNameInput.value ? lastNameInput.value.trim().charAt(0) : "";
+        var initials = (first + last).toUpperCase();
+        return initials || defaultInitials || "U";
+    }
+
+    function resetAvatarPreview() {
+        if (!avatarPreview || !avatarImage || !avatarInitials) {
+            return;
+        }
+
+        avatarPreview.setAttribute("data-has-image", "false");
+        avatarImage.removeAttribute("src");
+        avatarImage.alt = "";
+        avatarInitials.textContent = initialsFromName();
+    }
+
+    function setAvatarPreview(src, filename) {
+        if (!avatarPreview || !avatarImage) {
+            return;
+        }
+
+        avatarImage.src = src;
+        avatarImage.alt = "Selected profile photo " + (filename || "preview");
+        avatarPreview.setAttribute("data-has-image", "true");
+    }
+
+    function syncPhotoUploadState(file) {
+        if (!photoUpload) {
+            return;
+        }
+
+        photoUpload.setAttribute("data-has-file", file ? "true" : "false");
+    }
+
+    var cropperController = window.initProfilePhotoCropper({
+        input: photoInput,
+        onCropped: function (file, previewUrl) {
+            croppedPhotoFile = file;
+            setAvatarPreview(previewUrl, file.name);
+            syncPhotoUploadState(file);
+            markDirty();
+        },
+        onCancelled: function () {
+            croppedPhotoFile = null;
+            if (avatarImage && avatarImage.getAttribute("src")) {
+                setAvatarPreview(avatarImage.getAttribute("src"), "profile photo");
+            } else {
+                resetAvatarPreview();
+            }
+            syncPhotoUploadState(null);
+        },
+        onError: setInlineStatus
+    });
+
+    tabs.forEach(function (tab, index) {
+        tab.addEventListener("click", function () {
+            activateTab(tab.getAttribute("data-target"), false);
+        });
+
+        tab.addEventListener("keydown", function (event) {
+            var nextIndex = index;
+
+            if (event.key === "ArrowRight") {
+                nextIndex = (index + 1) % tabs.length;
+            } else if (event.key === "ArrowLeft") {
+                nextIndex = (index - 1 + tabs.length) % tabs.length;
+            } else if (event.key === "Home") {
+                nextIndex = 0;
+            } else if (event.key === "End") {
+                nextIndex = tabs.length - 1;
+            } else {
+                return;
+            }
+
+            event.preventDefault();
+            activateTab(tabs[nextIndex].getAttribute("data-target"), true);
+        });
+    });
+
+    form.addEventListener("input", function (event) {
+        if (event.target === firstNameInput || event.target === lastNameInput) {
+            if (avatarPreview && avatarPreview.getAttribute("data-has-image") !== "true" && avatarInitials) {
+                avatarInitials.textContent = initialsFromName();
+            }
+        }
+
+        markDirty();
+    });
+
+    form.addEventListener("change", function (event) {
+        if (event.target === twoFactorToggle) {
+            if (twoFactorSetupSuppressChange) {
+                return;
+            }
+
+            if (twoFactorToggle && twoFactorToggle.checked) {
+                beginTwoFactorSetup();
+                return;
+            }
+
+            closeTwoFactorModal(false);
+            markDirty();
+            return;
+        }
+
+        if (event.target === fontSizeSelect) {
+            applyFontSizePreference(fontSizeSelect.value || "medium");
+            saveFontSizePreference(fontSizeSelect.value || "medium");
+            markDirty();
+            return;
+        }
+
+        if (event.target === fontTypeSelect) {
+            applyFontTypePreference(fontTypeSelect.value || "sans-serif");
+            saveFontTypePreference(fontTypeSelect.value || "sans-serif");
+            markDirty();
+            return;
+        }
+
+        if (event.target === languageSelect) {
+            applyLanguagePreference(languageSelect.value || "english");
+            markDirty();
+            return;
+        }
+
+        if (event.target === darkModeToggle) {
+            markDirty();
+            return;
+        }
+
+        markDirty();
+    });
+
+    discardButton.addEventListener("click", function () {
+        restoreSnapshot();
+        if (photoInput) {
+            photoInput.value = "";
+        }
+        croppedPhotoFile = null;
+        if (cropperController) cropperController.clear();
+
+        if (avatarImage && avatarImage.getAttribute("src")) {
+            avatarPreview.setAttribute("data-has-image", "true");
+        } else {
+            resetAvatarPreview();
+        }
+        syncPhotoUploadState(null);
+        syncThemeToggleState();
+        if (fontSizeSelect) {
+            applyFontSizePreference(fontSizeSelect.value || "medium");
+        }
+        if (fontTypeSelect) {
+            applyFontTypePreference(fontTypeSelect.value || "sans-serif");
+        }
+        if (languageSelect) {
+            applyLanguagePreference(languageSelect.value || "english");
+        }
+        syncAvailableDaysValue();
+        isDirty = false;
+        saveButton.disabled = true;
+        saveState.textContent = "No unsaved changes";
+        setInlineStatus("All fields reverted.");
+    });
+
+    saveButton.addEventListener("click", function () {
+        if (!isDirty) {
+            setInlineStatus("No changes to save.");
+            return;
+        }
+
+        if (twoFactorSetupActive && !twoFactorSetupConfirmed) {
+            setInlineStatus("Please finish the email code step first.");
+            return;
+        }
+
+        if (!profileEndpoint) {
+            setInlineStatus("Unable to save: profile endpoint is not configured.");
+            return;
+        }
+
+        saveButton.disabled = true;
+        saveState.textContent = "Saving...";
+
+        var payload = new FormData();
+        [
+            "first_name",
+            "last_name",
+            "email",
+            "phone",
+            "birthdate",
+            "civil_status",
+            "address_line",
+            "barangay",
+            "city_municipality",
+            "emergency_contact_name",
+            "emergency_contact_relationship",
+            "emergency_contact_phone",
+            "volunteer_role",
+            "assigned_chapter_area"
+        ].forEach(function (fieldName) {
+            var field = form.querySelector("[name='" + fieldName + "']");
+            if (field) {
+                payload.append(fieldName, field.value || "");
+            }
+        });
+
+        if (croppedPhotoFile || photoInput && photoInput.files && photoInput.files[0]) {
+            payload.append("profile_photo", croppedPhotoFile || photoInput.files[0]);
+        }
+
+        fetch(profileEndpoint, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken
+            },
+            body: payload,
+            credentials: "same-origin"
+        }).then(function (response) {
+            return response.json().then(function (data) {
+                if (!response.ok) {
+                    var message = data && data.error ? data.error : "Unable to save profile changes.";
+                    throw new Error(message);
+                }
+                return data;
+            });
+        }).then(function (result) {
+            var payloadData = result && result.data ? result.data : null;
+            if (payloadData) {
+                var nextAvatarUrl = payloadData.profile && payloadData.profile.avatar_url ? payloadData.profile.avatar_url : "";
+                if (nextAvatarUrl) {
+                    setAvatarPreview(nextAvatarUrl, "profile photo");
+                } else {
+                    resetAvatarPreview();
+                }
+                updateHeaderProfile(payloadData);
+            }
+
+            return persistNonGeneralState().then(function (stateResult) {
+                if (darkModeToggle) {
+                    var isDark = !!darkModeToggle.checked;
+                    applyThemePreference(isDark);
+                    saveThemePreference(isDark);
+                }
+
+                if (fontSizeSelect) {
+                    var nextFontSize = fontSizeSelect.value || "medium";
+                    applyFontSizePreference(nextFontSize);
+                    saveFontSizePreference(nextFontSize);
+                }
+
+                if (fontTypeSelect) {
+                    var nextFontType = fontTypeSelect.value || "sans-serif";
+                    applyFontTypePreference(nextFontType);
+                    saveFontTypePreference(nextFontType);
+                }
+
+                if (languageSelect) {
+                    applyLanguagePreference(languageSelect.value || "english");
+                }
+
+                if (photoInput) {
+                    photoInput.value = "";
+                }
+                croppedPhotoFile = null;
+                syncPhotoUploadState(null);
+                refreshInitialStateSnapshot();
+                var stamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                markClean("Settings saved at " + stamp + ".");
+            });
+        }).catch(function (error) {
+            saveButton.disabled = false;
+            saveState.textContent = "Unsaved changes";
+            setInlineStatus(error && error.message ? error.message : "Unable to save settings.");
+        });
+    });
+
+    if (logoutAllButton) {
+        logoutAllButton.addEventListener("click", function () {
+            setInlineStatus("You have been signed out of all other devices.");
+        });
+    }
+
+    if (twoFactorModalCloseButton) {
+        twoFactorModalCloseButton.addEventListener("click", function () {
+            closeTwoFactorModal(true);
+        });
+    }
+
+    if (twoFactorModalResendButton) {
+        twoFactorModalResendButton.addEventListener("click", function () {
+            setTwoFactorModalError("");
+            resendTwoFactorCode().then(function () {
+                setTwoFactorModalMessage("We sent a fresh code to your email. Type it here to finish turning on email code sign-in.");
+                focusTwoFactorCode();
+            }).catch(function (error) {
+                setTwoFactorModalError(error && error.message ? error.message : "We could not send a new code.");
+            });
+        });
+    }
+
+    if (twoFactorModalVerifyButton) {
+        twoFactorModalVerifyButton.addEventListener("click", function () {
+            setTwoFactorModalError("");
+            verifyTwoFactorCode().then(function (result) {
+                twoFactorSetupConfirmed = true;
+                var savedState = result && result.settings_state ? result.settings_state : null;
+                syncTwoFactorSavedState(savedState && typeof savedState === "object" ? savedState : {
+                    security_2fa_enabled: true,
+                    security_2fa_confirmed: true
+                }, true, !twoFactorSetupHadDirtyState);
+                closeTwoFactorModal(false);
+                if (!twoFactorSetupHadDirtyState) {
+                    markClean("Two-factor authentication is on.");
+                } else {
+                    setInlineStatus("Two-factor authentication is now on.");
+                }
+            }).catch(function (error) {
+                setTwoFactorModalError(error && error.message ? error.message : "That code was not correct.");
+            });
+        });
+    }
+
+    if (twoFactorModal) {
+        twoFactorModal.addEventListener("click", function (event) {
+            if (event.target && event.target.getAttribute && event.target.getAttribute("data-close-two-factor") === "true") {
+                closeTwoFactorModal(true);
+            }
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" && twoFactorModal && !twoFactorModal.hidden) {
+                closeTwoFactorModal(true);
+            }
+        });
+    }
+
+    if (photoInput) {
+        photoInput.addEventListener("change", function () {
+            var file = photoInput.files && photoInput.files[0];
+
+            if (!file) {
+                resetAvatarPreview();
+                syncPhotoUploadState(null);
+                return;
+            }
+
+            if (!file.type || file.type.indexOf("image/") !== 0) {
+                photoInput.value = "";
+                resetAvatarPreview();
+                syncPhotoUploadState(null);
+                setInlineStatus("Please choose a valid image file.");
+                return;
+            }
+
+            if (file.size > 2 * 1024 * 1024) {
+                photoInput.value = "";
+                resetAvatarPreview();
+                syncPhotoUploadState(null);
+                setInlineStatus("Profile photo must be 2MB or smaller.");
+                return;
+            }
+
+            var reader = new FileReader();
+            reader.onload = function (event) {
+                if (event && event.target && typeof event.target.result === "string") {
+                    setAvatarPreview(event.target.result, file.name);
+                }
+            };
+            reader.readAsDataURL(file);
+            syncPhotoUploadState(file);
+        });
+    }
+
+    dayButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            var pressed = button.getAttribute("aria-pressed") === "true";
+            button.setAttribute("aria-pressed", pressed ? "false" : "true");
+            syncAvailableDaysValue();
+            markDirty();
+        });
+    });
+
+    var fromQuery = normalizeTabKey(new URLSearchParams(window.location.search).get("tab"));
+    var initial = tabs.some(function (tab) {
+        return tab.getAttribute("data-target") === fromQuery;
+    }) ? fromQuery : "general";
+
+    activateTab(initial, false);
+    applySavedSettingsState(parseSavedState());
+    syncPhotoUploadState(null);
+    if (!avatarImage || !avatarImage.getAttribute("src")) {
+        resetAvatarPreview();
+    }
+    syncAvailableDaysValue();
+    syncThemeToggleState();
+    syncFontSizeSelectState();
+    syncFontTypeSelectState();
+    syncLanguageSelectState();
+    refreshInitialStateSnapshot();
+
+    if (window.lucide && typeof window.lucide.createIcons === "function") {
+        window.lucide.createIcons();
+    }
+})();
+</script>

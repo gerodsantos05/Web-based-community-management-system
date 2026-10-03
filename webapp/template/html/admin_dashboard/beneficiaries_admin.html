@@ -1,0 +1,3908 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}People - Beneficiaries | HappYness{% endblock %}
+
+{% block extra_head %}
+<style data-admin-panel-style="admin-beneficiaries">
+    .ben-page {
+        --ben-surface: rgba(255, 255, 255, 0.95);
+        --ben-stroke: rgba(15, 118, 110, 0.16);
+        --ben-shadow: 0 10px 24px rgba(8, 83, 76, 0.1);
+        --ben-ink: #14352d;
+        --ben-sub: #56766c;
+        --ben-accent: #0f766e;
+        display: grid;
+        gap: 0.95rem;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        padding: 0.2rem 0.15rem 0.25rem;
+    }
+
+    .ben-card {
+        background: var(--ben-surface);
+        border: 1px solid var(--ben-stroke);
+        border-radius: 16px;
+        box-shadow: var(--ben-shadow);
+    }
+
+    .ben-summary {
+        display: grid;
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .ben-kpi {
+        min-height: 100px;
+        padding: 0.76rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .ben-kpi-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .ben-kpi-label {
+        margin: 0;
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #618176;
+        font-weight: 700;
+    }
+
+    .ben-kpi-value {
+        margin: 0.36rem 0 0;
+        font-size: 1.78rem;
+        line-height: 1.05;
+        font-weight: 800;
+        color: #16372e;
+    }
+
+    .ben-kpi-meta {
+        margin: 0.32rem 0 0;
+        font-size: 0.72rem;
+        color: #4f766b;
+    }
+
+    .ben-kpi-icon {
+        width: 1.76rem;
+        height: 1.76rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        color: var(--ben-accent);
+        background: rgba(16, 185, 129, 0.14);
+    }
+
+    .ben-head {
+        padding: 0.8rem 0.95rem;
+        border-bottom: 1px solid #deefe8;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.6rem;
+    }
+
+    .ben-title {
+        margin: 0;
+        font-size: 0.94rem;
+        font-weight: 700;
+        color: var(--ben-ink);
+    }
+
+    #ben-deactivate-title {
+        color: #14352d;
+    }
+
+    #ben-feedback-title {
+        color: #14352d !important;
+    }
+
+    .ben-sub {
+        margin: 0.14rem 0 0;
+        font-size: 0.72rem;
+        color: var(--ben-sub);
+    }
+
+    .ben-table-wrap {
+        overflow-x: auto;
+        overflow-y: visible;
+        max-height: 34rem;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .ben-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 1040px;
+    }
+
+    .ben-table th,
+    .ben-table td {
+        padding: 0.62rem 0.75rem;
+        font-size: 0.8rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #e7f2ed;
+        white-space: nowrap;
+    }
+
+    .ben-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        text-align: left;
+        white-space: nowrap;
+        background: rgba(236, 253, 245, 0.86);
+        border-bottom: 1px solid rgba(15, 118, 110, 0.16);
+        color: #2f6659;
+        font-weight: 700;
+    }
+
+    .ben-table tbody tr:hover {
+        background: rgba(236, 253, 245, 0.42);
+    }
+
+    .ben-name {
+        display: flex;
+        align-items: center;
+        gap: 0.54rem;
+    }
+
+    .ben-avatar {
+        width: 2.6rem;
+        height: 2.6rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        font-size: 0.86rem;
+        font-weight: 700;
+        color: #0f766e;
+        background: linear-gradient(145deg, rgba(16, 185, 129, 0.22), rgba(20, 184, 166, 0.2));
+    }
+
+    .ben-name strong {
+        display: block;
+        font-size: 0.82rem;
+        color: #173a31;
+    }
+
+    .ben-name small {
+        display: block;
+        font-size: 0.69rem;
+        color: #5f7d73;
+    }
+
+    .ben-badge {
+        display: inline-flex;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        font-size: 0.69rem;
+        font-weight: 700;
+        padding: 0.18rem 0.52rem;
+        white-space: nowrap;
+    }
+
+    .ben-status-active { color: #14532d; background: #dcfce7; border-color: #bbf7d0; }
+    .ben-status-pending { color: #8a4b10; background: #ffedd5; border-color: #fed7aa; }
+    .ben-status-inactive { color: #55626b; background: #f1f5f9; border-color: #dce3eb; }
+    .ben-aid-complete { color: #14532d; background: #dcfce7; border-color: #bbf7d0; }
+    .ben-aid-scheduled { color: #115e59; background: #ccfbf1; border-color: #99f6e4; }
+    .ben-aid-pending { color: #9a3412; background: #ffedd5; border-color: #fed7aa; }
+
+    .ben-action-btn {
+        border: 1px solid #d4e9e1;
+        border-radius: 9px;
+        background: #fff;
+        color: #1b4f43;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.34rem 0.52rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.26rem;
+        cursor: pointer;
+    }
+
+    .ben-row-action-btn {
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        background: #fff;
+        color: #1b4f43;
+        font-size: 0.75rem;
+        font-weight: 700;
+        width: 2.1rem;
+        height: 2.1rem;
+        min-width: 2.1rem;
+        padding: 0;
+        display: inline-grid;
+        place-items: center;
+        cursor: pointer;
+        transition: background-color 160ms ease, border-color 160ms ease, box-shadow 180ms ease, transform 120ms ease;
+    }
+
+    .ben-table th:last-child,
+    .ben-table td:last-child {
+        width: 4.2rem;
+        min-width: 4.2rem;
+        white-space: nowrap;
+        text-align: right;
+    }
+
+    .ben-row-action-btn:hover {
+        background: #f5fcf9;
+        border-color: #b8dfd1;
+    }
+
+    .ben-row-action-btn:active {
+        transform: scale(0.94);
+    }
+
+    .ben-row-action-btn.is-active {
+        background: #fff;
+        border-color: #d4e9e1;
+        color: #1b4f43;
+        box-shadow: none;
+        animation: none;
+    }
+
+    .ben-ellipsis {
+        width: 0.24rem;
+        height: 0.24rem;
+        border-radius: 999px;
+        background: currentColor;
+        box-shadow: -0.36rem 0 0 currentColor, 0.36rem 0 0 currentColor;
+    }
+
+    .ben-actions-menu {
+        position: fixed;
+        min-width: 15rem;
+        border-radius: 12px;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        background: #ffffff;
+        box-shadow: 0 20px 34px rgba(8, 83, 76, 0.18);
+        padding: 0.4rem;
+        display: grid;
+        gap: 0.16rem;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(8px) scale(0.97);
+        transform-origin: top center;
+        transition: opacity 180ms ease, transform 180ms ease, visibility 0s linear 180ms;
+        z-index: 90;
+    }
+
+    .ben-actions-menu[data-open="true"] {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0) scale(1);
+        transition: opacity 180ms ease, transform 180ms ease, visibility 0s;
+        animation: benCardReveal 180ms ease;
+    }
+
+    @keyframes benBtnPop {
+        0% { transform: scale(0.95); }
+        100% { transform: scale(1); }
+    }
+
+    @keyframes benCardReveal {
+        0% { opacity: 0; transform: translateY(12px) scale(0.96); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .ben-menu-item {
+        width: 100%;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: #264e43;
+        text-align: left;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.45rem 0.55rem;
+        cursor: pointer;
+    }
+
+    .ben-menu-item:hover {
+        background: rgba(236, 253, 245, 0.9);
+        color: #0f766e;
+    }
+
+    .ben-menu-item[disabled],
+    .ben-menu-item.is-disabled {
+        color: #95a9a2;
+        background: transparent;
+        cursor: not-allowed;
+        opacity: 0.55;
+        pointer-events: none;
+    }
+
+    .ben-menu-item-danger {
+        color: #b42318;
+    }
+
+    .ben-menu-item-danger:hover {
+        background: rgba(254, 242, 242, 0.92);
+        color: #b42318;
+    }
+
+    .ben-menu-item-primary {
+        background: transparent;
+        border: 0;
+        color: #264e43;
+        font-weight: 600;
+    }
+
+    .ben-menu-item-primary:hover {
+        background: rgba(236, 253, 245, 0.9);
+        color: #0f766e;
+    }
+
+    .ben-assist-modal {
+        width: min(94vw, 720px);
+        border-radius: 18px;
+        overflow: hidden;
+        border: 1px solid rgba(15, 118, 110, 0.14);
+        box-shadow: 0 28px 48px rgba(8, 83, 76, 0.22);
+        background: #ffffff;
+    }
+
+    .ben-feedback-detail-content {
+        padding: 0 20px 22px;
+    }
+
+    .ben-feedback-modal .ben-modal-close {
+        flex: 0 0 2.5rem;
+        width: 2.5rem;
+        height: 2.5rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        margin: 0;
+        border: 1px solid #cbded7;
+        border-radius: 50%;
+        background: #ffffff;
+        color: #48665d;
+        line-height: 0;
+    }
+
+    .ben-feedback-modal .ben-modal-close svg {
+        display: block;
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .ben-feedback-modal .ben-modal-close:hover {
+        background: #f5fcf9;
+        border-color: #b8dfd1;
+        color: #0f766e;
+    }
+
+    .ben-feedback-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .ben-feedback-detail-grid > div {
+        display: grid;
+        gap: 0.35rem;
+        min-width: 0;
+        padding: 0.75rem 0.8rem;
+        border: 1px solid #e6eef0;
+        border-radius: 10px;
+        background: #f8fcfa;
+    }
+
+    .ben-feedback-label {
+        color: #1a4f43;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .ben-feedback-value {
+        min-width: 0;
+        color: #173a31;
+        font-size: 0.82rem;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+    }
+
+    .ben-feedback-detail-grid > div:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .ben-feedback-detail-grid .ben-feedback-combined {
+        grid-column: 1 / -1;
+    }
+
+    .ben-feedback-combined .ben-feedback-value {
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .ben-feedback-rating {
+        color: #1a4f43;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+    }
+
+    .ben-feedback-comment {
+        color: #173a31;
+    }
+
+    .ben-feedback-empty {
+        margin: 12px 0 0;
+        padding: 0.8rem;
+        border: 1px dashed #cfe4dc;
+        border-radius: 10px;
+        background: #f8fcfa;
+        color: #5e7d73;
+        font-size: 0.78rem;
+        line-height: 1.45;
+    }
+
+    .ben-profile-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(88vw, 760px);
+        max-height: 88vh;
+        display: none;
+        flex-direction: column;
+        border-radius: 18px;
+        overflow: hidden;
+        border: 1px solid rgba(15, 118, 110, 0.14);
+        box-shadow: 0 28px 48px rgba(8, 83, 76, 0.22);
+        background: #ffffff;
+        z-index: 95;
+    }
+
+    .ben-profile-modal[data-open="true"] {
+        display: flex;
+    }
+
+    #ben-add-modal {
+        top: 104px;
+        bottom: 16px;
+        height: auto;
+        max-height: calc(100vh - 120px);
+        transform: translateX(-50%);
+        margin-block: auto;
+        overflow-y: auto;
+    }
+
+    .ben-profile-modal .ben-head {
+        padding: 18px;
+        border-bottom: 1px solid #eef2f1;
+    }
+
+    .ben-profile-modal .ben-modal-close-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        border: 1px solid #eef2f1;
+        background: #ffffff;
+        color: #6b7280;
+    }
+
+    .ben-assist-form {
+        padding: 0.9rem 0.9rem 1rem;
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .ben-assist-target {
+        border: 1px solid #deefe8;
+        border-radius: 14px;
+        background: #f8fcfa;
+        padding: 0.7rem 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.72rem;
+        font-size: 0.78rem;
+        color: #31594f;
+    }
+
+    .ben-assist-target strong {
+        display: block;
+        margin-top: 0.1rem;
+        font-size: 0.9rem;
+        color: #173a31;
+    }
+
+    .ben-form-grid {
+        display: grid;
+        gap: 0.72rem;
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+
+    #ben-add-modal,
+    #ben-add-modal .ben-profile-body {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    #ben-add-modal {
+        max-width: min(94vw, 820px);
+    }
+
+    #ben-add-modal #addben-form {
+        grid-column: 1 / -1;
+    }
+
+    .ben-assist-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+        gap: 12px;
+    }
+
+    .ben-assist-full {
+        grid-column: 1 / -1;
+    }
+
+    .ben-field {
+        display: grid;
+        gap: 0.3rem;
+    }
+
+    .ben-field-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.38rem;
+    }
+
+    .ben-field label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #1a4f43;
+        letter-spacing: 0.03em;
+    }
+
+    .ben-field input,
+    .ben-field select,
+    .ben-field textarea {
+        width: 100%;
+        border: 1px solid #d4e9e1;
+        border-radius: 9px;
+        background: #fff;
+        color: #173a31;
+        font-size: 0.8rem;
+        padding: 0.58rem 0.7rem;
+    }
+
+    .ben-field textarea {
+        min-height: 102px;
+        resize: vertical;
+    }
+
+    .ben-field-hint {
+        font-size: 0.68rem;
+        color: #6a867d;
+        margin-top: -0.1rem;
+    }
+
+    /* Inline status badge styling: keep radios for accessibility but style labels as badges */
+    .status-row {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 4px;
+    }
+
+    .status-row .status-opt {
+        /* keep input for screen readers but hide visually */
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0 0 0 0) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+    }
+
+    .status-row label[for^="addben_s_"] {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid #e6f6f0;
+        background: #f8fcfa;
+        color: #0f766e;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: background 160ms ease, color 160ms ease, transform 120ms ease, box-shadow 160ms ease;
+    }
+
+    /* checked state (uses input:checked + label because inputs are before labels) */
+    .status-row .status-opt:checked + label[for^="addben_s_"] {
+        background: linear-gradient(135deg, #0f766e, #14b8a6);
+        color: #ffffff;
+        border-color: transparent;
+        box-shadow: 0 8px 20px rgba(15,118,110,0.14);
+        transform: translateY(-1px);
+    }
+
+    .status-row label[for^="addben_s_"] i {
+        font-size: 0.9rem;
+        line-height: 1;
+    }
+
+    /* Position toggle buttons inside input fields to avoid layout gaps */
+    .ben-field .ben-modal-close-icon {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: grid;
+        place-items: center;
+        z-index: 2;
+    }
+
+    .ben-modal-header-actions {
+        display: flex;
+        align-items: start;
+        gap: 0.5rem;
+    }
+
+    .ben-modal-close-icon {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        border: 1px solid #d4e9e1;
+        background: #fff;
+        color: #48665d;
+        display: grid;
+        place-items: center;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .ben-modal-close-icon:hover {
+        background: #f5fcf9;
+        border-color: #b8dfd1;
+        color: #0f766e;
+    }
+
+    .ben-field input:focus,
+    .ben-field select:focus,
+    .ben-field textarea:focus {
+        outline: none;
+        border-color: rgba(15, 118, 110, 0.5);
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+    }
+
+    .ben-form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.55rem;
+        padding-top: 0.15rem;
+        border-top: 1px solid #e4f0eb;
+        margin-top: 0.15rem;
+    }
+
+    .ben-save-btn {
+        border: 1px solid rgba(13, 148, 136, 0.28);
+        background: linear-gradient(135deg, #0f766e, #14b8a6);
+        color: #fff;
+        box-shadow: 0 10px 18px rgba(15, 118, 110, 0.16);
+    }
+
+    .ben-save-btn:hover {
+        background: linear-gradient(135deg, #0e6b64, #0f9f91);
+        color: #fff;
+    }
+
+    .ben-save-icon {
+        width: 0.9rem;
+        height: 0.9rem;
+        display: inline-block;
+    }
+
+    .ben-layout {
+        display: block;
+    }
+
+    .ben-directory-tabs {
+        display: flex;
+        gap: 1.1rem;
+        padding: 0 1rem;
+        border-bottom: 1px solid #e2f1eb;
+    }
+
+    .ben-directory-tab {
+        position: relative;
+        border: 0;
+        padding: 0.7rem 0.1rem 0.62rem;
+        background: transparent;
+        color: #71847e;
+        font-size: 0.78rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .ben-directory-tab::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        bottom: -1px;
+        left: 0;
+        height: 2px;
+        background: transparent;
+    }
+
+    .ben-directory-tab[aria-selected="true"] {
+        color: var(--ben-accent);
+    }
+
+    .ben-directory-tab[aria-selected="true"]::after {
+        background: var(--ben-accent);
+    }
+
+    .ben-tab-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.15rem;
+        height: 1.15rem;
+        margin-left: 0.25rem;
+        padding: 0 0.28rem;
+        border-radius: 999px;
+        background: #dc2626;
+        color: #fff;
+        font-size: 0.65rem;
+        line-height: 1;
+    }
+
+    .ben-directory-panel[hidden] {
+        display: none;
+    }
+
+    .ben-directory-tab:focus-visible {
+        outline: 2px solid rgba(15, 118, 110, 0.45);
+        outline-offset: 3px;
+    }
+
+    .ben-directory-panel .ben-table-wrap {
+        border-top: 0;
+    }
+
+    .ben-secondary-table th,
+    .ben-secondary-table td {
+        white-space: normal;
+        vertical-align: middle;
+    }
+
+    .ben-secondary-table .ben-table-empty {
+        padding: 1.2rem;
+        color: var(--ben-sub);
+        text-align: center;
+    }
+
+    .ben-secondary-table th:last-child,
+    .ben-secondary-table td:last-child {
+        width: 5.2rem;
+        min-width: 5.2rem;
+    }
+
+    .ben-table-action-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .ben-table-action-group .ben-chip {
+        margin: 0;
+    }
+
+    .ben-assist-list {
+        list-style: none;
+        margin: 0;
+        padding: 0.56rem 0.82rem 0.82rem;
+        display: grid;
+        gap: 0;
+    }
+
+    .ben-assist-item {
+        border: 0;
+        border-bottom: 1px solid #e2f1eb;
+        background: transparent;
+        padding: 0.72rem 0.1rem;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 0.7rem;
+        align-items: center;
+        transition: background-color 160ms ease;
+        cursor: pointer;
+    }
+
+    .ben-assist-item:hover {
+        background: rgba(236, 253, 245, 0.6);
+    }
+
+    .ben-assist-item:last-child {
+        border-bottom: 0;
+        padding-bottom: 0.2rem;
+    }
+
+    .ben-assist-copy {
+        min-width: 0;
+        display: grid;
+        gap: 0.18rem;
+    }
+
+    .ben-assist-copy strong {
+        display: block;
+        font-size: 0.8rem;
+        color: #173a31;
+        line-height: 1.35;
+    }
+
+    .ben-assist-meta {
+        display: block;
+        font-size: 0.7rem;
+        color: #5e7d73;
+        line-height: 1.35;
+    }
+
+    .ben-assist-actions {
+        display: grid;
+        justify-items: end;
+        gap: 0.42rem;
+    }
+
+    .ben-assist-empty {
+        padding: 0.85rem 0.82rem 1rem;
+        color: #5e7d73;
+        font-size: 0.74rem;
+    }
+
+    .ben-list {
+        list-style: none;
+        margin: 0;
+        padding: 0.56rem 0.82rem 0.82rem;
+        display: grid;
+        gap: 0;
+    }
+
+    .ben-list-item {
+        border: 0;
+        border-bottom: 1px solid #e2f1eb;
+        background: transparent;
+        padding: 0.7rem 0.1rem;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 0.45rem;
+        align-items: center;
+        transition: background-color 160ms ease;
+        cursor: pointer;
+    }
+
+    .ben-list-item:hover {
+        background: rgba(236, 253, 245, 0.6);
+    }
+
+    .ben-list-item:last-child {
+        border-bottom: 0;
+        padding-bottom: 0.2rem;
+    }
+
+    .ben-list-item strong {
+        display: block;
+        font-size: 0.8rem;
+        color: #173a31;
+    }
+
+    .ben-list-item small {
+        display: block;
+        font-size: 0.7rem;
+        color: #5e7d73;
+    }
+
+    .ben-chip {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: #195144;
+        font-size: 0.67rem;
+        font-weight: 700;
+        padding: 0;
+        cursor: pointer;
+        text-decoration: underline;
+        text-underline-offset: 0.14em;
+    }
+
+    .ben-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: none;
+        z-index: 92;
+    }
+
+    .ben-modal-backdrop[data-open="true"] {
+        display: block;
+    }
+
+    .ben-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(88vw, 760px);
+        max-height: 88vh;
+        overflow: auto;
+        background: #fff;
+        border: 1px solid rgba(15, 118, 110, 0.14);
+        border-radius: 18px;
+        box-shadow: 0 28px 48px rgba(8, 83, 76, 0.22);
+        display: none;
+        z-index: 95;
+    }
+
+    .ben-modal[data-open="true"] {
+        display: block;
+    }
+
+    .ben-profile-grid {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .ben-profile-eyebrow {
+        margin: 0;
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #0f766e;
+        font-weight: 700;
+    }
+
+    #ben-profile-title {
+        color: #14352d !important;
+    }
+
+    .ben-profile-strip {
+        margin: 0 18px 12px;
+        border: 1px solid #e6eef0;
+        border-radius: 8px;
+        background: #ffffff;
+        box-shadow: 0 1px 0 rgba(2, 6, 23, 0.04);
+        padding: 0.7rem 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.72rem;
+    }
+
+    .ben-profile-strip-copy {
+        min-width: 0;
+        display: grid;
+        gap: 0.12rem;
+    }
+
+    .ben-profile-strip-copy small {
+        font-size: 0.72rem;
+        color: #5e7d73;
+        line-height: 1.35;
+    }
+
+    .ben-profile-strip-copy strong {
+        display: block;
+        margin-top: 0.08rem;
+        font-size: 0.92rem;
+        color: #173a31;
+    }
+
+    .ben-profile-strip-status {
+        margin-left: auto;
+    }
+
+    .ben-profile-body {
+        padding: 0 18px 18px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        flex: 1;
+        overflow: auto;
+        min-height: 0;
+    }
+
+    .ben-profile-field-full {
+        grid-column: 1 / -1;
+    }
+
+    .ben-profile-field {
+        border: 1px solid #e6eef0;
+        border-radius: 8px;
+        background: #ffffff;
+        box-shadow: 0 1px 0 rgba(2, 6, 23, 0.04);
+        padding: 0.72rem 0.76rem 0.76rem;
+        display: grid;
+        gap: 0.35rem;
+    }
+
+    .ben-profile-field span {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #1a4f43;
+        letter-spacing: 0.03em;
+    }
+
+    .ben-profile-field strong,
+    .ben-profile-field p {
+        margin: 0;
+        color: #173a31;
+        font-size: 0.8rem;
+        line-height: 1.45;
+    }
+
+    #ben-deactivate-message {
+        color: #56766c;
+    }
+
+    .ben-profile-readonly {
+        background: #ffffff;
+    }
+
+    .ben-profile-editable {
+        background: #ffffff;
+    }
+
+    .ben-profile-field .ben-field-label {
+        font-size: 0.72rem;
+        color: #1a4f43;
+    }
+
+    .ben-profile-field .ben-field-label i,
+    .ben-profile-field .ben-field-label svg {
+        color: #0F6E56;
+    }
+
+    .ben-profile-value {
+        color: #173a31;
+        font-size: 0.8rem;
+        line-height: 1.45;
+        word-break: break-word;
+    }
+
+    .ben-profile-form {
+        display: contents;
+    }
+
+    .ben-profile-form .ben-field input,
+    .ben-profile-form .ben-field select,
+    .ben-profile-form .ben-field textarea {
+        border-color: #d4e9e1;
+        border-radius: 12px;
+        background: #fff;
+    }
+
+    .ben-profile-form .ben-field textarea {
+        min-height: 92px;
+    }
+
+    .ben-profile-form .ben-field input,
+    .ben-profile-form .ben-field select,
+    .ben-profile-form .ben-field textarea,
+    .ben-profile-form .ben-readonly-input {
+        color: #173a31;
+        font-size: 0.8rem;
+    }
+
+    .ben-profile-readonly-input {
+        width: 100%;
+        border: 1px solid #d4e9e1;
+        border-radius: 12px;
+        background: #fff;
+        color: #173a31;
+        font-size: 0.8rem;
+        padding: 0.58rem 0.7rem;
+    }
+
+    .ben-profile-footer {
+        margin: 0;
+        padding: 12px 20px 18px;
+        border-top: 1px solid #e6eef0;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.9));
+        box-shadow: 0 -8px 20px rgba(2, 6, 23, 0.06);
+    }
+
+    .ben-profile-footer[data-mode="edit"] {
+        justify-content: flex-end;
+    }
+
+    .ben-profile-footer[data-mode="view"] {
+        justify-content: flex-end;
+    }
+
+    .ben-profile-edit-btn,
+    .ben-profile-save-btn {
+        border-color: rgba(15, 110, 86, 0.28);
+        background: linear-gradient(135deg, #0F6E56, #15a085);
+        color: #fff;
+    }
+
+    .ben-profile-edit-btn:hover,
+    .ben-profile-save-btn:hover {
+        background: linear-gradient(135deg, #0d634d, #129072);
+        color: #fff;
+    }
+
+    .ben-profile-status-active {
+        background: #E1F5EE;
+        color: #085041;
+    }
+
+    .ben-profile-status-inactive {
+        background: #f1f5f9;
+        color: #55626b;
+    }
+
+    .ben-profile-footer .ben-action-btn {
+        min-width: 6.3rem;
+    }
+
+    .ben-profile-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.32rem;
+        border-radius: 999px;
+        padding: 0.28rem 0.6rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        width: fit-content;
+    }
+
+    .ben-profile-pill-active {
+        background: #E1F5EE;
+        color: #085041;
+    }
+
+    .ben-profile-pill-inactive {
+        background: rgba(226, 232, 240, 0.8);
+        color: #475569;
+    }
+
+    .ben-profile-inline-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .ben-history-controls {
+        padding: 0 0.9rem 0.9rem;
+        display: flex;
+        gap: 0.55rem;
+        flex-wrap: wrap;
+    }
+
+    .ben-history-controls input,
+    .ben-history-controls select {
+        border: 1px solid #d4e9e1;
+        border-radius: 9px;
+        background: #fff;
+        color: #173a31;
+        font-size: 0.78rem;
+        padding: 0.52rem 0.65rem;
+        min-width: 0;
+    }
+
+    .ben-history-list {
+        padding: 0 0.9rem 0.9rem;
+    }
+
+    .ben-history-empty {
+        border: 1px dashed #cfe4dc;
+        border-radius: 12px;
+        background: #f8fcfa;
+        padding: 0.9rem;
+        color: #5e7d73;
+        font-size: 0.78rem;
+    }
+
+    .ben-history-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.78rem;
+    }
+
+    .ben-history-table th,
+    .ben-history-table td {
+        border-bottom: 1px solid #e2f1eb;
+        padding: 0.55rem 0.45rem;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .ben-history-table th {
+        color: #1a4f43;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .ben-history-note {
+        color: #5e7d73;
+        font-size: 0.72rem;
+        margin-top: 0.14rem;
+    }
+
+    .ben-confirm-modal {
+        width: min(92vw, 520px);
+    }
+
+    .ben-confirm-modal .ben-form-actions {
+        justify-content: flex-end;
+        gap: 0.65rem;
+        padding: 0.65rem 0.9rem 0.9rem;
+    }
+
+    .ben-confirm-modal .ben-form-actions .ben-action-btn {
+        justify-content: center;
+    }
+
+    .ben-danger-btn {
+        border: 1px solid rgba(220, 38, 38, 0.3);
+        background: linear-gradient(135deg, #b91c1c, #ef4444);
+        color: #fff;
+        box-shadow: 0 10px 18px rgba(185, 28, 28, 0.16);
+    }
+
+    .ben-danger-btn:hover {
+        background: linear-gradient(135deg, #a61c1c, #dc2626);
+        color: #fff;
+    }
+
+    .ben-profile-card {
+        border: 1px solid #deefe8;
+        border-radius: 12px;
+        padding: 0.66rem;
+        background: #ffffff;
+    }
+
+    .ben-profile-card h4 {
+        margin: 0;
+        font-size: 0.79rem;
+        color: #1a4f43;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .ben-profile-card p {
+        margin: 0.32rem 0 0;
+        font-size: 0.74rem;
+        color: #44695f;
+    }
+
+    .ben-profile-list {
+        list-style: none;
+        margin: 0.38rem 0 0;
+        padding: 0;
+        display: grid;
+        gap: 0.3rem;
+    }
+
+    .ben-profile-list li {
+        border: 1px solid #e2f1eb;
+        border-radius: 8px;
+        background: #fbfefd;
+        padding: 0.42rem 0.5rem;
+        font-size: 0.73rem;
+        color: #355d52;
+    }
+
+    .ben-toast {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 99;
+        border: 1px solid rgba(15, 118, 110, 0.24);
+        background: #ffffff;
+        color: #1b4f43;
+        border-radius: 10px;
+        padding: 0.56rem 0.72rem;
+        font-size: 0.76rem;
+        font-weight: 600;
+        box-shadow: 0 14px 26px rgba(8, 83, 76, 0.15);
+        display: none;
+    }
+
+    .ben-toast[data-show="true"] {
+        display: block;
+    }
+
+    .ben-filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-left: auto;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .ben-bulk-bar {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin: 0.85rem 0.95rem 0;
+        padding: 0.7rem 0.8rem;
+        border: 1px solid #d7ebe4;
+        border-radius: 12px;
+        background: #f8fcfa;
+    }
+
+    .ben-bulk-bar[data-show="true"] {
+        display: flex;
+    }
+
+    .ben-bulk-copy {
+        display: grid;
+        gap: 0.12rem;
+    }
+
+    .ben-bulk-copy strong {
+        font-size: 0.8rem;
+        color: #173a31;
+    }
+
+    .ben-bulk-copy small {
+        font-size: 0.7rem;
+        color: #5f7d73;
+    }
+
+    .ben-bulk-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+    }
+
+    .ben-bulk-btn {
+        border: 1px solid #d4e9e1;
+        border-radius: 9px;
+        background: #fff;
+        color: #1b4f43;
+        font-size: 0.76rem;
+        font-weight: 700;
+        padding: 0.42rem 0.68rem;
+        cursor: pointer;
+    }
+
+    .ben-bulk-btn:hover {
+        background: #f5fcf9;
+        border-color: #b8dfd1;
+    }
+
+    .ben-bulk-btn-primary {
+        border-color: rgba(15, 118, 110, 0.28);
+        background: linear-gradient(135deg, #0f766e, #14b8a6);
+        color: #fff;
+    }
+
+    .ben-bulk-btn-primary:hover {
+        background: linear-gradient(135deg, #0e6b64, #0f9f91);
+        color: #fff;
+    }
+
+    .ben-bulk-btn-danger {
+        border-color: #fecaca;
+        background: #fff7f7;
+        color: #b42318;
+    }
+
+    .ben-bulk-btn-danger:hover {
+        border-color: #fca5a5;
+        background: #fef2f2;
+    }
+
+    .ben-search-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: min(100%, 300px);
+        flex: 1 1 180px;
+        min-width: 0;
+    }
+
+    .ben-search-input {
+        width: 100%;
+        padding: 0.5rem 0.75rem 0.5rem 2.2rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        color: #173a31;
+        background: #fff;
+    }
+
+    .ben-search-input::placeholder {
+        color: #9db5ac;
+    }
+
+    .ben-search-icon {
+        position: absolute;
+        left: 0.6rem;
+        color: #5e7d73;
+        pointer-events: none;
+    }
+
+    .ben-status-filter {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        color: #173a31;
+        background: #fff;
+        cursor: pointer;
+        width: min(100%, 160px);
+        flex: 1 1 120px;
+    }
+
+    .ben-toggle-columns-btn {
+        padding: 0.5rem 0.85rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        color: #173a31;
+        background: #fff;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background-color 160ms ease, border-color 160ms ease;
+        flex: 0 0 auto;
+    }
+
+    .ben-toggle-columns-btn:hover {
+        background: #f5fcf9;
+        border-color: #b8dfd1;
+    }
+    #ben-directory-panel .ben-table th:nth-child(5),
+    #ben-directory-panel .ben-table td:nth-child(5),
+    #ben-directory-panel .ben-table th:nth-child(7),
+    #ben-directory-panel .ben-table td:nth-child(7) {
+        display: none;
+    }
+
+    #ben-directory-panel .ben-table.ben-show-all th:nth-child(5),
+    #ben-directory-panel .ben-table.ben-show-all td:nth-child(5),
+    #ben-directory-panel .ben-table.ben-show-all th:nth-child(7),
+    #ben-directory-panel .ben-table.ben-show-all td:nth-child(7) {
+        display: table-cell;
+    }
+
+    .ben-checkbox {
+        width: 1.1rem;
+        height: 1.1rem;
+        cursor: pointer;
+        accent-color: #0f766e;
+    }
+
+    .ben-table tbody tr.ben-row-selected {
+        background: rgba(16, 185, 129, 0.08) !important;
+    }
+
+    .ben-table tbody tr.ben-row-inactive {
+        opacity: 0.68;
+        background: #f8fbfa;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @media (min-width: 760px) {
+        .ben-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .ben-profile-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .ben-profile-view {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1120px) {
+        .ben-summary {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .ben-layout {
+            grid-template-columns: 1fr 1.15fr;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .ben-page {
+            gap: 0.7rem;
+        }
+
+        .ben-head {
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .ben-summary {
+            grid-template-columns: 1fr;
+        }
+
+        .ben-kpi-value {
+            font-size: clamp(1.3rem, 7vw, 1.8rem);
+        }
+
+        #ben-feedback-modal {
+            top: 100px;
+            bottom: 20px;
+            max-height: none;
+            height: calc(100vh - 120px);
+            box-sizing: border-box;
+            transform: translateX(-50%);
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #ben-feedback-modal > .ben-head {
+            flex-wrap: nowrap;
+            align-items: flex-start;
+        }
+
+        #ben-feedback-modal > .ben-head > div {
+            min-width: 0;
+            flex: 1 1 auto;
+            padding-right: 0.25rem;
+        }
+
+        .ben-feedback-detail-content {
+            padding: 0 14px 18px;
+        }
+
+        .ben-feedback-detail-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .ben-feedback-detail-grid > div:last-child {
+            grid-column: auto;
+        }
+
+        .ben-filter-bar {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            width: 100%;
+            margin-left: 0;
+            gap: 0.6rem;
+        }
+
+        .ben-directory-tabs {
+            gap: 0.8rem;
+            overflow-x: auto;
+            padding: 0 0.75rem;
+            scrollbar-width: thin;
+        }
+
+        .ben-directory-tab {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+
+        .ben-search-wrapper {
+            grid-column: 1 / -1;
+            width: 100%;
+            flex: 1 1 100%;
+        }
+
+        .ben-status-filter,
+        .ben-action-btn,
+        .ben-toggle-columns-btn {
+            width: 100% !important;
+            flex: 1 1 100%;
+            min-width: 0;
+        }
+
+        .ben-bulk-bar {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .ben-bulk-actions {
+            width: 100%;
+        }
+
+        .ben-bulk-actions .ben-bulk-btn {
+            flex: 1 1 auto;
+        }
+
+        .ben-action-btn,
+        .ben-toggle-columns-btn {
+            justify-content: center;
+        }
+
+        .ben-table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .ben-name {
+            align-items: flex-start;
+        }
+
+        .ben-profile-body {
+            grid-template-columns: 1fr;
+        }
+
+        .ben-profile-field-full {
+            grid-column: auto;
+        }
+
+        .ben-profile-modal {
+            top: 100px !important;
+            bottom: auto !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            height: auto !important;
+            max-height: calc(100vh - 120px) !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="beneficiaries-page" class="ben-page">
+    <section class="ben-summary" aria-label="Beneficiary summary">
+        <article class="ben-card ben-kpi">
+            <div class="ben-kpi-head">
+                <p class="ben-kpi-label">Total Beneficiaries</p>
+                <span class="ben-kpi-icon" aria-hidden="true"><i data-lucide="users"></i></span>
+            </div>
+            <p id="ben-kpi-total" class="ben-kpi-value" data-kpi-value="true" data-kpi-live="true">0</p>
+            <p class="ben-kpi-meta">Registered records</p>
+        </article>
+
+        <article class="ben-card ben-kpi">
+            <div class="ben-kpi-head">
+                <p class="ben-kpi-label">Active Beneficiaries</p>
+                <span class="ben-kpi-icon" aria-hidden="true"><i data-lucide="user-check"></i></span>
+            </div>
+            <p id="ben-kpi-active" class="ben-kpi-value" data-kpi-value="true" data-kpi-live="true">0</p>
+            <p class="ben-kpi-meta">Currently receiving aid</p>
+        </article>
+
+        <article class="ben-card ben-kpi">
+            <div class="ben-kpi-head">
+                <p class="ben-kpi-label">Pending Applications</p>
+                <span class="ben-kpi-icon" aria-hidden="true"><i data-lucide="file-clock"></i></span>
+            </div>
+            <p id="ben-kpi-pending" class="ben-kpi-value" data-kpi-value="true" data-kpi-live="true">0</p>
+            <p class="ben-kpi-meta">For review and approval</p>
+        </article>
+
+        <article class="ben-card ben-kpi">
+            <div class="ben-kpi-head">
+                <p class="ben-kpi-label">Assisted This Month</p>
+                <span class="ben-kpi-icon" aria-hidden="true"><i data-lucide="calendar-check"></i></span>
+            </div>
+            <p id="ben-kpi-assisted" class="ben-kpi-value" data-kpi-value="true" data-kpi-live="true">0</p>
+            <p class="ben-kpi-meta">Aid fulfilled this month</p>
+        </article>
+    </section>
+
+    <section class="ben-card" aria-label="Beneficiary directory and monitoring">
+        <header class="ben-head">
+            <div>
+                <h2 class="ben-title">Beneficiary Directory</h2>
+                <p id="ben-count" class="ben-sub" aria-live="polite">0 beneficiaries shown</p>
+            </div>
+            <div class="ben-filter-bar">
+                <div class="ben-search-wrapper">
+                    <svg class="ben-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                    <input type="text" id="ben-search-input" class="ben-search-input" placeholder="Search by name, location, contact..." aria-label="Search beneficiaries">
+                </div>
+                <select id="ben-status-filter" class="ben-status-filter" aria-label="Filter by status">
+                    <option value="">All Statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Inactive">Inactive</option>
+                </select>
+                <button type="button" id="ben-add-btn" class="ben-action-btn" aria-label="Add new beneficiary"><i data-lucide="user-plus"></i><span>Add Beneficiary</span></button>
+                <button type="button" id="ben-toggle-columns" class="ben-toggle-columns-btn" aria-label="Show more columns">Show More</button>
+            </div>
+        </header>
+        <div class="ben-directory-tabs" role="tablist" aria-label="Beneficiary directory views">
+            <button type="button" id="ben-directory-tab" class="ben-directory-tab" role="tab" aria-selected="true" aria-controls="ben-directory-panel">Directory</button>
+            <button type="button" id="ben-pending-tab" class="ben-directory-tab" role="tab" aria-selected="false" aria-controls="ben-pending-panel">Pending Applications <span id="ben-pending-tab-count" class="ben-tab-count">0</span></button>
+            <button type="button" id="ben-assistance-tab" class="ben-directory-tab" role="tab" aria-selected="false" aria-controls="ben-assistance-panel">Assistance Feedbacks</button>
+        </div>
+        <div id="ben-directory-panel" class="ben-directory-panel" role="tabpanel" aria-labelledby="ben-directory-tab">
+        <div id="ben-bulk-bar" class="ben-bulk-bar" data-show="false" aria-live="polite">
+            <div class="ben-bulk-copy">
+                <strong><span id="ben-bulk-count">0</span> beneficiaries selected</strong>
+                <small>Select multiple beneficiaries to add the same assistance record in one step.</small>
+            </div>
+            <div class="ben-bulk-actions">
+                <button type="button" id="ben-bulk-clear" class="ben-bulk-btn">Clear selection</button>
+                <button type="button" id="ben-bulk-assistance" class="ben-bulk-btn ben-bulk-btn-primary">Add Assistance to Selected</button>
+            </div>
+        </div>
+        <div class="ben-table-wrap">
+            <table class="ben-table" aria-describedby="ben-count">
+                <thead>
+                    <tr><th style="width: 2.5rem;"><input type="checkbox" id="ben-select-all" class="ben-checkbox" aria-label="Select all beneficiaries"></th><th>Name</th><th>Location</th><th>Email</th><th>Phone</th><th>Status</th><th>Last Assistance Date</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="ben-table-body"></tbody>
+            </table>
+        </div>
+        </div>
+        <div id="ben-pending-panel" class="ben-directory-panel" role="tabpanel" aria-labelledby="ben-pending-tab" hidden>
+            <div id="ben-pending-bulk-bar" class="ben-bulk-bar" data-show="false" aria-live="polite">
+                <div class="ben-bulk-copy"><strong><span id="ben-pending-selected-count">0</span> selected</strong></div>
+                <div class="ben-bulk-actions">
+                    <button type="button" id="ben-pending-bulk-approve" class="ben-bulk-btn ben-bulk-btn-primary">Bulk Approve</button>
+                    <button type="button" id="ben-pending-bulk-reject" class="ben-bulk-btn ben-bulk-btn-danger">Bulk Reject</button>
+                    <button type="button" id="ben-pending-bulk-clear" class="ben-bulk-btn">Clear Selection</button>
+                </div>
+            </div>
+            <div class="ben-table-wrap">
+                <table class="ben-table ben-secondary-table" aria-label="Pending beneficiary applications">
+                    <thead><tr><th style="width: 2.5rem;"><input type="checkbox" id="ben-pending-select-all" class="ben-checkbox" aria-label="Select all pending applications"></th><th>Applicant Name</th><th>Email</th><th>Phone Number</th><th>Location</th><th>Date Applied</th><th>Actions</th></tr></thead>
+                    <tbody id="ben-pending-list" aria-live="polite">
+                {% if pending_beneficiary_applications %}
+                    {% for application in pending_beneficiary_applications %}
+                            <tr>
+                                <td><input type="checkbox" class="ben-checkbox ben-pending-checkbox" data-id="{{ application.id }}" aria-label="Select {{ application.name }}"></td>
+                                <td><div class="ben-name"><span class="ben-avatar">{{ application.name|slice:":1" }}</span><div><strong>{{ application.name }}</strong></div></div></td>
+                                <td>{{ application.email|default:"Not provided" }}</td>
+                                <td>{{ application.phone|default:"Not provided" }}</td>
+                                <td>{{ application.location|default:"Not provided" }}</td>
+                                <td>{{ application.submittedAt }}</td>
+                                <td><div class="ben-table-action-group">
+                                    <button type="button" class="ben-row-action-btn" data-pending-action="approve" data-id="{{ application.id }}" aria-label="Approve application for {{ application.name }}" title="Approve">
+                                        <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M20 6L9 17l-5-5'></path></svg>
+                                    </button>
+                                    <button type="button" class="ben-row-action-btn" data-pending-action="reject" data-id="{{ application.id }}" aria-label="Reject application for {{ application.name }}" title="Reject">
+                                        <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M18 6L6 18M6 6l12 12'></path></svg>
+                                    </button>
+                                </div></td>
+                            </tr>
+                        {% endfor %}
+                {% else %}
+                    <tr><td colspan="7" class="ben-table-empty">No pending applications. New beneficiary applications will appear here.</td></tr>
+                {% endif %}
+            </tbody></table></div>
+        </div>
+        <div id="ben-assistance-panel" class="ben-directory-panel" role="tabpanel" aria-labelledby="ben-assistance-tab" hidden>
+            <div class="ben-table-wrap ben-feedback-list-wrap"><table class="ben-table ben-secondary-table" aria-label="Assistance feedbacks">
+                <thead><tr><th>Beneficiary</th><th>Source</th><th>Event or Assistance</th><th>Date</th><th>Rating</th><th>Comment</th><th>Action</th></tr></thead>
+                <tbody id="ben-feedback-list" aria-live="polite"></tbody>
+            </table></div>
+        </div>
+    </section>
+
+    <div id="ben-actions-menu" class="ben-actions-menu" role="menu" aria-label="Beneficiary row actions" data-open="false"></div>
+</div>
+
+<div id="ben-modal-backdrop" class="ben-modal-backdrop" data-open="false"></div>
+
+<div id="ben-feedback-modal" class="ben-modal ben-assist-modal ben-feedback-modal" role="dialog" aria-modal="true" aria-labelledby="ben-feedback-title" data-open="false">
+    <header class="ben-head">
+        <div>
+            <h3 id="ben-feedback-title" class="ben-title">Pickup feedback details</h3>
+            <p id="ben-feedback-subtitle" class="ben-sub">Feedback for this distribution</p>
+        </div>
+        <button type="button" id="ben-feedback-close" class="ben-modal-close" aria-label="Close feedback details">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+        </button>
+    </header>
+    <div class="ben-feedback-detail-content">
+        <div id="ben-feedback-detail-body" class="ben-feedback-detail-body"></div>
+    </div>
+</div>
+
+<div id="ben-profile-modal" class="ben-modal ben-assist-modal ben-profile-modal" role="dialog" aria-modal="true" aria-labelledby="ben-profile-title" data-open="false">
+    <header class="ben-head">
+        <div>
+            <p id="ben-profile-eyebrow" class="ben-profile-eyebrow">Beneficiary</p>
+            <h3 id="ben-profile-title" class="ben-title">Profile</h3>
+        </div>
+        <div class="ben-modal-header-actions">
+            <button type="button" id="ben-profile-edit" class="ben-action-btn ben-modal-close-icon" aria-label="Edit beneficiary profile" title="Edit profile">
+                <i data-lucide="pencil" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="ben-action-btn ben-modal-close-icon" data-close-profile="true" aria-label="Close profile modal" title="Close">×</button>
+        </div>
+    </header>
+    <div id="ben-profile-strip" class="ben-profile-strip"></div>
+    <div id="ben-profile-content" class="ben-profile-body"></div>
+
+    <section id="ben-history-section" class="ben-history-section" data-open="false" aria-label="Assistance history">
+        <header class="ben-head">
+            <div>
+                <h3 id="ben-history-title" class="ben-title">Assistance History</h3>
+                <p id="ben-history-subtitle" class="ben-sub">Review past assistance records</p>
+            </div>
+        </header>
+        <div class="ben-history-controls">
+            <input id="ben-history-search" type="search" placeholder="Filter by aid, volunteer, or notes" aria-label="Filter assistance history">
+            <select id="ben-history-sort" aria-label="Sort assistance history">
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+            </select>
+        </div>
+        <div id="ben-history-content" class="ben-history-list"></div>
+    </section>
+
+    <footer id="ben-profile-footer" class="ben-form-actions ben-profile-footer"></footer>
+</div>
+
+{% include "admin_dashboard/beneficiary_modal.html" %}
+{% comment %}
+<!-- Add Beneficiary modal -->
+<div id="ben-add-modal" class="ben-modal ben-assist-modal ben-profile-modal" role="dialog" aria-modal="true" aria-labelledby="ben-add-title" data-open="false">
+    <header class="ben-head">
+        <div>
+            <p class="ben-profile-eyebrow">Beneficiary</p>
+            <h3 id="ben-add-title" class="ben-title">Add new beneficiary</h3>
+        </div>
+        <div class="ben-modal-header-actions">
+            <button type="button" class="ben-action-btn ben-modal-close-icon" data-addben-close="true" aria-label="Close add beneficiary">×</button>
+        </div>
+    </header>
+    <!-- profile preview removed per request -->
+    <div class="ben-profile-body">
+        <form id="addben-form" onsubmit="return false;">
+            <div class="ben-form-grid">
+                <div class="ben-assist-grid">
+                    <div class="ben-field">
+                        <label class="ben-field-label">Full name <span style="color:#E24B4A">*</span></label>
+                        <input type="text" id="addben_fullname" oninput="addBen_updatePreview()" placeholder="e.g. Maria Santos">
+                    </div>
+                    <div class="ben-field">
+                        <label class="ben-field-label">Gender <span style="color:#E24B4A">*</span></label>
+                        <select id="addben_gender" name="gender">
+                            <option value="" disabled selected>Select gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                            <option value="prefer_not">Prefer not to say</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="ben-assist-grid">
+                    <div class="ben-field">
+                        <label class="ben-field-label">Email <span style="color:#E24B4A">*</span></label>
+                        <input type="email" id="addben_email" placeholder="email@example.com">
+                    </div>
+                    <div class="ben-field">
+                        <label class="ben-field-label">Phone number <span style="color:#E24B4A">*</span></label>
+                        <input type="tel" id="addben_phone" placeholder="+63 9XX XXX XXXX">
+                    </div>
+                </div>
+                <div class="ben-field">
+                    <label class="ben-field-label">Address <span style="color:#E24B4A">*</span></label>
+                    <textarea id="addben_address" placeholder="Street, Barangay, City, Province"></textarea>
+                </div>
+                <div class="ben-field">
+                    <label class="ben-field-label">Status <span style="color:#E24B4A">*</span></label>
+                    <div class="status-row">
+                        <input class="status-opt" type="radio" name="addben_status" id="addben_s_active" value="Active" checked>
+                        <label for="addben_s_active"><i class="ti ti-circle-check"></i>Active</label>
+                        <input class="status-opt" type="radio" name="addben_status" id="addben_s_inactive" value="Inactive">
+                        <label for="addben_s_inactive"><i class="ti ti-circle-x"></i>Inactive</label>
+                        <input class="status-opt" type="radio" name="addben_status" id="addben_s_pending" value="Pending">
+                        <label for="addben_s_pending"><i class="ti ti-clock"></i>Pending</label>
+                    </div>
+                </div>
+                <div class="ben-field">
+                    <div style="font-weight:700;color:#1a4f43;margin-top:8px">Account credentials</div>
+                </div>
+                <div class="ben-field">
+                    <label class="ben-field-label">Username <span style="color:#E24B4A">*</span></label>
+                    <input type="text" id="addben_username" oninput="addBen_updatePreview()" placeholder="e.g. maria.santos">
+                    <small class="ben-field-hint">Used to log in. Lowercase letters, numbers, and dots only.</small>
+                </div>
+                <div class="ben-field">
+                    <label class="ben-field-label">Password <span style="color:#E24B4A">*</span></label>
+                    <div style="position:relative">
+                        <input type="password" id="addben_passwordField" oninput="addBen_checkStrength()" placeholder="Create a password">
+                        <button type="button" class="ben-action-btn ben-modal-close-icon" onclick="addBen_togglePass()" aria-label="Toggle password visibility"><i class="ti ti-eye" id="addben_eyeIcon"></i></button>
+                    </div>
+                    <!-- password strength meter removed -->
+                </div>
+                <div class="ben-field">
+                    <label class="ben-field-label">Confirm password <span style="color:#E24B4A">*</span></label>
+                    <div style="position:relative">
+                        <input type="password" id="addben_confirmField" oninput="addBen_checkMatch()" placeholder="Re-enter password">
+                        <button type="button" class="ben-action-btn ben-modal-close-icon" onclick="addBen_toggleConfirm()" aria-label="Toggle confirm password visibility"><i class="ti ti-eye" id="addben_eyeIcon2"></i></button>
+                    </div>
+                    <div id="addben_matchHint" class="ben-field-hint"></div>
+                </div>
+            </div>
+        </form>
+    </div>
+    <footer class="ben-form-actions ben-profile-footer">
+        <button type="button" class="ben-action-btn" data-addben-close="true">Cancel</button>
+        <button type="button" id="addben-confirm" class="ben-action-btn ben-save-btn">Add beneficiary</button>
+    </footer>
+</div>
+
+<script>
+(function(){
+    'use strict';
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i += 1) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    function el(id){return document.getElementById(id);} 
+    var addModal = el('ben-add-modal');
+    var backdropEl = document.getElementById('ben-modal-backdrop');
+    function addBen_getInitials(name){ return (name||'').trim().split(/\s+/).filter(Boolean).map(function(w){return w[0].toUpperCase();}).slice(0,2).join('') || 'GA'; }
+    window.addBen_updatePreview = function(){ var name=el('addben_fullname')?el('addben_fullname').value:''; var user=el('addben_username')?el('addben_username').value:''; if(el('addben_previewName')) el('addben_previewName').textContent = name || 'Full name'; if(el('addben_previewUser')) el('addben_previewUser').textContent = user ? ('@'+user) : '@username'; if(el('addben_avatarCircle')) el('addben_avatarCircle').textContent = addBen_getInitials(name); };
+    window.addBen_togglePass = function(){ var f=el('addben_passwordField'), i=el('addben_eyeIcon'); if(!f) return; if(f.type==='password'){ f.type='text'; if(i) i.className='ti ti-eye-off'; } else { f.type='password'; if(i) i.className='ti ti-eye'; } };
+    window.addBen_toggleConfirm = function(){ var f=el('addben_confirmField'), i=el('addben_eyeIcon2'); if(!f) return; if(f.type==='password'){ f.type='text'; if(i) i.className='ti ti-eye-off'; } else { f.type='password'; if(i) i.className='ti ti-eye'; } };
+    window.addBen_checkStrength = function(){ var val=el('addben_passwordField')?el('addben_passwordField').value:''; var bars=[el('addben_b1'),el('addben_b2'),el('addben_b3'),el('addben_b4')]; var txt=el('addben_strengthText'); bars.forEach(function(b){ if(b) b.className=''; }); var score=0; if(val.length>=8) score++; if(/[A-Z]/.test(val)) score++; if(/[0-9]/.test(val)) score++; if(/[^A-Za-z0-9]/.test(val)) score++; var cls = score<=1 ? 'weak' : score===2 ? 'fair' : 'good'; for(var i=0;i<score;i++){ if(bars[i]) bars[i].className = cls; } var labels=['','Weak','Fair','Good','Strong']; if(txt){ txt.textContent = val.length===0 ? 'Minimum 8 characters' : (labels[score]||''); txt.style.color = score<=1 ? '#E24B4A' : score===2 ? '#EF9F27' : '#1D9E75'; } window.addBen_checkMatch(); };
+    window.addBen_checkMatch = function(){ var p=el('addben_passwordField')?el('addben_passwordField').value:''; var c=el('addben_confirmField')?el('addben_confirmField').value:''; var h=el('addben_matchHint'); if(!h) return; if(!c){ h.textContent=''; return; } if(p===c){ h.textContent='✓ Passwords match'; h.style.color='#1D9E75'; } else { h.textContent='Passwords do not match'; h.style.color='#E24B4A'; } };
+    function openAddModal(){ if(backdropEl) backdropEl.setAttribute('data-open','true'); if(addModal) addModal.setAttribute('data-open','true'); window.addBen_updatePreview(); }
+    function closeAddModal(){ if(backdropEl) backdropEl.setAttribute('data-open','false'); if(addModal) addModal.setAttribute('data-open','false'); }
+    var globalAddBtn = document.getElementById('ben-add-btn'); if(globalAddBtn) globalAddBtn.addEventListener('click', openAddModal);
+    var closeButtons = addModal ? addModal.querySelectorAll('[data-addben-close]') : [];
+    if (closeButtons) Array.prototype.forEach.call(closeButtons, function (b) { b.addEventListener('click', closeAddModal); });
+
+    var CREATE_BENEFICIARY_URL = "{% url 'create_beneficiary' %}";
+    var confirmBtn = el('addben-confirm');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function () {
+            var name = el('addben_fullname') ? el('addben_fullname').value.trim() : '';
+            var email = el('addben_email') ? el('addben_email').value.trim() : '';
+            var phone = el('addben_phone') ? el('addben_phone').value.trim() : '';
+            var address = el('addben_address') ? el('addben_address').value.trim() : '';
+            var statusEl = document.querySelector('input[name="addben_status"]:checked');
+            var status = statusEl ? statusEl.value : 'Active';
+            var username = el('addben_username') ? el('addben_username').value.trim() : '';
+            var password = el('addben_passwordField') ? el('addben_passwordField').value : '';
+            var genderEl = el('addben_gender');
+            var gender = genderEl ? genderEl.value : '';
+            var csrf = getCookie('csrftoken');
+
+            var formData = new FormData();
+            formData.append('full_name', name);
+            formData.append('email', email);
+            formData.append('phone', phone);
+            formData.append('address', address);
+            formData.append('status', status);
+            formData.append('username', username);
+            formData.append('password', password);
+            formData.append('gender', gender);
+
+            fetch(CREATE_BENEFICIARY_URL, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf },
+                body: formData,
+            })
+            .then(function (resp) {
+                return resp.json().then(function (data) {
+                    if (resp.status >= 200 && resp.status < 300) return data;
+                    throw data;
+                });
+            })
+            .then(function (data) {
+                var app = data.application || {};
+                var contact = (email || '') + ((email && phone) ? ' / ' : '') + (phone || '');
+                var newId = app.applicationId || (Array.isArray(BENEFICIARIES) && BENEFICIARIES.length ? Math.max.apply(null, BENEFICIARIES.map(function (b) { return b.applicationId || b.id || 0; })) + 1 : 1);
+                var newBeneficiary = {
+                    id: newId,
+                    applicationId: app.applicationId || newId,
+                    name: app.name || name,
+                    location: app.location || address || 'To be determined',
+                    contactDetails: app.contactDetails || contact,
+                    status: app.status || status,
+                    lastAssistanceDate: '',
+                    personalInfo: ['Contact: ' + contact, 'Added via Add Beneficiary modal: ' + new Date().toLocaleDateString()],
+                    enrollment: [], requests: [], documents: []
+                };
+                if (!window.BENEFICIARIES) window.BENEFICIARIES = [];
+                window.BENEFICIARIES.push(newBeneficiary);
+                if (typeof renderSummary === 'function') renderSummary();
+                if (typeof renderTable === 'function') renderTable();
+                closeAddModal();
+                if (window.showToast) showToast('✓ ' + (app.name || name) + ' added to beneficiaries');
+                if (app.user && app.user.password) {
+                    var credMsg = 'Credentials — ' + (app.user.username || '') + ' / ' + (app.user.password || '');
+                    if (window.showToast) showToast(credMsg);
+                    else alert(credMsg);
+                }
+            })
+            .catch(function (err) {
+                var msg = (err && err.error) ? err.error : 'Failed to add beneficiary.';
+                if (window.showToast) showToast(msg);
+            });
+        });
+    }
+})();
+</script>
+{% endcomment %}
+
+<div id="ben-deactivate-modal" class="ben-modal ben-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="ben-deactivate-title" data-open="false">
+    <header class="ben-head">
+        <div>
+            <h3 id="ben-deactivate-title" class="ben-title">Remove as Beneficiary</h3>
+        </div>
+        <div class="ben-modal-header-actions">
+            <button type="button" class="ben-action-btn ben-modal-close-icon" data-close-deactivate="true" aria-label="Close remove beneficiary modal">×</button>
+        </div>
+    </header>
+    <div class="ben-profile-shell">
+        <div class="ben-profile-field ben-profile-field-full">
+            <span>Confirmation</span>
+            <strong id="ben-deactivate-message">Are you sure you want to remove this beneficiary?</strong>
+        </div>
+        <div class="ben-form-actions">
+            <button type="button" class="ben-action-btn" data-close-deactivate="true">Cancel</button>
+            <button type="button" id="ben-deactivate-confirm" class="ben-action-btn ben-danger-btn">Remove Beneficiary</button>
+        </div>
+    </div>
+</div>
+
+<div id="ben-assistance-modal" class="ben-modal ben-assist-modal" role="dialog" aria-modal="true" aria-labelledby="ben-assistance-title" data-open="false">
+    <header class="ben-head">
+        <div>
+            <h3 id="ben-assistance-title" class="ben-title">Add Assistance</h3>
+            <p id="ben-assistance-subtitle" class="ben-sub">Record aid given to a beneficiary</p>
+        </div>
+        <div class="ben-modal-header-actions">
+            <button type="button" class="ben-action-btn ben-modal-close-icon" data-close-assistance="true" aria-label="Close assistance form">×</button>
+        </div>
+    </header>
+    <form id="ben-assistance-form" class="ben-assist-form">
+        <input type="hidden" id="ben-assistance-beneficiary-id" name="beneficiary_application_id">
+        <div class="ben-assist-target">
+            <span class="ben-avatar" aria-hidden="true" id="ben-assistance-beneficiary-avatar">BN</span>
+            <div>
+                Recording assistance for
+                <strong id="ben-assistance-beneficiary-name">Selected beneficiary</strong>
+            </div>
+        </div>
+        <div class="ben-form-grid ben-assist-grid">
+            <div class="ben-field">
+                <label class="ben-field-label" for="ben-assistance-aid-type"><span aria-hidden="true"><i data-lucide="package"></i></span> Type of aid</label>
+                <input id="ben-assistance-aid-type" name="aid_type" type="text" placeholder="Food pack, medicine, cash, and more" required>
+            </div>
+            <div class="ben-field">
+                <label class="ben-field-label" for="ben-assistance-quantity"><span aria-hidden="true"><i data-lucide="scale"></i></span> Quantity or amount</label>
+                <input id="ben-assistance-quantity" name="quantity_or_amount" type="text" placeholder="1 pack, 5 kg, 500 pesos" required>
+            </div>
+            <div class="ben-field">
+                <label class="ben-field-label" for="ben-assistance-date"><span aria-hidden="true"><i data-lucide="calendar-days"></i></span> Date</label>
+                <input id="ben-assistance-date" name="assistance_date" type="date" required>
+            </div>
+            <div class="ben-field">
+                <label class="ben-field-label" for="ben-assistance-volunteer"><span aria-hidden="true"><i data-lucide="user-check"></i></span> Assigned volunteer</label>
+                <select id="ben-assistance-volunteer" name="assigned_volunteer_id">
+                    <option value="">Select volunteer</option>
+                </select>
+            </div>
+            <div class="ben-field ben-assist-full">
+                <label class="ben-field-label" for="ben-assistance-notes"><span aria-hidden="true"><i data-lucide="sticky-note"></i></span> Notes <span class="ben-field-hint">Optional</span></label>
+                <textarea id="ben-assistance-notes" name="notes" rows="4" placeholder="Optional notes about the assistance"></textarea>
+            </div>
+        </div>
+        <div class="ben-form-actions">
+            <button type="button" class="ben-action-btn" data-close-assistance="true">Cancel</button>
+            <button type="submit" id="ben-assistance-submit" class="ben-action-btn ben-save-btn"><span aria-hidden="true" class="ben-save-icon"><i data-lucide="check"></i></span> Save Assistance</button>
+        </div>
+    </form>
+</div>
+
+<div id="ben-toast" class="ben-toast" role="status" aria-live="polite" data-show="false"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ beneficiaries_data|json_script:"beneficiaries-data" }}
+{{ volunteer_options|json_script:"volunteer-options-data" }}
+{{ assistance_feedbacks|json_script:"assistance-feedbacks-data" }}
+{{ pending_beneficiary_applications|json_script:"pending-beneficiary-applications-data" }}
+<script>
+(function () {
+    "use strict";
+
+    function loadJsonData(scriptId) {
+        var script = document.getElementById(scriptId);
+        if (!script) {
+            return [];
+        }
+
+        try {
+            return JSON.parse(script.textContent || "[]");
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+            var cookies = document.cookie.split(";");
+            for (var i = 0; i < cookies.length; i += 1) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + "=")) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    var BENEFICIARIES = loadJsonData("beneficiaries-data");
+    var VOLUNTEER_OPTIONS = loadJsonData("volunteer-options-data");
+
+    var REVIEW_ROLE_APPLICATION_URL = "{% url 'review_role_application' %}";
+    var BENEFICIARIES_REFRESH_URL = "{% url 'beneficiaries_data_api' %}";
+    var RECORD_BENEFICIARY_ASSISTANCE_URL = "{% url 'record_beneficiary_assistance' %}";
+    var DELETE_BENEFICIARY_ASSISTANCE_BULK_URL = "{% url 'delete_beneficiary_assistance_bulk' %}";
+    var UPDATE_BENEFICIARY_PROFILE_URL = "{% url 'update_beneficiary_profile' %}";
+    var DEACTIVATE_BENEFICIARY_URL = "{% url 'deactivate_beneficiary' %}";
+
+    var PENDING_APPLICATIONS = loadJsonData("pending-beneficiary-applications-data");
+    if (!Array.isArray(PENDING_APPLICATIONS)) {
+        PENDING_APPLICATIONS = [];
+    }
+
+    var ASSISTANCE_TRACKING = loadJsonData("assistance-tracking-data");
+    if (!Array.isArray(ASSISTANCE_TRACKING)) {
+        ASSISTANCE_TRACKING = [];
+    }
+    var ASSISTANCE_FEEDBACKS = loadJsonData("assistance-feedbacks-data");
+    if (!Array.isArray(ASSISTANCE_FEEDBACKS)) {
+        ASSISTANCE_FEEDBACKS = [];
+    }
+
+    var tableBody = document.getElementById("ben-table-body");
+    var countLabel = document.getElementById("ben-count");
+    var actionsMenu = document.getElementById("ben-actions-menu");
+    var tableWrap = document.querySelector(".ben-table-wrap");
+    var pendingList = document.getElementById("ben-pending-list");
+    var assistanceList = document.getElementById("ben-assistance-list");
+    var feedbackList = document.getElementById("ben-feedback-list");
+    var searchInput = document.getElementById("ben-search-input");
+    var statusFilter = document.getElementById("ben-status-filter");
+    var selectAllCheckbox = document.getElementById("ben-select-all");
+    var directoryTab = document.getElementById("ben-directory-tab");
+    var pendingTab = document.getElementById("ben-pending-tab");
+    var assistanceTab = document.getElementById("ben-assistance-tab");
+    var directoryPanel = document.getElementById("ben-directory-panel");
+    var pendingPanel = document.getElementById("ben-pending-panel");
+    var assistancePanel = document.getElementById("ben-assistance-panel");
+    var pendingTabCount = document.getElementById("ben-pending-tab-count");
+    var pendingBulkBar = document.getElementById("ben-pending-bulk-bar");
+    var pendingSelectedCount = document.getElementById("ben-pending-selected-count");
+    var pendingSelectAll = document.getElementById("ben-pending-select-all");
+    var pendingBulkApprove = document.getElementById("ben-pending-bulk-approve");
+    var pendingBulkReject = document.getElementById("ben-pending-bulk-reject");
+    var pendingBulkClear = document.getElementById("ben-pending-bulk-clear");
+    var assistanceBulkBar = document.getElementById("ben-assistance-bulk-bar");
+    var assistanceSelectedCount = document.getElementById("ben-assistance-selected-count");
+    var assistanceSelectAll = document.getElementById("ben-assistance-select-all");
+    var assistanceBulkDelete = document.getElementById("ben-assistance-bulk-delete");
+    var assistanceBulkClear = document.getElementById("ben-assistance-bulk-clear");
+    var feedbackModal = document.getElementById("ben-feedback-modal");
+    var feedbackModalClose = document.getElementById("ben-feedback-close");
+    var feedbackDetailBody = document.getElementById("ben-feedback-detail-body");
+    var feedbackSubtitle = document.getElementById("ben-feedback-subtitle");
+
+    var kpiTotal = document.getElementById("ben-kpi-total");
+    var kpiActive = document.getElementById("ben-kpi-active");
+    var kpiPending = document.getElementById("ben-kpi-pending");
+    var kpiAssisted = document.getElementById("ben-kpi-assisted");
+
+    var backdrop = document.getElementById("ben-modal-backdrop");
+    var profileModal = document.getElementById("ben-profile-modal");
+    var profileEyebrow = document.getElementById("ben-profile-eyebrow");
+    var profileTitle = document.getElementById("ben-profile-title");
+    var profileStrip = document.getElementById("ben-profile-strip");
+    var profileContent = document.getElementById("ben-profile-content");
+    var profileFooter = document.getElementById("ben-profile-footer");
+    var profileEditButton = document.getElementById("ben-profile-edit");
+    var historySection = document.getElementById("ben-history-section");
+    var historySubtitle = document.getElementById("ben-history-subtitle");
+    var historyContent = document.getElementById("ben-history-content");
+    var historySearchInput = document.getElementById("ben-history-search");
+    var historySortSelect = document.getElementById("ben-history-sort");
+    var deactivateModal = document.getElementById("ben-deactivate-modal");
+    var deactivateMessage = document.getElementById("ben-deactivate-message");
+    var deactivateConfirmButton = document.getElementById("ben-deactivate-confirm");
+    var assistanceModal = document.getElementById("ben-assistance-modal");
+    var assistanceForm = document.getElementById("ben-assistance-form");
+    var assistanceBeneficiaryIdInput = document.getElementById("ben-assistance-beneficiary-id");
+    var assistanceBeneficiaryIdsInput = document.createElement("input");
+    var assistanceBeneficiaryAvatar = document.getElementById("ben-assistance-beneficiary-avatar");
+    var assistanceBeneficiaryName = document.getElementById("ben-assistance-beneficiary-name");
+    var assistanceSubtitle = document.getElementById("ben-assistance-subtitle");
+    var assistanceAidTypeInput = document.getElementById("ben-assistance-aid-type");
+    var assistanceQuantityInput = document.getElementById("ben-assistance-quantity");
+    var assistanceDateInput = document.getElementById("ben-assistance-date");
+    var assistanceVolunteerSelect = document.getElementById("ben-assistance-volunteer");
+    var assistanceNotesInput = document.getElementById("ben-assistance-notes");
+    var assistanceSubmitButton = document.getElementById("ben-assistance-submit");
+    var bulkBar = document.getElementById("ben-bulk-bar");
+    var bulkCount = document.getElementById("ben-bulk-count");
+    var bulkClearButton = document.getElementById("ben-bulk-clear");
+    var bulkAssistanceButton = document.getElementById("ben-bulk-assistance");
+
+    var toast = document.getElementById("ben-toast");
+    var openMenuFor = null;
+    var openMenuTrigger = null;
+    var selectedBeneficiaries = new Set();
+    var selectedPendingApplications = new Set();
+    var selectedAssistanceRecords = new Set();
+    var refreshInFlight = false;
+    var refreshTimer = null;
+    var profileMode = "view";
+    var profileBeneficiaryId = null;
+    var profileBeneficiaryAppId = null;
+    var historyBeneficiaryId = null;
+    var deactivateBeneficiaryId = null;
+
+    function esc(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function initials(name) {
+        var parts = String(name || "").split(" ").filter(Boolean);
+        if (!parts.length) {
+            return "BN";
+        }
+        return (parts[0][0] + (parts[parts.length - 1][0] || "")).toUpperCase();
+    }
+
+    function formatDate(value) {
+        if (!value) {
+            return "N/A";
+        }
+        var date = new Date(value + "T00:00:00");
+        return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function splitContact(details, email, phone) {
+        var contact = {
+            email: String(email || "").trim(),
+            phone: String(phone || "").trim()
+        };
+        if (contact.email || contact.phone) {
+            return contact;
+        }
+        var raw = String(details || "").trim();
+        if (!raw) {
+            return contact;
+        }
+        var parts = raw.split(/\s*\/\s*/);
+        if (parts.length === 2) {
+            contact.email = parts[0].trim();
+            contact.phone = parts[1].trim();
+        } else if (raw.indexOf("@") !== -1) {
+            contact.email = raw;
+        } else {
+            contact.phone = raw;
+        }
+        return contact;
+    }
+
+    function showToast(message) {
+        toast.textContent = message;
+        toast.setAttribute("data-show", "true");
+        window.clearTimeout(showToast._timer);
+        showToast._timer = window.setTimeout(function () {
+            toast.setAttribute("data-show", "false");
+        }, 1900);
+    }
+
+    function renderVolunteerOptions() {
+        if (!assistanceVolunteerSelect) {
+            return;
+        }
+
+        var optionsHtml = '<option value="">Select volunteer</option>';
+        if (VOLUNTEER_OPTIONS.length) {
+            optionsHtml += VOLUNTEER_OPTIONS.map(function (volunteer) {
+                return '<option value="' + volunteer.id + '">' + esc(volunteer.name) + '</option>';
+            }).join("");
+        } else {
+            optionsHtml = '<option value="">No volunteers available</option>';
+        }
+
+        assistanceVolunteerSelect.innerHTML = optionsHtml;
+    }
+
+    function syncBulkBar() {
+        if (!bulkBar || !bulkCount) {
+            return;
+        }
+
+        var count = selectedBeneficiaries.size;
+        bulkCount.textContent = String(count);
+        bulkBar.setAttribute("data-show", count > 0 ? "true" : "false");
+    }
+
+    function syncPendingBulkBar() {
+        var count = selectedPendingApplications.size;
+        if (pendingSelectedCount) pendingSelectedCount.textContent = String(count);
+        if (pendingBulkBar) pendingBulkBar.setAttribute("data-show", count > 0 ? "true" : "false");
+        if (pendingSelectAll) {
+            pendingSelectAll.checked = PENDING_APPLICATIONS.length > 0 && count === PENDING_APPLICATIONS.length;
+            pendingSelectAll.indeterminate = count > 0 && count < PENDING_APPLICATIONS.length;
+        }
+    }
+
+    function syncAssistanceBulkBar() {
+        var count = selectedAssistanceRecords.size;
+        if (assistanceSelectedCount) assistanceSelectedCount.textContent = String(count);
+        if (assistanceBulkBar) assistanceBulkBar.setAttribute("data-show", count > 0 ? "true" : "false");
+        if (assistanceSelectAll) {
+            assistanceSelectAll.checked = ASSISTANCE_TRACKING.length > 0 && count === ASSISTANCE_TRACKING.length;
+            assistanceSelectAll.indeterminate = count > 0 && count < ASSISTANCE_TRACKING.length;
+        }
+    }
+
+    function clearPendingSelection() {
+        selectedPendingApplications.clear();
+        renderPendingApplications();
+        syncPendingBulkBar();
+    }
+
+    function clearAssistanceSelection() {
+        selectedAssistanceRecords.clear();
+        renderAssistanceTracking();
+        syncAssistanceBulkBar();
+    }
+
+    function getSelectedBeneficiaries() {
+        return BENEFICIARIES.filter(function (item) {
+            return selectedBeneficiaries.has(item.id);
+        });
+    }
+
+    function clearSelection() {
+        selectedBeneficiaries.clear();
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        }
+        renderTable();
+        syncBulkBar();
+    }
+
+    function applyDashboardPayload(payload) {
+        if (!payload) {
+            return;
+        }
+
+        if (Array.isArray(payload.beneficiaries)) {
+            BENEFICIARIES = payload.beneficiaries;
+        }
+
+        if (Array.isArray(payload.pending_applications)) {
+            PENDING_APPLICATIONS = payload.pending_applications;
+        }
+
+        if (Array.isArray(payload.assistance_tracking)) {
+            ASSISTANCE_TRACKING = payload.assistance_tracking;
+        }
+        if (Array.isArray(payload.assistance_feedbacks)) {
+            ASSISTANCE_FEEDBACKS = payload.assistance_feedbacks;
+        }
+
+        if (Array.isArray(payload.volunteer_options)) {
+            VOLUNTEER_OPTIONS = payload.volunteer_options;
+            renderVolunteerOptions();
+        }
+
+        renderSummary();
+        renderTable();
+        renderPendingApplications();
+        renderAssistanceTracking();
+        renderAssistanceFeedbacks();
+        syncBulkBar();
+    }
+
+    function statusClass(status) {
+        if (status === "Active") {
+            return "ben-badge ben-status-active";
+        }
+        if (status === "Pending") {
+            return "ben-badge ben-status-pending";
+        }
+        return "ben-badge ben-status-inactive";
+    }
+
+    function aidStatusClass(status) {
+        if (status === "Completed") {
+            return "ben-badge ben-aid-complete";
+        }
+        if (status === "Scheduled") {
+            return "ben-badge ben-aid-scheduled";
+        }
+        return "ben-badge ben-aid-pending";
+    }
+
+    function rowActions(beneficiary) {
+        var inactive = beneficiary.status === "Inactive";
+        return [
+            { key: "profile", label: "Profile" },
+            { key: "add-assistance", label: "Add Assistance" },
+            { key: "deactivate", label: "Remove as Beneficiary", danger: true }
+        ].map(function (item) {
+            var primaryClass = item.primary ? " ben-menu-item-primary" : "";
+            var dangerClass = item.danger ? " ben-menu-item-danger" : "";
+            // Keep 'deactivate' enabled for inactive users per requirement
+            var disabled = inactive && item.key !== "profile" && item.key !== "deactivate" ? " disabled aria-disabled=\"true\"" : "";
+            return "<button type=\"button\" class=\"ben-menu-item" + primaryClass + dangerClass + (disabled ? " is-disabled" : "") + "\" data-row-action=\"" + item.key + "\" data-beneficiary-id=\"" + beneficiary.id + "\" role=\"menuitem\"" + disabled + ">" + item.label + "</button>";
+        }).join("");
+    }
+
+    function profileStatusClass(status) {
+        return status === "Inactive" ? "ben-profile-pill-inactive" : "ben-profile-pill-active";
+    }
+
+    function renderSummary() {
+        // Calculate current month in YYYY-MM format
+        var now = new Date();
+        var currentMonth = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+        
+        // Total beneficiaries - count all records
+        var totalBeneficiaries = BENEFICIARIES.length;
+        
+        // Active beneficiaries - count records with status "Active"
+        var activeBeneficiaries = BENEFICIARIES.filter(function (item) { 
+            return item.status === "Active"; 
+        }).length;
+        
+        // Pending applications - count applications awaiting review
+        var pendingApplicationsCount = Array.isArray(PENDING_APPLICATIONS) ? PENDING_APPLICATIONS.length : 0;
+        
+        // People assisted this month - count completed assistance records in current month
+        var assistedThisMonth = ASSISTANCE_TRACKING.filter(function (item) {
+            return item.status === "Completed" && item.date.slice(0, 7) === currentMonth;
+        }).length;
+
+        // Update KPI display elements
+        if (kpiTotal) kpiTotal.textContent = String(totalBeneficiaries);
+        if (kpiActive) kpiActive.textContent = String(activeBeneficiaries);
+        if (kpiPending) kpiPending.textContent = String(pendingApplicationsCount);
+        if (kpiAssisted) kpiAssisted.textContent = String(assistedThisMonth);
+        if (pendingTabCount) pendingTabCount.textContent = String(pendingApplicationsCount);
+    }
+
+    function renderTable() {
+        var searchTerm = (searchInput && searchInput.value.toLowerCase()) || "";
+        var statusValue = (statusFilter && statusFilter.value) || "";
+
+        var filteredBeneficiaries = BENEFICIARIES.filter(function (item) {
+            var matchesSearch = searchTerm === "" || 
+                item.name.toLowerCase().includes(searchTerm) ||
+                item.location.toLowerCase().includes(searchTerm) ||
+                (item.email && item.email.toLowerCase().includes(searchTerm)) ||
+                (item.phone && item.phone.toLowerCase().includes(searchTerm)) ||
+                (item.contactDetails && item.contactDetails.toLowerCase().includes(searchTerm)) ||
+                (item.notes && item.notes.toLowerCase().includes(searchTerm));
+            var matchesStatus = statusValue === "" || item.status === statusValue;
+            return matchesSearch && matchesStatus;
+        });
+
+        tableBody.innerHTML = filteredBeneficiaries.map(function (item) {
+            var isSelected = selectedBeneficiaries.has(item.id);
+            var isInactive = item.status === "Inactive";
+            var contact = {
+                email: String(item.email || "").trim(),
+                phone: String(item.phone || "").trim()
+            };
+            if (!contact.email || !contact.phone) {
+                contact = splitContact(item.contactDetails, item.email, item.phone);
+            }
+            return "<tr data-beneficiary-id=\"" + item.id + "\" class=\"" + (isSelected ? "ben-row-selected" : "") + (isInactive ? " ben-row-inactive" : "") + "\">"
+                + "<td><input type=\"checkbox\" class=\"ben-checkbox ben-row-checkbox\" data-id=\"" + item.id + "\" aria-label=\"Select " + esc(item.name) + "\" " + (isSelected ? "checked" : "") + (isInactive ? " disabled" : "") + "></td>"
+                + "<td><div class=\"ben-name\"><span class=\"ben-avatar\">" + initials(item.name) + "</span><div><strong>" + esc(item.name) + "</strong></div></div></td>"
+                + "<td>" + esc(item.location) + "</td>"
+                + "<td>" + esc(contact.email || "N/A") + "</td>"
+                + "<td>" + esc(contact.phone || "N/A") + "</td>"
+                + "<td><span class=\"" + statusClass(item.status) + "\">" + esc(item.status) + "</span></td>"
+                + "<td>" + formatDate(item.lastAssistanceDate) + "</td>"
+                + "<td><button class=\"ben-row-action-btn\" type=\"button\" data-action-toggle=\"" + item.id + "\" aria-expanded=\"false\" aria-label=\"Open actions for " + esc(item.name) + "\" title=\"Actions\"><span class=\"ben-ellipsis\" aria-hidden=\"true\"></span></button></td>"
+                + "</tr>";
+        }).join("");
+
+        countLabel.textContent = filteredBeneficiaries.length + " beneficiaries shown";
+        updateSelectAllCheckbox();
+        syncBulkBar();
+    }
+
+    function renderPendingApplications() {
+        if (!pendingList) {
+            return;
+        }
+
+        selectedPendingApplications = new Set(PENDING_APPLICATIONS.filter(function (item) {
+            return selectedPendingApplications.has(item.id);
+        }).map(function (item) { return item.id; }));
+
+        if (!PENDING_APPLICATIONS.length) {
+            pendingList.innerHTML = "<tr><td colspan=\"7\" class=\"ben-table-empty\">No pending applications. New beneficiary applications will appear here.</td></tr>";
+            syncPendingBulkBar();
+            return;
+        }
+
+        pendingList.innerHTML = PENDING_APPLICATIONS.map(function (item) {
+            return "<tr>"
+                + "<td><input type=\"checkbox\" class=\"ben-checkbox ben-pending-checkbox\" data-id=\"" + item.id + "\" aria-label=\"Select " + esc(item.name) + "\"" + (selectedPendingApplications.has(item.id) ? " checked" : "") + "></td>"
+                + "<td><div class=\"ben-name\"><span class=\"ben-avatar\">" + esc(initials(item.name)) + "</span><div><strong>" + esc(item.name) + "</strong></div></div></td>"
+                + "<td>" + esc(item.email || "Not provided") + "</td>"
+                + "<td>" + esc(item.phone || "Not provided") + "</td>"
+                + "<td>" + esc(item.location || "Not provided") + "</td>"
+                + "<td>" + formatDate(item.submittedAt) + "</td>"
+                + "<td><div class=\"ben-table-action-group\">" 
+                + "<button type=\"button\" class=\"ben-row-action-btn\" data-pending-action=\"approve\" data-id=\"" + item.id + "\" aria-label=\"Approve application for " + esc(item.name) + "\" title=\"Approve\">"
+                + "<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M20 6L9 17l-5-5'></path></svg>"
+                + "</button> "
+                + "<button type=\"button\" class=\"ben-row-action-btn\" data-pending-action=\"reject\" data-id=\"" + item.id + "\" aria-label=\"Reject application for " + esc(item.name) + "\" title=\"Reject\">"
+                + "<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M18 6L6 18M6 6l12 12'></path></svg>"
+                + "</button>"
+                + "</div></td>"
+                + "</tr>";
+        }).join("");
+        syncPendingBulkBar();
+    }
+
+    function handleApplicationAction(applicationId, action) {
+        // Find the application in the pending list
+        var applicationIndex = PENDING_APPLICATIONS.findIndex(function (app) {
+            return app.id === applicationId;
+        });
+
+        if (applicationIndex === -1) {
+            showToast("Application not found");
+            return;
+        }
+
+        var application = PENDING_APPLICATIONS[applicationIndex];
+
+        if (action === "approve") {
+            // Add approved person to the beneficiaries list with Active status
+            var newBeneficiary = {
+                id: Math.max.apply(null, BENEFICIARIES.map(function (b) { return b.id; })) + 1,
+                applicationId: application.id,
+                name: application.name,
+                location: application.location || "To be determined",
+                contactDetails: application.contactDetails || "N/A",
+                status: "Active",
+                lastAssistanceDate: new Date().toISOString().slice(0, 10),
+                personalInfo: [
+                    "Contact: " + (application.contactDetails || "N/A"),
+                    "Application approved on: " + new Date().toLocaleDateString()
+                ],
+                enrollment: ["Approved: " + new Date().toLocaleDateString()],
+                requests: [],
+                documents: []
+            };
+
+            BENEFICIARIES.push(newBeneficiary);
+            showToast("✓ " + application.name + " approved and added to beneficiaries");
+        } else if (action === "reject") {
+            showToast("✗ " + application.name + " application rejected");
+        }
+
+        // Remove the application from the pending list
+        PENDING_APPLICATIONS.splice(applicationIndex, 1);
+
+        // Update all dashboard sections instantly
+        renderSummary();
+        renderTable();
+        renderPendingApplications();
+        renderAssistanceTracking();
+
+        // Server update and refresh (keep UI in sync with latest data)
+        reviewApplication(applicationId, action)
+            .then(function () {
+                refreshDashboardData("review");
+            })
+            .catch(function (error) {
+                console.error("Failed to save to server:", error.message);
+                refreshDashboardData("review");
+            });
+    }
+
+    function reviewApplication(applicationId, action) {
+        var body = new URLSearchParams({
+            application_id: String(applicationId),
+            action: action
+        });
+
+        return fetch(REVIEW_ROLE_APPLICATION_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-CSRFToken": getCookie("csrftoken") || ""
+            },
+            body: body.toString()
+        }).then(function (response) {
+            return response.json().then(function (payload) {
+                return { ok: response.ok, payload: payload };
+            });
+        });
+    }
+
+    function renderAssistanceTracking() {
+        if (!assistanceList) {
+            return;
+        }
+
+        selectedAssistanceRecords = new Set(ASSISTANCE_TRACKING.filter(function (item) {
+            return selectedAssistanceRecords.has(item.id);
+        }).map(function (item) { return item.id; }));
+
+        if (!ASSISTANCE_TRACKING.length) {
+            assistanceList.innerHTML = "<tr><td colspan=\"8\" class=\"ben-table-empty\">No assistance records available.</td></tr>";
+            syncAssistanceBulkBar();
+            return;
+        }
+
+        assistanceList.innerHTML = ASSISTANCE_TRACKING.map(function (item) {
+            var beneficiary = BENEFICIARIES.find(function (record) {
+                return record.applicationId === item.beneficiaryApplicationId || record.id === item.beneficiaryId;
+            });
+            var beneficiaryName = beneficiary ? beneficiary.name : (item.beneficiaryName || "Unknown");
+            var feedbackRating = "";
+            var feedbackMuted = "<span class=\"ben-chip-muted\">No feedback yet</span>";
+            if (item && item.feedback && item.feedback.rating) {
+                feedbackRating = esc(item.feedback.ratingLabel || ("★".repeat(item.feedback.rating) + "☆".repeat(Math.max(0, 5 - item.feedback.rating))));
+            }
+            var hasFeedback = Boolean(item && item.feedback && item.feedback.rating);
+            var detailIcon = hasFeedback
+                ? "<button type=\"button\" class=\"ben-row-action-btn ben-feedback-view-btn\" data-feedback-open=\"true\" data-assistance-id=\"" + item.id + "\" aria-label=\"View feedback for " + esc(beneficiaryName) + "\" title=\"View feedback\"><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z'></path><circle cx='12' cy='12' r='3'></circle></svg></button>"
+                : "<button type=\"button\" class=\"ben-row-action-btn ben-feedback-view-btn\" data-feedback-open=\"false\" data-assistance-id=\"" + item.id + "\" aria-label=\"View assistance details for " + esc(beneficiaryName) + "\" title=\"View details\"><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z'></path><circle cx='12' cy='12' r='3'></circle></svg></button>";
+            return "<tr>"
+            + "<td><input type=\"checkbox\" class=\"ben-checkbox ben-assistance-checkbox\" data-id=\"" + item.id + "\" aria-label=\"Select assistance record for " + esc(beneficiaryName) + "\"" + (selectedAssistanceRecords.has(item.id) ? " checked" : "") + "></td>"
+            + "<td><div class=\"ben-name\"><span class=\"ben-avatar\">" + esc(initials(beneficiaryName)) + "</span><div><strong>" + esc(beneficiaryName) + "</strong></div></div></td>"
+            + "<td>" + esc(item.quantity + " of " + item.aidType) + "</td>"
+            + "<td>" + formatDate(item.date) + "</td>"
+            + "<td>" + esc(item.volunteer || "Unassigned") + "</td>"
+            + "<td>" + esc(item.notes || "N/A") + "</td>"
+            + "<td>" + (hasFeedback ? feedbackRating : feedbackMuted) + "</td>"
+            + "<td><div class=\"ben-assist-actions\">"
+                + detailIcon
+                + "</div>"
+                + "</td></tr>";
+        }).join("");
+        syncAssistanceBulkBar();
+    }
+
+    function renderAssistanceFeedbacks() {
+        if (!feedbackList) return;
+        if (!ASSISTANCE_FEEDBACKS.length) {
+            feedbackList.innerHTML = "<tr><td colspan=\"7\" class=\"ben-table-empty\">No beneficiary feedbacks have been submitted.</td></tr>";
+            return;
+        }
+        feedbackList.innerHTML = ASSISTANCE_FEEDBACKS.map(function (item) {
+            var reviewButton = item.assistanceId
+                ? "<button type=\"button\" class=\"ben-row-action-btn ben-feedback-view-btn\" data-feedback-open=\"true\" data-assistance-id=\"" + esc(item.assistanceId) + "\" aria-label=\"Review feedback from " + esc(item.beneficiaryName) + "\" title=\"Review feedback\"><i data-lucide=\"eye\"></i></button>"
+                : "<button type=\"button\" class=\"ben-row-action-btn ben-feedback-view-btn\" data-feedback-activity-id=\"" + esc(item.id) + "\" aria-label=\"Review feedback from " + esc(item.beneficiaryName) + "\" title=\"Review feedback\"><i data-lucide=\"eye\"></i></button>";
+            return "<tr><td>" + esc(item.beneficiaryName || "Unknown") + "</td><td>" + esc(item.source || "Assistance") + "</td><td>" + esc(item.subject || "-") + "</td><td>" + formatDate(item.date) + "</td><td>" + esc(item.ratingLabel || "-") + "</td><td>" + esc(item.comment || "No comment") + "</td><td>" + reviewButton + "</td></tr>";
+        }).join("");
+        if (window.lucide && typeof window.lucide.createIcons === "function") window.lucide.createIcons();
+    }
+
+    function refreshDashboardData(reason) {
+        if (!BENEFICIARIES_REFRESH_URL) {
+            return Promise.resolve();
+        }
+
+        if (refreshInFlight) {
+            return Promise.resolve();
+        }
+
+        refreshInFlight = true;
+
+        return fetch(BENEFICIARIES_REFRESH_URL, {
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error("Request failed with status " + response.status);
+                }
+                return response.json();
+            })
+            .then(function (payload) {
+                applyDashboardPayload(payload);
+            })
+            .catch(function (error) {
+                console.error("Failed to refresh beneficiaries dashboard:", error.message || error);
+            })
+            .then(function () {
+                refreshInFlight = false;
+            });
+    }
+
+    function scheduleAutoRefresh() {
+        if (refreshTimer) {
+            return;
+        }
+
+        refreshTimer = window.setInterval(function () {
+            if (document.hidden) {
+                return;
+            }
+            refreshDashboardData("poll");
+        }, 30000);
+    }
+
+    function closeActionsMenu() {
+        actionsMenu.setAttribute("data-open", "false");
+        openMenuFor = null;
+        openMenuTrigger = null;
+        document.querySelectorAll("[data-action-toggle]").forEach(function (btn) {
+            btn.setAttribute("aria-expanded", "false");
+            btn.classList.remove("is-active");
+        });
+    }
+
+    function updateSelectAllCheckbox() {
+        if (!selectAllCheckbox || !tableBody) return;
+        var selectableCheckboxes = tableBody.querySelectorAll(".ben-row-checkbox:not(:disabled)");
+        var checkedCheckboxes = tableBody.querySelectorAll(".ben-row-checkbox:not(:disabled):checked");
+        selectAllCheckbox.checked = selectableCheckboxes.length > 0 && checkedCheckboxes.length === selectableCheckboxes.length;
+        selectAllCheckbox.indeterminate = checkedCheckboxes.length > 0 && checkedCheckboxes.length < selectableCheckboxes.length;
+    }
+
+    function toggleSelectAll() {
+        if (!selectAllCheckbox || !tableBody) return;
+        var isChecked = selectAllCheckbox.checked;
+        var rows = tableBody.querySelectorAll("[data-beneficiary-id]");
+        rows.forEach(function (row) {
+            var checkbox = row.querySelector(".ben-row-checkbox");
+            var id = parseInt(row.getAttribute("data-beneficiary-id"), 10);
+            if (checkbox && !checkbox.disabled) {
+                checkbox.checked = isChecked;
+                if (isChecked) {
+                    selectedBeneficiaries.add(id);
+                    row.classList.add("ben-row-selected");
+                } else {
+                    selectedBeneficiaries.delete(id);
+                    row.classList.remove("ben-row-selected");
+                }
+            }
+        });
+    }
+
+    function positionActionsMenu(trigger) {
+        if (!trigger || actionsMenu.getAttribute("data-open") !== "true") {
+            return;
+        }
+
+        var menuMargin = 8;
+        var edgePadding = 10;
+        var rect = trigger.getBoundingClientRect();
+        var menuWidth = actionsMenu.offsetWidth || 240;
+        var menuHeight = actionsMenu.offsetHeight || 220;
+
+        var left = rect.left + (rect.width / 2) - (menuWidth / 2);
+        var maxLeft = window.innerWidth - menuWidth - edgePadding;
+        left = Math.max(edgePadding, Math.min(left, Math.max(edgePadding, maxLeft)));
+
+        var top = rect.bottom + menuMargin;
+        var maxTop = window.innerHeight - menuHeight - edgePadding;
+        if (top > maxTop) {
+            top = Math.max(edgePadding, rect.top - menuHeight - menuMargin);
+        }
+
+        actionsMenu.style.top = top + "px";
+        actionsMenu.style.left = left + "px";
+    }
+
+    function openActionsMenu(beneficiaryId, trigger) {
+        var beneficiary = BENEFICIARIES.find(function (item) { return item.id === beneficiaryId; });
+        if (!beneficiary) {
+            return;
+        }
+
+        actionsMenu.innerHTML = rowActions(beneficiary);
+        document.querySelectorAll("[data-action-toggle]").forEach(function (btn) {
+            btn.setAttribute("aria-expanded", "false");
+            btn.classList.remove("is-active");
+        });
+        actionsMenu.setAttribute("data-open", "true");
+        trigger.setAttribute("aria-expanded", "true");
+        trigger.classList.add("is-active");
+        openMenuFor = beneficiaryId;
+        openMenuTrigger = trigger;
+
+        positionActionsMenu(trigger);
+    }
+
+    function buildBeneficiaryProfileCard(title, icon, value, fullWidth, editable) {
+        return "<div class=\"ben-profile-field ben-profile-readonly" + (fullWidth ? " ben-profile-field-full" : "") + (editable ? " ben-profile-editable" : "") + "\">"
+            + "<label class=\"ben-field-label\"><span aria-hidden=\"true\">" + icon + "</span> " + esc(title) + "</label>"
+            + "<div class=\"ben-profile-value\">" + value + "</div>"
+            + "</div>";
+    }
+
+    function renderProfileView(beneficiary) {
+        var history = getBeneficiaryHistory(beneficiary);
+        return buildBeneficiaryProfileCard("Full name", "<i data-lucide=\"user\"></i>", esc(beneficiary.name || "N/A"), false, false)
+            + buildBeneficiaryProfileCard("Contact details", "<i data-lucide=\"phone\"></i>", esc(beneficiary.contactDetails || "N/A"), false, false)
+            + buildBeneficiaryProfileCard("Status", "<i data-lucide=\"shield-check\"></i>", "<span class=\"ben-profile-pill " + profileStatusClass(beneficiary.status) + "\">" + esc(beneficiary.status) + "</span>", false, false)
+            + buildBeneficiaryProfileCard("Registered", "<i data-lucide=\"calendar-days\"></i>", esc(beneficiary.registeredAt || "N/A"), false, false)
+            + buildBeneficiaryProfileCard("Last assistance", "<i data-lucide=\"calendar-check\"></i>", esc(beneficiary.lastAssistanceDate || "N/A"), false, false)
+            + buildBeneficiaryProfileCard("Address", "<i data-lucide=\"map-pin\"></i>", esc(beneficiary.addressLine || beneficiary.location || "N/A"), false, false);
+    }
+
+    function renderProfileEdit(beneficiary) {
+        return "<form id=\"ben-profile-form\" class=\"ben-profile-form\">"
+            + "<input type=\"hidden\" name=\"beneficiary_application_id\" value=\"" + beneficiary.applicationId + "\">"
+            + "<label class=\"ben-field ben-profile-field ben-profile-editable\"><span class=\"ben-field-label\">Full name</span><input name=\"full_name\" type=\"text\" value=\"" + esc(beneficiary.name || "") + "\" required></label>"
+            + "<label class=\"ben-field ben-profile-field ben-profile-editable\"><span class=\"ben-field-label\"><span aria-hidden=\"true\"><i data-lucide=\"phone\"></i></span> Contact details</span><input name=\"contact_details\" type=\"text\" value=\"" + esc(beneficiary.contactDetails || "") + "\" required></label>"
+            + "<label class=\"ben-field ben-profile-field ben-profile-editable\"><span class=\"ben-field-label\"><span aria-hidden=\"true\"><i data-lucide=\"shield-check\"></i></span> Status</span><select name=\"status\"><option value=\"Active\"" + (beneficiary.status === "Active" ? " selected" : "") + ">Active</option><option value=\"Inactive\"" + (beneficiary.status === "Inactive" ? " selected" : "") + ">Inactive</option></select></label>"
+            + "<label class=\"ben-field ben-profile-field ben-profile-editable\"><span class=\"ben-field-label\"><span aria-hidden=\"true\"><i data-lucide=\"calendar-days\"></i></span> Registered</span><input type=\"text\" value=\"" + esc(beneficiary.registeredAt || "N/A") + "\" readonly></label>"
+            + "<label class=\"ben-field ben-profile-field ben-profile-editable\"><span class=\"ben-field-label\"><span aria-hidden=\"true\"><i data-lucide=\"calendar-check\"></i></span> Last assistance</span><input type=\"text\" value=\"" + esc(beneficiary.lastAssistanceDate || "N/A") + "\" readonly></label>"
+            + "<label class=\"ben-field ben-profile-field ben-profile-editable\"><span class=\"ben-field-label\"><span aria-hidden=\"true\"><i data-lucide=\"map-pin\"></i></span> Address</span><textarea name=\"supporting_information\" rows=\"3\">" + esc(beneficiary.addressLine || beneficiary.location || "") + "</textarea></label>"
+            + "</form>";
+    }
+
+    function getBeneficiaryHistory(beneficiary) {
+        return ASSISTANCE_TRACKING.filter(function (item) {
+            return item.beneficiaryApplicationId === beneficiary.applicationId || item.beneficiaryId === beneficiary.id;
+        });
+    }
+
+    function renderBeneficiaryHistory(beneficiary) {
+        if (!historyContent) {
+            return;
+        }
+
+        var searchTerm = String(historySearchInput ? historySearchInput.value : "").trim().toLowerCase();
+        var sortOrder = historySortSelect ? historySortSelect.value : "newest";
+        var history = getBeneficiaryHistory(beneficiary).filter(function (item) {
+            var haystack = [item.aidType, item.quantity, item.volunteer, item.notes].join(" ").toLowerCase();
+            return !searchTerm || haystack.indexOf(searchTerm) !== -1;
+        }).sort(function (left, right) {
+            var leftDate = new Date((left.date || "1970-01-01") + "T00:00:00");
+            var rightDate = new Date((right.date || "1970-01-01") + "T00:00:00");
+            return sortOrder === "oldest" ? leftDate - rightDate : rightDate - leftDate;
+        });
+
+        if (!history.length) {
+            historyContent.innerHTML = "<div class=\"ben-history-empty\">No assistance records found for this beneficiary.</div>";
+            return;
+        }
+
+        historyContent.innerHTML = "<table class=\"ben-history-table\"><thead><tr><th>Type</th><th>Quantity</th><th>Date</th><th>Volunteer</th><th>Notes</th></tr></thead><tbody>" + history.map(function (item) {
+            return "<tr>"
+                + "<td>" + esc(item.aidType || "N/A") + "</td>"
+                + "<td>" + esc(item.quantity || "N/A") + "</td>"
+                + "<td>" + esc(formatDate(item.date)) + "</td>"
+                + "<td>" + esc(item.volunteer || "Unassigned") + "</td>"
+                + "<td>" + esc(item.notes || "-") + "</td>"
+                + "</tr>";
+        }).join("") + "</tbody></table>";
+    }
+
+    function renderProfileStrip(beneficiary) {
+        if (!profileStrip) {
+            return;
+        }
+
+        profileStrip.innerHTML = "<span class=\"ben-avatar\" aria-hidden=\"true\">" + esc(initials(beneficiary.name)) + "</span>"
+            + "<div class=\"ben-profile-strip-copy\">"
+            + "<small>Viewing profile of</small>"
+            + "<strong>" + esc(beneficiary.name) + "</strong>"
+            + "</div>"
+            + "<span class=\"ben-profile-pill " + profileStatusClass(beneficiary.status) + " ben-profile-strip-status\">" + esc(beneficiary.status) + "</span>";
+    }
+
+    function renderProfileFooter(beneficiary, mode) {
+        if (!profileFooter) {
+            return;
+        }
+
+        if (mode === "edit") {
+            profileFooter.setAttribute("data-mode", "edit");
+            profileFooter.style.display = "flex";
+            profileFooter.innerHTML = "<button type=\"button\" class=\"ben-action-btn\" data-profile-cancel-edit=\"true\">Discard</button>"
+                + "<button type=\"submit\" form=\"ben-profile-form\" class=\"ben-action-btn ben-profile-save-btn\">Save changes</button>";
+            return;
+        }
+
+        profileFooter.setAttribute("data-mode", "view");
+        profileFooter.style.display = "none";
+        profileFooter.innerHTML = "";
+    }
+
+    function renderProfileModal(beneficiary, mode) {
+        profileMode = mode === "edit" ? "edit" : "view";
+        profileBeneficiaryId = beneficiary.id;
+
+        if (profileEyebrow) {
+            profileEyebrow.textContent = "Beneficiary";
+        }
+        if (profileTitle) {
+            profileTitle.textContent = "Profile";
+        }
+
+        renderProfileStrip(beneficiary);
+        if (profileContent) {
+            profileContent.innerHTML = profileMode === "edit" ? renderProfileEdit(beneficiary) : renderProfileView(beneficiary);
+        }
+        renderProfileFooter(beneficiary, profileMode);
+
+        if (profileEditButton) {
+            profileEditButton.style.display = profileMode === "view" ? "grid" : "none";
+        }
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    }
+
+    function closeHistoryModal() {
+        if (historySection) {
+            historySection.setAttribute("data-open", "false");
+        }
+        historyBeneficiaryId = null;
+        // Only hide backdrop if profile modal is not open
+        if (!profileModal || profileModal.getAttribute("data-open") !== "true") {
+            backdrop.setAttribute("data-open", "false");
+        }
+    }
+
+    function closeDeactivateModal() {
+        if (deactivateModal) {
+            deactivateModal.setAttribute("data-open", "false");
+        }
+        deactivateBeneficiaryId = null;
+        backdrop.setAttribute("data-open", "false");
+    }
+
+    function openProfile(beneficiaryId, mode) {
+        var beneficiary = BENEFICIARIES.find(function (item) { return item.id === beneficiaryId; });
+        if (!beneficiary) {
+            return;
+        }
+
+        closeActionsMenu();
+        closeAssistanceModal();
+        closeHistoryModal();
+        closeDeactivateModal();
+
+        renderProfileModal(beneficiary, mode);
+
+        backdrop.setAttribute("data-open", "true");
+        profileModal.setAttribute("data-open", "true");
+        profileBeneficiaryAppId = beneficiary.applicationId;
+
+        // Show assistance history inside the profile modal
+        historyBeneficiaryId = beneficiaryId;
+        if (historySearchInput) {
+            historySearchInput.value = "";
+        }
+        if (historySortSelect) {
+            historySortSelect.value = "newest";
+        }
+
+        renderBeneficiaryHistory(beneficiary);
+        if (historySection) {
+            historySection.setAttribute("data-open", "true");
+        }
+        refreshDashboardData("history").then(function () {
+            var refreshedBeneficiary = BENEFICIARIES.find(function (item) { return item.id === beneficiaryId; }) || beneficiary;
+            renderBeneficiaryHistory(refreshedBeneficiary);
+        });
+    }
+
+    function enterEditProfile() {
+        if (profileBeneficiaryId === null) {
+            return;
+        }
+
+        openProfile(profileBeneficiaryId, "edit");
+    }
+
+    function cancelEditProfile() {
+        if (profileBeneficiaryId === null) {
+            return;
+        }
+
+        openProfile(profileBeneficiaryId, "view");
+    }
+
+    function openHistoryModal(beneficiaryId) {
+        var beneficiary = BENEFICIARIES.find(function (item) { return item.id === beneficiaryId; });
+        if (!beneficiary) {
+            return;
+        }
+
+        closeActionsMenu();
+        closeAssistanceModal();
+        closeDeactivateModal();
+
+        // Open profile modal and show history section inside it
+        openProfile(beneficiaryId, "view");
+
+        historyBeneficiaryId = beneficiaryId;
+        if (historySearchInput) {
+            historySearchInput.value = "";
+        }
+        if (historySortSelect) {
+            historySortSelect.value = "newest";
+        }
+
+        renderBeneficiaryHistory(beneficiary);
+
+        if (historySection) {
+            historySection.setAttribute("data-open", "true");
+        }
+
+        refreshDashboardData("history").then(function () {
+            var refreshedBeneficiary = BENEFICIARIES.find(function (item) { return item.id === beneficiaryId; }) || beneficiary;
+            renderBeneficiaryHistory(refreshedBeneficiary);
+        });
+    }
+
+    function openDeactivateConfirm(beneficiaryId) {
+        var beneficiary = BENEFICIARIES.find(function (item) { return item.id === beneficiaryId; });
+        if (!beneficiary) {
+            return;
+        }
+
+        closeActionsMenu();
+        closeProfile();
+        closeAssistanceModal();
+        closeHistoryModal();
+
+        deactivateBeneficiaryId = beneficiaryId;
+        if (deactivateMessage) {
+            deactivateMessage.textContent = "Are you sure you want to remove " + beneficiary.name + " as a beneficiary? They will return to a regular user account.";
+        }
+
+        backdrop.setAttribute("data-open", "true");
+        deactivateModal.setAttribute("data-open", "true");
+    }
+
+    function openAssistanceModal(beneficiaryId) {
+        var beneficiary = BENEFICIARIES.find(function (item) { return item.id === beneficiaryId; });
+        if (!beneficiary || !assistanceModal || !assistanceForm) {
+            return;
+        }
+
+        closeActionsMenu();
+        closeProfile();
+        closeHistoryModal();
+        closeDeactivateModal();
+
+        assistanceForm.reset();
+        if (assistanceBeneficiaryIdInput) {
+            assistanceBeneficiaryIdInput.value = String(beneficiary.applicationId || "");
+        }
+        if (assistanceBeneficiaryIdsInput) {
+            assistanceBeneficiaryIdsInput.value = "";
+        }
+        if (assistanceBeneficiaryName) {
+            assistanceBeneficiaryName.textContent = beneficiary.name;
+        }
+        if (assistanceBeneficiaryAvatar) {
+            assistanceBeneficiaryAvatar.textContent = initials(beneficiary.name);
+        }
+        if (assistanceBeneficiaryIdsInput) {
+            assistanceBeneficiaryIdsInput.value = "";
+            assistanceBeneficiaryIdsInput.name = "beneficiary_application_ids";
+            assistanceBeneficiaryIdsInput.type = "hidden";
+            if (!assistanceBeneficiaryIdsInput.parentNode) {
+                assistanceForm.appendChild(assistanceBeneficiaryIdsInput);
+            }
+        }
+        if (assistanceSubtitle) {
+            assistanceSubtitle.textContent = "Record aid given to a beneficiary";
+        }
+        if (assistanceDateInput) {
+            assistanceDateInput.value = new Date().toISOString().slice(0, 10);
+        }
+
+        renderVolunteerOptions();
+
+        backdrop.setAttribute("data-open", "true");
+        assistanceModal.setAttribute("data-open", "true");
+    }
+
+    function openBulkAssistanceModal() {
+        var beneficiaries = getSelectedBeneficiaries();
+        if (!beneficiaries.length) {
+            showToast("Select at least one beneficiary first.");
+            return;
+        }
+
+        closeActionsMenu();
+        closeProfile();
+        closeHistoryModal();
+        closeDeactivateModal();
+
+        if (assistanceForm) {
+            assistanceForm.reset();
+        }
+        if (assistanceBeneficiaryIdInput) {
+            assistanceBeneficiaryIdInput.value = "";
+        }
+        if (assistanceBeneficiaryIdsInput) {
+            assistanceBeneficiaryIdsInput.value = beneficiaries.map(function (item) {
+                return item.applicationId || item.id;
+            }).join(",");
+            assistanceBeneficiaryIdsInput.name = "beneficiary_application_ids";
+            assistanceBeneficiaryIdsInput.type = "hidden";
+            if (!assistanceBeneficiaryIdsInput.parentNode) {
+                assistanceForm.appendChild(assistanceBeneficiaryIdsInput);
+            }
+        }
+        if (assistanceBeneficiaryName) {
+            assistanceBeneficiaryName.textContent = beneficiaries.length + " beneficiaries selected";
+        }
+        if (assistanceBeneficiaryAvatar) {
+            assistanceBeneficiaryAvatar.textContent = String(beneficiaries.length).slice(0, 2);
+        }
+        if (assistanceSubtitle) {
+            assistanceSubtitle.textContent = "Record the same assistance for " + beneficiaries.length + " beneficiaries";
+        }
+        if (assistanceDateInput) {
+            assistanceDateInput.value = new Date().toISOString().slice(0, 10);
+        }
+
+        renderVolunteerOptions();
+
+        backdrop.setAttribute("data-open", "true");
+        assistanceModal.setAttribute("data-open", "true");
+    }
+
+    function closeFeedbackModal() {
+        if (feedbackModal) {
+            feedbackModal.setAttribute("data-open", "false");
+        }
+        if (backdrop && feedbackModal && feedbackModal.getAttribute("data-open") === "false") {
+            backdrop.setAttribute("data-open", "false");
+        }
+    }
+
+    function openFeedbackDetailModal(recordId) {
+        if (!feedbackModal || !feedbackDetailBody) {
+            return;
+        }
+        var record = ASSISTANCE_TRACKING.find(function (item) {
+            return Number(item.id) === Number(recordId);
+        });
+        if (!record) {
+            return;
+        }
+        var feedback = record.feedback;
+        var beneficiary = BENEFICIARIES.find(function (item) {
+            return item.applicationId === record.beneficiaryApplicationId || item.id === record.beneficiaryId;
+        });
+        var beneficiaryName = beneficiary ? beneficiary.name : (record.beneficiaryName || "Unknown");
+        var detailRows = [];
+        detailRows.push("<div class=\"ben-feedback-detail-grid\">");
+        detailRows.push("<div><span class=\"ben-feedback-label\">Beneficiary</span><span class=\"ben-feedback-value\">" + esc(beneficiaryName) + "</span></div>");
+        detailRows.push("<div><span class=\"ben-feedback-label\">Distribution</span><span class=\"ben-feedback-value\">" + esc(record.aidType) + " · " + esc(formatDate(record.date)) + "</span></div>");
+        detailRows.push("<div class=\"ben-feedback-combined\"><span class=\"ben-feedback-label\">Feedback</span><span class=\"ben-feedback-value\"><span class=\"ben-feedback-rating\">" + (feedback && feedback.rating ? esc(feedback.ratingLabel || ("★".repeat(feedback.rating) + "☆".repeat(Math.max(0, 5 - feedback.rating)))) : "No rating submitted") + "</span><span class=\"ben-feedback-comment\">" + esc((feedback && feedback.comment) ? feedback.comment : "No comment left") + "</span></span></div>");
+        detailRows.push("</div>");
+        if (!feedback || !feedback.rating) {
+            detailRows.push("<p class=\"ben-feedback-empty\">Feedback has not been submitted for this assistance record yet.</p>");
+        }
+        if (feedbackDetailBody) feedbackDetailBody.innerHTML = detailRows.join("");
+        if (feedbackSubtitle) feedbackSubtitle.textContent = "Feedback for " + esc(beneficiaryName) + " on " + formatDate(record.date);
+        if (feedbackModal) {
+            feedbackModal.setAttribute("data-open", "true");
+        }
+        if (backdrop) {
+            backdrop.setAttribute("data-open", "true");
+        }
+    }
+
+    function openActivityFeedbackDetailModal(feedbackId) {
+        var item = ASSISTANCE_FEEDBACKS.find(function (feedback) { return String(feedback.id) === String(feedbackId); });
+        if (!item || !feedbackModal || !feedbackDetailBody) return;
+        feedbackDetailBody.innerHTML = "<div class=\"ben-feedback-detail-grid\"><div><span class=\"ben-feedback-label\">Beneficiary</span><span class=\"ben-feedback-value\">" + esc(item.beneficiaryName) + "</span></div><div><span class=\"ben-feedback-label\">Activity</span><span class=\"ben-feedback-value\">" + esc(item.subject) + " · " + esc(formatDate(item.date)) + "</span></div><div class=\"ben-feedback-combined\"><span class=\"ben-feedback-label\">Feedback</span><span class=\"ben-feedback-value\"><span class=\"ben-feedback-rating\">" + esc(item.ratingLabel || "No rating") + "</span><span class=\"ben-feedback-comment\">" + esc(item.comment || "No comment left") + "</span></span></div></div>";
+        feedbackSubtitle.textContent = "Feedback for " + item.beneficiaryName + " on " + formatDate(item.date);
+        feedbackModal.setAttribute("data-open", "true");
+        backdrop.setAttribute("data-open", "true");
+    }
+
+    function closeAssistanceModal() {
+        if (assistanceModal) {
+            assistanceModal.setAttribute("data-open", "false");
+        }
+        if (assistanceForm) {
+            assistanceForm.reset();
+        }
+        if (assistanceBeneficiaryIdsInput) {
+            assistanceBeneficiaryIdsInput.value = "";
+        }
+        backdrop.setAttribute("data-open", "false");
+    }
+
+    function handleAssistanceSubmit(event) {
+        event.preventDefault();
+
+        if (!assistanceForm) {
+            return;
+        }
+
+        var beneficiaryApplicationId = String(assistanceBeneficiaryIdInput ? assistanceBeneficiaryIdInput.value : "").trim();
+        var beneficiaryApplicationIds = String(assistanceBeneficiaryIdsInput ? assistanceBeneficiaryIdsInput.value : "").trim();
+        var aidType = String(assistanceAidTypeInput ? assistanceAidTypeInput.value : "").trim();
+        var quantityOrAmount = String(assistanceQuantityInput ? assistanceQuantityInput.value : "").trim();
+        var assistanceDate = String(assistanceDateInput ? assistanceDateInput.value : "").trim();
+        var assignedVolunteerId = String(assistanceVolunteerSelect ? assistanceVolunteerSelect.value : "").trim();
+        var notes = String(assistanceNotesInput ? assistanceNotesInput.value : "").trim();
+
+        if ((!beneficiaryApplicationId && !beneficiaryApplicationIds) || !aidType || !quantityOrAmount || !assistanceDate) {
+            showToast("Please complete the required assistance details.");
+            return;
+        }
+
+        var submitButton = assistanceSubmitButton;
+        var originalLabel = submitButton ? submitButton.innerHTML : "<span aria-hidden=\"true\" class=\"ben-save-icon\"><i data-lucide=\"check\"></i></span> Save Assistance";
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.innerHTML = "Saving...";
+        }
+
+        var body = new URLSearchParams({
+            beneficiary_application_id: beneficiaryApplicationId,
+            beneficiary_application_ids: beneficiaryApplicationIds,
+            aid_type: aidType,
+            quantity_or_amount: quantityOrAmount,
+            assistance_date: assistanceDate,
+            assigned_volunteer_id: assignedVolunteerId,
+            notes: notes
+        });
+
+        fetch(RECORD_BENEFICIARY_ASSISTANCE_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-CSRFToken": getCookie("csrftoken") || ""
+            },
+            body: body.toString()
+        })
+            .then(function (response) {
+                return response.json().then(function (payload) {
+                    return { ok: response.ok, payload: payload };
+                });
+            })
+            .then(function (result) {
+                if (!result.ok) {
+                    throw new Error(result.payload.error || "Unable to save assistance record.");
+                }
+
+                applyDashboardPayload(result.payload);
+                closeAssistanceModal();
+                clearSelection();
+                showToast("✓ Assistance recorded successfully");
+            })
+            .catch(function (error) {
+                console.error("Failed to record assistance:", error.message || error);
+                showToast(error.message || "Unable to save assistance record.");
+            })
+            .then(function () {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalLabel;
+                    if (window.lucide && typeof window.lucide.createIcons === "function") {
+                        window.lucide.createIcons();
+                    }
+                }
+            });
+    }
+
+    function closeProfile() {
+        backdrop.setAttribute("data-open", "false");
+        profileModal.setAttribute("data-open", "false");
+        profileMode = "view";
+        profileBeneficiaryId = null;
+        profileBeneficiaryAppId = null;
+        if (profileEditButton) {
+            profileEditButton.style.display = "grid";
+        }
+    }
+
+    function handleProfileSubmit(event) {
+        event.preventDefault();
+
+        if (!profileModal || profileMode !== "edit") {
+            return;
+        }
+
+        var form = event.target;
+        var submitButton = form.querySelector('button[type="submit"]');
+        var originalLabel = submitButton ? submitButton.innerHTML : "Save Changes";
+        var body = new URLSearchParams(new FormData(form));
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.innerHTML = "Saving...";
+        }
+
+        fetch(UPDATE_BENEFICIARY_PROFILE_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-CSRFToken": getCookie("csrftoken") || ""
+            },
+            body: body.toString()
+        })
+            .then(function (response) {
+                return response.json().then(function (payload) {
+                    return { ok: response.ok, payload: payload };
+                });
+            })
+            .then(function (result) {
+                if (!result.ok) {
+                    throw new Error(result.payload.error || "Unable to update beneficiary profile.");
+                }
+
+                applyDashboardPayload(result.payload);
+                var refreshedBeneficiary = BENEFICIARIES.find(function (item) { return item.applicationId === profileBeneficiaryAppId; });
+                if (refreshedBeneficiary) {
+                    renderProfileModal(refreshedBeneficiary, "view");
+                }
+                showToast("✓ Beneficiary profile updated");
+            })
+            .catch(function (error) {
+                console.error("Failed to update beneficiary profile:", error.message || error);
+                showToast(error.message || "Unable to update beneficiary profile.");
+            })
+            .then(function () {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalLabel;
+                    if (window.lucide && typeof window.lucide.createIcons === "function") {
+                        window.lucide.createIcons();
+                    }
+                }
+            });
+    }
+
+    function handleDeactivateConfirm() {
+        if (!deactivateBeneficiaryId) {
+            return;
+        }
+
+        var beneficiary = BENEFICIARIES.find(function (item) { return item.id === deactivateBeneficiaryId; });
+        var submitButton = deactivateConfirmButton;
+        var originalLabel = submitButton ? submitButton.textContent : "Remove as Beneficiary";
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = "Removing...";
+        }
+
+        var applicationId = beneficiary ? (beneficiary.applicationId || beneficiary.id) : deactivateBeneficiaryId;
+
+        fetch(DEACTIVATE_BENEFICIARY_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-CSRFToken": getCookie("csrftoken") || ""
+            },
+            body: new URLSearchParams({ beneficiary_application_id: String(applicationId) }).toString()
+        })
+            .then(function (response) {
+                return response.json().then(function (payload) {
+                    return { ok: response.ok, payload: payload };
+                });
+            })
+            .then(function (result) {
+                if (!result.ok) {
+                    throw new Error(result.payload.error || "Unable to remove beneficiary.");
+                }
+
+                applyDashboardPayload(result.payload);
+                selectedBeneficiaries.delete(deactivateBeneficiaryId);
+                syncBulkBar();
+                closeDeactivateModal();
+                showToast("✓ " + (beneficiary ? beneficiary.name : "Beneficiary") + " removed as beneficiary");
+            })
+            .catch(function (error) {
+                console.error("Failed to deactivate beneficiary:", error.message || error);
+                showToast(error.message || "Unable to remove beneficiary.");
+            })
+            .then(function () {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalLabel;
+                }
+            });
+    }
+
+        function runBulkApplicationReview(action) {
+            var ids = Array.from(selectedPendingApplications);
+            if (!ids.length) return;
+
+            pendingBulkApprove.disabled = true;
+            pendingBulkReject.disabled = true;
+            Promise.all(ids.map(function (id) {
+                return reviewApplication(id, action).then(function (result) {
+                    if (!result.ok) {
+                        throw new Error((result.payload && result.payload.error) || "Unable to review an application.");
+                    }
+                });
+            }))
+                .then(function () {
+                    selectedPendingApplications.clear();
+                    showToast((action === "approve" ? "✓ Approved " : "✗ Rejected ") + ids.length + " application(s)");
+                    return refreshDashboardData("bulk-review");
+                })
+                .catch(function (error) {
+                    showToast(error.message || "Unable to complete the bulk action.");
+                    refreshDashboardData("bulk-review-error");
+                })
+                .then(function () {
+                    pendingBulkApprove.disabled = false;
+                    pendingBulkReject.disabled = false;
+                });
+        }
+
+        function deleteSelectedAssistance() {
+            var ids = Array.from(selectedAssistanceRecords);
+            if (!ids.length) return;
+            if (!window.confirm("Delete " + ids.length + " selected records? This can't be undone.")) return;
+
+            assistanceBulkDelete.disabled = true;
+            var body = new URLSearchParams({ record_ids: ids.join(",") });
+            fetch(DELETE_BENEFICIARY_ASSISTANCE_BULK_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "X-CSRFToken": getCookie("csrftoken") || ""
+                },
+                body: body.toString()
+            })
+                .then(function (response) {
+                    return response.json().then(function (payload) {
+                        if (!response.ok) throw new Error(payload.error || "Unable to delete assistance records.");
+                        return payload;
+                    });
+                })
+                .then(function (payload) {
+                    selectedAssistanceRecords.clear();
+                    showToast(payload.message || "Assistance records deleted.");
+                    return refreshDashboardData("bulk-assistance-delete");
+                })
+                .catch(function (error) {
+                    showToast(error.message || "Unable to delete assistance records.");
+                })
+                .then(function () {
+                    assistanceBulkDelete.disabled = false;
+                });
+        }
+
+    function bindEvents() {
+        function selectDirectoryTab(tab, panel) {
+            [directoryTab, pendingTab, assistanceTab].forEach(function (item) {
+                if (item) {
+                    item.setAttribute("aria-selected", item === tab ? "true" : "false");
+                }
+            });
+            [directoryPanel, pendingPanel, assistancePanel].forEach(function (item) {
+                if (item) {
+                    item.hidden = item !== panel;
+                }
+            });
+        }
+
+        if (directoryTab && directoryPanel) {
+            directoryTab.addEventListener("click", function () { selectDirectoryTab(directoryTab, directoryPanel); });
+        }
+        if (pendingTab && pendingPanel) {
+            pendingTab.addEventListener("click", function () { selectDirectoryTab(pendingTab, pendingPanel); });
+        }
+        if (assistanceTab && assistancePanel) {
+            assistanceTab.addEventListener("click", function () { selectDirectoryTab(assistanceTab, assistancePanel); });
+        }
+
+        document.addEventListener("click", function (event) {
+            var toggle = event.target.closest("[data-action-toggle]");
+            if (toggle) {
+                var id = Number(toggle.getAttribute("data-action-toggle"));
+                if (openMenuFor === id && actionsMenu.getAttribute("data-open") === "true") {
+                    closeActionsMenu();
+                } else {
+                    closeActionsMenu();
+                    openActionsMenu(id, toggle);
+                }
+                return;
+            }
+
+            var feedbackButton = event.target.closest(".ben-feedback-view-btn");
+            if (feedbackButton) {
+                var activityFeedbackId = feedbackButton.getAttribute("data-feedback-activity-id");
+                if (activityFeedbackId) {
+                    openActivityFeedbackDetailModal(activityFeedbackId);
+                    return;
+                }
+                var feedbackRecordId = Number(feedbackButton.getAttribute("data-assistance-id"));
+                if (Number.isFinite(feedbackRecordId)) {
+                    openFeedbackDetailModal(feedbackRecordId);
+                }
+                return;
+            }
+
+            var rowAction = event.target.closest("[data-row-action]");
+            if (rowAction) {
+                var action = rowAction.getAttribute("data-row-action");
+                var beneficiaryId = Number(rowAction.getAttribute("data-beneficiary-id"));
+
+                if (action === "profile") {
+                    openProfile(beneficiaryId, "view");
+                } else if (action === "add-assistance") {
+                    openAssistanceModal(beneficiaryId);
+                } else if (action === "history") {
+                    openHistoryModal(beneficiaryId);
+                } else if (action === "deactivate") {
+                    openDeactivateConfirm(beneficiaryId);
+                } else {
+                    showToast(rowAction.textContent + " selected");
+                }
+
+                closeActionsMenu();
+                return;
+            }
+
+            var pendingAction = event.target.closest("[data-pending-action]");
+            if (pendingAction) {
+                var verb = pendingAction.getAttribute("data-pending-action");
+                var applicationId = Number(pendingAction.getAttribute("data-id"));
+
+                // Disable button immediately for responsive feedback
+                pendingAction.disabled = true;
+                pendingAction.style.opacity = "0.6";
+                
+                // Show loading state
+                var originalContent = pendingAction.innerHTML;
+                pendingAction.innerHTML = "<svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' style='animation: spin 1s linear infinite;' aria-hidden='true'><circle cx='12' cy='12' r='1'></circle><path d='M12 2v4M12 18v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M2 12h4M18 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83'></path></svg>";
+
+                // Process the application action instantly (optimistic update)
+                var actionLower = verb.toLowerCase();
+                handleApplicationAction(applicationId, actionLower);
+
+                // Re-enable button after a brief delay
+                window.setTimeout(function () {
+                    pendingAction.disabled = false;
+                    pendingAction.style.opacity = "1";
+                    pendingAction.innerHTML = originalContent;
+                }, 400);
+
+                return;
+            }
+
+            if (!event.target.closest("#ben-actions-menu")) {
+                closeActionsMenu();
+            }
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                closeActionsMenu();
+                closeProfile();
+                closeHistoryModal();
+                closeDeactivateModal();
+                closeFeedbackModal();
+                closeAssistanceModal();
+            }
+        });
+
+        window.addEventListener("resize", function () {
+            if (openMenuTrigger) {
+                positionActionsMenu(openMenuTrigger);
+            }
+        });
+
+        window.addEventListener("scroll", function () {
+            if (openMenuTrigger) {
+                positionActionsMenu(openMenuTrigger);
+            }
+        }, true);
+
+        var searchTimeout;
+        if (searchInput) {
+            searchInput.addEventListener("input", function () {
+                window.clearTimeout(searchTimeout);
+                searchTimeout = window.setTimeout(function () {
+                    selectedBeneficiaries.clear();
+                    renderTable();
+                    syncBulkBar();
+                }, 300);
+            });
+        }
+
+        if (statusFilter) {
+            statusFilter.addEventListener("change", function () {
+                selectedBeneficiaries.clear();
+                renderTable();
+                syncBulkBar();
+            });
+        }
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener("change", function () {
+                toggleSelectAll();
+                syncBulkBar();
+            });
+        }
+
+        if (pendingSelectAll) {
+            pendingSelectAll.addEventListener("change", function () {
+                if (pendingSelectAll.checked) {
+                    PENDING_APPLICATIONS.forEach(function (item) { selectedPendingApplications.add(item.id); });
+                } else {
+                    selectedPendingApplications.clear();
+                }
+                renderPendingApplications();
+            });
+        }
+
+        if (assistanceSelectAll) {
+            assistanceSelectAll.addEventListener("change", function () {
+                if (assistanceSelectAll.checked) {
+                    ASSISTANCE_TRACKING.forEach(function (item) { selectedAssistanceRecords.add(item.id); });
+                } else {
+                    selectedAssistanceRecords.clear();
+                }
+                renderAssistanceTracking();
+            });
+        }
+
+        if (pendingBulkApprove) pendingBulkApprove.addEventListener("click", function () { runBulkApplicationReview("approve"); });
+        if (pendingBulkReject) pendingBulkReject.addEventListener("click", function () { runBulkApplicationReview("reject"); });
+        if (pendingBulkClear) pendingBulkClear.addEventListener("click", clearPendingSelection);
+        if (assistanceBulkDelete) assistanceBulkDelete.addEventListener("click", deleteSelectedAssistance);
+        if (assistanceBulkClear) assistanceBulkClear.addEventListener("click", clearAssistanceSelection);
+
+        if (bulkAssistanceButton) {
+            bulkAssistanceButton.addEventListener("click", openBulkAssistanceModal);
+        }
+
+        if (bulkClearButton) {
+            bulkClearButton.addEventListener("click", clearSelection);
+        }
+
+        if (feedbackModalClose) {
+            feedbackModalClose.addEventListener("click", function () {
+                closeFeedbackModal();
+            });
+        }
+
+        if (backdrop) {
+            backdrop.addEventListener("click", function () {
+                if (feedbackModal && feedbackModal.getAttribute("data-open") === "true") {
+                    closeFeedbackModal();
+                }
+            });
+        }
+
+        document.addEventListener("change", function (event) {
+            if (event.target.classList.contains("ben-pending-checkbox")) {
+                var pendingId = Number(event.target.getAttribute("data-id"));
+                if (event.target.checked) selectedPendingApplications.add(pendingId);
+                else selectedPendingApplications.delete(pendingId);
+                syncPendingBulkBar();
+                return;
+            }
+            if (event.target.classList.contains("ben-assistance-checkbox")) {
+                var assistanceId = Number(event.target.getAttribute("data-id"));
+                if (event.target.checked) selectedAssistanceRecords.add(assistanceId);
+                else selectedAssistanceRecords.delete(assistanceId);
+                syncAssistanceBulkBar();
+                return;
+            }
+            if (event.target.classList.contains("ben-row-checkbox")) {
+                var checkbox = event.target;
+                var row = checkbox.closest("tr");
+                var id = parseInt(checkbox.getAttribute("data-id"), 10);
+                
+                if (checkbox.checked) {
+                    selectedBeneficiaries.add(id);
+                    row.classList.add("ben-row-selected");
+                } else {
+                    selectedBeneficiaries.delete(id);
+                    row.classList.remove("ben-row-selected");
+                }
+                updateSelectAllCheckbox();
+                syncBulkBar();
+            }
+        });
+
+        var toggleBtn = document.getElementById("ben-toggle-columns");
+        if (toggleBtn) {
+            toggleBtn.addEventListener("click", function () {
+                var table = document.querySelector(".ben-table");
+                var isExpanded = table.classList.contains("ben-show-all");
+                if (isExpanded) {
+                    table.classList.remove("ben-show-all");
+                    toggleBtn.textContent = "Show More";
+                } else {
+                    table.classList.add("ben-show-all");
+                    toggleBtn.textContent = "Show Less";
+                }
+            });
+        }
+
+        backdrop.addEventListener("click", function () {
+            closeProfile();
+            closeHistoryModal();
+            closeDeactivateModal();
+            closeAssistanceModal();
+        });
+
+        document.addEventListener("submit", function (event) {
+            if (event.target && event.target.id === "ben-profile-form") {
+                handleProfileSubmit(event);
+            }
+        });
+
+        if (assistanceForm) {
+            assistanceForm.addEventListener("submit", handleAssistanceSubmit);
+        }
+
+        if (deactivateConfirmButton) {
+            deactivateConfirmButton.addEventListener("click", handleDeactivateConfirm);
+        }
+
+        var closeProfileButton = document.querySelector("[data-close-profile='true']");
+        document.querySelectorAll("[data-close-profile='true']").forEach(function (button) {
+            button.addEventListener("click", closeProfile);
+        });
+
+        if (profileEditButton) {
+            profileEditButton.addEventListener("click", enterEditProfile);
+        }
+
+        document.addEventListener("click", function (event) {
+            var enterEditButton = event.target.closest("[data-profile-enter-edit='true']");
+            if (enterEditButton) {
+                enterEditProfile();
+                return;
+            }
+
+            var cancelEditButton = event.target.closest("[data-profile-cancel-edit='true']");
+            if (cancelEditButton) {
+                cancelEditProfile();
+                return;
+            }
+        });
+
+        var closeHistoryButton = document.querySelector("[data-close-history='true']");
+        if (closeHistoryButton) {
+            closeHistoryButton.addEventListener("click", closeHistoryModal);
+        }
+
+        var closeDeactivateButtons = document.querySelectorAll("[data-close-deactivate='true']");
+        closeDeactivateButtons.forEach(function (button) {
+            button.addEventListener("click", closeDeactivateModal);
+        });
+
+        var closeAssistanceButtons = document.querySelectorAll("[data-close-assistance='true']");
+        closeAssistanceButtons.forEach(function (button) {
+            button.addEventListener("click", closeAssistanceModal);
+        });
+
+        if (historySearchInput) {
+            historySearchInput.addEventListener("input", function () {
+                if (historyBeneficiaryId === null) {
+                    return;
+                }
+                var beneficiary = BENEFICIARIES.find(function (item) { return item.id === historyBeneficiaryId; });
+                if (beneficiary) {
+                    renderBeneficiaryHistory(beneficiary);
+                }
+            });
+        }
+
+        if (historySortSelect) {
+            historySortSelect.addEventListener("change", function () {
+                if (historyBeneficiaryId === null) {
+                    return;
+                }
+                var beneficiary = BENEFICIARIES.find(function (item) { return item.id === historyBeneficiaryId; });
+                if (beneficiary) {
+                    renderBeneficiaryHistory(beneficiary);
+                }
+            });
+        }
+    }
+
+    function init() {
+        if (actionsMenu && actionsMenu.parentElement !== document.body) {
+            document.body.appendChild(actionsMenu);
+        }
+
+        if (tableWrap) {
+            tableWrap.addEventListener("scroll", function () {
+                if (openMenuTrigger) {
+                    positionActionsMenu(openMenuTrigger);
+                }
+            });
+        }
+
+        renderSummary();
+        renderTable();
+        renderPendingApplications();
+        renderAssistanceTracking();
+        renderAssistanceFeedbacks();
+        renderVolunteerOptions();
+        bindEvents();
+
+        scheduleAutoRefresh();
+        refreshDashboardData("init");
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) {
+                refreshDashboardData("visibility");
+            }
+        });
+
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
+
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,2053 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Operations - Donations | HappYness{% endblock %}
+
+{% block extra_head %}
+<style data-admin-panel-style="operations-donation">
+    .don-page {
+        --don-surface: rgba(255, 255, 255, 0.95);
+        --don-stroke: rgba(15, 118, 110, 0.16);
+        --don-shadow: 0 10px 24px rgba(8, 83, 76, 0.1);
+        --admin-ops-card-shadow: var(--don-shadow);
+        --don-ink: #14352d;
+        --don-sub: #56766c;
+        --don-accent: #0f766e;
+        display: grid;
+        gap: 0.95rem;
+        width: 100%;
+        max-width: 100%;
+        overflow: visible;
+        padding: 0.24rem;
+    }
+
+    /* Avoid clipping card shadows by page safety wrappers. */
+    #dashboard-shell.admin-page #donations-page,
+    #dashboard-shell.admin-page #donations-page > section,
+    #dashboard-shell.admin-page #donations-page > article,
+    #dashboard-shell.admin-page #donations-page article[class*="kpi"] {
+        overflow: visible !important;
+    }
+
+    .don-card {
+        background: var(--don-surface);
+        border: 1px solid var(--don-stroke);
+        border-radius: 16px;
+        box-shadow: var(--don-shadow);
+        min-width: 0;
+    }
+
+    .don-card,
+    .don-kpi,
+    .don-toolbar,
+    .don-bulk-bar,
+    .don-table-wrap,
+    .don-list-item,
+    .don-alert,
+    .don-block,
+    .don-modal {
+        background-color: #ffffff !important;
+    }
+
+    .don-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.65rem;
+        padding: 0.82rem 0.95rem;
+        border-bottom: 1px solid #deefe8;
+    }
+
+    .don-table-head {
+        align-items: flex-start;
+    }
+
+    .don-management-head,
+    .don-table-head {
+        display: flex;
+    }
+
+    .don-management-head > div:last-child,
+    .don-table-head > .don-management-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.6rem;
+    }
+
+    .don-management-actions {
+        justify-content: flex-end;
+    }
+
+    .don-export-actions {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .don-export-actions .don-chip-btn {
+        min-width: 6.8rem;
+    }
+
+    .don-management-actions > #don-open-form {
+        align-self: center;
+        padding: 0.7rem 1rem;
+        font-size: 0.82rem;
+    }
+
+    @media (max-width: 767px) {
+        .don-management-head,
+        .don-table-head {
+            display: block;
+        }
+
+        .don-management-head > div:last-child,
+        .don-table-head > .don-management-actions {
+            width: 100%;
+            margin-top: 0.75rem;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .don-management-actions {
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+
+        .don-export-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .don-export-actions .don-chip-btn {
+            width: 100%;
+        }
+
+        .don-management-actions > #don-open-form {
+            margin-left: auto;
+        }
+    }
+
+    .don-title {
+        margin: 0;
+        font-size: 0.96rem;
+        font-weight: 700;
+        color: var(--don-ink);
+    }
+
+    .don-sub {
+        margin: 0.14rem 0 0;
+        font-size: 0.72rem;
+        color: var(--don-sub);
+    }
+
+    .don-summary {
+        display: grid;
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .don-kpi {
+        min-height: 100px;
+        padding: 0.76rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .don-kpi-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .don-kpi-label {
+        margin: 0;
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #618176;
+        font-weight: 700;
+    }
+
+    .don-kpi-value {
+        margin: 0.36rem 0 0;
+        font-size: 1.75rem;
+        line-height: 1.05;
+        font-weight: 800;
+        color: #16372e;
+    }
+
+    .don-kpi-meta {
+        margin: 0.32rem 0 0;
+        font-size: 0.72rem;
+        color: #4f766b;
+    }
+
+    .don-kpi-icon {
+        width: 1.76rem;
+        height: 1.76rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        color: var(--don-accent);
+        background: rgba(16, 185, 129, 0.14);
+    }
+
+    .don-toolbar {
+        padding: 0.82rem 0.95rem 0.9rem;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.7rem;
+    }
+
+    .don-action-btn,
+    .don-chip-btn {
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        background: #fff;
+        color: #1b4f43;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.45rem 0.7rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.28rem;
+        cursor: pointer;
+    }
+
+    .don-action-btn:hover,
+    .don-chip-btn:hover {
+        background: #f5fffa;
+    }
+
+    .don-chip-btn {
+        border-radius: 999px;
+        background: #f3fbf7;
+        padding: 0.24rem 0.52rem;
+        font-size: 0.67rem;
+    }
+
+    .don-input,
+    .don-select,
+    .don-textarea {
+        width: 100%;
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        min-height: 2.2rem;
+        padding: 0.52rem 0.66rem;
+        font-size: 0.82rem;
+        color: #1b4f43;
+        background: #fff;
+    }
+
+    .don-textarea {
+        min-height: 5rem;
+        resize: vertical;
+    }
+
+    .don-field {
+        display: grid;
+        gap: 0.28rem;
+    }
+
+    .don-field label {
+        font-size: 0.67rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #1a4f43;
+        font-weight: 700;
+    }
+
+    .don-bulk-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: space-between;
+        border-top: 1px solid #deefe8;
+        padding: 0.65rem 0.95rem 0.8rem;
+    }
+
+    .don-bulk-count {
+        font-size: 0.76rem;
+        color: #4f766b;
+        font-weight: 600;
+    }
+
+    .don-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: visible;
+        max-height: none;
+    }
+
+    .don-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 1140px;
+    }
+
+    .don-table th,
+    .don-table td {
+        padding: 0.62rem 0.75rem;
+        font-size: 0.8rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #e7f2ed;
+    }
+
+    .don-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        text-align: left;
+        white-space: nowrap;
+        background: rgba(236, 253, 245, 0.9);
+        border-bottom: 1px solid rgba(15, 118, 110, 0.16);
+        color: #2f6659;
+        font-weight: 700;
+    }
+
+    .don-table tbody tr:hover {
+        background: rgba(236, 253, 245, 0.42);
+    }
+
+    .don-table tbody tr {
+        background: #ffffff;
+    }
+
+    .don-donor-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.54rem;
+    }
+
+    .don-avatar {
+        width: 2.04rem;
+        height: 2.04rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #0f766e;
+        background: linear-gradient(145deg, rgba(16, 185, 129, 0.22), rgba(20, 184, 166, 0.2));
+    }
+
+    .don-donor strong {
+        display: block;
+        font-size: 0.82rem;
+        color: #173a31;
+    }
+
+    .don-donor small {
+        display: block;
+        font-size: 0.69rem;
+        color: #5f7d73;
+    }
+
+    .don-badge {
+        display: inline-flex;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        font-size: 0.69rem;
+        font-weight: 700;
+        padding: 0.18rem 0.52rem;
+        white-space: nowrap;
+    }
+
+    .don-status-completed { color: #14532d; background: #dcfce7; border-color: #bbf7d0; }
+    .don-status-pending { color: #8a4b10; background: #ffedd5; border-color: #fed7aa; }
+    .don-status-failed { color: #9a3412; background: #fee2e2; border-color: #fecaca; }
+    .don-status-cancelled { color: #55626b; background: #f1f5f9; border-color: #dce3eb; }
+
+    .don-method {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.18rem 0.5rem;
+        border-radius: 999px;
+        background: #f3fbf7;
+        color: #195144;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+
+    .don-action-menu-wrap {
+        position: relative;
+        display: inline-block;
+    }
+
+    .don-row-action-btn {
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        background: #fff;
+        color: #1b4f43;
+        font-size: 0.75rem;
+        font-weight: 700;
+        width: 2.1rem;
+        height: 2.1rem;
+        padding: 0;
+        display: inline-grid;
+        place-items: center;
+        cursor: pointer;
+        transition: background-color 160ms ease, border-color 160ms ease, box-shadow 180ms ease, transform 120ms ease;
+    }
+
+    .don-row-action-btn:hover {
+        background: #f5fcf9;
+        border-color: #b8dfd1;
+    }
+
+    .don-row-action-btn:active {
+        transform: scale(0.94);
+    }
+
+    .don-row-action-btn.is-active {
+        background: rgba(16, 185, 129, 0.16);
+        border-color: rgba(15, 118, 110, 0.45);
+        color: #0f5f4c;
+        box-shadow: 0 8px 16px rgba(15, 118, 110, 0.16);
+        animation: donBtnPop 180ms ease;
+    }
+
+    .don-ellipsis {
+        width: 0.24rem;
+        height: 0.24rem;
+        border-radius: 999px;
+        background: currentColor;
+        box-shadow: -0.36rem 0 0 currentColor, 0.36rem 0 0 currentColor;
+    }
+
+    .don-action-menu {
+        position: fixed;
+        min-width: 15rem;
+        border-radius: 12px;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        background: #fff;
+        box-shadow: 0 20px 34px rgba(8, 83, 76, 0.18);
+        padding: 0.4rem;
+        display: grid;
+        gap: 0.16rem;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(8px) scale(0.97);
+        transform-origin: top center;
+        transition: opacity 180ms ease, transform 180ms ease, visibility 0s linear 180ms;
+        z-index: 30;
+    }
+
+    .don-action-menu[data-open="true"] {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0) scale(1);
+        transition: opacity 180ms ease, transform 180ms ease, visibility 0s;
+        animation: donCardReveal 180ms ease;
+    }
+
+    @keyframes donBtnPop {
+        0% { transform: scale(0.95); }
+        100% { transform: scale(1); }
+    }
+
+    @keyframes donCardReveal {
+        0% { opacity: 0; transform: translateY(12px) scale(0.96); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .don-menu-item {
+        width: 100%;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: #264e43;
+        text-align: left;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.45rem 0.55rem;
+        cursor: pointer;
+    }
+
+    .don-menu-item:hover {
+        background: rgba(236, 253, 245, 0.9);
+        color: #0f766e;
+    }
+
+    .don-layout-two {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.9rem;
+    }
+
+    .don-list {
+        list-style: none;
+        margin: 0;
+        padding: 0.56rem 0.82rem 0.82rem;
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .don-list-item {
+        border: 1px solid #e2f1eb;
+        border-radius: 12px;
+        background: #fff;
+        padding: 0.55rem 0.62rem;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.45rem;
+        align-items: center;
+    }
+
+    .don-list-item strong {
+        display: block;
+        font-size: 0.8rem;
+        color: #173a31;
+    }
+
+    .don-list-item small {
+        display: block;
+        font-size: 0.7rem;
+        color: #5e7d73;
+    }
+
+    .don-alerts {
+        display: grid;
+        gap: 0.45rem;
+        padding: 0.56rem 0.82rem 0.82rem;
+    }
+
+    .don-alert {
+        border: 1px solid #e2f1eb;
+        border-radius: 12px;
+        background: #fff;
+        padding: 0.62rem;
+    }
+
+    .don-alert strong {
+        display: block;
+        font-size: 0.79rem;
+        color: #173a31;
+    }
+
+    .don-alert small {
+        display: block;
+        margin-top: 0.2rem;
+        font-size: 0.7rem;
+        color: #5e7d73;
+    }
+
+    .don-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(5, 46, 43, 0.45);
+        display: none;
+        z-index: 92;
+    }
+
+    .don-modal-backdrop[data-open="true"] {
+        display: block;
+    }
+
+    .don-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(94vw, 920px);
+        max-height: 88vh;
+        overflow: auto;
+        background: #fff;
+        border: 1px solid rgba(15, 118, 110, 0.22);
+        border-radius: 14px;
+        box-shadow: 0 24px 34px rgba(8, 83, 76, 0.25);
+        display: none;
+        z-index: 95;
+    }
+
+    .don-modal[data-open="true"] {
+        display: block;
+    }
+
+    #don-form-modal {
+        top: 100px;
+        bottom: 20px;
+        height: calc(100vh - 120px);
+        max-height: none;
+        overflow: hidden;
+        transform: translateX(-50%);
+        flex-direction: column;
+    }
+
+    #don-form-modal[data-open="true"] {
+        display: flex;
+    }
+
+    #don-form-modal > .don-head {
+        position: relative;
+        padding-right: 4rem;
+        flex: 0 0 auto;
+    }
+
+    #don-form-modal .don-modal-close-btn {
+        position: absolute;
+        top: 0.8rem;
+        right: 0.9rem;
+        width: 2.2rem;
+        height: 2.2rem;
+        padding: 0;
+        border: 1px solid #d4e9e1;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #48665d;
+        font-size: 1.2rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    #don-detail-modal > .don-head {
+        position: relative;
+        padding-right: 4rem;
+    }
+
+    #don-detail-modal .don-detail-close-btn {
+        position: absolute;
+        top: 0.8rem;
+        right: 0.9rem;
+        width: 2.2rem;
+        height: 2.2rem;
+        padding: 0;
+        border: 1px solid #d4e9e1;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #48665d;
+        font-size: 1.2rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    #don-form-modal #don-form {
+        flex: 1 1 auto;
+        box-sizing: border-box;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    #don-form-modal .don-form-footer {
+        flex: 0 0 auto;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        padding: 0.9rem;
+        border-top: 1px solid #deefe8;
+        background: #ffffff;
+    }
+
+    #don-form-modal .don-form-footer .don-action-btn {
+        background: #0f766e;
+        color: #ffffff;
+        border: none;
+        border-radius: 999px;
+        padding: 0.85rem 1.2rem;
+        font-size: 0.95rem;
+    }
+
+    #don-form-modal .don-form-footer .don-action-btn:hover {
+        background: #115e52;
+    }
+
+    @media (max-width: 767px) {
+        #don-detail-modal {
+            top: 100px;
+            bottom: 20px;
+            max-height: none;
+            transform: translateX(-50%);
+        }
+    }
+
+    .don-form-grid,
+    .don-detail-grid {
+        padding: 0.9rem;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.7rem;
+    }
+
+    .don-block {
+        border: 1px solid #deefe8;
+        border-radius: 12px;
+        padding: 0.66rem;
+        background: #fff;
+    }
+
+    .don-block h4 {
+        margin: 0;
+        font-size: 0.79rem;
+        color: #1a4f43;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .don-block p {
+        margin: 0.32rem 0 0;
+        font-size: 0.74rem;
+        color: #44695f;
+    }
+
+    .don-profile-list {
+        list-style: none;
+        margin: 0.38rem 0 0;
+        padding: 0;
+        display: grid;
+        gap: 0.3rem;
+    }
+
+    .don-profile-list li {
+        border: 1px solid #e2f1eb;
+        border-radius: 8px;
+        background: #fbfefd;
+        padding: 0.42rem 0.5rem;
+        font-size: 0.73rem;
+        color: #355d52;
+    }
+
+    .don-chart-wrap {
+        height: 18rem;
+    }
+
+    .don-chart-wrap canvas {
+        width: 100%;
+        height: 100%;
+    }
+
+    .don-toast {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 99;
+        border: 1px solid rgba(15, 118, 110, 0.24);
+        background: #ffffff;
+        color: #1b4f43;
+        border-radius: 10px;
+        padding: 0.56rem 0.72rem;
+        font-size: 0.76rem;
+        font-weight: 600;
+        box-shadow: 0 14px 26px rgba(8, 83, 76, 0.15);
+        display: none;
+    }
+
+    .don-toast[data-show="true"] {
+        display: block;
+    }
+
+    @media (min-width: 760px) {
+        .don-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .don-form-grid,
+        .don-detail-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .don-layout-two {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1120px) {
+        .don-summary {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .don-detail-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    .don-receipt-modal {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(5, 46, 43, 0.75);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+        z-index: 110;
+    }
+
+    .don-receipt-modal[data-open="true"] {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    .don-receipt-panel {
+        position: relative;
+        width: min(92vw, 880px);
+        max-height: min(90vh, 740px);
+        border-radius: 18px;
+        padding: 1rem;
+        background: #ffffff;
+        box-shadow: 0 24px 40px rgba(0, 0, 0, 0.24);
+        overflow: hidden;
+        animation: donReceiptReveal 220ms ease;
+    }
+
+    @keyframes donReceiptReveal {
+        0% { opacity: 0; transform: scale(0.96) translateY(10px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .don-receipt-close-btn {
+        position: absolute;
+        top: 0.8rem;
+        right: 0.9rem;
+        width: 2.2rem;
+        height: 2.2rem;
+        padding: 0;
+        border: 1px solid #d4e9e1;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #48665d;
+        font-size: 1.2rem;
+        line-height: 1;
+        cursor: pointer;
+        z-index: 2;
+    }
+
+    .don-receipt-holder {
+        width: 100%;
+        max-height: calc(90vh - 7.5rem);
+        overflow: auto;
+        border-radius: 14px;
+        background: #f8faf8;
+        padding: 0.35rem;
+        border: 1px solid rgba(15, 118, 110, 0.15);
+        margin-top: 0.45rem;
+    }
+
+    .don-receipt-holder img {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 12px;
+    }
+
+    .don-receipt-caption {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.7rem;
+        flex-wrap: wrap;
+        margin-top: 0.75rem;
+        border-top: 1px solid #e7f2ed;
+        padding-top: 0.7rem;
+        font-size: 0.72rem;
+        color: #466d61;
+    }
+
+    .don-receipt-meta {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .don-receipt-download {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        padding: 0.42rem 0.7rem;
+        color: #0f766e;
+        border: 1px solid #d4e9e1;
+        background: #f5fffa;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .don-receipt-thumb {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.2rem;
+        height: 2.2rem;
+        padding: 0;
+        border-radius: 10px;
+        border: 1px solid #d4e9e1;
+        background: #ffffff;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+        box-shadow: 0 4px 12px rgba(15, 118, 110, 0.08);
+    }
+
+    .don-receipt-thumb:hover {
+        transform: translateY(-1px);
+        border-color: rgba(15, 118, 110, 0.42);
+        box-shadow: 0 12px 20px rgba(15, 118, 110, 0.12);
+    }
+
+    .don-receipt-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .don-receipt-missing {
+        font-size: 0.72rem;
+        color: #6b7a73;
+    }
+
+    @media (max-width: 767px) {
+        .don-receipt-panel {
+            width: min(94vw, 680px);
+            padding: 0.8rem 0.8rem 0.9rem;
+        }
+
+        .don-receipt-caption {
+            align-items: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="donations-page" class="don-page">
+    <section class="don-summary" aria-label="Donations summary">
+        <article class="don-card don-kpi">
+            <div class="don-kpi-head">
+                <p class="don-kpi-label">Total Donations</p>
+                <span class="don-kpi-icon" aria-hidden="true"><i data-lucide="hand-coins"></i></span>
+            </div>
+            <p id="don-kpi-total" class="don-kpi-value" data-kpi-value="true" data-no-animate="true">₱{{ total_amount|floatformat:0 }}</p>
+            <p class="don-kpi-meta">All donations received</p>
+        </article>
+
+        <article class="don-card don-kpi">
+            <div class="don-kpi-head">
+                <p class="don-kpi-label">Pending Donations</p>
+                <span class="don-kpi-icon" aria-hidden="true"><i data-lucide="clock-3"></i></span>
+            </div>
+            <p id="don-kpi-pending" class="don-kpi-value" data-kpi-value="true" data-no-animate="true">{{ pending_count }}</p>
+            <p class="don-kpi-meta">Awaiting verification</p>
+        </article>
+
+        <article class="don-card don-kpi">
+            <div class="don-kpi-head">
+                <p class="don-kpi-label">Completed Donations</p>
+                <span class="don-kpi-icon" aria-hidden="true"><i data-lucide="badge-check"></i></span>
+            </div>
+            <p id="don-kpi-completed" class="don-kpi-value" data-kpi-value="true" data-no-animate="true">₱{{ completed_amount|floatformat:0 }}</p>
+            <p class="don-kpi-meta">Posted and confirmed</p>
+        </article>
+
+        <article class="don-card don-kpi">
+            <div class="don-kpi-head">
+                <p class="don-kpi-label">Average Donation</p>
+                <span class="don-kpi-icon" aria-hidden="true"><i data-lucide="wallet"></i></span>
+            </div>
+            <p id="don-kpi-average" class="don-kpi-value" data-kpi-value="true" data-no-animate="true">₱{{ average_donation|floatformat:0 }}</p>
+            <p class="don-kpi-meta">Average per transaction</p>
+        </article>
+    </section>
+
+    <section class="don-card" aria-label="Donation table">
+        <header class="don-head don-table-head">
+            <div>
+                <h2 class="don-title">Donation Transactions</h2>
+                <p id="don-table-count" class="don-sub" aria-live="polite">0 transactions</p>
+            </div>
+            <div class="don-management-actions">
+                <div class="don-export-actions">
+                    <button id="don-export-csv" type="button" class="don-chip-btn">Export CSV</button>
+                    <button id="don-export-pdf" type="button" class="don-chip-btn">Export PDF</button>
+                </div>
+                <button id="don-open-form" class="don-action-btn" type="button"><i data-lucide="plus"></i> Add Donation</button>
+            </div>
+        </header>
+
+        <div class="don-bulk-bar">
+            <div class="don-bulk-count" id="don-selected-count">0 selected</div>
+            <div class="flex flex-wrap gap-2">
+                <button id="don-bulk-approve" type="button" class="don-chip-btn">Bulk Approve</button>
+                <button id="don-bulk-complete" type="button" class="don-chip-btn">Bulk Complete</button>
+                <button id="don-bulk-clear" type="button" class="don-chip-btn">Clear Selection</button>
+            </div>
+        </div>
+
+        <div class="don-table-wrap">
+            <table class="don-table" aria-describedby="don-table-count">
+                <thead>
+                    <tr>
+                        <th scope="col"><input id="don-select-all" type="checkbox" aria-label="Select all visible donations" /></th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Donor</th>
+                        <th scope="col">Amount</th>
+                        <th scope="col">Method</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Reference Number</th>
+                        <th scope="col">Receipt</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="don-table-body"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="grid grid-cols-1 gap-4 xl:grid-cols-12" aria-label="Donation charts and quick insights">
+        <article class="don-card p-4 xl:col-span-7" aria-labelledby="don-over-time-title">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 id="don-over-time-title" class="text-lg font-semibold text-ink-900">Donations Over Time</h2>
+                <div role="tablist" aria-label="Chart range" class="inline-flex gap-2 rounded-full border border-brand-100 bg-brand-50/70 p-1">
+                    <button type="button" class="don-range-tab don-chip-btn" data-range="daily" role="tab" aria-selected="true">Daily</button>
+                    <button type="button" class="don-range-tab don-chip-btn" data-range="weekly" role="tab" aria-selected="false">Weekly</button>
+                    <button type="button" class="don-range-tab don-chip-btn" data-range="monthly" role="tab" aria-selected="false">Monthly</button>
+                </div>
+            </div>
+            <div class="don-chart-wrap"><canvas id="don-over-time-chart" role="img" aria-label="Donations over time chart"></canvas></div>
+        </article>
+
+        <article class="don-card p-4 xl:col-span-5" aria-labelledby="don-methods-title">
+            <h2 id="don-methods-title" class="mb-3 text-base font-semibold text-ink-900">Payment Method Breakdown</h2>
+            <div class="don-chart-wrap"><canvas id="don-method-chart" role="img" aria-label="Payment method breakdown chart"></canvas></div>
+        </article>
+    </section>
+
+    <div id="don-actions-menu" class="don-action-menu" role="menu" aria-label="Donation row actions" data-open="false"></div>
+</div>
+
+<div id="don-modal-backdrop" class="don-modal-backdrop" data-open="false"></div>
+
+<div id="don-form-modal" class="don-modal" role="dialog" aria-modal="true" aria-labelledby="don-form-title" data-open="false">
+    <header class="don-head">
+        <div>
+            <h3 id="don-form-title" class="don-title">Add Donation</h3>
+            <p class="don-sub">Manual entry for donations received outside the gateway</p>
+        </div>
+        <button type="button" class="don-modal-close-btn" data-close-form="true" aria-label="Close add donation modal">×</button>
+    </header>
+    <form id="don-form" class="don-form-grid" novalidate>
+        {% csrf_token %}
+        <div class="don-field">
+            <label for="don-name">Donor Name</label>
+            <input id="don-name" class="don-input" type="text" required placeholder="Donor name" />
+        </div>
+        <div class="don-field">
+            <label for="don-amount">Amount</label>
+            <input id="don-amount" class="don-input" type="number" min="1" step="1" required placeholder="0" />
+        </div>
+        <div class="don-field">
+            <label for="don-payment">Payment Method</label>
+            <select id="don-payment" class="don-select" required>
+                <option value="">Select method</option>
+                <option value="cash">Cash</option>
+                <option value="gcash">GCash</option>
+                <option value="bank_transfer">Bank Transfer</option>
+            </select>
+        </div>
+        <div class="don-field">
+            <label for="don-campaign-form">Campaign</label>
+            <select id="don-campaign-form" class="don-select" required>
+                <option value="General Donation">General Donation</option>
+            </select>
+        </div>
+        <div class="don-field" style="grid-column:1 / -1;">
+            <label for="don-notes">Notes</label>
+            <textarea id="don-notes" class="don-textarea" placeholder="Optional notes"></textarea>
+        </div>
+        <div class="don-field" style="grid-column:1 / -1;">
+            <label for="don-receipt">Receipt</label>
+            <input id="don-receipt" class="don-input" type="file" accept="image/*,.pdf" />
+        </div>
+    </form>
+    <div class="don-form-footer">
+        <button type="button" class="don-chip-btn" data-close-form="true">Cancel</button>
+        <button type="submit" form="don-form" class="don-action-btn">Save Donation</button>
+    </div>
+</div>
+
+<div id="don-detail-modal" class="don-modal" role="dialog" aria-modal="true" aria-labelledby="don-detail-title" data-open="false">
+    <header class="don-head">
+        <div>
+            <h3 id="don-detail-title" class="don-title">Donation Details</h3>
+            <p id="don-detail-sub" class="don-sub">Record overview</p>
+        </div>
+        <button type="button" class="don-detail-close-btn" data-close-detail="true" aria-label="Close donation details" title="Close">×</button>
+    </header>
+    <div id="don-detail-content" class="don-detail-grid"></div>
+</div>
+
+<div id="don-receipt-modal" class="don-receipt-modal" data-open="false" aria-hidden="true">
+    <div class="don-receipt-panel">
+        <button type="button" class="don-receipt-close-btn" data-close-receipt="true" aria-label="Close receipt preview" title="Close">×</button>
+        <div class="don-receipt-holder">
+            <img id="don-receipt-image" alt="Donation receipt" src="" />
+        </div>
+        <div class="don-receipt-caption">
+            <div id="don-receipt-meta" class="don-receipt-meta">Receipt preview</div>
+            <a id="don-receipt-download" class="don-receipt-download" href="#" target="_blank" rel="noopener" aria-label="Download receipt">Download</a>
+        </div>
+{% block extra_scripts %}
+{{ donations_data|json_script:"donations-data" }}
+<script>
+(function () {
+    "use strict";
+
+    var donationsDataEl = document.getElementById('donations-data');
+    const DONATIONS = donationsDataEl ? JSON.parse(donationsDataEl.textContent) : [];
+
+    function isConfirmedDonation(item) {
+        return ["verified", "completed"].indexOf(String(item && item.status || "").toLowerCase()) !== -1;
+    }
+
+    function normalizeDonationDate(value) {
+        var parsed = new Date(String(value || "") + "T00:00:00");
+        if (Number.isNaN(parsed.getTime())) {
+            return null;
+        }
+        return parsed;
+    }
+
+    function getConfirmedDonations() {
+        return DONATIONS.filter(function (item) {
+            return isConfirmedDonation(item);
+        });
+    }
+
+    function buildRangeBuckets(range, rows) {
+        if (!rows.length) {
+            var fallbackLabels = range === "daily" ? ["-", "-", "-", "-", "-", "-", "-"] : range === "weekly" ? ["W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8"] : ["M1", "M2", "M3", "M4", "M5", "M6"];
+            if (range === "daily") {
+                return { labels: fallbackLabels, amount: [0, 0, 0, 0, 0, 0, 0], count: [0, 0, 0, 0, 0, 0, 0] };
+            }
+            if (range === "weekly") {
+                return { labels: fallbackLabels, amount: [0, 0, 0, 0, 0, 0, 0, 0], count: [0, 0, 0, 0, 0, 0, 0, 0] };
+            }
+            return { labels: fallbackLabels, amount: [0, 0, 0, 0, 0, 0], count: [0, 0, 0, 0, 0, 0] };
+        }
+
+        var latestDate = new Date();
+        rows.forEach(function (item) {
+            var itemDate = normalizeDonationDate(item.date);
+            if (itemDate && itemDate > latestDate) {
+                latestDate = itemDate;
+            }
+        });
+
+        var labels = [];
+        var amount = [];
+        var count = [];
+        var groups = {};
+
+        if (range === "daily") {
+            for (var dayOffset = 6; dayOffset >= 0; dayOffset -= 1) {
+                var dayDate = new Date(latestDate);
+                dayDate.setHours(0, 0, 0, 0);
+                dayDate.setDate(latestDate.getDate() - dayOffset);
+                var dayKey = dayDate.toISOString().slice(0, 10);
+                labels.push(dayDate.toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+                groups[dayKey] = { amount: 0, count: 0 };
+            }
+            rows.forEach(function (item) {
+                var itemDate = normalizeDonationDate(item.date);
+                if (!itemDate) return;
+                var dayKey = itemDate.toISOString().slice(0, 10);
+                if (!groups[dayKey]) return;
+                groups[dayKey].amount += Number(item.amount || 0);
+                groups[dayKey].count += 1;
+            });
+            labels.forEach(function (label) {
+                var dayDate = new Date(latestDate);
+                dayDate.setHours(0, 0, 0, 0);
+                dayDate.setDate(latestDate.getDate() - (labels.length - labels.indexOf(label) - 1));
+                var key = dayDate.toISOString().slice(0, 10);
+                amount.push(groups[key] ? groups[key].amount : 0);
+                count.push(groups[key] ? groups[key].count : 0);
+            });
+            return { labels: labels, amount: amount, count: count };
+        }
+
+        if (range === "weekly") {
+            var weekStart = new Date(latestDate);
+            weekStart.setHours(0, 0, 0, 0);
+            weekStart.setDate(weekStart.getDate() - 7 * 7);
+            for (var weekIndex = 0; weekIndex < 8; weekIndex += 1) {
+                var start = new Date(weekStart);
+                start.setDate(weekStart.getDate() + (weekIndex * 7));
+                var end = new Date(start);
+                end.setDate(start.getDate() + 6);
+                var label = start.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + "–" + end.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+                labels.push(label);
+                groups[weekIndex] = { amount: 0, count: 0 };
+            }
+            rows.forEach(function (item) {
+                var itemDate = normalizeDonationDate(item.date);
+                if (!itemDate) return;
+                var diffDays = Math.floor((itemDate.getTime() - weekStart.getTime()) / 86400000);
+                if (diffDays < 0 || diffDays > 7 * 8) return;
+                var bucketIndex = Math.min(7, Math.floor(diffDays / 7));
+                groups[bucketIndex].amount += Number(item.amount || 0);
+                groups[bucketIndex].count += 1;
+            });
+            for (var idx = 0; idx < labels.length; idx += 1) {
+                amount.push(groups[idx] ? groups[idx].amount : 0);
+                count.push(groups[idx] ? groups[idx].count : 0);
+            }
+            return { labels: labels, amount: amount, count: count };
+        }
+
+        var monthStart = new Date(latestDate.getFullYear(), latestDate.getMonth(), 1);
+        for (var monthOffset = 5; monthOffset >= 0; monthOffset -= 1) {
+            var monthDate = new Date(monthStart.getFullYear(), monthStart.getMonth() - monthOffset, 1);
+            var monthKey = monthDate.getFullYear() + "-" + String(monthDate.getMonth() + 1).padStart(2, "0");
+            labels.push(monthDate.toLocaleDateString(undefined, { month: "short", year: "2-digit" }));
+            groups[monthKey] = { amount: 0, count: 0 };
+        }
+        rows.forEach(function (item) {
+            var itemDate = normalizeDonationDate(item.date);
+            if (!itemDate) return;
+            var monthKey = itemDate.getFullYear() + "-" + String(itemDate.getMonth() + 1).padStart(2, "0");
+            if (!groups[monthKey]) return;
+            groups[monthKey].amount += Number(item.amount || 0);
+            groups[monthKey].count += 1;
+        });
+        labels.forEach(function (label) {
+            var monthDate = new Date(monthStart.getFullYear(), monthStart.getMonth() - (labels.length - labels.indexOf(label) - 1), 1);
+            var key = monthDate.getFullYear() + "-" + String(monthDate.getMonth() + 1).padStart(2, "0");
+            amount.push(groups[key] ? groups[key].amount : 0);
+            count.push(groups[key] ? groups[key].count : 0);
+        });
+        return { labels: labels, amount: amount, count: count };
+    }
+
+    function buildMethodBreakdown(rows) {
+        var methodTotals = {};
+        rows.forEach(function (item) {
+            var method = String(item.methodLabel || item.method || "Unspecified").trim();
+            if (!method) method = "Unspecified";
+            methodTotals[method] = (methodTotals[method] || 0) + Number(item.amount || 0);
+        });
+        return {
+            labels: Object.keys(methodTotals),
+            values: Object.values(methodTotals)
+        };
+    }
+
+    var state = {
+        range: "daily",
+        selected: new Set(),
+        charts: { overTime: null, method: null }
+    };
+
+    var tableBody = document.getElementById("don-table-body");
+    var countLabel = document.getElementById("don-table-count");
+    var selectedCount = document.getElementById("don-selected-count");
+    var actionsMenu = document.getElementById("don-actions-menu");
+    var tableWrap = document.querySelector(".don-table-wrap");
+    var backdrop = document.getElementById("don-modal-backdrop");
+    var formModal = document.getElementById("don-form-modal");
+    var detailModal = document.getElementById("don-detail-modal");
+    var detailSub = document.getElementById("don-detail-sub");
+    var detailContent = document.getElementById("don-detail-content");
+    var receiptModal = document.getElementById("don-receipt-modal");
+    var receiptImage = document.getElementById("don-receipt-image");
+    var receiptMeta = document.getElementById("don-receipt-meta");
+    var receiptDownload = document.getElementById("don-receipt-download");
+    var campaignSelectForm = document.getElementById("don-campaign-form");
+    var openMenuFor = null;
+    var openMenuTrigger = null;
+
+    function esc(value) {
+        return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function formatFriendlyDate(value) {
+        var date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return value || "—";
+        }
+
+        return new Intl.DateTimeFormat("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric"
+        }).format(date);
+    }
+
+    function initials(name) {
+        var parts = String(name || "").split(" ").filter(Boolean);
+        if (!parts.length) return "DN";
+        return (parts[0][0] + (parts[parts.length - 1][0] || "")).toUpperCase();
+    }
+
+    function currency(value) {
+        return "P " + Number(value || 0).toLocaleString();
+    }
+
+    function showToast(message) {
+        var toast = document.getElementById("don-toast");
+        toast.textContent = message;
+        toast.setAttribute("data-show", "true");
+        window.clearTimeout(showToast._timer);
+        showToast._timer = window.setTimeout(function () {
+            toast.setAttribute("data-show", "false");
+        }, 1900);
+    }
+
+    function statusClass(status) {
+        if (status === "verified") return "don-badge don-status-completed";
+        if (status === "completed") return "don-badge don-status-completed";
+        if (status === "pending") return "don-badge don-status-pending";
+        if (status === "rejected") return "don-badge don-status-failed";
+        return "don-badge don-status-cancelled";
+    }
+
+    function getFiltered() {
+        return DONATIONS.slice();
+    }
+
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+            var cookies = document.cookie.split(";");
+            for (var i = 0; i < cookies.length; i += 1) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + "=")) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function actionMarkup(id) {
+        return "<div class=\"don-action-menu-wrap\"><button type=\"button\" class=\"don-row-action-btn\" data-open-actions=\"" + id + "\" aria-haspopup=\"menu\" aria-expanded=\"false\" aria-label=\"Open donation actions\" title=\"Actions\"><span class=\"don-ellipsis\" aria-hidden=\"true\"></span></button></div>";
+    }
+
+    function populateCampaignSelect() {
+        var campaigns = [];
+        DONATIONS.forEach(function (donation) {
+            if (campaigns.indexOf(donation.campaign) === -1) campaigns.push(donation.campaign);
+        });
+        campaigns.sort();
+        while (campaignSelectForm.options.length > 1) campaignSelectForm.remove(1);
+        campaigns.forEach(function (campaign) {
+            var option = document.createElement("option");
+            option.value = campaign;
+            option.textContent = campaign;
+            campaignSelectForm.appendChild(option);
+        });
+    }
+
+    function renderSummary() {
+        var rows = getFiltered();
+        var total = rows.reduce(function (sum, item) { return sum + item.amount; }, 0);
+        var pendingCount = rows.filter(function (item) { return item.status === "pending"; }).length;
+        var completed = rows.filter(function (item) { return ["verified", "completed"].includes(item.status); }).reduce(function (sum, item) { return sum + item.amount; }, 0);
+        var average = rows.length ? Math.round(total / rows.length) : 0;
+
+        document.getElementById("don-kpi-total").textContent = currency(total);
+        document.getElementById("don-kpi-pending").textContent = pendingCount;
+        document.getElementById("don-kpi-completed").textContent = currency(completed);
+        document.getElementById("don-kpi-average").textContent = currency(average);
+    }
+
+    function renderTable() {
+        var rows = getFiltered();
+        tableBody.innerHTML = rows.map(function (item) {
+            var checked = state.selected.has(item.ref) ? "checked" : "";
+            var receiptUrl = item.official_receipt_url || item.receipt_url || "";
+            var receiptMarkup = receiptUrl
+                ? "<button type=\"button\" class=\"don-receipt-thumb\" data-open-receipt=\"" + esc(receiptUrl) + "\" data-receipt-ref=\"" + esc(item.ref) + "\" data-receipt-amount=\"" + esc(currency(item.amount)) + "\" data-receipt-method=\"" + esc(item.methodLabel || item.method) + "\" data-receipt-date=\"" + esc(formatFriendlyDate(item.date)) + "\" aria-label=\"Preview donation receipt for " + esc(item.ref) + "\"><img src=\"" + esc(receiptUrl) + "\" alt=\"Receipt for " + esc(item.ref) + "\" /></button>"
+                : "<span class=\"don-receipt-missing\">—</span>";
+            return "<tr>"
+                + "<td><input type=\"checkbox\" class=\"don-row-check\" data-ref=\"" + esc(item.ref) + "\" aria-label=\"Select donation " + esc(item.ref) + "\" " + checked + " /></td>"
+                + "<td>" + esc(formatFriendlyDate(item.date)) + "</td>"
+                + "<td><div class=\"don-donor-wrap\"><span class=\"don-avatar\">" + initials(item.donor) + "</span><div class=\"don-donor\"><strong>" + esc(item.donor) + "</strong><small>" + esc(item.notes) + "</small></div></div></td>"
+                + "<td class=\"font-semibold text-brand-700\">" + currency(item.amount) + "</td>"
+                + "<td><span class=\"don-method\">" + esc(item.methodLabel || item.method) + "</span></td>"
+                + "<td><span class=\"" + statusClass(item.status) + "\">" + esc(item.statusLabel || item.status) + "</span></td>"
+                + "<td>" + esc(item.ref) + "</td>"
+                + "<td>" + receiptMarkup + "</td>"
+                + "<td>" + actionMarkup(item.ref) + "</td>"
+                + "</tr>";
+        }).join("");
+
+        countLabel.textContent = rows.length + " transactions";
+        selectedCount.textContent = state.selected.size + " selected";
+        document.getElementById("don-select-all").checked = rows.length > 0 && rows.every(function (item) { return state.selected.has(item.ref); });
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    }
+
+    function renderCharts() {
+        if (typeof Chart === "undefined") return false;
+
+        var rows = getConfirmedDonations();
+        var data = buildRangeBuckets(state.range, rows);
+        var methodData = buildMethodBreakdown(rows);
+
+        if (!state.charts.overTime) {
+            state.charts.overTime = new Chart(document.getElementById("don-over-time-chart"), {
+                type: "line",
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        { label: "Donation Amount", data: data.amount, borderColor: "#0f766e", backgroundColor: "rgba(15, 118, 110, 0.14)", fill: true, pointRadius: 2, tension: 0.35 },
+                        { label: "Transactions", data: data.count, borderColor: "#14b8a6", backgroundColor: "rgba(20, 184, 166, 0.1)", fill: true, pointRadius: 2, tension: 0.3, yAxisID: "y1" }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 1200, easing: "easeInOutCubic" },
+                    plugins: { legend: { labels: { color: "#0f4e48" } } },
+                    scales: {
+                        x: { ticks: { color: "#236e67" }, grid: { color: "rgba(35,110,103,0.12)" } },
+                        y: { beginAtZero: true, ticks: { color: "#236e67" }, grid: { color: "rgba(35,110,103,0.12)" } },
+                        y1: { beginAtZero: true, position: "right", ticks: { color: "#236e67" }, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+
+            state.charts.method = new Chart(document.getElementById("don-method-chart"), {
+                type: "doughnut",
+                data: {
+                    labels: methodData.labels,
+                    datasets: [{ data: methodData.values, backgroundColor: ["rgba(15,118,110,0.9)", "rgba(16,185,129,0.85)", "rgba(110,231,183,0.82)", "rgba(20,184,166,0.78)", "rgba(52,211,153,0.8)"], borderColor: "#ffffff", borderWidth: 2 }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: "62%",
+                    plugins: { legend: { position: "bottom", labels: { color: "#0f4e48", boxWidth: 12 } } }
+                }
+            });
+            return true;
+        }
+
+        state.charts.overTime.data.labels = data.labels;
+        state.charts.overTime.data.datasets[0].data = data.amount;
+        state.charts.overTime.data.datasets[1].data = data.count;
+        state.charts.overTime.update();
+
+        state.charts.method.data.labels = methodData.labels;
+        state.charts.method.data.datasets[0].data = methodData.values;
+        state.charts.method.update();
+        return true;
+    }
+
+    function renderDetail(donation) {
+        var receiptLink = donation.receipt_url || donation.receipt || "";
+        detailSub.textContent = donation.donor + " • " + donation.ref + " • " + (donation.statusLabel || donation.status);
+        detailContent.innerHTML = ""
+            + "<section class=\"don-block\"><h4>Donor</h4><p>" + esc(donation.donor) + "</p></section>"
+            + "<section class=\"don-block\"><h4>Donation</h4><p>Amount: " + currency(donation.amount) + "</p><p>Method: " + esc(donation.method) + "</p><p>Status: " + esc(donation.statusLabel || donation.status) + "</p></section>"
+            + "<section class=\"don-block\"><h4>Reference</h4><p>" + esc(donation.ref) + "</p><p>Campaign: " + esc(donation.campaign) + "</p><p>Date: " + esc(donation.date) + "</p></section>"
+            + "<section class=\"don-block\"><h4>Receipt</h4><p>" + (receiptLink ? "<a href=\"" + esc(receiptLink) + "\" target=\"_blank\" rel=\"noopener\">Download receipt</a>" : "-") + "</p></section>"
+            + "<section class=\"don-block\"><h4>Notes</h4><p>" + esc(donation.notes) + "</p></section>"
+            + "<section class=\"don-block\"><h4>Status History</h4><ul class=\"don-profile-list\"><li>Created on " + esc(donation.date) + "</li><li>Current status: " + esc(donation.statusLabel || donation.status) + "</li></ul></section>";
+
+        backdrop.setAttribute("data-open", "true");
+        detailModal.setAttribute("data-open", "true");
+    }
+
+    function openFormModal() {
+        backdrop.setAttribute("data-open", "true");
+        formModal.setAttribute("data-open", "true");
+    }
+
+    function closeModals() {
+        backdrop.setAttribute("data-open", "false");
+        formModal.setAttribute("data-open", "false");
+        detailModal.setAttribute("data-open", "false");
+        closeReceiptViewer();
+    }
+
+    function openReceiptViewer(url, meta) {
+        if (!url) {
+            showToast("Receipt is not available.");
+            return;
+        }
+        receiptImage.src = url;
+        receiptModal.setAttribute("data-open", "true");
+        receiptModal.setAttribute("aria-hidden", "false");
+
+        var details = meta || {};
+        var reference = details.reference || details.ref || "Receipt";
+        var amount = details.amount || "";
+        var method = details.method || "";
+        var date = details.date || "";
+        var captionParts = [reference];
+        if (amount) captionParts.push(amount);
+        if (method) captionParts.push(method);
+        if (date) captionParts.push(date);
+        receiptMeta.textContent = captionParts.join(" • ");
+
+        receiptDownload.href = url;
+        receiptDownload.setAttribute("download", "donation-receipt-" + String(reference).replace(/\s+/g, "-").toLowerCase() + ".png");
+        receiptDownload.style.display = "inline-flex";
+    }
+
+    function closeReceiptViewer() {
+        receiptModal.setAttribute("data-open", "false");
+        receiptModal.setAttribute("aria-hidden", "true");
+        receiptImage.src = "";
+        receiptMeta.textContent = "Receipt preview";
+        receiptDownload.href = "#";
+        receiptDownload.removeAttribute("download");
+        receiptDownload.style.display = "inline-flex";
+    }
+
+    function closeActionsMenu() {
+        actionsMenu.setAttribute("data-open", "false");
+        openMenuFor = null;
+        openMenuTrigger = null;
+        document.querySelectorAll("[data-open-actions]").forEach(function (btn) {
+            btn.setAttribute("aria-expanded", "false");
+            btn.classList.remove("is-active");
+        });
+    }
+
+    function positionActionsMenu(trigger) {
+        if (!trigger || actionsMenu.getAttribute("data-open") !== "true") {
+            return;
+        }
+
+        var menuMargin = 8;
+        var edgePadding = 10;
+        var rect = trigger.getBoundingClientRect();
+        var menuWidth = actionsMenu.offsetWidth || 240;
+        var menuHeight = actionsMenu.offsetHeight || 220;
+
+        var left = rect.left + (rect.width / 2) - (menuWidth / 2);
+        var maxLeft = window.innerWidth - menuWidth - edgePadding;
+        left = Math.max(edgePadding, Math.min(left, Math.max(edgePadding, maxLeft)));
+
+        var top = rect.bottom + menuMargin;
+        var maxTop = window.innerHeight - menuHeight - edgePadding;
+        if (top > maxTop) {
+            top = Math.max(edgePadding, rect.top - menuHeight - menuMargin);
+        }
+
+        actionsMenu.style.top = top + "px";
+        actionsMenu.style.left = left + "px";
+    }
+
+    function openActionsMenu(ref, trigger) {
+        var donation = DONATIONS.find(function (item) { return item.ref === ref; });
+        var items = [
+            { key: "details", label: "View Details" }
+        ];
+        if (donation && donation.receipt) {
+            items.push({ key: "receipt", label: "View Receipt" });
+        }
+        items = items.concat([
+            { key: "impact", label: "Send Impact Update" },
+            { key: "certificate", label: "Generate Donor Certificate" },
+            { key: "approve", label: "Approve" },
+            { key: "complete", label: "Mark as Completed" },
+            { key: "failed", label: "Mark as Failed" },
+            { key: "refund", label: "Cancel/Refund" }
+        ]);
+
+        actionsMenu.innerHTML = items.map(function (item) {
+            return "<button type=\"button\" class=\"don-menu-item\" data-row-action=\"" + item.key + "\" data-donation-ref=\"" + ref + "\" role=\"menuitem\">" + item.label + "</button>";
+        }).join("");
+
+        document.querySelectorAll("[data-open-actions]").forEach(function (btn) {
+            btn.setAttribute("aria-expanded", "false");
+            btn.classList.remove("is-active");
+        });
+        actionsMenu.setAttribute("data-open", "true");
+        trigger.setAttribute("aria-expanded", "true");
+        trigger.classList.add("is-active");
+        openMenuFor = ref;
+        openMenuTrigger = trigger;
+
+        positionActionsMenu(trigger);
+    }
+
+    function generateDonationCertificate(donation) {
+        if (!donation) return;
+        var name = String(donation.donor || donation.donor_name || "Supporter").trim() || "Supporter";
+        var reason = "In recognition of their generous and compassionate support to the HappYness Project and the families we serve. Their donation helps enable meals, outreach, care, and hope for our community.";
+
+        if (typeof html2canvas === "undefined" || !window.jspdf && !window.jsPDF) {
+            showToast("Certificate library is still loading. Please try again.");
+            return;
+        }
+
+        var holder = document.createElement("div");
+        holder.style.position = "fixed";
+        holder.style.left = "-9999px";
+        holder.style.top = "-9999px";
+        holder.style.width = "960px";
+        holder.style.height = "680px";
+        holder.style.pointerEvents = "none";
+        holder.innerHTML = [''
+            + '<div style="position:relative;width:960px;height:680px;background:#fffdf7;display:flex;align-items:center;justify-content:center;border-radius:16px;overflow:hidden;box-sizing:border-box;">'
+            + '<img src="{% static "media/certificate of appreciation.jpg" %}" alt="Certificate background" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" />'
+            + '<div style="position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);width:72%;text-align:center;">'
+            + '<div style="font-family:"Alex Brush", cursive;font-size:46px;color:#163a31;letter-spacing:0.04em;line-height:1.1;">' + esc(name) + '</div>'
+            + '<div style="font-family:"Cormorant Garamond", serif;font-size:18px;color:#1e3d35;line-height:1.5;margin-top:18px;white-space:normal;">' + esc(reason) + '</div>'
+            + '</div>'
+            + '</div>'].join("");
+        document.body.appendChild(holder);
+
+        var pdfCtor = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
+        html2canvas(holder, {
+            backgroundColor: "#fffdf7",
+            useCORS: true,
+            allowTaint: true,
+            scale: 2,
+            logging: false
+        }).then(function (canvas) {
+            var doc = new pdfCtor({ orientation: "landscape", unit: "mm", format: "a4" });
+            var pageWidth = doc.internal.pageSize.getWidth();
+            var pageHeight = doc.internal.pageSize.getHeight();
+            var margin = 4;
+            var aspect = canvas.width / canvas.height;
+            var imgWidth = pageWidth - (margin * 2);
+            var imgHeight = imgWidth / aspect;
+            if (imgHeight > pageHeight - (margin * 2)) {
+                imgHeight = pageHeight - (margin * 2);
+                imgWidth = imgHeight * aspect;
+            }
+            var x = (pageWidth - imgWidth) / 2;
+            var y = (pageHeight - imgHeight) / 2;
+            doc.addImage(canvas.toDataURL("image/png"), "PNG", x, y, imgWidth, imgHeight);
+            doc.save("Donor_Certificate_" + name.replace(/\s+/g, "_") + ".pdf");
+            showToast("Donor certificate downloaded");
+            holder.remove();
+        }).catch(function () {
+            showToast("Unable to generate donor certificate right now.");
+            holder.remove();
+        });
+    }
+
+    function refresh() {
+        renderTable();
+        renderSummary();
+        renderCharts();
+    }
+
+    function exportCSV() {
+        window.location.href = "/donations/export/csv/";
+    }
+
+    function exportPDF() {
+        window.location.href = "/donations/export/pdf/";
+    }
+
+    function bindEvents() {
+        document.getElementById("don-open-form").addEventListener("click", openFormModal);
+        document.getElementById("don-export-csv").addEventListener("click", exportCSV);
+        document.getElementById("don-export-pdf").addEventListener("click", exportPDF);
+
+        document.querySelectorAll(".don-range-tab").forEach(function (button) {
+            button.addEventListener("click", function () {
+                state.range = button.getAttribute("data-range") || "daily";
+                document.querySelectorAll(".don-range-tab").forEach(function (other) {
+                    other.setAttribute("aria-selected", String(other === button));
+                });
+                renderCharts();
+            });
+        });
+
+        document.getElementById("don-select-all").addEventListener("change", function (event) {
+            getFiltered().forEach(function (item) {
+                if (event.target.checked) state.selected.add(item.ref);
+                else state.selected.delete(item.ref);
+            });
+            renderTable();
+        });
+
+        tableBody.addEventListener("change", function (event) {
+            var checkbox = event.target.closest(".don-row-check");
+            if (!checkbox) return;
+            if (checkbox.checked) state.selected.add(checkbox.getAttribute("data-ref"));
+            else state.selected.delete(checkbox.getAttribute("data-ref"));
+            selectedCount.textContent = state.selected.size + " selected";
+        });
+
+        tableBody.addEventListener("click", function (event) {
+            var toggle = event.target.closest("[data-open-actions]");
+            if (!toggle) return;
+            event.preventDefault();
+            event.stopPropagation();
+            var ref = toggle.getAttribute("data-open-actions");
+            if (openMenuFor === ref && actionsMenu.getAttribute("data-open") === "true") {
+                closeActionsMenu();
+            } else {
+                closeActionsMenu();
+                openActionsMenu(ref, toggle);
+            }
+        });
+
+        document.addEventListener("click", function (event) {
+            var action = event.target.closest("[data-row-action]");
+            if (action) {
+                var ref = action.getAttribute("data-donation-ref");
+                var donation = DONATIONS.find(function (item) { return item.ref === ref; });
+                if (!donation) return;
+
+                var key = action.getAttribute("data-row-action");
+                if (key === "details") renderDetail(donation);
+                if (key === "receipt") openReceiptViewer(donation.receipt_url || donation.receipt);
+                if (key === "impact") {
+                    var impactText = window.prompt("Share an impact update for " + (donation.donor || donation.donor_name || "this donor") + ":", donation.impact_update || "");
+                    if (impactText === null) return;
+                    var trimmedImpact = String(impactText || "").trim();
+                    if (!trimmedImpact) {
+                        showToast("Impact update cannot be empty.");
+                        return;
+                    }
+                    fetch('/donations/bulk-update/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ ids: [donation.id], impact_update: trimmedImpact })
+                    }).then(function (response) {
+                        return response.json().then(function (payload) {
+                            if (!response.ok) {
+                                throw new Error(payload.error || 'Unable to send impact update.');
+                            }
+                            return payload;
+                        });
+                    }).then(function () {
+                        donation.impact_update = trimmedImpact;
+                        showToast("Impact update sent");
+                        refresh();
+                    }).catch(function (error) {
+                        showToast(error.message || "Unable to send impact update.");
+                    });
+                }
+                if (key === "certificate") generateDonationCertificate(donation);
+                if (key === "approve") {
+                    donation.status = "verified";
+                    donation.statusLabel = "Verified";
+                    fetch('/donations/bulk-update/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ ids: [donation.id], status: 'verified' })
+                    }).then(function (response) {
+                        return response.json().then(function (payload) {
+                            if (!response.ok) {
+                                throw new Error(payload.error || 'Unable to update donation status.');
+                            }
+                            return payload;
+                        });
+                    }).then(function () {
+                        showToast("Donation approved");
+                        refresh();
+                    }).catch(function (error) {
+                        showToast(error.message || "Unable to update donation status.");
+                    });
+                }
+                if (key === "complete") {
+                    donation.status = "completed";
+                    donation.statusLabel = "Completed";
+                    fetch('/donations/bulk-update/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ ids: [donation.id], status: 'completed' })
+                    }).then(function (response) {
+                        return response.json().then(function (payload) {
+                            if (!response.ok) {
+                                throw new Error(payload.error || 'Unable to update donation status.');
+                            }
+                            return payload;
+                        });
+                    }).then(function () {
+                        showToast("Marked as completed");
+                        refresh();
+                    }).catch(function (error) {
+                        showToast(error.message || "Unable to update donation status.");
+                    });
+                }
+                if (key === "failed") {
+                    donation.status = "rejected";
+                    donation.statusLabel = "Rejected";
+                    fetch('/donations/bulk-update/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ ids: [donation.id], status: 'failed' })
+                    }).then(function (response) {
+                        return response.json().then(function (payload) {
+                            if (!response.ok) {
+                                throw new Error(payload.error || 'Unable to update donation status.');
+                            }
+                            return payload;
+                        });
+                    }).then(function () {
+                        showToast("Marked as failed");
+                        refresh();
+                    }).catch(function (error) {
+                        showToast(error.message || "Unable to update donation status.");
+                    });
+                }
+                if (key === "refund") {
+                    donation.status = "cancelled";
+                    donation.statusLabel = "Cancelled";
+                    fetch('/donations/bulk-update/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ ids: [donation.id], status: 'cancelled' })
+                    }).then(function (response) {
+                        return response.json().then(function (payload) {
+                            if (!response.ok) {
+                                throw new Error(payload.error || 'Unable to update donation status.');
+                            }
+                            return payload;
+                        });
+                    }).then(function () {
+                        showToast("Cancelled/refunded");
+                        refresh();
+                    }).catch(function (error) {
+                        showToast(error.message || "Unable to update donation status.");
+                    });
+                }
+                closeActionsMenu();
+                return;
+            }
+
+            if (!event.target.closest(".don-action-menu-wrap")) closeActionsMenu();
+        });
+
+        document.getElementById("don-bulk-clear").addEventListener("click", function () {
+            state.selected.clear();
+            renderTable();
+            showToast("Selection cleared");
+        });
+
+        document.getElementById("don-bulk-approve").addEventListener("click", function () {
+            var selectedIds = [];
+            DONATIONS.forEach(function (item) {
+                if (state.selected.has(item.ref)) {
+                    item.status = "verified";
+                    item.statusLabel = "Verified";
+                    selectedIds.push(item.id);
+                }
+            });
+            if (!selectedIds.length) {
+                showToast("Select donations first");
+                return;
+            }
+
+            fetch('/donations/bulk-update/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ ids: selectedIds, status: 'verified' })
+            }).then(function (response) {
+                return response.json().then(function (payload) {
+                    if (!response.ok) {
+                        throw new Error(payload.error || 'Unable to update donation statuses.');
+                    }
+                    return payload;
+                });
+            }).then(function () {
+                showToast(selectedIds.length + " donations approved");
+                refresh();
+            }).catch(function (error) {
+                showToast(error.message || "Unable to update donation statuses.");
+            });
+        });
+
+        document.getElementById("don-bulk-complete").addEventListener("click", function () {
+            var selectedIds = [];
+            DONATIONS.forEach(function (item) {
+                if (state.selected.has(item.ref)) {
+                    item.status = "completed";
+                    item.statusLabel = "Completed";
+                    selectedIds.push(item.id);
+                }
+            });
+            if (!selectedIds.length) {
+                showToast("Select donations first");
+                return;
+            }
+
+            fetch('/donations/bulk-update/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ ids: selectedIds, status: 'completed' })
+            }).then(function (response) {
+                return response.json().then(function (payload) {
+                    if (!response.ok) {
+                        throw new Error(payload.error || 'Unable to update donation statuses.');
+                    }
+                    return payload;
+                });
+            }).then(function () {
+                showToast(selectedIds.length + " donations marked completed");
+                refresh();
+            }).catch(function (error) {
+                showToast(error.message || "Unable to update donation statuses.");
+            });
+        });
+
+        document.addEventListener("click", function (event) {
+            var previewTrigger = event.target.closest("[data-open-receipt]");
+            if (previewTrigger) {
+                event.preventDefault();
+                var url = previewTrigger.getAttribute("data-open-receipt");
+                if (url) {
+                    openReceiptViewer(url, {
+                        reference: previewTrigger.getAttribute("data-receipt-ref") || "Receipt",
+                        amount: previewTrigger.getAttribute("data-receipt-amount") || "",
+                        method: previewTrigger.getAttribute("data-receipt-method") || "",
+                        date: previewTrigger.getAttribute("data-receipt-date") || ""
+                    });
+                }
+            }
+        });
+
+        document.getElementById("don-form").addEventListener("submit", function (event) {
+            event.preventDefault();
+            var name = document.getElementById("don-name").value.trim();
+            var amount = Number(document.getElementById("don-amount").value || 0);
+            var method = document.getElementById("don-payment").value;
+            var campaign = document.getElementById("don-campaign-form").value;
+            var notes = document.getElementById("don-notes").value.trim();
+            var receipt = document.getElementById("don-receipt").files[0];
+
+            if (!name || !amount || !method || !campaign) {
+                showToast("Fill out all required fields");
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append("donor_name", name);
+            formData.append("donor_message", notes);
+            formData.append("amount", String(amount));
+            formData.append("payment_method", method);
+            formData.append("campaign", campaign);
+            if (receipt) formData.append("receipt", receipt);
+
+            var csrfInput = document.querySelector('#don-form input[name=csrfmiddlewaretoken]');
+            fetch("/donations/submit/", {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-CSRFToken": csrfInput ? csrfInput.value : (getCookie("csrftoken") || "")
+                },
+                credentials: "same-origin"
+            }).then(function (response) {
+                return response.json().then(function (payload) {
+                    return { ok: response.ok, payload: payload };
+                });
+            }).then(function (result) {
+                if (!result.ok) {
+                    throw new Error(result.payload && result.payload.error ? result.payload.error : "Unable to save donation.");
+                }
+
+                DONATIONS.unshift(result.payload.donation);
+                closeModals();
+                showToast("Donation added");
+                populateCampaignSelect();
+                refresh();
+                event.target.reset();
+            }).catch(function (error) {
+                showToast(error && error.message ? error.message : "Unable to save donation.");
+            });
+        });
+
+        backdrop.addEventListener("click", closeModals);
+        receiptModal.addEventListener("click", function (event) {
+            if (event.target === receiptModal) {
+                closeReceiptViewer();
+            }
+        });
+        document.querySelectorAll("[data-close-form]").forEach(function (btn) { btn.addEventListener("click", closeModals); });
+        document.querySelectorAll("[data-close-detail]").forEach(function (btn) { btn.addEventListener("click", closeModals); });
+        document.querySelectorAll("[data-close-receipt]").forEach(function (btn) { btn.addEventListener("click", closeReceiptViewer); });
+
+        window.addEventListener("resize", function () {
+            if (openMenuTrigger) {
+                positionActionsMenu(openMenuTrigger);
+            }
+        });
+
+        window.addEventListener("scroll", function () {
+            if (openMenuTrigger) {
+                positionActionsMenu(openMenuTrigger);
+            }
+        }, true);
+
+        if (tableWrap) {
+            tableWrap.addEventListener("scroll", function () {
+                if (openMenuTrigger) {
+                    positionActionsMenu(openMenuTrigger);
+                }
+            });
+        }
+    }
+
+    function init() {
+        if (actionsMenu && actionsMenu.parentElement !== document.body) {
+            document.body.appendChild(actionsMenu);
+        }
+        populateCampaignSelect();
+        bindEvents();
+        renderCharts();
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === 'function') {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
+        // Run these LAST so they overwrite animation values
+        renderTable();
+        renderSummary();
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
+})();
+</script>
+{% endblock %}
+{% endblock %}

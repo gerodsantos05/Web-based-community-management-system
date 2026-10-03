@@ -1,106 +1,771 @@
-<aside id="dashboard-sidebar" data-mobile-open="false" class="flex flex-col border-r border-brand-100 bg-brand-50" aria-label="Sidebar">
-    <div class="h-20 px-4 border-b border-brand-100 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <span class="sidebar-brand-icon inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white text-brand-700 border border-brand-100" aria-hidden="true">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9-9 9-9-9z" />
-                </svg>
-            </span>
-            <div class="sidebar-brand-text">
-                <p class="text-sm font-semibold text-ink-900">Happyness</p>
-                <p class="text-xs text-ink-500">Admin Console</p>
-            </div>
-        </div>
-    </div>
+<style>
+    #dashboard-shell {
+        position: relative;
+    }
 
-    <nav class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4" role="navigation" aria-label="Primary navigation">
-        <div class="sidebar-group">
-            <p class="sidebar-section-label sr-only px-2 text-[11px] uppercase tracking-[0.18em] text-ink-500">Main</p>
-            <ul class="mt-2 space-y-2">
-                <li>
-                    <a href="{% url 'dashboard' %}" aria-label="Dashboard" class="sidebar-link focus-ring relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm {% if request.resolver_match.url_name == 'dashboard' %}font-semibold bg-brand-100/70 text-ink-900{% else %}font-medium text-ink-700 hover:bg-brand-100/60{% endif %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>
-                        {% if request.resolver_match.url_name == 'dashboard' %}<span class="absolute left-0 top-1.5 h-[calc(100%-12px)] w-[3px] rounded-r-sm bg-brand-700" aria-hidden="true"></span>{% endif %}
-                        <span class="sidebar-icon sidebar-icon-wrap {% if request.resolver_match.url_name == 'dashboard' %}text-brand-700{% else %}text-ink-500{% endif %}" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M4.5 10.5V20h15v-9.5"/></svg>
-                        </span>
-                        <span class="sidebar-label">Dashboard</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'users' %}" aria-label="Users" class="sidebar-link focus-ring relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm {% if request.resolver_match.url_name == 'users' %}font-semibold bg-brand-100/70 text-ink-900{% else %}font-medium text-ink-700 hover:bg-brand-100/60{% endif %}" {% if request.resolver_match.url_name == 'users' %}aria-current="page"{% endif %}>
-                        {% if request.resolver_match.url_name == 'users' %}<span class="absolute left-0 top-1.5 h-[calc(100%-12px)] w-[3px] rounded-r-sm bg-brand-700" aria-hidden="true"></span>{% endif %}
-                        <span class="sidebar-icon sidebar-icon-wrap {% if request.resolver_match.url_name == 'users' %}text-brand-700{% else %}text-ink-500{% endif %}" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M23 21v-2a4 4 0 00-3-3.87"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 3.13a4 4 0 010 7.75"/></svg>
-                        </span>
-                        <span class="sidebar-label">Users</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'donations' %}" aria-label="Donations" class="sidebar-link focus-ring relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm {% if request.resolver_match.url_name == 'donations' %}font-semibold bg-brand-100/70 text-ink-900{% else %}font-medium text-ink-700 hover:bg-brand-100/60{% endif %}" {% if request.resolver_match.url_name == 'donations' %}aria-current="page"{% endif %}>
-                        {% if request.resolver_match.url_name == 'donations' %}<span class="absolute left-0 top-1.5 h-[calc(100%-12px)] w-[3px] rounded-r-sm bg-brand-700" aria-hidden="true"></span>{% endif %}
-                        <span class="sidebar-icon sidebar-icon-wrap {% if request.resolver_match.url_name == 'donations' %}text-brand-700{% else %}text-ink-500{% endif %}" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-                        </span>
-                        <span class="sidebar-label">Donations</span>
-                    </a>
-                </li>
-            </ul>
-        </div>
+    #dashboard-main-wrapper {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        width: 100%;
+    }
 
-        <div class="sidebar-group">
-            <p class="sidebar-section-label sr-only px-2 text-[11px] uppercase tracking-[0.18em] text-ink-500">Management</p>
-            <ul class="mt-2 space-y-2">
-                <li>
-                    <a href="{% url 'inventory' %}" aria-label="Inventory" class="sidebar-link focus-ring relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm {% if request.resolver_match.url_name == 'inventory' %}font-semibold bg-brand-100/70 text-ink-900{% else %}font-medium text-ink-700 hover:bg-brand-100/60{% endif %}" {% if request.resolver_match.url_name == 'inventory' %}aria-current="page"{% endif %}>
-                        {% if request.resolver_match.url_name == 'inventory' %}<span class="absolute left-0 top-1.5 h-[calc(100%-12px)] w-[3px] rounded-r-sm bg-brand-700" aria-hidden="true"></span>{% endif %}
-                        <span class="sidebar-icon sidebar-icon-wrap {% if request.resolver_match.url_name == 'inventory' %}text-brand-700{% else %}text-ink-500{% endif %}" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg>
-                        </span>
-                        <span class="sidebar-label">Inventory</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'reports' %}" aria-label="Reports" class="sidebar-link focus-ring relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm {% if request.resolver_match.url_name == 'reports' %}font-semibold bg-brand-100/70 text-ink-900{% else %}font-medium text-ink-700 hover:bg-brand-100/60{% endif %}" {% if request.resolver_match.url_name == 'reports' %}aria-current="page"{% endif %}>
-                        {% if request.resolver_match.url_name == 'reports' %}<span class="absolute left-0 top-1.5 h-[calc(100%-12px)] w-[3px] rounded-r-sm bg-brand-700" aria-hidden="true"></span>{% endif %}
-                        <span class="sidebar-icon sidebar-icon-wrap {% if request.resolver_match.url_name == 'reports' %}text-brand-700{% else %}text-ink-500{% endif %}" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5"/><path d="M10 19V9"/><path d="M16 19v-6"/><path d="M22 19v-3"/></svg>
-                        </span>
-                        <span class="sidebar-label">Reports</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'payment' %}" aria-label="Payment" class="sidebar-link focus-ring relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm {% if request.resolver_match.url_name == 'payment' %}font-semibold bg-brand-100/70 text-ink-900{% else %}font-medium text-ink-700 hover:bg-brand-100/60{% endif %}" {% if request.resolver_match.url_name == 'payment' %}aria-current="page"{% endif %}>
-                        {% if request.resolver_match.url_name == 'payment' %}<span class="absolute left-0 top-1.5 h-[calc(100%-12px)] w-[3px] rounded-r-sm bg-brand-700" aria-hidden="true"></span>{% endif %}
-                        <span class="sidebar-icon sidebar-icon-wrap {% if request.resolver_match.url_name == 'payment' %}text-brand-700{% else %}text-ink-500{% endif %}" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 11h18M5 15h4"/></svg>
-                        </span>
-                        <span class="sidebar-label">Payment</span>
-                    </a>
-                </li>
-            </ul>
-        </div>
+    #dashboard-content-scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        width: 100%;
+    }
 
-        <div class="sidebar-group">
-            <p class="sidebar-section-label sr-only px-2 text-[11px] uppercase tracking-[0.18em] text-ink-500">System</p>
-            <ul class="mt-2 space-y-2">
-                <li>
-                    <a href="{% url 'settings' %}" aria-label="Settings" class="sidebar-link focus-ring relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm {% if request.resolver_match.url_name == 'settings' %}font-semibold bg-brand-100/70 text-ink-900{% else %}font-medium text-ink-700 hover:bg-brand-100/60{% endif %}" {% if request.resolver_match.url_name == 'settings' %}aria-current="page"{% endif %}>
-                        {% if request.resolver_match.url_name == 'settings' %}<span class="absolute left-0 top-1.5 h-[calc(100%-12px)] w-[3px] rounded-r-sm bg-brand-700" aria-hidden="true"></span>{% endif %}
-                        <span class="sidebar-icon sidebar-icon-wrap {% if request.resolver_match.url_name == 'settings' %}text-brand-700{% else %}text-ink-500{% endif %}" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1A1.7 1.7 0 0 0 10 3.2V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5h.1a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1z"/></svg>
-                        </span>
-                        <span class="sidebar-label">Settings</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'logout' %}" aria-label="Logout" class="sidebar-link focus-ring relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-700 hover:bg-brand-100/60">
-                        <span class="sidebar-icon sidebar-icon-wrap text-ink-500" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
-                        </span>
-                        <span class="sidebar-label">Logout</span>
-                    </a>
-                </li>
-            </ul>
-        </div>
+    #app-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.88);
+    }
+
+    #dashboard-shell {
+        display: grid;
+        grid-template-columns: 248px 1fr;
+        transition: grid-template-columns 200ms ease;
+    }
+
+    #dashboard-shell.sidebar-booting {
+        transition: none !important;
+    }
+
+    #dashboard-shell[data-sidebar="expanded"] {
+        grid-template-columns: 248px 1fr !important;
+    }
+
+    #dashboard-shell[data-sidebar="collapsed"] {
+        grid-template-columns: 82px 1fr !important;
+    }
+
+    #dashboard-shell > *:nth-child(2) {
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    #dashboard-sidebar {
+        width: 248px;
+        border-right: 1px solid rgba(16, 185, 129, 0.16);
+        background: linear-gradient(180deg, #f8fdfa 0%, #f2fbf7 100%);
+        transition: width 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+        z-index: 45;
+    }
+
+    .sidebar-header {
+        height: 4.8rem;
+        border-bottom: 1px solid rgba(16, 185, 129, 0.12);
+        padding: 0 0.9rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .sidebar-brand-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+        height: 100%;
+    }
+
+    .sidebar-brand-icon {
+        width: 2.3rem;
+        height: 2.3rem;
+        border-radius: 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #047857;
+        background: #ffffff;
+        border: 1px solid rgba(16, 185, 129, 0.24);
+        flex-shrink: 0;
+    }
+
+    .sidebar-brand-copy {
+        min-width: 0;
+        transition: opacity 160ms ease;
+    }
+
+    .sidebar-brand-copy p {
+        margin: 0;
+    }
+
+    .sidebar-brand-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--ink-900);
+        line-height: 1.25;
+        white-space: nowrap;
+    }
+
+    .sidebar-brand-subtitle {
+        color: #047857;
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1.25;
+        white-space: nowrap;
+    }
+
+    .sidebar-brand-subtitle-admin {
+        font-weight: 500;
+    }
+
+    .sidebar-nav {
+        flex: 1;
+        overflow-x: hidden;
+        overflow-y: auto;
+        padding: 0.7rem 0.65rem;
+    }
+
+    .sidebar-section {
+        margin-top: 0.7rem;
+    }
+
+    .sidebar-section:first-child {
+        margin-top: 0;
+    }
+
+    .sidebar-section-label {
+        margin: 0 0 0.35rem;
+        padding: 0 0.45rem;
+        font-size: 0.67rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #5e7d73;
+        transition: opacity 160ms ease;
+    }
+
+    .sidebar-item-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 0.22rem;
+    }
+
+    .sidebar-link {
+        width: 100%;
+        min-height: 2.45rem;
+        border: 0;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.45rem 0.55rem;
+        border-radius: 0.75rem;
+        font-size: 0.86rem;
+        font-weight: 500;
+        color: var(--ink-700);
+        text-decoration: none;
+        text-align: left;
+        cursor: pointer;
+        transition: background-color 170ms ease, color 170ms ease;
+    }
+
+    .sidebar-link:hover {
+        background: rgba(16, 185, 129, 0.11);
+        color: var(--ink-900);
+    }
+
+    .sidebar-link:focus-visible {
+        outline: 2px solid #10b981;
+        outline-offset: 2px;
+    }
+
+    .sidebar-link.is-active,
+    .sidebar-link[aria-current="page"] {
+        background: rgba(16, 185, 129, 0.2);
+        color: var(--ink-900);
+        font-weight: 600;
+    }
+
+    .sidebar-icon-wrap {
+        width: 2.2rem;
+        height: 2.2rem;
+        border-radius: 0.65rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #57786e;
+        flex-shrink: 0;
+        transition: background-color 170ms ease, color 170ms ease;
+    }
+
+    .sidebar-link.is-active .sidebar-icon-wrap,
+    .sidebar-link[aria-current="page"] .sidebar-icon-wrap {
+        background: rgba(16, 185, 129, 0.2);
+        color: #047857;
+    }
+
+    .sidebar-link-text {
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: opacity 160ms ease;
+    }
+
+    .sidebar-expand-caret {
+        margin-left: auto;
+        width: 0.95rem;
+        height: 0.95rem;
+        color: #6a8a80;
+        transition: transform 220ms ease, opacity 160ms ease;
+        flex-shrink: 0;
+    }
+
+    .sidebar-item.has-children.is-open > .sidebar-link .sidebar-expand-caret {
+        transform: rotate(180deg);
+    }
+
+    .sidebar-submenu-shell {
+        display: grid;
+        grid-template-rows: 0fr;
+        opacity: 0;
+        transition: grid-template-rows 220ms ease, opacity 170ms ease;
+    }
+
+    .sidebar-item.has-children.is-open > .sidebar-submenu-shell {
+        grid-template-rows: 1fr;
+        opacity: 1;
+    }
+
+    .sidebar-submenu {
+        overflow: hidden;
+        margin: 0;
+        list-style: none;
+        padding: 0.2rem 0 0.2rem 2.6rem;
+        display: grid;
+        gap: 0.2rem;
+    }
+
+    .sidebar-submenu-link {
+        display: block;
+        border-radius: 0.6rem;
+        padding: 0.38rem 0.52rem;
+        font-size: 0.78rem;
+        color: #5b786f;
+        text-decoration: none;
+        transition: background-color 150ms ease, color 150ms ease;
+    }
+
+    .sidebar-submenu-link:hover {
+        background: rgba(16, 185, 129, 0.11);
+        color: var(--ink-900);
+    }
+
+    .sidebar-submenu-link:focus-visible {
+        outline: 2px solid #10b981;
+        outline-offset: 2px;
+    }
+
+    .sidebar-submenu-link.is-active,
+    .sidebar-submenu-link[aria-current="page"] {
+        background: rgba(16, 185, 129, 0.2);
+        color: #065f46;
+        font-weight: 600;
+    }
+
+    .sidebar-footer {
+        margin-top: auto;
+        padding: 0.7rem 0.65rem 0.85rem;
+        border-top: 1px solid rgba(16, 185, 129, 0.14);
+    }
+
+    #dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar {
+        width: 82px;
+        overflow: hidden;
+    }
+
+    #dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-nav {
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+    }
+
+    #dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-item-list {
+        justify-items: center;
+    }
+
+    #dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-section {
+        margin-top: 0.55rem;
+    }
+
+    #dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-brand-copy,
+    #dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-section-label,
+    #dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-link-text,
+    #dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-expand-caret,
+    #dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-submenu-shell {
+        display: none;
+    }
+
+    #dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-link {
+        width: 2.95rem;
+        height: 2.95rem;
+        justify-content: center;
+        padding: 0;
+        margin: 0 auto;
+    }
+
+    #dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-icon-wrap {
+        width: 2.7rem;
+        height: 2.7rem;
+    }
+
+    #dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-icon-wrap svg {
+        width: 1.75rem;
+        height: 1.75rem;
+    }
+
+    @media (max-width: 1023px) {
+        #dashboard-shell {
+            display: block !important;
+        }
+
+        #dashboard-shell,
+        #dashboard-shell[data-sidebar="expanded"],
+        #dashboard-shell[data-sidebar="collapsed"] {
+            grid-template-columns: 1fr !important;
+        }
+
+        #dashboard-main-wrapper,
+        #dashboard-content-scroll {
+            margin-left: 0 !important;
+            padding-left: 0 !important;
+            position: relative;
+            z-index: 1;
+        }
+
+        #dashboard-main-wrapper {
+            height: 100vh;
+            width: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
+            transform: none !important;
+        }
+
+        #dashboard-content-scroll {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            width: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
+            transform: none !important;
+        }
+
+        #mobile-overlay {
+            position: fixed;
+            inset: 4rem 0 0 0;
+            z-index: 40;
+            background: rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 220ms ease;
+        }
+
+        #mobile-overlay[data-open="true"] {
+            display: block !important;
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        #dashboard-sidebar {
+            position: fixed;
+            top: 4rem;
+            left: 0;
+            height: calc(100vh - 4rem);
+            width: 240px !important;
+            max-width: 82vw;
+            transform: translateX(-100%);
+            transition: transform 0.25s ease;
+            box-shadow: 14px 0 30px rgba(6, 46, 42, 0.18);
+            z-index: 50;
+        }
+
+        #dashboard-sidebar[data-mobile-open="true"] {
+            transform: translateX(0);
+        }
+
+        #dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar {
+            width: 240px !important;
+            max-width: 82vw;
+            overflow: hidden;
+        }
+
+        #dashboard-shell[data-sidebar="collapsed"] #dashboard-sidebar .sidebar-link {
+            justify-content: flex-start;
+            padding-left: 0.55rem;
+            padding-right: 0.55rem;
+        }
+
+        #sidebar-toggle-mobile[data-open="true"] .icon-menu {
+            display: none;
+        }
+
+        #sidebar-toggle-mobile[data-open="true"] .icon-close {
+            display: block;
+        }
+    }
+</style>
+
+<aside
+    id="dashboard-sidebar"
+    data-dashboard-sidebar="admin"
+    data-mobile-open="false"
+    data-current="{{ request.resolver_match.url_name|default:'' }}"
+    data-group="{{ request.GET.group|default:'' }}"
+    data-role="{{ request.GET.role|default:'' }}"
+    data-tab="{{ request.GET.tab|default:'' }}"
+    class="flex flex-col"
+    aria-label="Admin sidebar navigation"
+>
+    {% include "partials/_sidebar_brand.html" %}
+
+    <nav class="sidebar-nav" role="navigation" aria-label="Primary admin navigation">
+        <div id="sidebar-nav-root"></div>
     </nav>
+
+    <div class="sidebar-footer" id="sidebar-exit-root"></div>
 </aside>
+
+<script>
+    (function initAdminSidebar() {
+        "use strict";
+
+        var sidebar = document.getElementById("dashboard-sidebar");
+        if (!sidebar || sidebar.dataset.navInit === "true") {
+            return;
+        }
+
+        var navRoot = document.getElementById("sidebar-nav-root");
+        var exitRoot = document.getElementById("sidebar-exit-root");
+        var mobileToggle = document.querySelector('[data-sidebar-toggle="admin"]');
+        var mobileOverlay = document.querySelector('[data-mobile-overlay="admin"]');
+
+        var routeMap = {
+            dashboard: "{% url 'admin_dashboard' %}",
+            resourceLibrary: "{% url 'admin_resource_library' %}",
+            volunteers: "{% url 'volunteers' %}",
+            beneficiaries: "{% url 'beneficiaries' %}",
+            activities: "{% url 'activities' %}",
+            donations: "{% url 'donations' %}",
+            inventory: "{% url 'inventory' %}",
+            payments: "{% url 'payment' %}",
+            announcements: "{% url 'announcements' %}",
+            analytics: "{% url 'reports' %}",
+            exports: "{% url 'exports' %}",
+            communityPosts: "{% url 'community_posts' %}",
+            feedback: "{% url 'feedback' %}",
+            moderation: "{% url 'moderation' %}",
+            settings: "{% url 'settings' %}",
+            auditLogs: "{% url 'audit_logs' %}",
+            logout: "{% url 'logout' %}"
+        };
+
+        var iconMap = {
+            dashboard: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M3 12l9-9 9 9M4.5 10.5V20h15v-9.5\"/></svg>",
+            users: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M16 19a4 4 0 0 0-8 0M12 13a4 4 0 1 0 0-8M19 19a4 4 0 0 0-3-3.87M17 5.1a4 4 0 0 1 0 7.8\"/></svg>",
+            volunteers: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M9 11c0-1.7 1.3-3 3-3s3 1.3 3 3v5H9v-5Z\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M5 21h14M12 3v2\"/></svg>",
+            beneficiaries: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 21s-6.5-4.4-6.5-10A3.5 3.5 0 0 1 9 7.5c1.2 0 2.3.6 3 1.6.7-1 1.8-1.6 3-1.6a3.5 3.5 0 0 1 3.5 3.5c0 5.6-6.5 10-6.5 10Z\"/></svg>",
+            operations: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><rect x=\"3\" y=\"4\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"4\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/></svg>",
+            activities: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M8 2v4M16 2v4M3 10h18\"/></svg>",
+            donations: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 21s-6.5-4.4-6.5-10A3.5 3.5 0 0 1 9 7.5c1.2 0 2.3.6 3 1.6.7-1 1.8-1.6 3-1.6a3.5 3.5 0 0 1 3.5 3.5c0 5.6-6.5 10-6.5 10Z\"/></svg>",
+            inventory: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><path d=\"M3 7l9-4 9 4-9 4-9-4z\"/><path d=\"M3 7v10l9 4 9-4V7\"/><path d=\"M12 11v10\"/></svg>",
+            payments: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><rect x=\"2\" y=\"5\" width=\"20\" height=\"14\" rx=\"2\"/><path d=\"M2 10h20\"/></svg>",
+            reports: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><path d=\"M4 19V5\"/><path d=\"M10 19V9\"/><path d=\"M16 19v-6\"/><path d=\"M22 19v-3\"/></svg>",
+            announcements: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><path d=\"M3 11.5 14 7v10L3 12.5v-1z\"/><path d=\"M14 9h4a3 3 0 1 1 0 6h-4\"/><path d=\"M6 13v6\"/></svg>",
+            moderation: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 3 4 6v6c0 5 3.4 8.4 8 9 4.6-.6 8-4 8-9V6l-8-3Z\"/><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"m9 12 2 2 4-4\"/></svg>",
+            settings: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1A1.7 1.7 0 0 0 10 3.2V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5h.1a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1z\"/></svg>",
+            logout: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><path d=\"M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4\"/><path d=\"M10 17l5-5-5-5\"/><path d=\"M15 12H3\"/></svg>"
+        };
+
+        var SIDEBAR_SECTIONS = [
+            {
+                items: [
+                    { key: "dashboard", label: "Dashboard", icon: "dashboard" }
+                ]
+            },
+            {
+                items: [
+                    {
+                        key: "peopleGroup",
+                        label: "People",
+                        icon: "users",
+                        children: [
+                            { key: "volunteers", label: "Volunteers" },
+                            { key: "beneficiaries", label: "Beneficiaries" }
+                        ]
+                    }
+                ]
+            },
+            {
+                items: [
+                    {
+                        key: "operationsGroup",
+                        label: "Operations",
+                        icon: "operations",
+                        children: [
+                            { key: "activities", label: "Activities" },
+                            { key: "donations", label: "Donations" },
+                            { key: "inventory", label: "Inventory" },
+                            { key: "payments", label: "Payments" },
+                            { key: "resourceLibrary", label: "Resource Library" }
+                        ]
+                    }
+                ]
+            },
+            {
+                items: [
+                    { key: "communityPosts", label: "Community Posts", icon: "announcements" },
+                    { key: "analytics", label: "Analytics", icon: "reports" },
+                    { key: "settings", label: "Settings", icon: "settings" }
+                ]
+            }
+        ];
+
+        var current = sidebar.getAttribute("data-current") || "";
+        var currentGroup = sidebar.getAttribute("data-group") || "";
+        var currentRole = sidebar.getAttribute("data-role") || "";
+        var currentTab = sidebar.getAttribute("data-tab") || "";
+
+        function isKeyActive(key) {
+            if (key === "dashboard") {
+                return current === "admin_dashboard" && currentTab !== "activities";
+            }
+            if (key === "volunteers") {
+                return current === "volunteers";
+            }
+            if (key === "beneficiaries") {
+                return current === "beneficiaries";
+            }
+            if (key === "activities") {
+                return current === "activities";
+            }
+            if (key === "donations") {
+                return current === "donations";
+            }
+            if (key === "inventory") {
+                return current === "inventory";
+            }
+            if (key === "payments") {
+                return current === "payment";
+            }
+            if (key === "resourceLibrary") {
+                return current === "admin_resource_library";
+            }
+            if (key === "announcements") {
+                return current === "announcements";
+            }
+            if (key === "analytics") {
+                return current === "reports" && !currentTab;
+            }
+            if (key === "exports") {
+                return current === "exports";
+            }
+            if (key === "communityPosts") {
+                return current === "community_posts";
+            }
+            if (key === "feedback") {
+                return current === "feedback";
+            }
+            if (key === "moderation") {
+                return current === "moderation";
+            }
+            if (key === "settings") {
+                return current === "settings";
+            }
+            if (key === "auditLogs") {
+                return current === "audit_logs";
+            }
+            return false;
+        }
+
+        function isGroupActive(item) {
+            if (!item.children) {
+                return isKeyActive(item.key);
+            }
+            return item.children.some(function (child) {
+                return isKeyActive(child.key);
+            });
+        }
+
+        function makeIcon(name) {
+            return iconMap[name] || iconMap.dashboard;
+        }
+
+        function createSubmenu(item, idx) {
+            var shell = document.createElement("div");
+            shell.className = "sidebar-submenu-shell";
+            shell.id = "sidebar-submenu-" + idx;
+
+            var list = document.createElement("ul");
+            list.className = "sidebar-submenu";
+
+            item.children.forEach(function (child) {
+                var li = document.createElement("li");
+                var a = document.createElement("a");
+                a.className = "sidebar-submenu-link";
+                a.href = routeMap[child.key] || "#";
+                if (child.key === "announcements" || child.key === "communityPosts" || child.key === "feedback" || child.key === "moderation" || child.key === "analytics" || child.key === "exports") {
+                    a.setAttribute("data-no-click-animation", "true");
+                }
+                a.textContent = child.label;
+                if (isKeyActive(child.key)) {
+                    a.classList.add("is-active");
+                    a.setAttribute("aria-current", "page");
+                }
+                li.appendChild(a);
+                list.appendChild(li);
+            });
+
+            shell.appendChild(list);
+            return shell;
+        }
+
+        function createItem(item, idx) {
+            var li = document.createElement("li");
+            li.className = "sidebar-item";
+
+            if (item.children && item.children.length) {
+                li.classList.add("has-children");
+                var active = isGroupActive(item);
+                if (active) {
+                    li.classList.add("is-open");
+                }
+
+                var toggle = document.createElement("button");
+                toggle.type = "button";
+                toggle.className = "sidebar-link";
+                toggle.setAttribute("aria-expanded", active ? "true" : "false");
+                toggle.setAttribute("aria-controls", "sidebar-submenu-" + idx);
+
+                toggle.innerHTML = ""
+                    + "<span class=\"sidebar-icon-wrap\" aria-hidden=\"true\">" + makeIcon(item.icon) + "</span>"
+                    + "<span class=\"sidebar-link-text\">" + item.label + "</span>"
+                    + "<svg class=\"sidebar-expand-caret\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"m6 9 6 6 6-6\"/></svg>";
+
+                toggle.addEventListener("click", function () {
+                    var willOpen = !li.classList.contains("is-open");
+                    li.classList.toggle("is-open", willOpen);
+                    toggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
+                });
+
+                li.appendChild(toggle);
+                li.appendChild(createSubmenu(item, idx));
+                return li;
+            }
+
+            var link = document.createElement("a");
+            link.className = "sidebar-link";
+            link.href = routeMap[item.key] || "#";
+            if (item.key === "reports" || item.key === "analytics" || item.key === "exports") {
+                link.setAttribute("data-no-click-animation", "true");
+            }
+
+            if (isKeyActive(item.key)) {
+                link.classList.add("is-active");
+                link.setAttribute("aria-current", "page");
+            }
+
+            link.innerHTML = ""
+                + "<span class=\"sidebar-icon-wrap\" aria-hidden=\"true\">" + makeIcon(item.icon) + "</span>"
+                + "<span class=\"sidebar-link-text\">" + item.label + "</span>";
+
+            li.appendChild(link);
+            return li;
+        }
+
+        function renderSidebarSections() {
+            if (!navRoot) {
+                return;
+            }
+
+            navRoot.innerHTML = "";
+
+            SIDEBAR_SECTIONS.forEach(function (section, sectionIdx) {
+                var sectionWrap = document.createElement("section");
+                sectionWrap.className = "sidebar-section";
+
+                var list = document.createElement("ul");
+                list.className = "sidebar-item-list";
+
+                section.items.forEach(function (item, itemIdx) {
+                    var absoluteIdx = sectionIdx * 20 + itemIdx;
+                    list.appendChild(createItem(item, absoluteIdx));
+                });
+
+                sectionWrap.appendChild(list);
+                navRoot.appendChild(sectionWrap);
+            });
+        }
+
+        function renderExit() {
+            if (!exitRoot) {
+                return;
+            }
+
+            var logout = document.createElement("a");
+            logout.className = "sidebar-link";
+            logout.href = routeMap.logout;
+            logout.setAttribute("aria-label", "Logout");
+            logout.innerHTML = ""
+                + "<span class=\"sidebar-icon-wrap\" aria-hidden=\"true\">" + makeIcon("logout") + "</span>"
+                + "<span class=\"sidebar-link-text\">Logout</span>";
+
+            exitRoot.innerHTML = "";
+            exitRoot.appendChild(logout);
+        }
+
+        function setMobileOpen(isOpen) {
+            var open = Boolean(isOpen);
+            sidebar.setAttribute("data-mobile-open", open ? "true" : "false");
+
+            if (mobileOverlay) {
+                mobileOverlay.classList.toggle("hidden", !open);
+                mobileOverlay.setAttribute("data-open", open ? "true" : "false");
+                mobileOverlay.setAttribute("aria-hidden", open ? "false" : "true");
+            }
+
+            if (mobileToggle) {
+                mobileToggle.setAttribute("aria-expanded", open ? "true" : "false");
+                mobileToggle.setAttribute("data-open", open ? "true" : "false");
+            }
+        }
+
+        function bindMobileToggle() {
+            sidebar.addEventListener("click", function (event) {
+                var link = event.target.closest("a.sidebar-link, .sidebar-submenu-link");
+                if (link && window.innerWidth <= 1023) {
+                    setMobileOpen(false);
+                }
+            });
+
+            document.addEventListener("keydown", function (event) {
+                if (event.key === "Escape" && sidebar.getAttribute("data-mobile-open") === "true") {
+                    setMobileOpen(false);
+                }
+            });
+        }
+
+        renderSidebarSections();
+        renderExit();
+
+        // Try to bind immediately (works when header is already parsed). Also
+        // ensure we attempt binding again after DOMContentLoaded in case the
+        // header markup appears later in the page.
+        bindMobileToggle();
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", bindMobileToggle);
+        }
+
+        // Ensure the sidebar is closed by default on init
+        setMobileOpen(false);
+        sidebar.dataset.navInit = "true";
+    })();
+</script>

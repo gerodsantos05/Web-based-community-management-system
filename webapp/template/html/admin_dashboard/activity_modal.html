@@ -1,0 +1,117 @@
+<style>
+    .act-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 998; display: none; }
+    .act-modal { position: fixed; top: 100px; bottom: 16px; left: 50%; transform: translateX(-50%); width: min(92vw, 520px); height: calc(100vh - 116px); max-height: none; background: #fff; border: 1px solid rgba(15,118,110,.22); border-radius: 18px; box-shadow: 0 28px 52px rgba(15,118,110,.18); z-index: 999; display: none; flex-direction: column; overflow: hidden; }
+    .act-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.2rem .8rem; border-bottom: 1px solid #deefe8; }
+    .act-modal-title { margin: 0; font-size: 1rem; font-weight: 700; color: #14352d; }
+    .act-modal-close-btn { background: none; border: 1px solid #e0e0e0; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 16px; color: #666; }
+    .act-modal-content { padding: 1rem 1.2rem 1.2rem; overflow-y: auto; flex: 1 1 auto; min-height: 0; }
+    .act-form-grid { display: grid; gap: .95rem; }
+    .act-field, .act-volunteer-field { display: grid; gap: .35rem; }
+    .act-field label, .act-volunteer-header label { font-size: .76rem; font-weight: 700; color: #4d7265; text-transform: uppercase; letter-spacing: .06em; }
+    .act-input, .act-select, .act-textarea, .act-volunteer-search { width: 100%; border: 1px solid #d4e9e1; border-radius: 12px; padding: .8rem .95rem; font-size: .92rem; color: #173a31; background: #fff; box-sizing: border-box; }
+    .act-textarea { min-height: 100px; resize: vertical; }
+    .act-volunteer-header { display: flex; justify-content: space-between; gap: .75rem; }
+    .act-volunteer-count { font-size: .73rem; font-weight: 700; color: #1d9e75; }
+    .act-volunteer-list { display: grid; gap: .55rem; border: 1px solid #e6f6f0; border-radius: 16px; background: #fbfdfb; padding: .8rem; max-height: 150px; overflow: auto; }
+    .act-volunteer-item { display: flex; gap: .65rem; align-items: center; padding: .55rem .65rem; border-radius: 12px; background: #fff; cursor: pointer; }
+    .act-form-actions { display: flex; justify-content: flex-end; gap: .7rem; flex: 0 0 auto; margin-top: 0; padding: 1rem 1.2rem 1.2rem; border-top: 1px solid #deefe8; background: #fff; }
+    .act-chip-btn, .act-btn-save { border-radius: 999px; padding: .75rem 1rem; font-weight: 700; cursor: pointer; }
+    .act-chip-btn { background: #fff; border: 1px solid #d4e9e1; color: #1b4f43; }
+    .act-btn-save { background: #0f766e; border: none; color: #fff; padding-inline: 1.2rem; }
+    .act-category-pills { display: flex; flex-wrap: wrap; gap: .45rem; }
+    .act-category-pill.active { background: #dff5ec; border-color: #1d9e75; color: #0f766e; }
+    .act-category-custom[hidden], .act-image-preview[hidden] { display: none; }
+    .act-image-preview { position: relative; width: 100%; max-width: 220px; }
+    .act-image-preview img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; border: 1px solid #d4e9e1; }
+    .act-image-remove { position: absolute; top: .45rem; right: .45rem; border: 0; border-radius: 999px; width: 28px; height: 28px; background: rgba(20, 53, 45, .86); color: #fff; cursor: pointer; }
+    @media (max-width: 767px) {
+        .act-modal { bottom: 20px; height: calc(100vh - 120px); }
+    }
+</style>
+
+<div id="act-modal-backdrop" class="act-modal-backdrop"></div>
+<div id="addActivityModal" class="act-modal" role="dialog" aria-modal="true" aria-labelledby="activityModalTitle">
+    <div class="act-modal-header">
+        <h3 id="activityModalTitle" class="act-modal-title">Add Activity</h3>
+        <button type="button" class="act-modal-close-btn" aria-label="Close activity modal">&#215;</button>
+    </div>
+    <div class="act-modal-content">
+        <form id="activityForm" class="act-form-grid" method="post" enctype="multipart/form-data" action="{% url 'add_activity' %}">
+            {% csrf_token %}
+            <input type="hidden" name="return_to" value="dashboard">
+            <input type="hidden" id="activityId" name="activityId" value="">
+            <input type="hidden" id="activityVolunteerIds" name="volunteer_ids" value="">
+            <div class="act-field"><label for="activityTitle">Title</label><input id="activityTitle" name="title" class="act-input" type="text" required placeholder="Activity title"></div>
+            <div class="act-field"><label for="activityDate">Date</label><input id="activityDate" name="date" class="act-input" type="date" required></div>
+            <div class="act-field"><label for="activityTime">Time</label><input id="activityTime" name="time" class="act-input" type="time" required></div>
+            <div class="act-field"><label for="activityLocation">Location</label><select id="activityLocation" name="location" class="act-select" required>
+                <option value="">Select barangay</option>
+                <option>Alima</option><option>Aniban I</option><option>Aniban II</option><option>Banalo</option><option>Bayanan</option><option>Digman</option><option>Habay I</option><option>Habay II</option><option>Molino I</option><option>Molino II</option><option>Queens Row Central</option><option>Real I</option><option>Salinas I</option><option>San Nicolas I</option><option>Talaba I</option><option>Zapote I</option>
+            </select></div>
+            <div class="act-field"><label for="activityStatus">Status</label><select id="activityStatus" name="status" class="act-select" required><option value="">Select status</option><option value="active">Active</option><option value="draft">Draft</option><option value="cancelled">Cancelled</option></select></div>
+            <div class="act-field"><label>Category</label><div class="act-category-pills" role="radiogroup" aria-label="Activity category"><button type="button" class="act-chip-btn act-category-pill" data-category-value="rag-making" role="radio">Rag-making</button><button type="button" class="act-chip-btn act-category-pill" data-category-value="teaching-kids" role="radio">Teaching Kids</button><button type="button" class="act-chip-btn act-category-pill" data-category-value="pagtatanim" role="radio">Planting</button><button type="button" class="act-chip-btn act-category-pill" data-category-value="outreach" role="radio">Outreach</button><button type="button" class="act-chip-btn act-category-pill" data-category-value="other" role="radio">Other</button></div><input type="hidden" id="activityCategory" name="category" required></div>
+            <div id="activityCustomCategoryWrap" class="act-field act-category-custom" hidden><label for="activityCustomCategory">Custom category name</label><input id="activityCustomCategory" name="custom_category" class="act-input" type="text" maxlength="120" placeholder="Enter a category name"></div>
+            <div class="act-field"><label for="activityImage">Activity Image (optional)</label><input id="activityImage" name="activity_image" class="act-input" type="file" accept="image/*"><input id="removeActivityImage" name="remove_activity_image" type="hidden" value="0"><div id="activityImagePreview" class="act-image-preview" hidden><img id="activityImagePreviewImage" src="" alt="Activity preview"><button id="removeActivityImageButton" class="act-image-remove" type="button" aria-label="Remove activity image">×</button></div></div>
+            <div class="act-volunteer-field">
+                <div class="act-volunteer-header"><label for="activityVolunteerSearch">Assign Volunteers</label><span id="activityVolunteerCount" class="act-volunteer-count">0 selected</span></div>
+                <input id="activityVolunteerSearch" type="search" class="act-volunteer-search" placeholder="Search volunteers" aria-label="Search volunteers">
+                <div id="activityVolunteerList" class="act-volunteer-list" aria-label="Volunteer selection list"></div>
+            </div>
+            <div class="act-field"><label for="activityDescription">Description</label><textarea id="activityDescription" name="description" class="act-textarea" required placeholder="Short activity description"></textarea></div>
+        </form>
+        <div class="act-form-actions">
+            <button type="button" class="act-chip-btn" data-close-form="true">Cancel</button>
+            <button type="submit" form="activityForm" class="act-btn-save">Save Activity</button>
+        </div>
+    </div>
+</div>
+
+{{ volunteer_options|json_script:"activity-volunteer-options" }}
+<script>
+(function () {
+    var modal = document.getElementById('addActivityModal');
+    var backdrop = document.getElementById('act-modal-backdrop');
+    var form = document.getElementById('activityForm');
+    if (!modal || !backdrop || !form) return;
+    var selected = new Set();
+    var options = [];
+    try { options = JSON.parse(document.getElementById('activity-volunteer-options').textContent || '[]'); } catch (error) { options = []; }
+    var list = document.getElementById('activityVolunteerList');
+    var search = document.getElementById('activityVolunteerSearch');
+    function renderVolunteers() {
+        var query = (search.value || '').toLowerCase();
+        list.innerHTML = options.filter(function (item) { return !query || (item.name || '').toLowerCase().indexOf(query) !== -1; }).map(function (item) {
+            return '<label class="act-volunteer-item"><input type="checkbox" value="' + item.id + '"' + (selected.has(Number(item.id)) ? ' checked' : '') + '><span>' + (item.name || 'Volunteer') + '</span></label>';
+        }).join('') || '<span>No volunteers found.</span>';
+        list.querySelectorAll('input').forEach(function (input) { input.addEventListener('change', function () { this.checked ? selected.add(Number(this.value)) : selected.delete(Number(this.value)); updateSelection(); }); });
+        updateSelection();
+    }
+    function updateSelection() { document.getElementById('activityVolunteerCount').textContent = selected.size + ' selected'; document.getElementById('activityVolunteerIds').value = Array.from(selected).join(','); }
+    function close() { modal.style.display = 'none'; backdrop.style.display = 'none'; document.body.style.overflow = ''; form.reset(); selected.clear(); setCategory(''); imageInput.value = ''; imagePreviewImage.removeAttribute('src'); imagePreview.hidden = true; document.getElementById('removeActivityImage').value = '0'; renderVolunteers(); }
+    function open() { modal.style.display = 'flex'; backdrop.style.display = 'block'; document.body.style.overflow = 'hidden'; document.getElementById('activityTitle').focus(); }
+    document.querySelector('[data-open-add-activity]').addEventListener('click', open);
+    document.querySelector('.act-modal-close-btn').addEventListener('click', close);
+    document.querySelector('[data-close-form="true"]').addEventListener('click', close);
+    backdrop.addEventListener('click', close);
+    search.addEventListener('input', renderVolunteers);
+    function setCategory(value) {
+        var hidden = document.getElementById('activityCategory');
+        var customWrap = document.getElementById('activityCustomCategoryWrap');
+        var customInput = document.getElementById('activityCustomCategory');
+        var isOther = value === 'other';
+        if (hidden) hidden.value = value || '';
+        if (customWrap) customWrap.hidden = !isOther;
+        if (customInput) customInput.required = isOther;
+        document.querySelectorAll('.act-category-pill').forEach(function (button) { var active = button.getAttribute('data-category-value') === value; button.classList.toggle('active', active); button.setAttribute('aria-checked', active ? 'true' : 'false'); });
+    }
+    document.querySelectorAll('.act-category-pill').forEach(function (button) { button.addEventListener('click', function () { setCategory(button.getAttribute('data-category-value')); }); });
+    var imageInput = document.getElementById('activityImage');
+    var imagePreview = document.getElementById('activityImagePreview');
+    var imagePreviewImage = document.getElementById('activityImagePreviewImage');
+    if (imageInput) imageInput.addEventListener('change', function () { var file = imageInput.files && imageInput.files[0]; if (file) { imagePreviewImage.src = URL.createObjectURL(file); imagePreview.hidden = false; } });
+    document.getElementById('removeActivityImageButton').addEventListener('click', function () { imageInput.value = ''; imagePreviewImage.removeAttribute('src'); imagePreview.hidden = true; document.getElementById('removeActivityImage').value = '1'; });
+    form.addEventListener('submit', function (event) { if (document.getElementById('activityCategory').value === 'other' && !document.getElementById('activityCustomCategory').value.trim()) { event.preventDefault(); document.getElementById('activityCustomCategory').focus(); } });
+    setCategory('');
+    renderVolunteers();
+})();
+</script>

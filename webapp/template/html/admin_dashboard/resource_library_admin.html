@@ -1,0 +1,702 @@
+
+{% extends "base.html" %}
+
+{% block title %}Operations - Resource Library | HappYness{% endblock %}
+
+{% block extra_head %}
+<style>
+    .rla-page { --rla-ink: #173b32; --rla-muted: #647b73; --rla-line: #dcebe5; --rla-soft: #f2fbf7; display: grid; gap: 1.1rem; box-sizing: border-box; width: 100%; max-width: 1440px; margin: 0 auto; padding: .25rem 0 1rem .75rem; color: var(--rla-ink); }
+    .rla-panel { min-width: 0; border: 1px solid var(--rla-line); border-radius: 10px; background: #fff; padding: 1rem; box-shadow: 0 5px 16px rgba(19, 73, 57, .045); }
+    .rla-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin: 0 0 .85rem; color: var(--rla-ink); }
+    .rla-panel-title { display: flex; min-width: 0; align-items: center; gap: .6rem; }
+    .rla-panel-title h2 { margin: 0; color: var(--rla-ink); font-size: 1rem; font-weight: 700; }
+    .rla-count { flex: 0 0 auto; border-radius: 999px; background: #eaf7f1; padding: .2rem .55rem; color: #16705b; font-size: .72rem; font-weight: 700; }
+    .rla-fields { display: grid; gap: .68rem; }
+    .rla-field { display: grid; gap: .3rem; min-width: 0; }
+    .rla-field[hidden] { display: none; }
+    .rla-field label, .rla-field-label { color: #294d43; font-size: .8rem; font-weight: 700; }
+    .rla-control { width: 100%; box-sizing: border-box; min-height: 2.45rem; border: 1px solid #cfe3db; border-radius: 6px; background: #fff; padding: .5rem .6rem; color: var(--rla-ink); font: inherit; font-size: .84rem; }
+    .rla-picker { position: relative; min-width: 0; }
+    .rla-native-select { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
+    .rla-picker-details { position: relative; min-width: 0; }
+    .rla-picker-details > summary { display: flex; align-items: center; justify-content: space-between; gap: .5rem; min-height: 3.2rem; list-style: none; cursor: pointer; }
+    .rla-picker-details > summary::-webkit-details-marker { display: none; }
+    .rla-picker-details > summary::marker { content: ""; }
+    .rla-picker-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rla-picker-chevron { width: 1rem; height: 1rem; flex: 0 0 auto; transition: transform 120ms ease; }
+    .rla-picker-details[open] .rla-picker-chevron { transform: rotate(180deg); }
+    .rla-picker-menu { display: grid; gap: .1rem; max-height: min(14rem, 38vh); overflow-y: auto; margin-top: .25rem; border: 1px solid var(--rla-line); border-radius: 6px; background: #fff; padding: .25rem; box-shadow: 0 8px 20px rgba(10, 40, 31, .12); }
+    .rla-picker-option { min-height: 2.45rem; width: 100%; border: 0; border-radius: 4px; background: #fff; padding: .55rem .65rem; color: var(--rla-ink); font: inherit; font-size: .84rem; text-align: left; overflow-wrap: anywhere; cursor: pointer; }
+    .rla-picker-option:hover, .rla-picker-option:focus-visible, .rla-picker-option[aria-selected="true"] { outline: none; background: var(--rla-soft); color: #0b6e5b; }
+    textarea.rla-control { min-height: 4.6rem; resize: vertical; }
+    .rla-control:focus { outline: 2px solid rgba(15, 155, 142, .22); border-color: #0f9b8e; }
+    .rla-help { color: var(--rla-muted); font-size: .73rem; }
+    .rla-errors { margin: 0; color: #b42318; font-size: .75rem; }
+    .rla-form-error { border: 1px solid #f1c2bd; border-radius: 6px; background: #fff7f6; padding: .55rem .7rem; color: #9f241b; font-size: .8rem; }
+    .rla-publish { display: flex; align-items: center; gap: .55rem; color: #294d43; font-size: .8rem; font-weight: 600; }
+    .rla-publish input { width: 1rem; height: 1rem; accent-color: #0f9b8e; }
+    .rla-submit { display: inline-flex; min-height: 2.45rem; align-items: center; justify-content: center; gap: .45rem; border: 0; border-radius: 6px; background: #0f8d7d; color: #fff; padding: .5rem .8rem; font: inherit; font-size: .84rem; font-weight: 700; line-height: 1.2; white-space: nowrap; cursor: pointer; }
+    .rla-submit:hover { background: #0c7569; }
+    .rla-submit i { width: 1rem; height: 1rem; flex: 0 0 auto; }
+    .rla-modal-backdrop { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; padding: 1rem; background: rgba(14, 37, 31, .48); }
+    .rla-modal-backdrop.is-open { display: flex; }
+    .rla-modal-dialog { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; width: min(100%, 640px); max-height: min(92vh, 860px); overflow: hidden; border: 1px solid var(--rla-line); border-radius: 10px; background: #fff; box-shadow: 0 24px 70px rgba(10, 40, 31, .24); }
+    .rla-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--rla-line); padding: 1.1rem 1.2rem .8rem; }
+    .rla-modal-header h2 { margin: 0; color: #14352d; font-size: 1.05rem; font-weight: 700; }
+    .rla-modal-header p { margin: .2rem 0 0; color: var(--rla-muted); font-size: .78rem; }
+    .rla-modal-close { display: inline-grid; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border: 1px solid #e0e0e0; border-radius: 50%; padding: 0; background: #fff; color: #666; cursor: pointer; }
+    .rla-modal-close:hover { background: var(--rla-soft); }
+    .rla-modal-close i, .rla-modal-close svg { width: 1rem; height: 1rem; }
+    .rla-modal-body { overflow-y: auto; padding: 1rem 1.1rem 1.1rem; }
+    .rla-modal-body .rla-fields { gap: .75rem; }
+    .rla-modal-actions { display: flex; align-items: center; justify-content: flex-end; gap: .7rem; flex: 0 0 auto; margin: 0; padding: 1rem 1.2rem 1.2rem; border-top: 1px solid #deefe8; background: #fff; }
+    .rla-cancel { min-height: 3.2rem; border: 1px solid #d4e9e1; border-radius: 999px; background: #fff; padding: .75rem 1rem; color: #1b4f43; font: inherit; font-size: .9rem; font-weight: 700; cursor: pointer; }
+    .rla-cancel:hover { background: var(--rla-soft); }
+    .rla-modal-save { min-height: 3.2rem; border-radius: 999px; padding: .75rem 1.2rem; font-size: .9rem; }
+    body.rla-modal-open { overflow: hidden; }
+    .rla-preview-backdrop { position: fixed; inset: 0; z-index: 120; display: none; place-items: center; padding: 1rem; background: rgba(14, 37, 31, .58); }
+    .rla-preview-backdrop.is-open { display: grid; }
+    .rla-preview-dialog { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; width: min(100%, 900px); max-height: min(90vh, 900px); overflow: hidden; border: 1px solid var(--rla-line); border-radius: 10px; background: #fff; box-shadow: 0 24px 70px rgba(10, 40, 31, .28); }
+    .rla-preview-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--rla-line); padding: .9rem 1rem; }
+    .rla-preview-header h2 { margin: 0; color: #14352d; font-size: 1rem; font-weight: 700; overflow-wrap: anywhere; }
+    .rla-preview-header p { margin: .2rem 0 0; color: var(--rla-muted); font-size: .76rem; }
+    .rla-preview-body { display: grid; min-height: 0; gap: .8rem; overflow: auto; padding: 1rem; }
+    .rla-preview-stage { display: grid; width: 100%; height: min(64vh, 650px); min-height: 250px; place-items: center; overflow: hidden; border: 1px solid #dcebe5; border-radius: 6px; background: #f7fbf9; color: var(--rla-muted); }
+    .rla-preview-stage img, .rla-preview-stage video, .rla-preview-stage iframe { display: block; width: 100%; height: 100%; border: 0; object-fit: contain; background: #12211d; }
+    .rla-preview-stage audio { width: min(90%, 480px); }
+    .rla-preview-message { max-width: 34rem; padding: 1rem; text-align: center; }
+    .rla-preview-message strong { display: block; margin-bottom: .35rem; color: #173b32; }
+    .rla-preview-description { margin: 0; color: #40584f; font-size: .84rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .rla-preview-footer { display: flex; gap: .75rem; border-top: 1px solid var(--rla-line); padding: 1rem; }
+    .rla-preview-footer .rla-cancel,
+    .rla-preview-footer .rla-action { display: inline-flex; flex: 1 1 0; min-width: 0; min-height: 3.2rem; align-items: center; justify-content: center; border: 1px solid #dbe2ea; border-radius: .625rem; padding: .75rem 1rem; font: inherit; font-size: .9rem; font-weight: 700; text-align: center; }
+    .rla-preview-footer .rla-cancel { background: #fff; color: #172033; }
+    .rla-preview-footer .rla-cancel:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .rla-preview-footer .rla-action { border-color: #0f9b8e; background: #0f9b8e; color: #fff; }
+    .rla-preview-footer .rla-action:hover { border-color: #0b756c; background: #0b756c; color: #fff; }
+    body.rla-preview-open { overflow: hidden; }
+    .rla-delete-backdrop { position: fixed; inset: 0; z-index: 140; display: none; align-items: center; justify-content: center; padding: 1rem; background: rgba(14, 37, 31, .58); }
+    .rla-delete-backdrop.is-open { display: flex; }
+    .rla-delete-dialog { display: grid; grid-template-rows: auto 1fr auto; width: min(100%, 560px); max-height: min(90vh, 600px); overflow: hidden; border: 1px solid var(--rla-line); border-radius: 10px; background: #fff; box-shadow: 0 24px 70px rgba(10, 40, 31, .28); }
+    .rla-delete-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #dcebe5; padding: 1rem 1.1rem; }
+    .rla-delete-header h2 { margin: 0; color: #173b32; font-size: 1.05rem; font-weight: 700; }
+    .rla-delete-body { display: grid; align-content: start; gap: .5rem; overflow-y: auto; padding: 1.1rem; }
+    .rla-delete-body p { margin: 0; color: #294d43; line-height: 1.5; }
+    .rla-delete-resource-name { color: #173b32; font-weight: 700; overflow-wrap: anywhere; }
+    .rla-delete-actions { display: flex; justify-content: flex-end; gap: .6rem; border-top: 1px solid #dcebe5; padding: .85rem 1.1rem; }
+    .rla-delete-actions button { min-height: 2.7rem; border: 1px solid #d4e9e1; border-radius: 6px; background: #fff; padding: .55rem .9rem; color: #1b4f43; font: inherit; font-weight: 700; cursor: pointer; }
+    .rla-delete-actions .rla-delete-confirm { border-color: #b42318; background: #b42318; color: #fff; }
+    .rla-delete-actions .rla-delete-confirm:hover { border-color: #912018; background: #912018; }
+    .rla-tools { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, 190px); align-items: stretch; gap: .6rem; margin-bottom: .8rem; }
+    .rla-search-wrap { position: relative; display: block; min-width: 0; }
+    .rla-search-wrap i, .rla-search-wrap svg { position: absolute; top: 50%; left: .65rem; width: 1rem; height: 1rem; transform: translateY(-50%); color: #71877e; pointer-events: none; }
+    .rla-tools .rla-control { height: 3.2rem; min-height: 3.2rem; }
+    .rla-search { display: block; padding-left: 2rem; }
+    .rla-resource-list { display: grid; }
+    .rla-resource { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .8rem; align-items: center; border-top: 1px solid var(--rla-line); padding: .85rem .15rem; }
+    .rla-resource[hidden] { display: none; }
+    .rla-resource h3 { margin: 0; color: var(--rla-ink); font-size: .88rem; font-weight: 700; overflow-wrap: anywhere; }
+    .rla-meta { display: flex; flex-wrap: wrap; gap: .35rem .65rem; margin-top: .3rem; color: var(--rla-muted); font-size: .74rem; }
+    .rla-status { font-weight: 700; }
+    .rla-status[data-published="true"] { color: #07806f; }
+    .rla-status[data-published="false"] { color: #a15b14; }
+    .rla-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .4rem; }
+    .rla-actions form { margin: 0; }
+    .rla-action { min-height: 2.15rem; border: 1px solid #cfe3db; border-radius: 6px; background: #fff; padding: .35rem .6rem; color: var(--rla-ink); font: inherit; font-size: .75rem; font-weight: 700; text-decoration: none; cursor: pointer; }
+    .rla-action:hover { background: var(--rla-soft); }
+    .rla-action-danger { color: #a33128; border-color: #f0ceca; }
+    .rla-empty { display: grid; min-height: 220px; place-content: center; justify-items: center; gap: .45rem; border: 1px dashed #cfe3db; border-radius: 8px; background: #f8fcfa; padding: 1.25rem; text-align: center; color: var(--rla-muted); }
+    .rla-empty i { width: 1.5rem; height: 1.5rem; color: #438674; }
+    .rla-empty strong { color: var(--rla-ink); font-size: .88rem; }
+    .rla-empty p { margin: 0; font-size: .78rem; }
+    .rla-empty[hidden] { display: none; }
+    .rla-results-count { margin: 0 0 .6rem; color: var(--rla-muted); font-size: .74rem; }
+    @media (max-width: 767px) {
+        .rla-modal-backdrop { align-items: flex-start; overflow-y: auto; padding: 100px .5rem 1rem; }
+        .rla-modal-dialog { max-height: calc(100dvh - 100px - 1rem); }
+        .rla-preview-backdrop { align-items: start; overflow-y: auto; padding: 100px .5rem 1rem; }
+        .rla-preview-dialog { max-height: calc(100dvh - 100px - 1rem); }
+        .rla-preview-stage { height: 58dvh; min-height: 220px; }
+        .rla-delete-backdrop { align-items: flex-start; overflow-y: auto; padding: 100px .75rem 1rem; }
+        .rla-delete-dialog { max-height: calc(100dvh - 100px - 1rem); }
+    }
+    @media (max-width: 560px) { .rla-page { gap: .8rem; } .rla-panel { padding: .85rem; } .rla-panel-heading { display: grid; grid-template-columns: minmax(0, 1fr); gap: .65rem; } .rla-panel-title, .rla-panel-title h2 { white-space: nowrap; } .rla-panel-heading > .rla-submit { justify-self: end; margin-top: .15rem; } .rla-tools { grid-template-columns: 1fr; } .rla-resource { grid-template-columns: 1fr; } .rla-actions { justify-content: flex-start; } .rla-modal-dialog { border-radius: 10px; } .rla-modal-body { padding: .85rem; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="rla-page" aria-label="Resource library management">
+    <section id="rla-manage-panel" class="rla-panel rla-list-panel" aria-labelledby="rla-manage-title">
+            <div class="rla-panel-heading">
+                <div class="rla-panel-title">
+                    <h2 id="rla-manage-title">Manage resources</h2>
+                    <span class="rla-count">{{ resources|length }}</span>
+                </div>
+                <button class="rla-submit" type="button" data-rla-open-modal><i data-lucide="plus" aria-hidden="true"></i>Add resource</button>
+            </div>
+            <div class="rla-tools">
+                <label class="rla-search-wrap">
+                    <i data-lucide="search" aria-hidden="true"></i>
+                    <input id="rla-search" class="rla-control rla-search" type="search" placeholder="Search resources" aria-label="Search resources" />
+                </label>
+                <div class="rla-picker" data-rla-picker data-select-id="rla-category-filter">
+                    <select id="rla-category-filter" class="rla-native-select" tabindex="-1" aria-hidden="true">
+                        <option value="">All categories</option>
+                        {% for value, label in resource_form.category.field.choices %}
+                            {% if value %}<option value="{{ value }}">{{ label }}</option>{% endif %}
+                        {% endfor %}
+                    </select>
+                    <details class="rla-picker-details">
+                        <summary class="rla-control" aria-controls="rla-filter-category-options" aria-expanded="false">
+                            <span class="rla-picker-label" data-rla-picker-label>All categories</span>
+                            <i class="rla-picker-chevron" data-lucide="chevron-down" aria-hidden="true"></i>
+                        </summary>
+                        <div id="rla-filter-category-options" class="rla-picker-menu" role="listbox" aria-label="Filter by category">
+                            <button class="rla-picker-option" type="button" role="option" data-rla-picker-value="" aria-selected="true">All categories</button>
+                            {% for value, label in resource_form.category.field.choices %}
+                                {% if value %}<button class="rla-picker-option" type="button" role="option" data-rla-picker-value="{{ value }}" aria-selected="false">{{ label }}</button>{% endif %}
+                            {% endfor %}
+                        </div>
+                    </details>
+                </div>
+            </div>
+            {% if resources %}<p class="rla-results-count" id="rla-results-count">{{ resources|length }} resources</p>{% endif %}
+            <div class="rla-resource-list">
+                {% for resource in resources %}
+                <article class="rla-resource" data-rla-resource data-title="{{ resource.title|lower }}" data-description="{{ resource.description|lower }}" data-category="{{ resource.category }}">
+                    <div>
+                        <h3>{{ resource.title }}</h3>
+                        <div class="rla-meta">
+                            <span>{{ resource.category_label }}</span>
+                            <span>{{ resource.resource_type }}</span>
+                            <span class="rla-status" data-published="{{ resource.is_published|yesno:'true,false' }}">{{ resource.is_published|yesno:'Published,Hidden' }}</span>
+                        </div>
+                    </div>
+                    <div class="rla-actions">
+                        {% if resource.source_url %}<button class="rla-action" type="button" data-rla-preview
+                            data-resource-title="{{ resource.title }}"
+                            data-resource-category="{{ resource.category_label }}"
+                            data-resource-type="{{ resource.resource_type }}"
+                            data-resource-description="{{ resource.description }}"
+                            data-preview-kind="{{ resource.preview_kind }}"
+                            data-preview-url="{% if resource.preview_kind == 'pdf' %}{% url 'volunteer_resource_library_pdf_preview' resource.pk %}{% else %}{{ resource.source_url }}{% endif %}"
+                            data-original-url="{{ resource.source_url }}">Open</button>{% endif %}
+                        <button class="rla-action" type="button" data-rla-edit-resource
+                            data-resource-id="{{ resource.pk }}"
+                            data-title="{{ resource.title }}"
+                            data-category="{{ resource.category }}"
+                            data-custom-category="{{ resource.custom_category }}"
+                            data-description="{{ resource.description }}"
+                            data-external-url="{{ resource.external_url }}"
+                            data-published="{{ resource.is_published|yesno:'true,false' }}"
+                            data-file-name="{{ resource.source_name }}"
+                            aria-label="Edit {{ resource.title }}">Edit</button>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="resource_id" value="{{ resource.pk }}">
+                            <button class="rla-action" type="submit" name="action" value="toggle">{{ resource.is_published|yesno:'Hide,Publish' }}</button>
+                        </form>
+                        <button class="rla-action rla-action-danger" type="button" data-rla-delete-open data-resource-id="{{ resource.pk }}" data-resource-title="{{ resource.title }}" aria-label="Delete {{ resource.title }}">Delete</button>
+                    </div>
+                </article>
+                {% empty %}
+                <div class="rla-empty">
+                    <i data-lucide="library-big" aria-hidden="true"></i>
+                    <strong>No resources yet</strong>
+                    <p>Add a guide, file, or link for volunteers to use.</p>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="rla-empty" id="rla-filter-empty" hidden>
+                <i data-lucide="search-x" aria-hidden="true"></i>
+                <strong>No matching resources</strong>
+                <p>Try another title or category.</p>
+            </div>
+        </section>
+</main>
+
+<div id="rla-add-modal" class="rla-modal-backdrop{% if resource_form.errors %} is-open{% endif %}" aria-hidden="{% if resource_form.errors %}false{% else %}true{% endif %}">
+    <section class="rla-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="rla-modal-title" tabindex="-1">
+        <header class="rla-modal-header">
+            <div>
+                <h2 id="rla-modal-title">{% if editing_resource %}Edit resource{% else %}Add a resource{% endif %}</h2>
+                <p id="rla-modal-description">{% if editing_resource %}Update the resource details or replace its file.{% else %}Publish a guide, file, or link for volunteers.{% endif %}</p>
+            </div>
+            <button class="rla-modal-close" type="button" data-rla-close-modal aria-label="Close resource dialog"><i data-lucide="x" aria-hidden="true"></i></button>
+        </header>
+        <div class="rla-modal-body">
+            <form id="rla-resource-form" method="post" enctype="multipart/form-data" class="rla-fields">
+                {% csrf_token %}
+                <input id="rla-form-action" type="hidden" name="action" value="{% if editing_resource %}update{% else %}create{% endif %}">
+                <input id="rla-form-resource-id" type="hidden" name="resource_id" value="{% if editing_resource %}{{ editing_resource.pk }}{% endif %}">
+                {% if resource_form.non_field_errors %}<div class="rla-form-error" role="alert">{{ resource_form.non_field_errors }}</div>{% endif %}
+                <div class="rla-field">
+                    <label for="{{ resource_form.title.id_for_label }}">Title</label>
+                    {{ resource_form.title }}
+                    {% for error in resource_form.title.errors %}<p class="rla-errors">{{ error }}</p>{% endfor %}
+                </div>
+                <div class="rla-field">
+                    <label for="rla-resource-category-trigger">Category</label>
+                    {{ resource_form.category }}
+                    <div class="rla-picker" data-rla-picker data-select-id="{{ resource_form.category.id_for_label }}">
+                        <details class="rla-picker-details">
+                            <summary id="rla-resource-category-trigger" class="rla-control" aria-controls="rla-resource-category-options" aria-expanded="false">
+                                <span class="rla-picker-label" data-rla-picker-label>Select a category</span>
+                                <i class="rla-picker-chevron" data-lucide="chevron-down" aria-hidden="true"></i>
+                            </summary>
+                            <div id="rla-resource-category-options" class="rla-picker-menu" role="listbox" aria-label="Resource category">
+                                {% for value, label in resource_form.category.field.choices %}
+                                    <button class="rla-picker-option" type="button" role="option" data-rla-picker-value="{{ value }}" aria-selected="{% if value == resource_form.category.value %}true{% else %}false{% endif %}">{{ label }}</button>
+                                {% endfor %}
+                            </div>
+                        </details>
+                    </div>
+                    {% for error in resource_form.category.errors %}<p class="rla-errors">{{ error }}</p>{% endfor %}
+                </div>
+                <div id="rla-custom-category-field" class="rla-field" {% if resource_form.category.value != 'other' %}hidden{% endif %}>
+                    <label for="{{ resource_form.custom_category.id_for_label }}">Category name</label>
+                    {{ resource_form.custom_category }}
+                    {% for error in resource_form.custom_category.errors %}<p class="rla-errors">{{ error }}</p>{% endfor %}
+                </div>
+                <div class="rla-field">
+                    <label for="{{ resource_form.description.id_for_label }}">Description</label>
+                    {{ resource_form.description }}
+                    {% for error in resource_form.description.errors %}<p class="rla-errors">{{ error }}</p>{% endfor %}
+                </div>
+                <div class="rla-field">
+                    <label for="{{ resource_form.file_upload.id_for_label }}">Upload a file</label>
+                    {{ resource_form.file_upload }}
+                    <span class="rla-help">Up to 25 MB. Documents, images, audio, and video are supported.</span>
+                    <span id="rla-current-file" class="rla-help"{% if not editing_resource_file_name %} hidden{% endif %}>{% if editing_resource_file_name %}Current file: {{ editing_resource_file_name }}. Leave blank to keep it.{% endif %}</span>
+                    <label id="rla-clear-file-option" class="rla-publish"{% if not editing_resource_file_name %} hidden{% endif %}><input id="id_remove_current_file" type="checkbox" name="remove_current_file" value="on"{% if request.POST.remove_current_file %} checked{% endif %}> Remove current file to use an external link</label>
+                    {% for error in resource_form.file_upload.errors %}<p class="rla-errors">{{ error }}</p>{% endfor %}
+                </div>
+                <div class="rla-field">
+                    <label for="{{ resource_form.external_url.id_for_label }}">Or use an external link</label>
+                    {{ resource_form.external_url }}
+                    {% for error in resource_form.external_url.errors %}<p class="rla-errors">{{ error }}</p>{% endfor %}
+                </div>
+                <label class="rla-publish">{{ resource_form.is_published }} Publish to volunteers immediately</label>
+            </form>
+        </div>
+        <footer id="rla-modal-footer" class="rla-modal-actions">
+            <button class="rla-cancel" type="button" data-rla-close-modal>Cancel</button>
+            <button id="rla-modal-submit" class="rla-submit rla-modal-save" type="submit" form="rla-resource-form">{% if editing_resource %}Save changes{% else %}Add resource{% endif %}</button>
+        </footer>
+    </section>
+</div>
+
+<div id="rla-preview-backdrop" class="rla-preview-backdrop" aria-hidden="true">
+    <section id="rla-preview-dialog" class="rla-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="rla-preview-title" aria-describedby="rla-preview-description" tabindex="-1">
+        <header class="rla-preview-header">
+            <div>
+                <h2 id="rla-preview-title">Resource preview</h2>
+                <p><span id="rla-preview-category"></span> · <span id="rla-preview-type"></span></p>
+            </div>
+            <button class="rla-modal-close" type="button" data-rla-preview-close aria-label="Close preview"><i data-lucide="x" aria-hidden="true"></i></button>
+        </header>
+        <div class="rla-preview-body">
+            <div id="rla-preview-stage" class="rla-preview-stage" aria-live="polite"></div>
+            <p id="rla-preview-description" class="rla-preview-description"></p>
+        </div>
+        <footer class="rla-preview-footer">
+            <button class="rla-cancel" type="button" data-rla-preview-close>Close</button>
+            <a id="rla-preview-original" class="rla-action" href="#" target="_blank" rel="noopener noreferrer">Open original</a>
+        </footer>
+    </section>
+</div>
+
+<div id="rla-delete-backdrop" class="rla-delete-backdrop" aria-hidden="true">
+    <section id="rla-delete-dialog" class="rla-delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="rla-delete-title" aria-describedby="rla-delete-description" tabindex="-1">
+        <header class="rla-delete-header">
+            <h2 id="rla-delete-title">Delete resource?</h2>
+            <button class="rla-modal-close" type="button" data-rla-delete-close aria-label="Close delete confirmation"><i data-lucide="x" aria-hidden="true"></i></button>
+        </header>
+        <div class="rla-delete-body">
+            <p id="rla-delete-description">This will permanently delete <span id="rla-delete-resource-name" class="rla-delete-resource-name"></span> and its uploaded file. This action cannot be undone.</p>
+        </div>
+        <footer class="rla-delete-actions">
+            <button type="button" data-rla-delete-close>Cancel</button>
+            <form id="rla-delete-form" method="post">
+                {% csrf_token %}
+                <input id="rla-delete-resource-id" type="hidden" name="resource_id" value="">
+                <input type="hidden" name="action" value="delete">
+            </form>
+            <button class="rla-delete-confirm" type="submit" form="rla-delete-form">Delete resource</button>
+        </footer>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var modal = document.getElementById("rla-add-modal");
+    var modalDialog = modal ? modal.querySelector("[role='dialog']") : null;
+    var resourceForm = document.getElementById("rla-resource-form");
+    var modalTitle = document.getElementById("rla-modal-title");
+    var modalDescription = document.getElementById("rla-modal-description");
+    var modalSubmit = document.getElementById("rla-modal-submit");
+    var formAction = document.getElementById("rla-form-action");
+    var formResourceId = document.getElementById("rla-form-resource-id");
+    var currentFile = document.getElementById("rla-current-file");
+    var clearFileOption = document.getElementById("rla-clear-file-option");
+    var clearFileCheckbox = document.getElementById("id_remove_current_file");
+    var fileUploadInput = document.getElementById("id_file_upload");
+    var previousFocus = null;
+
+    document.querySelectorAll("[data-rla-picker]").forEach(function (picker) {
+        var select = document.getElementById(picker.getAttribute("data-select-id"));
+        var details = picker.querySelector(".rla-picker-details");
+        var summary = details ? details.querySelector("summary") : null;
+        var label = picker.querySelector("[data-rla-picker-label]");
+        var options = Array.prototype.slice.call(picker.querySelectorAll("[data-rla-picker-value]"));
+        if (!select || !details || !summary || !label) return;
+
+        function syncPicker() {
+            var selectedOption = select.options[select.selectedIndex];
+            label.textContent = selectedOption ? selectedOption.textContent.trim() : "";
+            options.forEach(function (option) {
+                option.setAttribute("aria-selected", option.getAttribute("data-rla-picker-value") === select.value ? "true" : "false");
+            });
+        }
+
+        options.forEach(function (option) {
+            option.addEventListener("click", function () {
+                select.value = option.getAttribute("data-rla-picker-value");
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+                syncPicker();
+                details.open = false;
+                summary.focus();
+            });
+        });
+        details.addEventListener("toggle", function () {
+            summary.setAttribute("aria-expanded", details.open ? "true" : "false");
+        });
+        select.addEventListener("change", syncPicker);
+        syncPicker();
+    });
+
+    function openAddModal() {
+        if (!modal || !modalDialog) return;
+        if (resourceForm) resourceForm.reset();
+        if (formAction) formAction.value = "create";
+        if (formResourceId) formResourceId.value = "";
+        if (modalTitle) modalTitle.textContent = "Add a resource";
+        if (modalDescription) modalDescription.textContent = "Publish a guide, file, or link for volunteers.";
+        if (modalSubmit) modalSubmit.textContent = "Add resource";
+        if (currentFile) {
+            currentFile.hidden = true;
+            currentFile.textContent = "";
+        }
+        if (clearFileOption) clearFileOption.hidden = true;
+        if (clearFileCheckbox) clearFileCheckbox.checked = false;
+        if (formCategory) formCategory.dispatchEvent(new Event("change", { bubbles: true }));
+        previousFocus = document.activeElement;
+        modal.classList.add("is-open");
+        modal.setAttribute("aria-hidden", "false");
+        document.body.classList.add("rla-modal-open");
+        var firstField = modal.querySelector("input:not([type='hidden']), select, textarea");
+        (firstField || modalDialog).focus();
+    }
+
+    function openEditModal(button) {
+        if (!modal || !modalDialog || !resourceForm) return;
+        formAction.value = "update";
+        formResourceId.value = button.dataset.resourceId || "";
+        document.getElementById("id_title").value = button.dataset.title || "";
+        formCategory.value = button.dataset.category || "";
+        document.getElementById("id_custom_category").value = button.dataset.customCategory || "";
+        document.getElementById("id_description").value = button.dataset.description || "";
+        document.getElementById("id_external_url").value = button.dataset.externalUrl || "";
+        document.getElementById("id_is_published").checked = button.dataset.published === "true";
+        fileUploadInput.value = "";
+        if (clearFileCheckbox) clearFileCheckbox.checked = false;
+        formCategory.dispatchEvent(new Event("change", { bubbles: true }));
+        if (modalTitle) modalTitle.textContent = "Edit resource";
+        if (modalDescription) modalDescription.textContent = "Update the resource details or replace its file.";
+        if (modalSubmit) modalSubmit.textContent = "Save changes";
+        if (currentFile) {
+            var fileName = button.dataset.fileName || "";
+            currentFile.hidden = !fileName;
+            currentFile.textContent = fileName ? "Current file: " + fileName + ". Leave blank to keep it." : "";
+            if (clearFileOption) clearFileOption.hidden = !fileName;
+        }
+        previousFocus = button;
+        modal.classList.add("is-open");
+        modal.setAttribute("aria-hidden", "false");
+        document.body.classList.add("rla-modal-open");
+        document.getElementById("id_title").focus();
+    }
+
+    if (fileUploadInput && clearFileCheckbox) {
+        fileUploadInput.addEventListener("change", function () {
+            if (fileUploadInput.files.length) clearFileCheckbox.checked = false;
+        });
+    }
+
+    function closeAddModal() {
+        if (!modal || !modalDialog) return;
+        modal.classList.remove("is-open");
+        modal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("rla-modal-open");
+        if (previousFocus && typeof previousFocus.focus === "function") previousFocus.focus();
+    }
+
+    document.querySelectorAll("[data-rla-open-modal]").forEach(function (button) {
+        button.addEventListener("click", openAddModal);
+    });
+    document.querySelectorAll("[data-rla-edit-resource]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            openEditModal(button);
+        });
+    });
+    document.querySelectorAll("[data-rla-close-modal]").forEach(function (button) {
+        button.addEventListener("click", closeAddModal);
+    });
+    if (modal) {
+        modal.addEventListener("click", function (event) {
+            if (event.target === modal) closeAddModal();
+        });
+    }
+    document.addEventListener("keydown", function (event) {
+        if (!modal || !modal.classList.contains("is-open")) return;
+        if (event.key === "Escape") {
+            event.preventDefault();
+            closeAddModal();
+            return;
+        }
+        if (event.key !== "Tab" || !modalDialog) return;
+        var focusable = Array.prototype.slice.call(modalDialog.querySelectorAll("a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"));
+        if (!focusable.length) return;
+        var firstFocusable = focusable[0];
+        var lastFocusable = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === firstFocusable) {
+            event.preventDefault();
+            lastFocusable.focus();
+        } else if (!event.shiftKey && document.activeElement === lastFocusable) {
+            event.preventDefault();
+            firstFocusable.focus();
+        }
+    });
+
+    if (modal && modal.classList.contains("is-open")) {
+        document.body.classList.add("rla-modal-open");
+        var invalidField = modal.querySelector(".rla-errors")?.previousElementSibling;
+        if (invalidField && typeof invalidField.focus === "function") invalidField.focus();
+    }
+
+    var search = document.getElementById("rla-search");
+    var category = document.getElementById("rla-category-filter");
+    var formCategory = document.getElementById("id_category");
+    var customCategoryField = document.getElementById("rla-custom-category-field");
+    var customCategoryInput = document.getElementById("id_custom_category");
+    var resources = Array.prototype.slice.call(document.querySelectorAll("[data-rla-resource]"));
+    var filterEmpty = document.getElementById("rla-filter-empty");
+    var resultsCount = document.getElementById("rla-results-count");
+
+    function updateCustomCategoryField() {
+        if (!formCategory || !customCategoryField || !customCategoryInput) return;
+        var isOther = formCategory.value === "other";
+        customCategoryField.hidden = !isOther;
+        customCategoryInput.required = isOther;
+        if (!isOther) customCategoryInput.value = "";
+    }
+
+    if (formCategory) {
+        formCategory.addEventListener("change", updateCustomCategoryField);
+        updateCustomCategoryField();
+    }
+
+    function updateResourceList() {
+        var query = String(search.value || "").trim().toLowerCase();
+        var selectedCategory = category.value;
+        var visibleCount = 0;
+
+        resources.forEach(function (resource) {
+            var searchableText = (resource.dataset.title + " " + resource.dataset.description).toLowerCase();
+            var matches = (!query || searchableText.includes(query))
+                && (!selectedCategory || resource.dataset.category === selectedCategory);
+            resource.hidden = !matches;
+            if (matches) visibleCount += 1;
+        });
+
+        if (resultsCount) {
+            resultsCount.textContent = visibleCount + (visibleCount === 1 ? " resource" : " resources");
+        }
+        if (filterEmpty) {
+            filterEmpty.hidden = visibleCount > 0 || resources.length === 0;
+        }
+    }
+
+    if (search && category) {
+        search.addEventListener("input", updateResourceList);
+        category.addEventListener("change", updateResourceList);
+    }
+
+    var previewBackdrop = document.getElementById("rla-preview-backdrop");
+    var previewDialog = document.getElementById("rla-preview-dialog");
+    var previewStage = document.getElementById("rla-preview-stage");
+    var previewOriginal = document.getElementById("rla-preview-original");
+    var previewPreviousFocus = null;
+
+    function showPreviewMessage(heading, message) {
+        var content = document.createElement("div");
+        content.className = "rla-preview-message";
+        var title = document.createElement("strong");
+        title.textContent = heading;
+        var description = document.createElement("span");
+        description.textContent = message;
+        content.append(title, description);
+        previewStage.replaceChildren(content);
+    }
+
+    function renderResourcePreview(kind, sourceUrl, title) {
+        previewStage.replaceChildren();
+        if (kind === "link") {
+            showPreviewMessage("External resource", "This link will open in a new tab.");
+            return;
+        }
+
+        var media;
+        if (kind === "pdf") {
+            media = document.createElement("iframe");
+            var pdfUrl = new URL(sourceUrl, window.location.href);
+            pdfUrl.hash = "page=1&pagemode=none&navpanes=0";
+            media.src = pdfUrl.toString();
+            media.title = title + " PDF preview";
+        } else if (kind === "image") {
+            media = document.createElement("img");
+            media.src = sourceUrl;
+            media.alt = title;
+            media.loading = "lazy";
+        } else if (kind === "video") {
+            media = document.createElement("video");
+            media.src = sourceUrl;
+            media.controls = true;
+            media.playsInline = true;
+            media.preload = "metadata";
+        } else if (kind === "audio") {
+            media = document.createElement("audio");
+            media.src = sourceUrl;
+            media.controls = true;
+            media.preload = "metadata";
+        } else {
+            showPreviewMessage("Preview unavailable", "This file type can’t be previewed in the browser. Use Open original to view it.");
+            return;
+        }
+
+        previewStage.appendChild(media);
+    }
+
+    function openResourcePreview(button) {
+        var title = button.dataset.resourceTitle || "Resource";
+        var kind = button.dataset.previewKind || "document";
+        var sourceUrl = button.dataset.previewUrl || "";
+        var originalUrl = button.dataset.originalUrl || sourceUrl;
+        document.getElementById("rla-preview-title").textContent = title;
+        document.getElementById("rla-preview-category").textContent = button.dataset.resourceCategory || "Resource";
+        document.getElementById("rla-preview-type").textContent = button.dataset.resourceType || "File";
+        document.getElementById("rla-preview-description").textContent = button.dataset.resourceDescription || "No description available.";
+        previewOriginal.href = originalUrl;
+        previewOriginal.textContent = kind === "link" ? "Open link" : "Open original";
+        renderResourcePreview(kind, sourceUrl, title);
+        previewPreviousFocus = button;
+        previewBackdrop.classList.add("is-open");
+        previewBackdrop.setAttribute("aria-hidden", "false");
+        document.body.classList.add("rla-preview-open");
+        previewBackdrop.querySelector("[data-rla-preview-close]").focus();
+    }
+
+    function closeResourcePreview() {
+        if (!previewBackdrop.classList.contains("is-open")) return;
+        previewStage.querySelectorAll("video, audio").forEach(function (media) {
+            media.pause();
+            media.removeAttribute("src");
+            media.load();
+        });
+        previewStage.replaceChildren();
+        previewBackdrop.classList.remove("is-open");
+        previewBackdrop.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("rla-preview-open");
+        if (previewPreviousFocus) previewPreviousFocus.focus();
+    }
+
+    document.querySelectorAll("[data-rla-preview]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            openResourcePreview(button);
+        });
+    });
+    document.querySelectorAll("[data-rla-preview-close]").forEach(function (button) {
+        button.addEventListener("click", closeResourcePreview);
+    });
+    previewBackdrop.addEventListener("click", function (event) {
+        if (event.target === previewBackdrop) closeResourcePreview();
+    });
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && previewBackdrop.classList.contains("is-open")) {
+            closeResourcePreview();
+        }
+    });
+
+    var deleteBackdrop = document.getElementById("rla-delete-backdrop");
+    var deleteDialog = document.getElementById("rla-delete-dialog");
+    var deleteResourceId = document.getElementById("rla-delete-resource-id");
+    var deleteResourceName = document.getElementById("rla-delete-resource-name");
+    var deletePreviousFocus = null;
+
+    function openDeleteConfirmation(button) {
+        deleteResourceId.value = button.dataset.resourceId || "";
+        deleteResourceName.textContent = button.dataset.resourceTitle || "this resource";
+        deletePreviousFocus = button;
+        deleteBackdrop.classList.add("is-open");
+        deleteBackdrop.setAttribute("aria-hidden", "false");
+        document.body.classList.add("rla-modal-open");
+        deleteBackdrop.querySelector("[data-rla-delete-close]").focus();
+    }
+
+    function closeDeleteConfirmation() {
+        if (!deleteBackdrop.classList.contains("is-open")) return;
+        deleteBackdrop.classList.remove("is-open");
+        deleteBackdrop.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("rla-modal-open");
+        if (deletePreviousFocus) deletePreviousFocus.focus();
+    }
+
+    document.querySelectorAll("[data-rla-delete-open]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            openDeleteConfirmation(button);
+        });
+    });
+    document.querySelectorAll("[data-rla-delete-close]").forEach(function (button) {
+        button.addEventListener("click", closeDeleteConfirmation);
+    });
+    deleteBackdrop.addEventListener("click", function (event) {
+        if (event.target === deleteBackdrop) closeDeleteConfirmation();
+    });
+    document.addEventListener("keydown", function (event) {
+        if (!deleteBackdrop.classList.contains("is-open")) return;
+        if (event.key === "Escape") {
+            closeDeleteConfirmation();
+            return;
+        }
+        if (event.key !== "Tab") return;
+        var focusable = Array.prototype.slice.call(deleteDialog.querySelectorAll("button:not([disabled])"));
+        if (!focusable.length) return;
+        var firstFocusable = focusable[0];
+        var lastFocusable = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === firstFocusable) {
+            event.preventDefault();
+            lastFocusable.focus();
+        } else if (!event.shiftKey && document.activeElement === lastFocusable) {
+            event.preventDefault();
+            firstFocusable.focus();
+        }
+    });
+
+    if (window.lucide && typeof window.lucide.createIcons === "function") {
+        window.lucide.createIcons();
+    }
+});
+</script>
+{% endblock %}

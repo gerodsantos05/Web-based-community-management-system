@@ -1,0 +1,819 @@
+{% load static %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
+<link rel="stylesheet" href="{% static 'css/profile-photo-cropper.css' %}">
+
+<header class="header" id="home">
+    <div class="container header-row">
+        <a class="brand" href="{% url 'home' %}" aria-label="HappYness Project home">
+            <span class="brand-dot" aria-hidden="true"></span>
+            <span>HappYness Project</span>
+        </a>
+
+        <nav class="header-nav" id="mobileNav" aria-label="Primary navigation">
+            <ul class="nav-list">
+                <li><a class="nav-link{% if nav_active == 'home' %} active{% endif %}" href="{% url 'home' %}">Home</a></li>
+                <li><a class="nav-link{% if nav_active == 'about' %} active{% endif %}" href="{% url 'about' %}">About</a></li>
+                <li><a class="nav-link{% if nav_active == 'products' %} active{% endif %}" href="{% url 'products' %}">Products</a></li>
+                <li><a class="nav-link{% if nav_active == 'contact' %} active{% endif %}" href="{% url 'contact' %}">Contact</a></li>
+                <li class="mobile-donate-item"><a id="openDonateModalMobile" class="nav-link donate-link{% if nav_active == 'donate' %} active{% endif %}" href="{% url 'donate' %}">Donate</a></li>
+            </ul>
+        </nav>
+
+        <div class="header-actions">
+            {% if request.user.is_authenticated %}
+            <div class="profile-menu">
+                <button class="profile-btn" id="profileMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Account">
+                    {% if request.user.userprofile and request.user.userprofile.avatar %}
+                        <img src="{{ request.user.userprofile.avatar.url }}" alt="{{ request.user.get_full_name|default:request.user.username }}" class="avatar-sm" />
+                    {% else %}
+                        <span class="avatar-fallback">{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}</span>
+                    {% endif %}
+                    <span class="profile-name">{{ request.user.first_name|default:request.user.username }}</span>
+                    <i data-lucide="chevron-down" class="profile-caret"></i>
+                </button>
+
+                <div class="profile-dropdown hidden" id="profileDropdown" role="menu" aria-hidden="true">
+                    <button type="button" class="dropdown-item" onclick="openProfileSettingsModal()">Settings</button>
+                    <form method="post" action="{% url 'logout' %}" style="margin:0;">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-item">Sign out</button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <button class="btn btn-signin" id="openSignInModal" type="button">Sign In</button>
+            {% endif %}
+
+            <button class="menu-btn" id="menuBtn" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobileNav">
+                <i data-lucide="menu"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+{% if False %}
+<!-- Legacy Donate Modal -->
+<div id="donateModal" class="donate-modal hidden" aria-hidden="true">
+    <div class="donate-overlay" id="donateOverlay"></div>
+    <div class="donate-panel" role="dialog" aria-modal="true" aria-labelledby="donateTitle">
+        <div id="donateModalHeader">
+            <button type="button" class="donate-close" id="donateClose" aria-label="Close donate modal">✕</button>
+            <h2 id="donateTitle">Donate to HappYness Project</h2>
+        </div>
+        <div id="donateModalScrollArea" class="donate-scroll-area">
+            <form id="donateForm" class="donate-form" novalidate>
+            {% csrf_token %}
+            <div class="donate-row">
+                <label class="donate-label">Suggested amount</label>
+                <div class="donate-amounts">
+                    <button type="button" class="amt-btn" data-amt="100">₱100</button>
+                    <button type="button" class="amt-btn" data-amt="300">₱300</button>
+                    <button type="button" class="amt-btn" data-amt="500">₱500</button>
+                    <button type="button" class="amt-btn" data-amt="1000">₱1,000</button>
+                </div>
+                <input type="number" id="donateCustomAmt" name="custom_amount" placeholder="Custom amount (PHP)" class="donate-input" min="1" />
+                <p id="donateAmountError" class="donate-error hidden">Please select or enter a donation amount.</p>
+            </div>
+
+            <div class="donate-row">
+                <label class="donate-label">Send your donation via</label>
+                <div class="donate-methods">
+                    <div class="method-card selected" data-pay="gcash" role="button" tabindex="0">
+                        <span class="method-icon">
+                            <!-- wallet icon (blue) -->
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <rect x="2" y="6" width="20" height="12" rx="2" stroke="#0f61b6" stroke-width="1.5" fill="#eaf6ff" />
+                                <circle cx="18" cy="12" r="1.6" fill="#0f61b6" />
+                            </svg>
+                        </span>
+                        <span class="method-inner">
+                            <strong>GCash</strong>
+                            <small>Send to number</small>
+                        </span>
+                    </div>
+                    <div class="method-card" data-pay="bank" role="button" tabindex="0">
+                        <span class="method-icon">
+                            <!-- bank icon -->
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M12 3L2 8v2h20V8L12 3z" stroke="#6b7280" stroke-width="1.2" fill="#fff"/>
+                                <rect x="4" y="11" width="16" height="7" rx="1" stroke="#6b7280" stroke-width="1.2" fill="#fff"/>
+                                <path d="M8 11v7M12 11v7M16 11v7" stroke="#6b7280" stroke-width="1.2"/>
+                            </svg>
+                        </span>
+                        <span class="method-inner">
+                            <strong>Bank transfer</strong>
+                            <small>BDO / BPI / etc.</small>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="gcashDetails" class="donate-details">
+                <div class="detail-row"><span class="detail-label">GCash number</span><span class="detail-value" id="gcashNumber">0917-000-0000</span><button type="button" class="copy-btn" data-copy="#gcashNumber">Copy</button></div>
+                <div class="detail-row"><span class="detail-label">Account name</span><span class="detail-value" id="gcashName">HappYness Project</span><button type="button" class="copy-btn" data-copy="#gcashName">Copy</button></div>
+            </div>
+
+            <div id="bankDetails" class="donate-details hidden">
+                <div class="detail-row"><span class="detail-label">Bank</span><span class="detail-value" id="bankName">Sample Bank</span><button type="button" class="copy-btn" data-copy="#bankName">Copy</button></div>
+                <div class="detail-row"><span class="detail-label">Account number</span><span class="detail-value" id="bankAcct">0123456789</span><button type="button" class="copy-btn" data-copy="#bankAcct">Copy</button></div>
+                <div class="detail-row"><span class="detail-label">Account name</span><span class="detail-value" id="bankAcctName">HappYness Project</span><button type="button" class="copy-btn" data-copy="#bankAcctName">Copy</button></div>
+            </div>
+
+            <div class="donate-row">
+                <label class="donate-label">Name (optional)</label>
+                <input type="text" name="donor_name" placeholder="Leave blank to stay anonymous" class="donate-input" />
+            </div>
+
+            <div class="donate-row">
+                <label class="donate-label">Reference / Message (optional)</label>
+                <input type="text" name="donor_message" placeholder="Reference or message" class="donate-input" />
+            </div>
+
+            <div class="donate-row">
+                <label class="donate-label">Upload your transaction receipt *</label>
+                <div class="upload-box" id="uploadBox" role="button" tabindex="0">
+                    <div class="upload-icon">
+                        <!-- purple upload/receipt icon -->
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <rect x="6" y="3" width="12" height="14" rx="2" fill="#f3e8ff" stroke="#7c3aed" stroke-width="1" />
+                            <path d="M9 9h6M9 12h6" stroke="#7c3aed" stroke-width="1.2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="upload-title">Tap to attach screenshot</div>
+                    <div class="upload-sub">GCash or bank transfer receipt</div>
+                </div>
+                <input type="file" id="donateReceipt" accept="image/*" class="donate-input visually-hidden" />
+            </div>
+
+            <div class="donate-row">
+                <button type="submit" id="donateSubmit" class="donate-submit" disabled>Attach receipt to enable</button>
+            </div>
+            <p class="donate-note">We'll review your receipt and acknowledge your donation shortly.</p>
+        </form>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+
+<style>
+/* Donate modal styles - compact and responsive */
+.donate-modal { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: start center; overflow: hidden; padding: calc(var(--public-header-height, 78px) + 1rem) 1rem 1rem; }
+.donate-modal.hidden { display: none; }
+.donate-overlay { position: fixed; inset: 0; background: rgba(3,6,23,0.35); z-index: 1190; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.donate-panel { position: relative; background: #fff; max-width: 500px; width: 100%; border-radius: 12px; padding: 1rem 1rem 0.9rem; box-shadow: 0 30px 60px rgba(2,6,23,0.3); z-index: 1210; margin-top: 0; max-height: calc(100vh - var(--public-header-height, 78px) - 2rem); overflow-y: auto; box-sizing: border-box; -webkit-overflow-scrolling: touch; }
+.donate-panel h2 { margin: 0 0 0.7rem 0; font-size: 1rem; font-weight: 800; color: #123528; }
+.donate-close { position: absolute; right: 10px; top: 10px; border: 0; background: transparent; font-size: 18px; cursor: pointer; color: #6b7280; }
+.donate-form { display: grid; gap: 0.75rem; }
+.donate-scroll-area { display: grid; gap: 0.7rem; }
+.donate-row { display: flex; flex-direction: column; gap: 0.35rem; }
+.donate-label { font-weight: 600; color: #6b7280; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.6px; }
+.donate-amounts { display: flex; gap: 6px; flex-wrap: wrap; }
+.amt-btn {
+    background: #f3f7f6;
+    border: 1px solid #dfe9e4;
+    padding: 7px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #1d4d43;
+    transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+.amt-btn.active {
+    background: #eafaf5;
+    border-color: #1D9E75;
+    color: #0f7a5c;
+    box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.08);
+}
+.donate-input { border: 1px solid #e6eef0; padding: 8px; border-radius: 6px; font-size: 0.85rem; }
+.donate-input.error { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08); }
+.donate-input::placeholder { font-size: 0.8rem; }
+.donate-error { color: #dc2626; font-size: 0.8rem; margin: 0; }
+.donate-methods { display: flex; gap: 0.75rem; font-size: 0.85rem; }
+.donate-methods label { cursor: pointer; }
+.donate-details {
+    background: #f8faf8;
+    padding: 8px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;
+    opacity: 1;
+    max-height: 220px;
+    transition: opacity 180ms ease, max-height 180ms ease, padding 180ms ease;
+}
+.donate-details.hidden {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    pointer-events: none;
+}
+.detail-row { display: flex; gap: 6px; align-items: center; justify-content: space-between; font-size: 0.8rem; }
+.detail-label { color: #475569; font-weight: 600; }
+.detail-value { color: #0f5132; font-weight: 700; word-break: break-all; }
+.copy-btn { background: #e6f4ef; border: 0; padding: 4px 6px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
+.donate-submit {
+    background: #1D9E75;
+    color: #fff;
+    border: 0;
+    padding: 10px 14px;
+    border-radius: 999px;
+    font-weight: 800;
+    cursor: pointer;
+    font-size: 0.95rem;
+    width: 100%;
+    transition: background-color 180ms ease, opacity 180ms ease, transform 180ms ease;
+}
+.donate-submit.is-enabled { background: #1D9E75; }
+.donate-submit[disabled] {
+    background: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+    border: 1px solid #e6e9ec;
+}
+.donate-note { color: #475569; font-size: 0.75rem; margin-top: 0.3rem; }
+.hidden { display: none !important; }
+
+/* Method card styles */
+.method-card {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 10px 12px;
+    width: 48%;
+    background: #fff;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+.method-card.selected {
+    border-color: #1D9E75;
+    background: #E1F5EE;
+    box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.08);
+}
+.method-inner { display: inline-block; vertical-align: middle; font-size: 0.95rem; }
+.method-inner small { display: block; font-size: 0.75rem; color: #6b7280; font-weight: 600; }
+.method-icon { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; margin-right:10px; }
+
+.upload-box {
+    border: 1.5px dashed #cbd5cf;
+    border-radius: 8px;
+    padding: 18px;
+    text-align: center;
+    background: #fff;
+    color: #374151;
+    transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease, opacity 180ms ease;
+}
+.upload-box.dragover { border-color: #1D9E75; background: #f0fbf7; }
+.upload-box .upload-icon { font-size: 22px; margin-bottom: 6px; display:flex; align-items:center; justify-content:center; }
+.upload-box .upload-title { font-weight:700; font-size: 0.95rem; }
+.upload-box .upload-sub { font-size: 0.8rem; color: #6b7280; margin-top:4px; }
+.upload-box.attached {
+    border: 1.5px solid #1D9E75;
+    background: #E1F5EE;
+    animation: donorUploadFade 180ms ease;
+}
+.upload-box.attached .upload-selected-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-align: left;
+}
+.upload-box.attached .upload-selected-thumb {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid rgba(29, 158, 117, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.upload-box.attached .upload-selected-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.upload-box.attached .upload-selected-thumb svg {
+    width: 20px;
+    height: 20px;
+}
+.upload-box.attached .upload-selected-meta {
+    display: grid;
+    gap: 0.1rem;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+.upload-box.attached .upload-selected-meta strong {
+    font-size: 0.82rem;
+    color: #123528;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.upload-box.attached .upload-selected-meta span {
+    font-size: 0.68rem;
+    color: #1D9E75;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.upload-box.attached .upload-selected-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: auto;
+}
+.upload-box.attached .upload-replace,
+.upload-box.attached .upload-remove {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 6px;
+    color: #155847;
+    font-weight: 700;
+    font-size: 0.7rem;
+}
+.upload-box.attached .upload-remove {
+    color: #7e2d2d;
+}
+@keyframes donorUploadFade {
+    0% { opacity: 0; transform: translateY(4px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* File input styled as dashed drop area */
+.file-input { border: 2px dashed #9dd9c6; background: #f6fffa; padding: 12px; border-radius: 8px; }
+.file-input::file-selector-button { background: #fff; border: 1px solid #e6eef0; padding: 6px 10px; border-radius: 6px; }
+.file-input::-webkit-file-upload-button { background: #fff; border: 1px solid #e6eef0; padding: 6px 10px; border-radius: 6px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+@media (max-width: 480px) {
+    .donate-modal { padding: calc(var(--public-header-height, 78px) + 0.7rem) 0.5rem 0.5rem; place-items: start center; }
+    .donate-panel { max-height: calc(100vh - var(--public-header-height, 78px) - 1.5rem); }
+}
+
+/* If viewport height is short, align modal to top to avoid clipping */
+@media (max-height: 700px) {
+    .donate-modal { place-items: start center; padding-top: 2.5rem; }
+    .donate-panel { max-height: calc(85vh - 2.5rem); }
+}
+</style>
+
+<style>
+/* Profile menu styles */
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+}
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-left: auto;
+    justify-content: flex-end;
+    flex-shrink: 0;
+}
+.profile-menu { position:relative; }
+.profile-btn { display:flex; align-items:center; gap:8px; background:transparent; border:0; cursor:pointer; padding:6px 8px; border-radius:8px; font-size:0.98rem; font-weight:600; }
+.avatar-sm { width:34px; height:34px; border-radius:999px; object-fit:cover; }
+.avatar-fallback { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:999px; background:#dfeee6; color:#0f5132; font-weight:700; }
+.profile-name { font-weight:600; color:#6b7280; margin-left:6px; }
+.profile-caret { opacity:0.7; }
+.profile-dropdown { position:absolute; right:0; top:46px; min-width:180px; background:#fff; border-radius:8px; box-shadow:0 12px 30px rgba(2,6,23,0.15); padding:6px; z-index:90; }
+.dropdown-item { display:block; padding:8px 12px; color:#6b7280; text-decoration:none; border-radius:6px; font-weight:600; font-size:0.98rem; }
+.dropdown-item:hover { background:#f1f5f4; color:#4b5563; }
+.profile-dropdown form { padding:0; }
+.profile-dropdown button.dropdown-item { width:100%; text-align:left; border:0; background:transparent; padding:8px 12px; cursor:pointer; font-size:0.98rem; color:#6b7280; font-weight:600; }
+.profile-dropdown button.dropdown-item:hover { background:#f1f5f4; color:#4b5563; }
+.hidden{ display:none !important; }
+</style>
+
+<script>
+(function(){
+    function initDonateModal(){
+    var openBtns = document.querySelectorAll('.open-donate-modal');
+    var modal = document.getElementById('donateModal');
+    var overlay = document.getElementById('donateOverlay');
+    var closeBtn = document.getElementById('donateClose');
+    var amtBtns = modal ? modal.querySelectorAll('.amt-btn') : [];
+    var customAmt = modal ? modal.querySelector('#donateCustomAmt') : null;
+    var methodCards = modal ? modal.querySelectorAll('.method-card') : [];
+    var gcash = modal ? modal.querySelector('#gcashDetails') : null;
+    var bank = modal ? modal.querySelector('#bankDetails') : null;
+    var copyBtns = modal ? modal.querySelectorAll('.copy-btn') : [];
+    var receipt = modal ? modal.querySelector('#donateReceipt') : null;
+    var uploadBox = modal ? modal.querySelector('#uploadBox') : null;
+    var submitBtn = modal ? modal.querySelector('#donateSubmit') : null;
+
+    function getSelectedAmount(){
+        if(customAmt && customAmt.value && Number(customAmt.value) > 0){ return Number(customAmt.value); }
+        var activeBtn = modal ? modal.querySelector('.amt-btn.active') : null;
+        if(activeBtn){ return Number(activeBtn.getAttribute('data-amt') || 0); }
+        return null;
+    }
+
+    function setUploadDefaultState(){
+        if(!uploadBox){ return; }
+        uploadBox.classList.remove('attached');
+        uploadBox.innerHTML = '<div class="upload-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="6" y="3" width="12" height="14" rx="2" fill="#f3e8ff" stroke="#7c3aed" stroke-width="1" /><path d="M9 9h6M9 12h6" stroke="#7c3aed" stroke-width="1.2" stroke-linecap="round"/></svg></div><div class="upload-title">Tap to attach screenshot</div><div class="upload-sub">GCash or bank transfer receipt</div>';
+        if(receipt){ receipt.value = ''; }
+    }
+
+    function renderUploadStatus(file){
+        if(!uploadBox || !file){ return; }
+        var fileName = file.name || 'Receipt';
+        var preview = (file.type && file.type.indexOf('image') !== -1)
+            ? '<img src="' + URL.createObjectURL(file) + '" alt="Selected receipt preview" />'
+            : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8 3.75h6l4 4V18a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5.75a2 2 0 0 1 2-2Z" stroke="#1D9E75" stroke-width="1.2"/><path d="M14 3.75v4h4" stroke="#1D9E75" stroke-width="1.2"/><path d="M9 12h6M9 15h6" stroke="#1D9E75" stroke-width="1.2" stroke-linecap="round"/></svg>';
+        uploadBox.classList.add('attached');
+        uploadBox.innerHTML = '<div class="upload-selected-row"><div class="upload-selected-thumb">' + preview + '</div><div class="upload-selected-meta"><strong>' + fileName + '</strong><span>Uploaded</span></div><div class="upload-selected-actions"><button type="button" class="upload-replace" aria-label="Replace uploaded receipt">Replace</button><button type="button" class="upload-remove" aria-label="Remove uploaded receipt">✕</button></div></div>';
+    }
+
+    function updateSubmitButtonState(){
+        if(!submitBtn || !modal){ return; }
+        var amountValue = getSelectedAmount();
+        var selectedMethod = modal.querySelector('.method-card.selected');
+        var hasReceipt = !!(receipt && receipt.files && receipt.files.length > 0);
+        var amountReady = !!(amountValue && Number(amountValue) > 0);
+        var methodReady = !!selectedMethod;
+        var shouldEnable = amountReady && methodReady && hasReceipt;
+
+        if(amountReady){
+            submitBtn.textContent = 'Confirm donation of ₱' + Number(amountValue).toLocaleString();
+        } else if(amountValue === 0){
+            submitBtn.textContent = 'Select an amount';
+        } else {
+            submitBtn.textContent = 'Choose an amount';
+        }
+
+        submitBtn.disabled = !shouldEnable;
+        submitBtn.classList.toggle('is-enabled', shouldEnable);
+    }
+
+    function openModal(){ if(!modal) return; modal.classList.remove('hidden'); modal.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; updateSubmitButtonState(); }
+    function closeModal(){ if(!modal) return; var isThankYouActive = donateModalScrollArea && donateModalScrollArea.innerHTML.indexOf('id="donateThankYouClose"') !== -1; if(isThankYouActive){ restoreDonateModalContent(); } else { resetForm(); } modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+    function resetForm(){ if(!modal) return; var f = modal.querySelector('#donateForm'); if(f) f.reset(); var currentAmtBtns = modal.querySelectorAll('.amt-btn'); currentAmtBtns.forEach(function(b){ b.classList.remove('active'); }); var currentSubmitBtn = modal.querySelector('#donateSubmit'); if(currentSubmitBtn){ currentSubmitBtn.disabled=true; currentSubmitBtn.textContent='Choose an amount'; currentSubmitBtn.classList.remove('is-enabled'); } var currentMethodCards = modal.querySelectorAll('.method-card'); if(currentMethodCards && currentMethodCards.length){ currentMethodCards.forEach(function(c){ c.classList.remove('selected'); if(c.getAttribute('data-pay')==='gcash'){ c.classList.add('selected'); } }); } setUploadDefaultState(); showPayDetails(); }
+
+    function showPayDetails(){ var sel = modal.querySelector('.method-card.selected'); var val = sel ? sel.getAttribute('data-pay') : 'gcash'; if(gcash) gcash.classList.toggle('hidden', val!=='gcash'); if(bank) bank.classList.toggle('hidden', val!=='bank'); updateSubmitButtonState(); }
+
+    if(openBtns && openBtns.length){ openBtns.forEach(function(b){ b.addEventListener('click', openModal); }); }
+    if(overlay) overlay.addEventListener('click', closeModal);
+    if(closeBtn) closeBtn.addEventListener('click', closeModal);
+
+    var amountError = modal ? modal.querySelector('#donateAmountError') : null;
+    var donateModalHeader = modal ? modal.querySelector('#donateModalHeader') : null;
+    var donateModalScrollArea = modal ? modal.querySelector('#donateModalScrollArea') : null;
+    var donateModalOriginalScrollContent = donateModalScrollArea ? donateModalScrollArea.innerHTML : '';
+
+    function clearAmountError(){ var errorEl = modal ? modal.querySelector('#donateAmountError') : null; var currentCustomAmt = modal ? modal.querySelector('#donateCustomAmt') : null; if(errorEl) errorEl.classList.add('hidden'); if(currentCustomAmt) currentCustomAmt.classList.remove('error'); }
+    function showAmountError(){ var errorEl = modal ? modal.querySelector('#donateAmountError') : null; var currentCustomAmt = modal ? modal.querySelector('#donateCustomAmt') : null; if(errorEl) errorEl.classList.remove('hidden'); if(currentCustomAmt) currentCustomAmt.classList.add('error'); }
+    function restoreDonateModalContent(){ if(donateModalHeader) donateModalHeader.style.display = 'block'; if(donateModalScrollArea) donateModalScrollArea.innerHTML = donateModalOriginalScrollContent; resetForm(); }
+    function buildDonateThankYouHtml(donor, method, amount){ return `
+            <div style="text-align:center; padding:32px 24px; position:relative;">
+              <div style="width:64px;height:64px;border-radius:50%;background:#e8f8ef;border:2px solid #1D9E75;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7.5 12.5l2.5 2.5 6-6" stroke="#1D9E75" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <p style="font-size:11px;font-weight:700;color:#1D9E75;text-transform:uppercase;letter-spacing:0.14em;margin-bottom:8px;">Thank you!</p>
+              <h3 style="font-size:22px;font-weight:800;color:#0f172a;margin-bottom:10px;">Donation Received</h3>
+              <p style="font-size:13px;color:#475569;line-height:1.7;margin-bottom:22px;">We received your receipt and will review it shortly.</p>
+              <div style="background:#f8faf9;border:1.5px solid #d1e7df;border-radius:14px;padding:18px 16px 16px;text-align:left;margin-bottom:22px;">
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:#6b7280;margin-bottom:10px;"><span>Donor</span><strong style="color:#0f172a;font-weight:700;">${donor}</strong></div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:#6b7280;margin-bottom:10px;"><span>Method</span><strong style="color:#0f172a;font-weight:700;">${method}</strong></div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:#6b7280;margin-bottom:10px;"><span>Amount</span><strong style="color:#0f172a;font-weight:700;">${amount}</strong></div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:#6b7280;"><span>Status</span><strong style="color:#0f172a;font-weight:700;">Under review</strong></div>
+              </div>
+              <button type="button" id="donateThankYouClose" style="width:100%;padding:13px;background:#1D9E75;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;">Close</button>
+            </div>`; }
+    function showDonateThankYou(donor, method, amount){ if(donateModalHeader) donateModalHeader.style.display = 'none'; if(donateModalScrollArea) donateModalScrollArea.innerHTML = buildDonateThankYouHtml(donor, method, amount); }
+
+    function getCookie(name){
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    if(modal){
+        modal.addEventListener('submit', function(e){ if(e.target && e.target.id==='donateForm'){ e.preventDefault(); clearAmountError(); var amountValue = modal.querySelector('#donateCustomAmt') ? Number(modal.querySelector('#donateCustomAmt').value) : 0; if(!amountValue || amountValue <= 0){ showAmountError(); return; } var currentSubmitBtn = modal.querySelector('#donateSubmit'); if(currentSubmitBtn && !currentSubmitBtn.disabled){ currentSubmitBtn.disabled=true; currentSubmitBtn.innerText='Sending...'; } var donorNameInput = modal.querySelector('[name=donor_name]'); var donorMessageInput = modal.querySelector('[name=donor_message]'); var donorName = donorNameInput ? donorNameInput.value.trim() : ''; donorName = donorName || 'Anonymous'; var selectedMethod = modal.querySelector('.method-card.selected'); var paymentMethod = selectedMethod && selectedMethod.getAttribute('data-pay')==='bank' ? 'bank_transfer' : 'gcash'; var methodText = paymentMethod === 'bank_transfer' ? 'Bank transfer' : 'GCash'; var receiptInput = modal.querySelector('#donateReceipt'); if(!receiptInput || !receiptInput.files || !receiptInput.files.length){ showAmountError(); if(currentSubmitBtn){ currentSubmitBtn.disabled=false; currentSubmitBtn.innerText='Attach receipt to enable'; } return; } var csrfInput = modal.querySelector('input[name=csrfmiddlewaretoken]'); var csrfToken = csrfInput ? csrfInput.value : getCookie('csrftoken') || ''; var formData = new FormData(); formData.append('donor_name', donorName); formData.append('donor_message', donorMessageInput ? donorMessageInput.value.trim() : ''); formData.append('amount', String(amountValue)); formData.append('payment_method', paymentMethod); formData.append('campaign', 'General Donation'); formData.append('receipt', receiptInput.files[0]); fetch('/donations/submit/', { method: 'POST', body: formData, headers: { 'X-CSRFToken': csrfToken }, credentials: 'same-origin' }).then(function(response){ return response.json().then(function(payload){ return { ok: response.ok, status: response.status, payload: payload }; }); }).then(function(result){ if(!result.ok){ throw new Error(result.payload && result.payload.error ? result.payload.error : 'Unable to submit donation.'); } var amountLabel = '₱' + amountValue.toLocaleString(); showDonateThankYou(result.payload && result.payload.donation ? result.payload.donation.donor : donorName, result.payload && result.payload.donation ? result.payload.donation.method : methodText, amountLabel); }).catch(function(error){ if(currentSubmitBtn){ currentSubmitBtn.disabled=false; currentSubmitBtn.innerText='Attach a receipt to continue.'; } alert(error && error.message ? error.message : 'Unable to submit donation.'); }); } });
+        modal.addEventListener('click', function(e){ var target = e.target; if(target && target.id==='donateThankYouClose'){ closeModal(); return; } var replaceBtn = target.closest('.upload-replace'); if(replaceBtn){ var currentReceipt = modal.querySelector('#donateReceipt'); if(currentReceipt) currentReceipt.click(); return; } var removeBtn = target.closest('.upload-remove'); if(removeBtn){ e.stopPropagation(); setUploadDefaultState(); updateSubmitButtonState(); return; } var btn = target.closest('.amt-btn'); if(btn && modal.contains(btn)){ var currentAmtBtns = modal.querySelectorAll('.amt-btn'); currentAmtBtns.forEach(function(x){ x.classList.remove('active'); }); btn.classList.add('active'); var currentCustomAmt = modal.querySelector('#donateCustomAmt'); if(currentCustomAmt){ currentCustomAmt.value = btn.getAttribute('data-amt'); } clearAmountError(); updateSubmitButtonState(); return; } var copyBtn = target.closest('.copy-btn'); if(copyBtn){ var sel = document.querySelector(copyBtn.getAttribute('data-copy')); if(sel){ navigator.clipboard && navigator.clipboard.writeText(sel.innerText.trim()); copyBtn.innerText='Copied'; setTimeout(function(){ copyBtn.innerText='Copy'; },1200); } return; } var uploadClick = target.closest('#uploadBox'); if(uploadClick){ var currentReceipt = modal.querySelector('#donateReceipt'); if(currentReceipt) currentReceipt.click(); return; } var methodCard = target.closest('.method-card'); if(methodCard){ var cards = modal.querySelectorAll('.method-card'); cards.forEach(function(c){ c.classList.remove('selected'); }); methodCard.classList.add('selected'); showPayDetails(); return; } });
+        modal.addEventListener('keydown', function(e){ var uploadKey = e.target.closest('#uploadBox'); if(uploadKey && (e.key==='Enter' || e.key===' ')){ e.preventDefault(); var currentReceipt = modal.querySelector('#donateReceipt'); if(currentReceipt) currentReceipt.click(); } });
+        modal.addEventListener('input', function(e){ if(e.target && e.target.id==='donateCustomAmt'){ var currentAmtBtns = modal.querySelectorAll('.amt-btn'); currentAmtBtns.forEach(function(x){ x.classList.remove('active'); }); clearAmountError(); updateSubmitButtonState(); } });
+        modal.addEventListener('change', function(e){ if(e.target && e.target.id==='donateReceipt'){ var receiptInput = e.target; if(receiptInput.files && receiptInput.files.length>0){ renderUploadStatus(receiptInput.files[0]); } else { setUploadDefaultState(); } updateSubmitButtonState(); } });
+    }
+    }
+
+    // Profile menu toggle
+    var profileBtn = document.getElementById('profileMenuBtn');
+    var profileDropdown = document.getElementById('profileDropdown');
+    function closeProfileDropdown(){ if(profileDropdown) profileDropdown.classList.add('hidden'); if(profileBtn) profileBtn.setAttribute('aria-expanded','false'); }
+    function toggleProfileDropdown(){ if(!profileDropdown) return; var isHidden = profileDropdown.classList.contains('hidden'); if(isHidden){ profileDropdown.classList.remove('hidden'); profileBtn.setAttribute('aria-expanded','true'); } else { closeProfileDropdown(); } }
+    if(profileBtn){ profileBtn.addEventListener('click', function(e){ e.stopPropagation(); toggleProfileDropdown(); }); }
+    document.addEventListener('click', function(){ closeProfileDropdown(); });
+    if(profileDropdown){ profileDropdown.addEventListener('click', function(e){ e.stopPropagation(); }); }
+    
+    if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', initDonateModal); } else { initDonateModal(); }
+    
+    // Profile Settings Modal
+    function openProfileSettingsModal() {
+        var modal = document.getElementById('profileSettingsModal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        // Close dropdown
+        closeProfileDropdown();
+        // ensure overlay and close button can close modal
+        var overlay = document.getElementById('profileSettingsOverlay');
+        if (overlay) {
+            overlay.addEventListener('click', closeProfileSettingsModal);
+        }
+        var closeBtn = document.getElementById('profileSettingsClose');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeProfileSettingsModal);
+        }
+    }
+    
+    function closeProfileSettingsModal() {
+        var modal = document.getElementById('profileSettingsModal');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+    
+    // Close modal on overlay click
+    var settingsOverlay = document.getElementById('profileSettingsOverlay');
+    if (settingsOverlay) {
+        settingsOverlay.addEventListener('click', closeProfileSettingsModal);
+    }
+    
+    // Close modal on close button
+    var settingsCloseBtn = document.getElementById('profileSettingsClose');
+    if (settingsCloseBtn) {
+        settingsCloseBtn.addEventListener('click', closeProfileSettingsModal);
+    }
+    
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeProfileSettingsModal();
+        }
+    });
+
+    // Expose functions to global scope for inline onclick handlers
+    window.openProfileSettingsModal = openProfileSettingsModal;
+    window.closeProfileSettingsModal = closeProfileSettingsModal;
+})();
+</script>
+
+{% if request.user.is_authenticated %}
+<!-- Profile Settings Modal (Single-column Account Settings) -->
+<div id="profileSettingsModal" class="hidden" role="dialog" aria-modal="true" aria-hidden="true" style="position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; background: rgba(0, 0, 0, 0.45); padding: 1rem;">
+    <div id="profileSettingsOverlay" style="position: absolute; inset: 0;" aria-hidden="true"></div>
+
+    <div id="profileSettingsContainer" role="document" style="position: relative; width: 88%; max-width: 600px; height: 74vh; background: #fff; border-radius: 12px; box-shadow: 0 30px 60px rgba(2,6,23,0.18); display:flex; flex-direction:column; overflow:hidden;">
+        <button id="profileSettingsClose" aria-label="Close settings" style="position:absolute; right:12px; top:12px; z-index:40; width:40px; height:40px; border-radius:8px; border:1px solid #eef2f1; background:#fff; cursor:pointer;">✕</button>
+
+        <div id="profileSettingsScroll" style="flex:1; overflow:auto; padding:18px; display:flex; flex-direction:column; gap:12px;">
+            <!-- Header / Identity -->
+            <header id="profile-section" style="display:flex; gap:12px; align-items:center; justify-content:space-between;">
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <div style="position:relative; width:64px; height:64px; flex:0 0 64px;">
+                        <div style="width:64px; height:64px; border-radius:999px; overflow:hidden; background:linear-gradient(135deg,#fef3f2,#ecfdf5); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:22px; color:#0f5132; box-shadow:0 0 0 2px #fff inset;">
+                            {% if request.user.userprofile and request.user.userprofile.avatar %}
+                                <img id="profileAvatarPreview" src="{{ request.user.userprofile.avatar.url }}" alt="{{ request.user.get_full_name|default:request.user.username }}" style="width:100%; height:100%; object-fit:cover; display:block;" />
+                            {% else %}
+                                <span id="profileAvatarFallback">{% if request.user.first_name %}{{ request.user.first_name|slice:":1"|upper }}{% else %}{{ request.user.username|slice:":1"|upper }}{% endif %}</span>
+                                <img id="profileAvatarPreview" alt="{{ request.user.get_full_name|default:request.user.username }}" style="width:100%; height:100%; object-fit:cover; display:none;" />
+                            {% endif %}
+                        </div>
+                        <label for="profileAvatarInput" aria-label="Change profile picture" title="Change profile picture" style="position:absolute; right:-2px; bottom:-2px; width:22px; height:22px; border-radius:999px; border:2px solid #fff; background:#0f766e; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 6px 14px rgba(15,118,110,0.22);">
+                            <i data-lucide="camera" aria-hidden="true" style="width:12px; height:12px;"></i>
+                        </label>
+                    </div>
+                    <div>
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <div style="font-weight:700; font-size:1.05rem; color:#1f2933;">{{ request.user.get_full_name|default:request.user.first_name|default:request.user.username }}</div>
+                            <span style="background:#eef2ff; color:#3730a3; padding:4px 8px; border-radius:999px; font-weight:600; font-size:0.8rem;">Google</span>
+                        </div>
+                        <div style="color:#6b7280; font-size:0.95rem; margin-top:2px;">{{ user_provider_email }}</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Profile Information -->
+            <section style="background:#fff; padding:12px; border-radius:8px; box-shadow:0 1px 0 rgba(2,6,23,0.04);">
+                <h3 style="margin:0 0 12px 0; font-size:1rem; color:#1f2933;">Profile Information</h3>
+                <form id="accountSettingsForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input id="profileAvatarInput" name="profile_photo" type="file" accept="image/*" style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;" />
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div><input name="full_name" type="text" value="{{ request.user.get_full_name|default:request.user.first_name|default:request.user.username }}" placeholder="Full name" style="width:100%; padding:10px; border-radius:8px; border:1px solid #e6eef0;" /></div>
+                        <div><input name="email" type="email" value="{{ user_provider_email }}" placeholder="Email" disabled style="width:100%; padding:10px; border-radius:8px; border:1px solid #e6eef0; background:#f8faf9; color:#6b7280;" /></div>
+
+                        <div><input name="phone" type="tel" value="{{ request.user.userprofile.phone|default:'' }}" placeholder="Phone number" style="width:100%; padding:10px; border-radius:8px; border:1px solid #e6eef0;" /></div>
+                        <div>
+                            <select name="language" style="width:100%; padding:10px; border-radius:8px; border:1px solid #e6eef0;">
+                                <option value="" disabled selected>Language</option>
+                                <option value="en"{% if request.LANGUAGE_CODE == 'en' %} selected{% endif %}>English</option>
+                                <option value="fil"{% if request.LANGUAGE_CODE == 'fil' %} selected{% endif %}>Filipino</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Notifications and Preferences -->
+            <section id="preferences-section" style="background:#fff; padding:12px; border-radius:8px; box-shadow:0 1px 0 rgba(2,6,23,0.04);">
+                <h3 style="margin:0 0 12px 0; font-size:1rem; color:#1f2933;">Notifications and Preferences</h3>
+                <div style="display:grid; gap:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-weight:600; color:#1f2933;">Email Notifications</div>
+                        </div>
+                        <label style="display:inline-block;">
+                            <input id="notifToggle" type="checkbox" checked style="display:none;" />
+                            <span style="display:inline-block; width:44px; height:26px; background:#e6eef0; border-radius:999px; position:relative;"></span>
+                        </label>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-weight:600; color:#1f2933;">News & Updates</div>
+                        </div>
+                        <label style="display:inline-block;">
+                            <input id="newsToggle2" type="checkbox" checked style="display:none;" />
+                            <span style="display:inline-block; width:44px; height:26px; background:#e6eef0; border-radius:999px; position:relative;"></span>
+                        </label>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-weight:600; color:#1f2933;">Dark Mode</div>
+                        </div>
+                        <label style="display:inline-block;">
+                            <input id="themeToggle" type="checkbox" style="display:none;" />
+                            <span style="display:inline-block; width:44px; height:26px; background:#e6eef0; border-radius:999px; position:relative;"></span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Danger Zone -->
+            <section style="margin-top:8px; background:linear-gradient(180deg, rgba(254,242,242,0.6), rgba(254,242,242,0.25)); padding:12px; border-radius:8px; border:1px solid rgba(252,165,165,0.5);">
+                <h3 style="margin:0 0 8px 0; font-size:1rem; color:#b91c1c;">Danger Zone</h3>
+                <div style="display:flex; gap:10px;">
+                    <button id="endSessionsBtn" type="button" style="background:white; border:1px solid #fee2e2; color:#b91c1c; padding:8px 12px; border-radius:8px; cursor:pointer;">End all sessions</button>
+                    <button id="deleteAccountBtn" type="button" style="background:#b91c1c; border:0; color:white; padding:8px 12px; border-radius:8px; cursor:pointer;">Delete account</button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Sticky footer -->
+        <footer style="position:sticky; bottom:0; background:linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.9)); padding:12px 20px; display:flex; justify-content:flex-end; gap:10px; box-shadow:0 -8px 20px rgba(2,6,23,0.06);">
+            <button id="cancelSettingsBtn" type="button" style="background:white; border:1px solid #e6eef0; padding:10px 14px; border-radius:8px; cursor:pointer;">Cancel</button>
+            <button id="saveSettingsBtn" type="button" style="background:#0f766e; color:white; padding:10px 14px; border-radius:8px; border:0; font-weight:700;">Save</button>
+        </footer>
+    </div>
+
+    <style>
+        #profileSettingsModal.hidden { display: none !important; }
+        #profileSettingsScroll {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(148, 163, 184, 0.55) transparent;
+            -ms-overflow-style: auto;
+        }
+        #profileSettingsScroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        #profileSettingsScroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #profileSettingsScroll::-webkit-scrollbar-thumb {
+            background-color: rgba(148, 163, 184, 0.52);
+            border-radius: 999px;
+            border: 1px solid transparent;
+            background-clip: padding-box;
+        }
+        #profileSettingsScroll::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(148, 163, 184, 0.68);
+        }
+        /* switch visuals */
+        input[type=checkbox] + span { transition: background 150ms ease; }
+        input[type=checkbox] + span::after { content: ''; position:absolute; left:4px; top:4px; width:18px; height:18px; background:#fff; border-radius:50%; transition: transform 150ms ease; box-shadow:0 1px 3px rgba(2,6,23,0.08);} 
+        input[type=checkbox]:checked + span { background: linear-gradient(90deg,#4f46e5,#0f766e); }
+        input[type=checkbox]:checked + span::after { transform: translateX(18px); }
+        @media (max-width: 720px) { #profileSettingsContainer { width: 94%; height: 80vh; } footer { padding:10px; } }
+    </style>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<script src="{% static 'js/profile-photo-cropper.js' %}"></script>
+<script>
+// Modal interactions: close, save, cancel, danger actions
+document.addEventListener('DOMContentLoaded', function(){
+    var modal = document.getElementById('profileSettingsModal');
+    var overlay = document.getElementById('profileSettingsOverlay');
+    var closeBtn = document.getElementById('profileSettingsClose');
+    var topClose = document.getElementById('profileSettingsCloseBtnTop');
+    var cancel = document.getElementById('cancelSettingsBtn');
+    var save = document.getElementById('saveSettingsBtn');
+    var form = document.getElementById('accountSettingsForm');
+    var avatarInput = document.getElementById('profileAvatarInput');
+    var avatarPreview = document.getElementById('profileAvatarPreview');
+    var avatarFallback = document.getElementById('profileAvatarFallback');
+    var croppedPhotoFile = null;
+
+    var cropperController = window.initProfilePhotoCropper({
+        input: avatarInput,
+        onCropped: function(file, previewUrl){
+            croppedPhotoFile = file;
+            showAvatarPreview(previewUrl);
+        },
+        onCancelled: function(){ croppedPhotoFile = null; },
+        onError: function(message){ alert(message); }
+    });
+
+    function hideModal(){ if(!modal) return; modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+
+    function showAvatarPreview(src){
+        if(!avatarPreview) return;
+        avatarPreview.src = src;
+        avatarPreview.style.display = 'block';
+        if(avatarFallback) avatarFallback.style.display = 'none';
+    }
+
+    if(closeBtn) closeBtn.addEventListener('click', hideModal);
+    if(topClose) topClose.addEventListener('click', hideModal);
+    if(overlay) overlay.addEventListener('click', hideModal);
+    if(cancel) cancel.addEventListener('click', hideModal);
+
+    if(avatarInput){
+        avatarInput.addEventListener('change', function(){
+            return;
+        });
+    }
+
+    if(save && form){
+        save.addEventListener('click', function(){
+            var csrfInput = form.querySelector('[name=csrfmiddlewaretoken]');
+            var formData = new FormData(form);
+            if(croppedPhotoFile || avatarInput && avatarInput.files && avatarInput.files[0]){
+                formData.set('profile_photo', croppedPhotoFile || avatarInput.files[0]);
+            }
+            save.disabled = true;
+            save.innerText = 'Saving...';
+
+            fetch('{% url "dashboard_profile_update" %}', {
+                method: 'POST',
+                body: formData,
+                headers: csrfInput ? { 'X-CSRFToken': csrfInput.value, 'X-Requested-With': 'XMLHttpRequest' } : { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(response){
+                return response.json().then(function(data){ return { ok: response.ok, data: data }; });
+            })
+            .then(function(result){
+                if(!result.ok){
+                    throw new Error((result.data && result.data.error) || 'Unable to save settings.');
+                }
+                window.location.reload();
+            })
+            .catch(function(error){
+                alert(error.message || 'Unable to save settings.');
+                save.disabled = false;
+                save.innerText = 'Save';
+            });
+        });
+    }
+
+    var endBtn = document.getElementById('endSessionsBtn');
+    var delBtn = document.getElementById('deleteAccountBtn');
+    if(endBtn){ endBtn.addEventListener('click', function(){ if(confirm('Sign out from all devices?')){ alert('All sessions ended (demo).'); } }); }
+    if(delBtn){ delBtn.addEventListener('click', function(){ if(confirm('Delete your account permanently? This cannot be undone.')){ alert('Account deleted (demo).'); } }); }
+});
+</script>
+{% endif %}

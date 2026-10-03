@@ -1,0 +1,1155 @@
+{% extends "volunteer_dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Tasks & OJT | HappYness{% endblock %}
+
+{% block extra_head %}
+<style>
+    #tasks-ojt-page { max-width: 1100px; margin: 0 auto; padding: 1.25rem 0 1.75rem; }
+    #tasks-ojt-page.toj-page-leaving { animation: toj-page-leave 180ms ease-in both; pointer-events:none; }
+    @keyframes toj-page-leave { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-8px); } }
+    .toj-header { margin-bottom: 1.5rem; }
+    .toj-title { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; margin: 0; }
+    .toj-sub { color: #64748b; margin: 0.2rem 0 0; font-size: 0.95rem; }
+
+    .toj-cards-container { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin-bottom:1.5rem; align-items:stretch; }
+    @media (max-width:768px) { .toj-cards-container { grid-template-columns:minmax(0,1fr); } }
+    
+    .toj-card { background: #fff; border: 1px solid #d8ddd7; border-radius: 1rem; padding: 0.8rem 1rem; }
+    .toj-left-column { display:flex; min-width:0; min-height:0; flex-direction:column; gap:1rem; }
+    .toj-card-hours { display:flex; align-self:stretch; flex-direction:column; gap:.2rem; }
+    .toj-card-support { display:flex; min-height:0; flex:1; flex-direction:column; gap:.75rem; }
+    .toj-support-heading { display:flex; align-items:center; gap:.45rem; margin:0; color:#35695b; font-size:.7rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    .toj-support-heading i, .toj-support-heading svg { width:.95rem; height:.95rem; color:#0f766e; stroke-width:1.7; }
+    .toj-regular-days { display:flex; min-height:0; flex:1; flex-direction:column; justify-content:space-evenly; }
+    .toj-regular-day-row { display:grid; grid-template-columns:2.65rem minmax(0,1fr) auto; align-items:center; gap:.7rem; min-width:0; padding:.5rem 0; border-bottom:1px solid #e9efec; }
+    .toj-regular-day-row:last-child { border-bottom:0; }
+    .toj-regular-day-mark { display:grid; width:2.5rem; height:2.5rem; place-items:center; border:1px solid rgba(15,118,110,.2); border-radius:50%; background:#f0faf6; color:#0f766e; font-size:.65rem; font-weight:900; }
+    .toj-regular-day-info { display:flex; min-width:0; flex-direction:column; gap:.12rem; }
+    .toj-regular-day-name { color:#173a31; font-size:.86rem; font-weight:800; }
+    .toj-regular-day-date { color:#64748b; font-size:.7rem; font-weight:600; }
+    .toj-regular-day-timein { color:#64748b; font-size:.68rem; font-weight:600; }
+    .toj-regular-day-note { color:#0f766e; font-size:.68rem; font-weight:700; }
+    .toj-regular-day-attendance { display:flex; align-items:center; gap:.45rem; }
+    .toj-regular-day-elapsed { color:#0f766e; font-size:.68rem; font-weight:800; white-space:nowrap; }
+    .toj-regular-days[hidden], .toj-support-empty[hidden], .toj-schedule-attendance[hidden] { display:none; }
+    .toj-support-empty { display:flex; flex:1; align-items:center; margin:0; color:#64748b; font-size:.82rem; }
+    .toj-schedule-attendance { flex:0 0 auto; }
+    .toj-hours-summary, .toj-hours-progress { min-width:0; }
+    .toj-card-hours-label { font-size: 0.7rem; font-weight: 800; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
+    .toj-hours-heading { display:flex; align-items:center; gap:0.45rem; }
+    .toj-hours-heading i, .toj-hours-heading svg { width:.95rem; height:.95rem; color:#0f766e; stroke-width:1.7; }
+    .live-label { display:none; align-items:center; }
+    .live-label.visible { display:inline-flex; }
+    .live-dot { width:0.45rem; height:0.45rem; border-radius:50%; background:#0f9b8e; animation:toj-pulse 1.6s ease-in-out infinite; }
+    @keyframes toj-pulse { 0%,100%{opacity:.45;transform:scale(.9)} 50%{opacity:1;transform:scale(1)} }
+    .toj-card-hours-value { font-size: 2.15rem; font-weight: 900; color: #0f172a; line-height: 1.05; }
+    .toj-card-hours-percent { font-size: 0.85rem; color: #64748b; font-weight: 500; margin:0 0 .35rem; }
+    .progress-bar { height: 10px; background: rgba(15,118,110,.12); border-radius: 999px; overflow: hidden; margin-top: 0.1rem; }
+    .progress-bar-fill { height: 100%; background: #0f766e; width: 0%; }
+    .toj-timein-button[hidden] { display:none; }
+    .toj-timein-button { flex:0 0 auto; padding:.35rem .55rem; border:1px solid #0f766e; border-radius:.5rem; background:#0f766e; color:#fff; font:inherit; font-size:.7rem; font-weight:800; cursor:pointer; }
+    .toj-timein-button.danger-outline { border-color:rgba(180,35,24,.35); background:#fff; color:#b42318; }
+    .toj-timein-button:disabled, .toj-timein-button:disabled:hover { border-color:#cbd5d1; background:#e8eeeb; color:#71837c; opacity:1; cursor:not-allowed; box-shadow:none; }
+    .toj-hours-progress { margin-top:.2rem; }
+    
+    .toj-card-calendar { display:flex; flex-direction:column; gap:.55rem; }
+    .toj-calendar-head { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+    .toj-calendar-month { margin:0; color:#173a31; font-size:.9rem; font-weight:800; }
+    .toj-calendar-nav { display:grid; place-items:center; width:2rem; height:2rem; border:1px solid #c9ddd6; border-radius:50%; background:#fff; color:#0f766e; cursor:pointer; transition:background-color 150ms ease, transform 150ms ease; }
+    .toj-calendar-nav:hover { background:#edf8f3; transform:scale(1.06); }
+    .toj-calendar-nav:active { transform:scale(.94); }
+    .toj-calendar-nav:focus-visible, .toj-calendar-day:focus-visible { outline:3px solid rgba(15,155,142,.28); outline-offset:2px; }
+    .toj-calendar-grid { display:grid; width:100%; max-width:30rem; margin:0 auto; grid-template-columns:repeat(7,minmax(0,1fr)); gap:.12rem; }
+    .toj-calendar-weekday { display:grid; place-items:center; min-height:1.35rem; color:#7a8c86; font-size:.68rem; font-weight:800; }
+    .toj-calendar-cell { position:relative; display:flex; align-items:flex-start; justify-content:center; min-width:0; aspect-ratio:1; padding:.08rem; border:1px solid transparent; border-radius:.45rem; }
+    .toj-calendar-day { display:grid; place-items:center; flex:0 1 auto; width:min(3rem,100%); height:min(3rem,100%); min-width:0; padding:0; border:1px solid transparent; border-radius:50%; background:transparent; color:#1f4530; font:inherit; font-size:.9rem; font-weight:700; cursor:pointer; transition:background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease; }
+    .toj-calendar-day:hover { background:#edf8f3; transform:scale(1.06); }
+    .toj-calendar-day:active { transform:scale(.94); }
+    .toj-calendar-day.is-duty-day { border-color:rgba(15,118,110,.24); background:#dff4ef; color:#0b625c; }
+    .toj-calendar-day.is-duty-day:hover { background:#c8ebe3; }
+    .toj-calendar-day.is-assigned-day { border-color:#134e4a; background:#134e4a; color:#fff; }
+    .toj-calendar-day.is-assigned-day:hover { background:#0f403d; }
+    .toj-calendar-day.is-today { border:2px solid #0f766e; background:#fff; color:#0f766e; }
+    .toj-calendar-day.is-selected { border:2px solid #0f766e; background:#fff; color:#0f766e; }
+    .toj-calendar-day.is-duty-day.is-selected:not(.is-today) { border-color:#0f766e; background:#dff4ef; color:#0b625c; }
+    .toj-calendar-day.is-assigned-day.is-selected:not(.is-today) { border-color:#134e4a; background:#134e4a; color:#fff; }
+    #dashboard-content-scroll #tasks-ojt-page .toj-calendar-day { font-size:1rem!important; line-height:1.2!important; }
+    .toj-calendar-marker.is-open { display:block; width:.65rem; height:.65rem; border:1px solid #ca8a04; border-radius:50%; background:#eab308; }
+    .toj-calendar-cell > .toj-calendar-marker.is-open { position:absolute; z-index:2; top:.38rem; right:.38rem; pointer-events:none; }
+    .toj-calendar-legend-item { display:inline-flex; align-items:center; gap:.3rem; white-space:nowrap; }
+    .toj-calendar-legend { display:flex; align-items:center; justify-content:flex-start; gap:.75rem; flex-wrap:wrap; color:#64748b; font-size:.68rem; font-weight:700; }
+    .toj-calendar-today-marker { width:.85rem; height:.85rem; border:1px solid #0f766e; border-radius:50%; }
+    .toj-calendar-duty-marker { width:.48rem; height:.48rem; border:1px solid rgba(15,118,110,.24); border-radius:50%; background:#dff4ef; }
+    .toj-calendar-duty-marker.is-assigned { border-color:#134e4a; background:#134e4a; }
+    .toj-calendar-legend .toj-calendar-marker, .toj-calendar-legend .toj-calendar-duty-marker { position:static; display:block; width:.65rem; height:.65rem; flex:0 0 .65rem; }
+    .toj-calendar-dot { width:.42rem; height:.42rem; border-radius:50%; background:#0f766e; }
+    @media (prefers-reduced-motion: reduce) {
+        .toj-calendar-nav, .toj-calendar-day { transition:none; }
+        .toj-calendar-nav:hover, .toj-calendar-nav:active, .toj-calendar-day:hover, .toj-calendar-day:active { transform:none; }
+    }
+    
+    .toj-meta { font-size: 0.95rem; color: #334155 }
+
+    .toj-tabs { display:flex; gap:1.2rem; margin-top:1rem; border-bottom:1px solid #e5e7eb; }
+    .toj-tab { padding:0.55rem 0 0.7rem; cursor:pointer; border:0; background:transparent; color:#64748b; border-bottom:2px solid transparent; margin-bottom:-1px }
+    .toj-tab.active { background:transparent; color:#13867a; border-color:#13867a; font-weight:700 }
+
+    .filter-pills { display:flex; gap:0.55rem; margin:0.8rem 0 1rem; flex-wrap:wrap }
+    .pill { padding:0.32rem 0.8rem; border-radius:999px; background:#fff; cursor:pointer; font-size:0.9rem; border:1px solid #cfd6d2; color:#4b5563 }
+    .pill.active { background:#69c1b5; border-color:#69c1b5; color:#fff }
+
+    .task-list { display:flex; flex-direction:column; gap:0.7rem }
+    .task-card { background:#fbfaf6; border:1px solid #ddd8cd; padding:0.85rem 0.95rem; border-radius:0.9rem; display:flex; flex-direction:column; gap:0.55rem; cursor:default; box-shadow:0 1px 0 rgba(15,23,42,0.03) }
+    .task-card:hover { background:#fffdf8 }
+    .task-card.today { box-shadow: inset 4px 0 0 0 #69c1b5, 0 1px 0 rgba(15,23,42,0.03) }
+    .task-card.in-progress { box-shadow: inset 4px 0 0 0 #0f9b8e, 0 1px 0 rgba(15,23,42,0.03) }
+    .task-card.awaiting-confirmation { box-shadow: inset 4px 0 0 0 #d97706, 0 1px 0 rgba(15,23,42,0.03) }
+    .task-card.missed { opacity:.62; }
+    .task-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:0.75rem }
+    .task-card-main { display:flex; flex-direction:column; gap:0.28rem; min-width:0; flex:1 }
+    .task-info { display:flex; flex-direction:column; align-items:flex-start; gap:0.55rem }
+    .module-tag { display:inline-flex; width:fit-content; align-self:flex-start; padding:0.18rem 0.5rem; border-radius:999px; font-weight:700; font-size:0.8rem; line-height:1; border:1px solid transparent }
+    .tag-rag-making { background:#d6f4ef; color:#0f766e }
+    .tag-teaching-kids { background:#dbeafe; color:#1e40af }
+    .tag-pagtatanim { background:#dcfce7; color:#166534 }
+    .tag-outreach { background:#fef3c7; color:#92400e }
+    .status-teal, .status-amber, .status-done { font-weight:700; font-size:0.78rem; padding:0.22rem 0.6rem; border-radius:999px; line-height:1 }
+    .status-teal { color:#0f766e; background:#dff4ef }
+    .status-amber { color:#b45309; background:#fcefd8 }
+    .status-done { color:#64748b; background:#edf2f7 }
+    .status-danger { color:#b42318; background:#fee4e2 }
+    .status-live { display:inline-flex; align-items:center; gap:.3rem; color:#0f766e; background:#dff4ef }
+    .status-live .live-dot { width:.4rem; height:.4rem; }
+    .task-attendance-meta { color:#64748b; font-size:.8rem; font-weight:600; }
+    .task-attendance-meta strong { color:#334155; }
+    .task-description { color:#475569; font-size:.84rem; line-height:1.45; }
+    .task-category { display:inline-flex; width:fit-content; padding:0.18rem 0.5rem; border-radius:999px; background:#e6f5f0; color:#0f766e; font-size:0.76rem; font-weight:700; }
+    .task-beneficiary-list { display:flex; flex-direction:column; gap:0.45rem; margin-top:0.55rem; padding-top:0.55rem; border-top:1px solid #e7efe8; }
+    .task-beneficiary-item { display:flex; align-items:center; justify-content:space-between; gap:0.75rem; padding:0.45rem 0.6rem; border:1px solid #dfe7e2; border-radius:0.75rem; background:#f8fbfa; }
+    .task-beneficiary-meta { display:flex; flex-direction:column; gap:0.14rem; min-width:0; }
+    .task-beneficiary-name { font-weight:700; color:#0f172a; }
+    .task-beneficiary-status { font-size:0.72rem; font-weight:700; padding:0.22rem 0.5rem; border-radius:999px; display:inline-flex; align-items:center; }
+    .task-beneficiary-status.pending { background:#fef3c7; color:#92400e; }
+    .task-beneficiary-status.confirmed { background:#dff4ef; color:#0f766e; }
+    .task-beneficiary-status.rejected { background:#fee4e2; color:#b42318; }
+    .task-beneficiary-confirm { padding:0.38rem 0.7rem; border-radius:0.65rem; background:#0f9b8e; color:#fff; border:1px solid #0f9b8e; font-weight:700; cursor:pointer; }
+    .task-beneficiary-confirm:disabled { opacity:0.6; cursor:not-allowed; }
+    .task-beneficiary-manage { align-self:flex-start; padding:0.48rem 0.78rem; border:1px solid #0f9b8e; border-radius:0.65rem; background:#fff; color:#0f766e; font-weight:800; cursor:pointer; }
+    .task-beneficiary-locked { color:#64748b; font-size:0.8rem; font-weight:600; }
+    .beneficiary-attendance-modal-backdrop { position:fixed; inset:0; z-index:80; display:grid; place-items:center; padding:1rem; background:rgba(15,23,42,.42); animation:beneficiary-attendance-fade-in 180ms ease-out both; }
+    .beneficiary-attendance-modal-backdrop.is-closing { animation:beneficiary-attendance-fade-out 160ms ease-in both; }
+    .beneficiary-attendance-modal { width:min(100%, 650px); max-height:min(88vh, 740px); overflow:auto; border:1px solid #dfe7e2; border-radius:1.05rem; background:#fff; box-shadow:0 24px 60px rgba(15,23,42,.24); animation:beneficiary-attendance-modal-in 220ms cubic-bezier(.2,.8,.2,1) both; }
+    .beneficiary-attendance-modal-backdrop.is-closing .beneficiary-attendance-modal { animation:beneficiary-attendance-modal-out 160ms ease-in both; }
+    @keyframes beneficiary-attendance-fade-in { from { opacity:0; } to { opacity:1; } }
+    @keyframes beneficiary-attendance-fade-out { from { opacity:1; } to { opacity:0; } }
+    @keyframes beneficiary-attendance-modal-in { from { opacity:0; transform:translateY(12px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+    @keyframes beneficiary-attendance-modal-out { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(8px) scale(.98); } }
+    .beneficiary-attendance-modal-head { position:relative; min-height:132px; display:flex; align-items:flex-end; padding:1.1rem 1.2rem; overflow:hidden; background:linear-gradient(135deg,#176b61,#0f9b8e); }
+    .beneficiary-attendance-modal-head::after { position:absolute; right:-3rem; top:-4rem; width:11rem; height:11rem; content:""; border:1px solid rgba(255,255,255,.16); border-radius:50%; box-shadow:0 0 0 1rem rgba(255,255,255,.04),0 0 0 2rem rgba(255,255,255,.025); }
+    .beneficiary-attendance-modal-head-copy { position:relative; z-index:1; max-width:80%; }
+    .beneficiary-attendance-modal-kicker { margin:0 0 .35rem; color:#bceee0; font-size:.68rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+    .beneficiary-attendance-modal-title { margin:0; color:#fff; font-size:1.35rem; font-weight:850; }
+    .beneficiary-attendance-modal-subtitle { margin:.3rem 0 0; color:#e0f7f0; font-size:.82rem; }
+    .beneficiary-attendance-modal-close { position:absolute; top:1rem; right:1rem; z-index:2; width:2.2rem; height:2.2rem; border:1px solid rgba(255,255,255,.55); border-radius:50%; background:rgba(255,255,255,.16); color:#fff; cursor:pointer; font-size:1.1rem; backdrop-filter:blur(8px); }
+    .beneficiary-attendance-modal-body { display:flex; flex-direction:column; gap:.65rem; padding:1rem 1.1rem 1.1rem; }
+    .beneficiary-attendance-modal-summary { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin:0 0 .2rem; color:#64748b; font-size:.78rem; font-weight:700; }
+    .beneficiary-attendance-modal-summary strong { color:#0f766e; }
+    .beneficiary-attendance-modal-summary-detail { color:#94a3b8; font-weight:600; }
+    .beneficiary-attendance-modal-tools { display:flex; align-items:center; gap:.55rem; flex-wrap:wrap; }
+    .beneficiary-attendance-modal-search { min-width:0; flex:1 1 220px; padding:.62rem .75rem; border:1px solid #dfe7e2; border-radius:.65rem; color:#0f172a; font:inherit; font-size:.8rem; outline:none; }
+    .beneficiary-attendance-modal-search:focus { border-color:#0f9b8e; box-shadow:0 0 0 3px rgba(15,155,142,.12); }
+    .beneficiary-attendance-modal-filters { display:flex; gap:.35rem; }
+    .beneficiary-attendance-modal-filter { padding:.5rem .62rem; border:1px solid #dfe7e2; border-radius:999px; background:#fff; color:#64748b; cursor:pointer; font-size:.72rem; font-weight:800; }
+    .beneficiary-attendance-modal-filter.is-active { border-color:#0f9b8e; background:#e5f6f1; color:#0f766e; }
+    .beneficiary-attendance-modal-list { display:flex; flex-direction:column; gap:.65rem; max-height:310px; overflow:auto; padding:.1rem .15rem .1rem 0; }
+    .beneficiary-attendance-modal-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.7rem; border:1px solid #dfe7e2; border-radius:.8rem; background:#f8fbfa; }
+    .beneficiary-attendance-modal-person { display:flex; align-items:center; min-width:0; gap:.7rem; }
+    .beneficiary-attendance-modal-avatar { width:2.5rem; height:2.5rem; flex:0 0 2.5rem; display:grid; place-items:center; overflow:hidden; border:2px solid #c5e8dc; border-radius:50%; background:#dff4ef; color:#0f766e; font-weight:850; }
+    .beneficiary-attendance-modal-avatar img { width:100%; height:100%; object-fit:cover; }
+    .beneficiary-attendance-modal-meta { display:flex; min-width:0; flex-direction:column; gap:.2rem; }
+    .beneficiary-attendance-modal-name { overflow:hidden; color:#0f172a; font-weight:800; text-overflow:ellipsis; white-space:nowrap; }
+    .beneficiary-attendance-modal-status { color:#64748b; font-size:.75rem; font-weight:700; }
+    .beneficiary-attendance-modal-empty { margin:0; color:#64748b; font-size:.85rem; }
+    @media (max-width:560px) { .beneficiary-attendance-modal-row { align-items:stretch; flex-direction:column; } .beneficiary-attendance-modal-row .task-beneficiary-confirm { align-self:flex-start; } }
+
+    .task-action { align-self:flex-end; display:flex; gap:0.45rem; flex-wrap:wrap; justify-content:flex-end; }
+    .task-action .btn { padding:0.42rem 0.72rem; border-radius:8px; cursor:pointer; border:1px solid #e6eef0; font-weight:700; }
+    .task-action .btn.teal { background:#0f9b8e; color:#fff; border-color:#0f9b8e }
+    .task-action .btn.danger-outline { background:#fff; color:#b42318; border-color:rgba(180,35,24,.35) }
+    .task-action .btn.danger-outline:hover { background:#fff5f4; border-color:#b42318 }
+    .task-timeout-confirm { display:flex; align-items:center; justify-content:space-between; gap:0.7rem; flex-wrap:wrap; max-height:0; overflow:hidden; padding:0 0.7rem; border:0 solid transparent; border-radius:9px; background:#fff8f7; color:#7f1d1d; font-size:0.82rem; opacity:0; transition:max-height 180ms ease, opacity 180ms ease, padding 180ms ease, border-width 180ms ease; }
+    .task-timeout-confirm.visible { max-height:5rem; padding:0.62rem 0.7rem; border-width:1px; opacity:1; }
+    .task-timeout-confirm .confirm-actions { display:flex; gap:0.4rem; }
+    .task-timeout-confirm .btn { padding:0.36rem 0.58rem; font-size:0.76rem; }
+    @keyframes task-confirm-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+
+    .completed-summary { display:flex; justify-content:space-between; gap:1rem; align-items:center; width:100%; background:#f3f4f6; padding:0.6rem 0.75rem; border-radius:0.75rem }
+    .completed-history-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; border:1px solid #dfe7e2; border-radius:0.9rem; background:#fff; }
+    .completed-history-table { width:100%; min-width:760px; border-collapse:collapse; font-size:0.82rem; }
+    .completed-history-table th, .completed-history-table td { padding:0.78rem 0.85rem; border-bottom:1px solid #e5ebe7; text-align:left; vertical-align:middle; white-space:nowrap; }
+    .completed-history-table th { background:#f0faf6; color:#35695b; font-size:0.7rem; font-weight:800; letter-spacing:0; text-transform:none; }
+    .completed-history-table tbody tr:last-child td { border-bottom:0; }
+    .completed-history-table td:first-child { color:#173a31; font-weight:700; }
+    .completed-history-status { display:inline-flex; padding:0.25rem 0.55rem; border-radius:999px; background:#dff4ef; color:#0f766e; font-size:0.72rem; font-weight:800; }
+    .completed-toolbar { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:0.75rem; }
+    .completed-toolbar-title { margin:0; color:#35695b; font-size:0.9rem; font-weight:800; }
+    .completed-export-btn { display:inline-flex; align-items:center; justify-content:center; gap:0.4rem; padding:0.55rem 0.8rem; border:1px solid #c9ddd6; border-radius:0.65rem; background:#fff; color:#0f766e; font-size:0.8rem; font-weight:800; text-decoration:none; }
+    .completed-export-btn:hover { background:#edf8f3; }
+    .completed-export-btn svg { width:1rem; height:1rem; }
+    @media (max-width: 560px) { .completed-toolbar { align-items:stretch; flex-direction:column; } .completed-export-btn { width:100%; } }
+    .log-inputs { width:100% }
+    /* time input sizing — keep white background and border (do not make black) */
+    .log-inputs input.time-input { padding:0.6rem 0.9rem; border:1px solid #cbd5d1; border-radius:10px; background:#fff; min-width:170px; font-weight:600; font-size:0.95rem }
+    .log-inputs input.time-input::-webkit-calendar-picker-indicator { opacity:0.7 }
+    /* make the Log hours button match input height but not full width */
+    .log-inputs .btn { height:44px; padding:0 1rem; align-self:center }
+
+    .empty { color:#94a3b8; padding:1rem; text-align:center }
+</style>
+{% endblock %}
+
+{% block content %}
+<section id="tasks-ojt-page">
+    <header class="toj-header">
+        <h1 class="toj-title">Tasks &amp; OJT</h1>
+        <p class="toj-sub">Your assigned tasks and on-the-job training progress</p>
+    </header>
+
+    <div class="toj-cards-container" id="toj-cards">
+        <div class="toj-left-column">
+            <div class="toj-card toj-card-hours">
+                <div class="toj-hours-summary">
+                    <div class="toj-card-hours-label toj-hours-heading"><i data-lucide="clock" aria-hidden="true"></i>Hours Logged <span id="toj-live-label" class="live-label"><span class="live-dot" aria-hidden="true"></span></span></div>
+                    <div id="toj-hours" class="toj-card-hours-value">0 hr / 80 hr</div>
+                </div>
+                <div class="toj-hours-progress">
+                    <div id="toj-percent" class="toj-card-hours-percent">80 hr remaining</div>
+                    <div class="progress-bar" aria-label="OJT hours progress"><div id="toj-bar" class="progress-bar-fill"></div></div>
+                </div>
+            </div>
+
+            <section class="toj-card toj-card-support" aria-labelledby="toj-support-heading">
+                <h2 id="toj-support-heading" class="toj-support-heading"><i data-lucide="calendar-days" aria-hidden="true"></i>Regular OJT Days</h2>
+                <div id="toj-regular-days" class="toj-regular-days" role="list" aria-label="Regular OJT weekdays" hidden></div>
+                <p id="toj-support-empty" class="toj-support-empty" hidden>No OJT schedule yet.</p>
+            </section>
+        </div>
+
+        <div class="toj-card toj-card-calendar" aria-label="Activity calendar">
+            <div class="toj-calendar-head">
+                <button type="button" id="toj-calendar-prev" class="toj-calendar-nav" aria-label="Previous month"><i data-lucide="chevron-left" aria-hidden="true"></i></button>
+                <div>
+                    <p id="toj-calendar-month" class="toj-calendar-month" aria-live="polite"></p>
+                </div>
+                <button type="button" id="toj-calendar-next" class="toj-calendar-nav" aria-label="Next month"><i data-lucide="chevron-right" aria-hidden="true"></i></button>
+            </div>
+            <div id="toj-calendar-grid" class="toj-calendar-grid" role="grid" aria-label="Activity calendar"></div>
+            <div class="toj-calendar-legend" aria-label="Calendar key">
+                <span class="toj-calendar-legend-item"><span class="toj-calendar-duty-marker" aria-hidden="true"></span>OJT duty day</span>
+                <span class="toj-calendar-legend-item"><span class="toj-calendar-duty-marker is-assigned" aria-hidden="true"></span>Assigned task</span>
+                <span class="toj-calendar-legend-item"><span class="toj-calendar-marker is-open" aria-hidden="true"></span>Open activity</span>
+                <span class="toj-calendar-legend-item"><span class="toj-calendar-today-marker" aria-hidden="true"></span>Today</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="toj-tabs" role="tablist">
+        <div class="toj-tab active" data-tab="upcoming">Upcoming</div>
+        <div class="toj-tab" data-tab="completed">Completed</div>
+        <div class="toj-tab" data-tab="evaluations">Evaluations</div>
+    </div>
+
+    <div id="toj-content">
+        <div id="tab-upcoming" class="tab-panel">
+            <div class="filter-pills" id="filter-pills"></div>
+
+            <h3>Today</h3>
+            <div class="task-list" id="today-list"></div>
+
+            <h3 style="margin-top:1rem">Upcoming</h3>
+            <div class="task-list" id="upcoming-list"></div>
+        </div>
+
+        <div id="tab-completed" class="tab-panel" style="display:none">
+            <div class="completed-toolbar">
+                <p class="completed-toolbar-title">Attendance history</p>
+                <a class="completed-export-btn" href="{% url 'export_volunteer_completed_pdf' %}">
+                    <i data-lucide="file-down" aria-hidden="true"></i>
+                    <span>Export PDF</span>
+                </a>
+            </div>
+            <div class="task-list" id="completed-list"></div>
+        </div>
+
+        <div id="tab-evaluations" class="tab-panel" style="display:none">
+            <div id="evaluations-list">
+                <p class="empty">No evaluations yet.</p>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<script>
+const ASSIGNED_TASKS_URL = "{% url 'volunteer_assigned_activities_api' %}";
+const ACTIVITY_CALENDAR_URL = "{% url 'volunteer_activity_calendar_api' %}";
+const ATTENDANCE_URL = "{% url 'volunteer_activity_attendance' %}";
+
+const MODULES = ['All','Rag-making','Teaching Kids','Planting','Outreach'];
+let tasks = [];
+let attendanceRecords = [];
+let ojtHours = 0;
+let ojtRequiredHours = 80;
+let assignedCalendarActivities = [];
+let openCalendarActivities = [];
+let calendarDutyDays = [];
+let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let calendarSelectedDate = new Date();
+let calendarNavDirection = '';
+let calendarNavAnimations = [];
+let calendarLoadError = '';
+let calendarScheduleSummary = null;
+let assignedTasksLoaded = false;
+
+function $(id){return document.getElementById(id)}
+
+function getCookie(name){
+    const cookies = document.cookie ? document.cookie.split(';') : [];
+    for(const cookie of cookies){
+        const trimmed = cookie.trim();
+        if(trimmed.startsWith(name + '=')) return decodeURIComponent(trimmed.substring(name.length + 1));
+    }
+    return '';
+}
+
+function init(){
+    renderPills();
+    bindTabs();
+    bindActivityCalendar();
+    loadActivityCalendar();
+    loadAssignedTasks().then(function(){
+        renderTasks();
+        renderCompleted();
+        updateStrip();
+    });
+    startTasksRefreshPoller();
+}
+
+function calendarDateKey(year, monthIndex, day){
+    return year + '-' + String(monthIndex + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+}
+
+function bindActivityCalendar(){
+    $('toj-calendar-prev').addEventListener('click', function(){
+        calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1);
+        calendarSelectedDate = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+        calendarNavDirection = 'previous';
+        loadActivityCalendar();
+    });
+    $('toj-calendar-next').addEventListener('click', function(){
+        calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1);
+        calendarSelectedDate = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+        calendarNavDirection = 'next';
+        loadActivityCalendar();
+    });
+    renderActivityCalendar();
+}
+
+function loadActivityCalendar(){
+    const monthValue = calendarMonth.getFullYear() + '-' + String(calendarMonth.getMonth() + 1).padStart(2, '0');
+    const url = ACTIVITY_CALENDAR_URL + '?month=' + encodeURIComponent(monthValue);
+    return fetch(url, { credentials: 'same-origin' })
+        .then(function(response){
+            if(!response.ok){ throw new Error('Unable to load scheduled activities.'); }
+            return response.json();
+        })
+        .then(function(payload){
+            const calendarActivities = Array.isArray(payload.items) ? payload.items : [];
+            assignedCalendarActivities = Array.isArray(payload.assigned_items) ? payload.assigned_items : calendarActivities.filter(function(item){ return item.type === 'assigned'; });
+            openCalendarActivities = Array.isArray(payload.open_items) ? payload.open_items : calendarActivities.filter(function(item){ return item.type === 'open'; });
+            calendarDutyDays = Array.isArray(payload.duty_days) ? payload.duty_days : [];
+            calendarScheduleSummary = payload;
+            calendarLoadError = '';
+            renderActivityCalendar();
+            renderOjtScheduleCard();
+            if(assignedTasksLoaded) renderTasks();
+            return payload;
+        })
+        .catch(function(error){
+            calendarLoadError = error.message || 'Scheduled activities could not be loaded.';
+            assignedCalendarActivities = [];
+            openCalendarActivities = [];
+            calendarDutyDays = [];
+            calendarScheduleSummary = null;
+            renderActivityCalendar();
+            renderOjtScheduleCard();
+            if(assignedTasksLoaded) renderTasks();
+            return null;
+        });
+}
+
+function renderOjtScheduleCard(){
+    if(window.__tojOjtTimeInTimer){
+        window.clearTimeout(window.__tojOjtTimeInTimer);
+        window.__tojOjtTimeInTimer = null;
+    }
+    const regularDays = $('toj-regular-days');
+    const emptyMessage = $('toj-support-empty');
+    const summary = calendarScheduleSummary;
+    const scheduleExists = Boolean(summary && summary.has_schedule);
+    const weekdayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const weekdayAbbreviations = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    const dutyWeekdays = Array.from(new Set((summary && Array.isArray(summary.schedule_weekdays) ? summary.schedule_weekdays : []).map(Number)))
+        .filter(function(day){ return Number.isInteger(day) && day >= 0 && day < weekdayNames.length; });
+
+    regularDays.replaceChildren();
+    regularDays.hidden = !scheduleExists;
+    emptyMessage.hidden = scheduleExists;
+    if(!scheduleExists) return;
+
+    const today = new Date();
+    const todayKey = calendarDateKey(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayDuty = summary.today_duty;
+    const referenceDate = summary.schedule_effective_from && summary.schedule_effective_from > todayKey
+        ? new Date(summary.schedule_effective_from + 'T12:00:00')
+        : today;
+    const referenceDay = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+    function dateForWeekday(weekday){
+        const currentWeekday = (referenceDay.getDay() + 6) % 7;
+        const daysUntil = (weekday - currentWeekday + 7) % 7;
+        const nextDate = new Date(referenceDay);
+        nextDate.setDate(nextDate.getDate() + daysUntil);
+        return nextDate;
+    }
+    dutyWeekdays.sort(function(first, second){
+        const firstDelta = Math.round((dateForWeekday(first) - referenceDay) / 86400000);
+        const secondDelta = Math.round((dateForWeekday(second) - referenceDay) / 86400000);
+        return firstDelta - secondDelta;
+    });
+
+    dutyWeekdays.forEach(function(weekday){
+        const weekdayDate = dateForWeekday(weekday);
+        const isToday = weekdayDate.getFullYear() === today.getFullYear() && weekdayDate.getMonth() === today.getMonth() && weekdayDate.getDate() === today.getDate();
+        const row = document.createElement('div');
+        row.className = 'toj-regular-day-row';
+        row.setAttribute('role', 'listitem');
+        const mark = document.createElement('span');
+        mark.className = 'toj-regular-day-mark';
+        mark.setAttribute('aria-hidden', 'true');
+        mark.textContent = weekdayAbbreviations[weekday];
+        const info = document.createElement('span');
+        info.className = 'toj-regular-day-info';
+        const name = document.createElement('strong');
+        name.className = 'toj-regular-day-name';
+        name.textContent = weekdayNames[weekday];
+        const isActiveToday = isToday && todayDuty && todayDuty.date === todayKey;
+        const dateLabel = document.createElement('span');
+        dateLabel.className = 'toj-regular-day-date';
+        dateLabel.textContent = weekdayDate.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+        info.append(name, dateLabel);
+        const activeAssignment = isActiveToday && todayDuty.assignment_id
+            ? tasks.find(function(task){ return String(task.id) === String(todayDuty.assignment_id); })
+            : null;
+        const timeInValue = todayDuty.time_in || (activeAssignment && activeAssignment.attendanceStartedAt) || '';
+        if(isActiveToday && timeInValue){
+            const timeInLabel = document.createElement('span');
+            timeInLabel.className = 'toj-regular-day-timein';
+            timeInLabel.textContent = 'Timed in at ' + formatTimeOnly(new Date(timeInValue));
+            info.appendChild(timeInLabel);
+        }
+        if(isActiveToday && todayDuty.status === 'upcoming'){
+            const note = document.createElement('span');
+            note.className = 'toj-regular-day-note';
+            const startTime = todayDuty.start_time || '08:00';
+            const startAt = new Date(todayKey + 'T' + startTime + ':00');
+            note.textContent = 'Time in opens at ' + formatTimeOnly(startAt);
+            info.appendChild(note);
+        }
+        row.append(mark, info);
+
+        if(isActiveToday){
+            const attendanceActions = document.createElement('span');
+            attendanceActions.className = 'toj-regular-day-attendance';
+            const attendanceButton = document.createElement('button');
+            attendanceButton.type = 'button';
+            attendanceButton.className = 'toj-timein-button toj-schedule-attendance';
+            if(todayDuty.status === 'upcoming' || todayDuty.status === 'active'){
+                const actionType = todayDuty.status === 'active' ? 'time_out' : 'time_in';
+                attendanceButton.textContent = actionType === 'time_out' ? 'Time out' : 'Time in';
+                if(actionType === 'time_out'){
+                    attendanceButton.classList.add('danger-outline');
+                    const elapsedLabel = document.createElement('span');
+                    elapsedLabel.className = 'toj-regular-day-elapsed';
+                    elapsedLabel.setAttribute('aria-label', 'Time elapsed');
+                    elapsedLabel.dataset.timeIn = todayDuty.time_in || '';
+                    if(!elapsedLabel.dataset.timeIn && activeAssignment) elapsedLabel.dataset.timeIn = activeAssignment.attendanceStartedAt || '';
+                    function updateElapsedLabel(){
+                        const startedAt = new Date(elapsedLabel.dataset.timeIn);
+                        const elapsedMinutes = Number.isNaN(startedAt.getTime()) ? 0 : Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 60000));
+                        elapsedLabel.textContent = '+' + elapsedMinutes + ' min';
+                    }
+                    updateElapsedLabel();
+                    attendanceActions.appendChild(elapsedLabel);
+                    if(!window.__tojOjtElapsedInterval){
+                        window.__tojOjtElapsedInterval = window.setInterval(function(){
+                            document.querySelectorAll('.toj-regular-day-elapsed').forEach(function(label){
+                                const startedAt = new Date(label.dataset.timeIn);
+                                const elapsedMinutes = Number.isNaN(startedAt.getTime()) ? 0 : Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 60000));
+                                label.textContent = '+' + elapsedMinutes + ' min';
+                            });
+                        }, 60000);
+                    }
+                }
+                if(actionType === 'time_in'){
+                    const startAt = new Date(todayKey + 'T' + (todayDuty.start_time || '08:00') + ':00');
+                    const remaining = startAt.getTime() - Date.now();
+                    attendanceButton.disabled = remaining > 0;
+                    if(remaining > 0){
+                        window.__tojOjtTimeInTimer = window.setTimeout(renderOjtScheduleCard, remaining);
+                    }
+                }
+                attendanceButton.addEventListener('click', function(){ submitCalendarAttendance(attendanceButton, actionType, todayDuty.assignment_id || null, todayKey); });
+            } else {
+                attendanceButton.disabled = true;
+                attendanceButton.textContent = todayDuty.status === 'pending' ? 'Pending' : todayDuty.status === 'done' ? 'Done' : 'Missed';
+            }
+            attendanceActions.appendChild(attendanceButton);
+            row.appendChild(attendanceActions);
+        }
+        regularDays.appendChild(row);
+    });
+    if(!summary || !summary.today_duty || summary.today_duty.status !== 'active'){
+        if(window.__tojOjtElapsedInterval){
+            window.clearInterval(window.__tojOjtElapsedInterval);
+            window.__tojOjtElapsedInterval = null;
+        }
+    }
+}
+
+function appendCalendarEmptyCell(grid){
+    const empty = document.createElement('div');
+    empty.className = 'toj-calendar-cell toj-calendar-empty';
+    empty.setAttribute('role', 'gridcell');
+    grid.appendChild(empty);
+}
+
+function renderActivityCalendar(){
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const monthLabel = calendarMonth.toLocaleDateString('en-US', { month:'long', year:'numeric' });
+    const grid = $('toj-calendar-grid');
+    $('toj-calendar-month').textContent = monthLabel;
+    grid.replaceChildren();
+
+    ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].forEach(function(label){
+        const weekday = document.createElement('span');
+        weekday.className = 'toj-calendar-weekday';
+        weekday.textContent = label;
+        weekday.setAttribute('role', 'columnheader');
+        grid.appendChild(weekday);
+    });
+    for(let blank = 0; blank < firstWeekday; blank++){
+        appendCalendarEmptyCell(grid);
+    }
+    for(let day = 1; day <= daysInMonth; day++){
+        const key = calendarDateKey(year, month, day);
+        const date = new Date(year, month, day);
+        const duty = calendarDutyDays.find(function(item){ return item.date === key; });
+        const assignedEvents = assignedCalendarActivities.filter(function(activity){ return activity.date === key; });
+        const openEvents = openCalendarActivities.filter(function(activity){ return activity.date === key; });
+        const cell = document.createElement('div');
+        cell.className = 'toj-calendar-cell';
+        cell.setAttribute('role', 'gridcell');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'toj-calendar-day';
+        if(duty) button.classList.add('is-duty-day');
+        if(assignedEvents.length) button.classList.add('is-assigned-day');
+        const isSelected = calendarSelectedDate && calendarDateKey(calendarSelectedDate.getFullYear(), calendarSelectedDate.getMonth(), calendarSelectedDate.getDate()) === key;
+        const isToday = key === calendarDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+        if(isSelected) button.classList.add('is-selected');
+        if(isToday) button.classList.add('is-today');
+        button.textContent = String(day);
+        button.setAttribute('aria-label', date.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' }) + (duty ? ', OJT ' + duty.status : '') + (assignedEvents.length ? ', ' + assignedEvents.length + ' assigned ' + (assignedEvents.length === 1 ? 'task' : 'tasks') : '') + (openEvents.length ? ', ' + openEvents.length + ' open ' + (openEvents.length === 1 ? 'activity' : 'activities') : ''));
+        button.setAttribute('aria-pressed', String(Boolean(isSelected)));
+        button.addEventListener('click', function(){
+            const previousSelected = grid.querySelector('.toj-calendar-day.is-selected');
+            if(previousSelected){
+                previousSelected.classList.remove('is-selected');
+                previousSelected.setAttribute('aria-pressed', 'false');
+            }
+            calendarSelectedDate = date;
+            button.classList.add('is-selected');
+            button.setAttribute('aria-pressed', 'true');
+            if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+                button.animate([
+                    { transform:'scale(.88)' },
+                    { transform:'scale(1)' }
+                ], { duration:180, easing:'cubic-bezier(.2,.8,.2,1)' });
+            }
+        });
+        cell.appendChild(button);
+        if(openEvents.length){
+            const openMarker = document.createElement('span');
+            openMarker.className = 'toj-calendar-marker is-open';
+            openMarker.setAttribute('aria-hidden', 'true');
+            cell.appendChild(openMarker);
+        }
+        grid.appendChild(cell);
+    }
+    for(let blank = firstWeekday + daysInMonth; blank < 42; blank++){
+        appendCalendarEmptyCell(grid);
+    }
+    if(calendarNavDirection){
+        animateCalendarNavigation(calendarNavDirection);
+        calendarNavDirection = '';
+    }
+}
+
+function animateCalendarNavigation(direction){
+    calendarNavAnimations.forEach(function(animation){ animation.cancel(); });
+    calendarNavAnimations = [];
+    const monthHeading = $('toj-calendar-month');
+    const calendarGrid = $('toj-calendar-grid');
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+        [monthHeading, calendarGrid].forEach(function(element){
+            calendarNavAnimations.push(element.animate([
+                { opacity:.55 },
+                { opacity:1 }
+            ], { duration:180, easing:'ease-out' }));
+        });
+        return;
+    }
+    const offset = direction === 'next' ? '14px' : '-14px';
+    const easing = 'cubic-bezier(.22,.68,.25,1)';
+    calendarNavAnimations.push(monthHeading.animate([
+        { opacity:0, transform:'translateX(' + offset + ')' },
+        { opacity:1, transform:'translateX(0)' }
+    ], { duration:220, easing:easing }));
+    calendarNavAnimations.push(calendarGrid.animate([
+        { opacity:0, transform:'translateX(' + offset + ')' },
+        { opacity:1, transform:'translateX(0)' }
+    ], { duration:280, delay:25, easing:easing }));
+}
+
+function submitCalendarAttendance(button, action, assignmentId, dutyDate){
+    button.disabled = true;
+    const body = new FormData();
+    body.append('action', action);
+    if(assignmentId) body.append('assignment_id', String(assignmentId));
+    else body.append('duty_date', dutyDate);
+    fetch(ATTENDANCE_URL, { method:'POST', credentials:'same-origin', headers:{'X-CSRFToken': getCookie('csrftoken')}, body:body })
+        .then(function(response){
+            return response.text().then(function(raw){
+                let payload = {};
+                try{ payload = JSON.parse(raw || '{}'); }catch(error){ throw new Error('The server rejected the attendance request.'); }
+                if(!response.ok) throw new Error(payload.error || 'Unable to time in.');
+                return payload;
+            });
+        })
+        .then(function(){ return Promise.all([loadAssignedTasks(), loadActivityCalendar()]); })
+        .then(function(){ renderTasks(); renderCompleted(); updateStrip(); })
+        .catch(function(error){ button.disabled=false; button.textContent=error.message || 'Time in'; });
+}
+
+function startTasksRefreshPoller(){
+    if(window.__tojTasksRefreshTimer){
+        window.clearInterval(window.__tojTasksRefreshTimer);
+    }
+    window.__tojTasksRefreshTimer = window.setInterval(function(){
+        loadAssignedTasks().then(function(){
+            renderTasks();
+            renderCompleted();
+            updateStrip();
+        });
+    }, 5000);
+}
+
+function loadAssignedTasks(){
+    return fetch(ASSIGNED_TASKS_URL, { credentials: 'same-origin' })
+        .then(function(response){
+            if(!response.ok){ throw new Error('Unable to load assigned tasks.'); }
+            return response.json();
+        })
+        .then(function(payload){
+            var items = Array.isArray(payload.items) ? payload.items : [];
+            attendanceRecords = Array.isArray(payload.attendance) ? payload.attendance : [];
+            ojtHours = Number(payload.ojt_hours || 0);
+            ojtRequiredHours = Number(payload.ojt_hours_required || 80);
+            if(!Number.isFinite(ojtRequiredHours) || ojtRequiredHours <= 0){ ojtRequiredHours = 80; }
+            tasks = items.map(function(item){
+                var module = normalizeActivityType(item.activity_type || '') || deriveModule(item.activity_name || '');
+                var datetimeFrom = buildIsoDateTime(item.date, item.time);
+                var datetimeTo = item.end_time ? buildIsoDateTime(item.date, item.end_time) : '';
+                var status = String(item.status || 'upcoming').toLowerCase();
+                return {
+                    id: item.id,
+                    activityId: item.activity_id || item.id,
+                    title: item.activity_name || 'Activity',
+                    scheduledDate: item.date || '',
+                    module: module,
+                    datetimeFrom: datetimeFrom,
+                    datetimeTo: datetimeTo,
+                    location: item.location || 'TBA',
+                    description: item.activity_description || '',
+                    status: status,
+                    attendanceStartedAt: item.attendance_started_at || '',
+                    attendanceEndedAt: item.attendance_ended_at || '',
+                    imageUrl: item.image_url || '',
+                    beneficiaries: Array.isArray(item.beneficiaries) ? item.beneficiaries : [],
+                    attendance: Array.isArray(item.attendance) ? item.attendance : [],
+                    bring: '',
+                    receive: '',
+                    coordinator: item.notes || ''
+                };
+            });
+            renderOjtScheduleCard();
+            assignedTasksLoaded = true;
+        })
+        .catch(function(){
+            tasks = [];
+            attendanceRecords = [];
+            renderOjtScheduleCard();
+            assignedTasksLoaded = true;
+        });
+}
+
+function deriveModule(title){
+    var lowered = String(title || '').toLowerCase();
+    if(lowered.includes('rag')) return 'rag-making';
+    if(lowered.includes('teach')) return 'teaching-kids';
+    if(lowered.includes('tan') || lowered.includes('plant')) return 'pagtatanim';
+    if(lowered.includes('outreach') || lowered.includes('community')) return 'outreach';
+    return '';
+}
+
+function normalizeActivityType(value){
+    var normalized = String(value || '').trim().toLowerCase();
+    if(!normalized){
+        return '';
+    }
+    return normalized.replace(/_/g, '-');
+}
+
+function buildIsoDateTime(dateValue, timeValue){
+    if(!dateValue) return '';
+    if(timeValue){ return dateValue + 'T' + timeValue + ':00'; }
+    return dateValue;
+}
+
+function renderPills(){
+    const el = $('filter-pills');
+    MODULES.forEach((m,i)=>{
+        const pill = document.createElement('div'); pill.className='pill'+(i===0?' active':''); pill.textContent=m;
+        pill.addEventListener('click',()=>{ document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active')); pill.classList.add('active'); renderTasks(); });
+        el.appendChild(pill);
+    });
+}
+
+function bindTabs(){
+    document.querySelectorAll('.toj-tab').forEach(t=>t.addEventListener('click',()=>{
+        document.querySelectorAll('.toj-tab').forEach(x=>x.classList.remove('active'));
+        t.classList.add('active');
+        const tab = t.dataset.tab;
+        document.querySelectorAll('.tab-panel').forEach(p=>p.style.display='none');
+        $('tab-'+tab).style.display='block';
+    }));
+}
+
+function isTodayDate(iso){
+    try{ const d = new Date(iso); const now = new Date(); return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth() && d.getDate()===now.getDate(); }catch(e){return false}
+}
+
+function fmtDateTime(iso){ try{ const d = new Date(iso); return d.toLocaleString([], { dateStyle:'medium', timeStyle:'short' }); }catch(e){ return '' } }
+function fmtCardDateTime(iso){ try{ const d = new Date(iso); return d.toLocaleDateString('en-US',{ month:'short', day:'numeric', year:'numeric' }) + ' · ' + d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }); }catch(e){ return '' } }
+
+function formatDateOnly(d){ try{ return d.toLocaleDateString('en-US',{ month:'short', day:'numeric', year:'numeric' }); }catch(e){return ''} }
+function formatTimeOnly(d){ try{ return d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }); }catch(e){return ''} }
+function formatHourDuration(hours){
+    const wholeHours = Math.floor(Math.max(0, Number(hours || 0)));
+    return wholeHours + ' hr';
+}
+function formatRange(startIso, endIso){ try{
+    const s = new Date(startIso); const e = new Date(endIso);
+    if(s.toDateString() === e.toDateString()){
+        return formatDateOnly(s) + ' · ' + formatTimeOnly(s) + ' – ' + formatTimeOnly(e);
+    }
+    return formatDateOnly(s) + ' · ' + formatTimeOnly(s) + ' – ' + formatDateOnly(e) + ' · ' + formatTimeOnly(e);
+}catch(ex){ return fmtDateTime(startIso) + ' — ' + fmtDateTime(endIso) }}
+
+function renderTasks(){
+    const filter = document.querySelector('.pill.active').textContent;
+    const todayList = $('today-list'); const upcomingList = $('upcoming-list');
+    todayList.innerHTML=''; upcomingList.innerHTML='';
+    const timeInButtonDays = new Set();
+    const currentDateKey = calendarDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+    tasks.forEach(t=>{
+        if(filter!=='All' && t.module.toLowerCase() !== filter.toLowerCase().replace(/\s+/g,'-')) return;
+        const taskDate = t.scheduledDate ? new Date(t.scheduledDate + 'T12:00:00') : t.datetimeFrom ? new Date(t.datetimeFrom) : new Date();
+        const taskDateKey = t.scheduledDate || calendarDateKey(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
+        const todayDuty = calendarScheduleSummary && calendarScheduleSummary.today_duty;
+        const isScheduledOjtDutyDay = Boolean(todayDuty && todayDuty.date === taskDateKey);
+        if(t.status === 'completed') { timeInButtonDays.add(taskDateKey); return; }
+        const dtLabel = t.datetimeFrom ? (t.datetimeTo ? formatRange(t.datetimeFrom, t.datetimeTo) : fmtCardDateTime(t.datetimeFrom)) : '';
+        let isToday = taskDateKey === currentDateKey;
+
+        const card = document.createElement('div');
+        card.className='task-card'+(isToday? ' today':'' )+(t.status === 'time_in' || t.status === 'in_progress' ? ' in-progress' : '')+(t.status === 'awaiting_confirmation' ? ' awaiting-confirmation' : '')+(t.status === 'missed' ? ' missed' : '');
+        const topRow = document.createElement('div'); topRow.className='task-card-top';
+        const info = document.createElement('div'); info.className='task-card-main';
+
+        const title = document.createElement('div'); title.innerHTML = '<strong>'+t.title+'</strong>';
+        if(t.description){ const description = document.createElement('div'); description.className='task-description'; description.textContent=t.description; info.appendChild(description); }
+        const sub = document.createElement('div'); sub.style.fontSize='0.9rem'; sub.style.color='#64748b'; sub.textContent = dtLabel + (dtLabel? ' • ' : '') + t.location;
+        info.appendChild(title);
+        const attendanceMeta = document.createElement('div'); attendanceMeta.className='task-attendance-meta'; attendanceMeta.dataset.taskMeta = t.id;
+        attendanceMeta.innerHTML = attendanceMetaText(t);
+        if(attendanceMeta.textContent) info.appendChild(attendanceMeta);
+        info.appendChild(sub);
+        if(t.module){ const category = document.createElement('span'); category.className='task-category'; category.textContent=moduleLabel(t.module); info.appendChild(category); }
+
+        if(Array.isArray(t.beneficiaries) && t.beneficiaries.length){
+            const beneficiaryAction = document.createElement('div');
+            beneficiaryAction.className = 'task-beneficiary-list';
+            if(t.status === 'time_in' || t.status === 'in_progress'){
+                const manageButton = document.createElement('button');
+                manageButton.type = 'button';
+                manageButton.className = 'task-beneficiary-manage';
+                manageButton.textContent = 'Manage beneficiary attendance';
+                manageButton.addEventListener('click', function(event){
+                    event.stopPropagation();
+                    const targetUrl = '{% url "volunteer_beneficiary_attendance_page" %}?activity_id=' + encodeURIComponent(t.activityId || t.id);
+                    const page = document.getElementById('tasks-ojt-page');
+                    if(page){
+                        page.classList.add('toj-page-leaving');
+                        window.setTimeout(function(){ window.location.href = targetUrl; }, 180);
+                    } else {
+                        window.location.href = targetUrl;
+                    }
+                });
+                beneficiaryAction.appendChild(manageButton);
+            } else {
+                const lockedMessage = document.createElement('span');
+                lockedMessage.className = 'task-beneficiary-locked';
+                lockedMessage.textContent = 'Time in to manage beneficiary attendance.';
+                beneficiaryAction.appendChild(lockedMessage);
+            }
+            info.appendChild(beneficiaryAction);
+        }
+
+        const status = document.createElement('div');
+        if(t.status === 'completed') { status.className='status-done'; status.textContent='Completed'; }
+        else if(t.status === 'awaiting_confirmation') { status.className='status-amber'; status.textContent='Awaiting confirmation'; }
+        else if(t.status === 'time_in' || t.status === 'in_progress') { status.className='status-live'; status.innerHTML='<span class="live-dot"></span>In progress'; }
+        else if(t.status === 'missed') { status.className='status-danger'; status.textContent='Missed'; }
+        else if(isToday) { status.className='status-teal'; status.textContent='Today'; }
+        else { status.className='status-amber'; status.textContent='Upcoming'; }
+
+        topRow.appendChild(info); topRow.appendChild(status);
+        card.appendChild(topRow);
+        if(t.status === 'time_in' || t.status === 'in_progress'){
+            timeInButtonDays.add(taskDateKey);
+            if(!isScheduledOjtDutyDay) addCardAttendanceAction(card, t, 'time_out');
+        }
+        else if(t.status === 'awaiting_confirmation' || t.status === 'missed' || t.status === 'cancelled') timeInButtonDays.add(taskDateKey);
+        else if(isToday && t.status !== 'awaiting_confirmation' && t.status !== 'missed' && t.status !== 'cancelled'){
+            const hasDutyDay = isScheduledOjtDutyDay || calendarDutyDays.some(function(duty){ return duty.date === taskDateKey; });
+            if(!hasDutyDay && !timeInButtonDays.has(taskDateKey)){
+                addCardAttendanceAction(card, t, 'time_in');
+                timeInButtonDays.add(taskDateKey);
+            }
+        }
+
+        if(isToday) todayList.appendChild(card); else upcomingList.appendChild(card);
+    })
+    if(todayList.children.length===0) todayList.innerHTML='<div class="empty">No tasks for today.</div>';
+    if(upcomingList.children.length===0) upcomingList.innerHTML='<div class="empty">No upcoming tasks.</div>';
+}
+
+function formatElapsed(milliseconds){
+    const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return [hours, minutes, seconds].map(function(value){ return String(value).padStart(2, '0'); }).join(':');
+}
+
+function latestAttendance(task, status){
+    const records = Array.isArray(task.attendance) ? task.attendance : [];
+    return records.filter(function(record){ return !status || record.status === status; }).slice(-1)[0] || null;
+}
+
+function closeBeneficiaryAttendanceModal(){
+    const modal = document.getElementById('beneficiary-attendance-modal-backdrop');
+    if(!modal || modal.classList.contains('is-closing')) return;
+    modal.classList.add('is-closing');
+    window.setTimeout(function(){ modal.remove(); }, 170);
+}
+
+function openBeneficiaryAttendanceModal(task){
+    closeBeneficiaryAttendanceModal();
+    const backdrop = document.createElement('div');
+    backdrop.id = 'beneficiary-attendance-modal-backdrop';
+    backdrop.className = 'beneficiary-attendance-modal-backdrop';
+    const modal = document.createElement('section');
+    modal.className = 'beneficiary-attendance-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Manage beneficiary attendance');
+    const head = document.createElement('div');
+    head.className = 'beneficiary-attendance-modal-head';
+    const headCopy = document.createElement('div');
+    headCopy.className = 'beneficiary-attendance-modal-head-copy';
+    headCopy.innerHTML = '<p class="beneficiary-attendance-modal-kicker">Live attendance</p><h2 class="beneficiary-attendance-modal-title"></h2><p class="beneficiary-attendance-modal-subtitle">Confirm who attended this assigned activity</p>';
+    headCopy.querySelector('.beneficiary-attendance-modal-title').textContent = task.title;
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button'; closeButton.className = 'beneficiary-attendance-modal-close';
+    closeButton.setAttribute('aria-label', 'Close'); closeButton.textContent = '×';
+    head.appendChild(headCopy); head.appendChild(closeButton);
+    closeButton.addEventListener('click', closeBeneficiaryAttendanceModal);
+    const body = document.createElement('div');
+    body.className = 'beneficiary-attendance-modal-body';
+    const beneficiaryRows = Array.isArray(task.beneficiaries) ? task.beneficiaries : [];
+    const summary = document.createElement('p');
+    summary.className = 'beneficiary-attendance-modal-summary';
+    summary.innerHTML = '<span>Assigned beneficiaries</span><span><strong></strong><span class="beneficiary-attendance-modal-summary-detail"></span></span>';
+    body.appendChild(summary);
+    const summaryCount = summary.querySelector('strong');
+    const summaryDetail = summary.querySelector('.beneficiary-attendance-modal-summary-detail');
+    const tools = document.createElement('div');
+    tools.className = 'beneficiary-attendance-modal-tools';
+    const search = document.createElement('input');
+    search.type = 'search'; search.className = 'beneficiary-attendance-modal-search';
+    search.placeholder = 'Search beneficiaries'; search.setAttribute('aria-label', 'Search beneficiaries');
+    tools.appendChild(search);
+    const filters = document.createElement('div');
+    filters.className = 'beneficiary-attendance-modal-filters';
+    const activeFilter = { value: 'all' };
+    ['all', 'pending', 'confirmed'].forEach(function(filterValue){
+        const filterButton = document.createElement('button');
+        filterButton.type = 'button'; filterButton.className = 'beneficiary-attendance-modal-filter' + (filterValue === 'all' ? ' is-active' : '');
+        filterButton.textContent = filterValue === 'all' ? 'All' : filterValue === 'pending' ? 'Needs action' : 'Confirmed';
+        filterButton.addEventListener('click', function(){
+            activeFilter.value = filterValue;
+            filters.querySelectorAll('button').forEach(function(button){ button.classList.toggle('is-active', button === filterButton); });
+            renderRows();
+        });
+        filters.appendChild(filterButton);
+    });
+    tools.appendChild(filters); body.appendChild(tools);
+    const list = document.createElement('div');
+    list.className = 'beneficiary-attendance-modal-list';
+    body.appendChild(list);
+    function renderRows(){
+        const query = search.value.trim().toLowerCase();
+        const pendingCount = beneficiaryRows.filter(function(item){ return String(item.status || '') !== 'confirmed' && !item.confirmed_at; }).length;
+        summaryCount.textContent = beneficiaryRows.length + ' total';
+        summaryDetail.textContent = ' · ' + pendingCount + ' need action';
+        const visibleRows = beneficiaryRows.filter(function(item){
+            const statusValue = String(item.status || 'pending');
+            const matchesFilter = activeFilter.value === 'all' || (activeFilter.value === 'confirmed' ? statusValue === 'confirmed' : statusValue !== 'confirmed');
+            return matchesFilter && (!query || String(item.name || '').toLowerCase().includes(query));
+        });
+        list.innerHTML = '';
+        if(!visibleRows.length){
+            const empty = document.createElement('p'); empty.className = 'beneficiary-attendance-modal-empty';
+            empty.textContent = beneficiaryRows.length ? 'No beneficiaries match this search or filter.' : 'No beneficiaries are assigned to this activity.';
+            list.appendChild(empty); return;
+        }
+        visibleRows.forEach(function(beneficiary){
+            const row = document.createElement('div');
+            row.className = 'beneficiary-attendance-modal-row';
+            const person = document.createElement('div');
+            person.className = 'beneficiary-attendance-modal-person';
+            const avatar = document.createElement('span');
+            avatar.className = 'beneficiary-attendance-modal-avatar';
+            const initials = String(beneficiary.name || 'B').split(/\s+/).filter(Boolean).slice(0, 2).map(function(part){ return part.charAt(0).toUpperCase(); }).join('') || 'B';
+            if(beneficiary.avatar_url){
+                const avatarImage = document.createElement('img'); avatarImage.src = beneficiary.avatar_url; avatarImage.alt = '';
+                avatarImage.onerror = function(){ avatar.textContent = initials; }; avatar.appendChild(avatarImage);
+            } else { avatar.textContent = initials; }
+            const meta = document.createElement('div'); meta.className = 'beneficiary-attendance-modal-meta';
+            const name = document.createElement('span'); name.className = 'beneficiary-attendance-modal-name'; name.textContent = beneficiary.name || 'Beneficiary';
+            const status = document.createElement('span'); status.className = 'beneficiary-attendance-modal-status';
+            const beneficiaryStatus = String(beneficiary.status || 'pending');
+            status.textContent = beneficiary.status_label || (beneficiaryStatus === 'confirmed' ? 'Confirmed' : beneficiaryStatus === 'rejected' ? 'Rejected' : 'Pending');
+            meta.appendChild(name); meta.appendChild(status); person.appendChild(avatar); person.appendChild(meta); row.appendChild(person);
+            if(beneficiaryStatus !== 'confirmed' && !(beneficiaryStatus === 'pending' && beneficiary.confirmed_at)){
+                const button = document.createElement('button'); button.type = 'button'; button.className = 'task-beneficiary-confirm';
+                button.textContent = beneficiaryStatus === 'rejected' ? 'Resubmit attendance' : 'Confirm attendance';
+                button.addEventListener('click', function(){ submitBeneficiaryAttendance(task, beneficiary, button); }); row.appendChild(button);
+            }
+            list.appendChild(row);
+        });
+    }
+    search.addEventListener('input', renderRows);
+    renderRows();
+    modal.appendChild(head); modal.appendChild(body); backdrop.appendChild(modal); document.body.appendChild(backdrop);
+    backdrop.addEventListener('click', function(event){ if(event.target === backdrop) closeBeneficiaryAttendanceModal(); });
+}
+
+function attendanceMetaText(task){
+    if(task.status === 'time_in' || task.status === 'in_progress'){
+        return 'Timed in at ' + formatTimeOnly(new Date(task.attendanceStartedAt)) + ' · <strong data-live-task="' + task.id + '">' + formatElapsed(Date.now() - new Date(task.attendanceStartedAt).getTime()) + '</strong>';
+    }
+    if(task.status === 'awaiting_confirmation'){
+        const record = latestAttendance(task, 'pending');
+        return record ? 'Ended at ' + formatTimeOnly(new Date(record.time_out)) + ' · ' + (Number(record.duration_minutes || 0) / 60).toFixed(2) + ' hrs logged' : 'Awaiting admin confirmation';
+    }
+    if(task.status === 'completed'){
+        const record = latestAttendance(task, 'confirmed');
+        return 'Confirmed by admin · ' + (record ? (Number(record.duration_minutes || 0) / 60).toFixed(2) : '0.00') + ' hrs added';
+    }
+    return '';
+}
+
+function moduleLabel(m){ if(m==='rag-making') return 'Rag Making'; if(m==='teaching-kids') return 'Teaching Kids'; if(m==='pagtatanim') return 'Planting'; if(m==='outreach') return 'Outreach'; return '' }
+function moduleClass(m){ if(m==='rag-making') return 'tag-rag-making'; if(m==='teaching-kids') return 'tag-teaching-kids'; if(m==='pagtatanim') return 'tag-pagtatanim'; if(m==='outreach') return 'tag-outreach'; return '' }
+
+function submitAttendance(task, action, btn, resetLabel){
+    btn.disabled = true;
+    const body = new FormData(); body.append('assignment_id', task.id); body.append('action', action);
+    fetch(ATTENDANCE_URL, { method:'POST', credentials:'same-origin', headers:{'X-CSRFToken': getCookie('csrftoken')}, body:body })
+        .then(function(response){
+            return response.text().then(function(raw){
+                let payload = {};
+                try{ payload = JSON.parse(raw || '{}'); }catch(error){ throw new Error('The server rejected the attendance request. Refresh the page and try again.'); }
+                if(!response.ok) throw new Error(payload.error || 'Unable to update attendance.');
+                return payload;
+            });
+        })
+        .then(function(){ return Promise.all([loadAssignedTasks(), loadActivityCalendar()]); })
+        .then(function(){ renderTasks(); renderCompleted(); updateStrip(); })
+        .catch(function(error){ btn.disabled=false; btn.textContent=error.message || resetLabel; });
+}
+
+function submitBeneficiaryAttendance(task, beneficiary, button){
+    if(!button) return;
+    button.disabled = true;
+    button.textContent = 'Submitting...';
+    const body = new FormData();
+    body.append('activity_id', String(task.activityId || task.id));
+    body.append('beneficiary_id', String(beneficiary.id));
+    body.append('action', 'confirm');
+    fetch('{% url "volunteer_beneficiary_attendance" %}', { method:'POST', credentials:'same-origin', headers:{'X-CSRFToken': getCookie('csrftoken')}, body:body })
+        .then(function(response){
+            return response.text().then(function(raw){
+                let payload = {};
+                try{ payload = JSON.parse(raw || '{}'); }catch(error){ throw new Error('The server rejected the beneficiary attendance request.'); }
+                if(!response.ok) throw new Error(payload.error || 'Unable to confirm beneficiary attendance.');
+                return payload;
+            });
+        })
+        .then(function(){ closeBeneficiaryAttendanceModal(); return loadAssignedTasks(); })
+        .then(function(){ renderTasks(); renderCompleted(); updateStrip(); })
+        .catch(function(error){
+            button.disabled = false;
+            button.textContent = 'Confirm';
+            window.alert(error.message || 'Unable to submit attendance.');
+        });
+}
+
+function addCardAttendanceAction(card, task, action){
+    const actionArea = document.createElement('div'); actionArea.className = 'task-action';
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'btn ' + (action === 'time_out' ? 'danger-outline' : 'teal');
+    button.textContent = action === 'time_out' ? 'Time out' : 'Time in';
+    button.addEventListener('click', function(event){
+        event.stopPropagation();
+        if(action === 'time_in') submitAttendance(task, action, button, 'Time in');
+        else showTimeoutConfirmation(card, task, button);
+    });
+    actionArea.appendChild(button); card.appendChild(actionArea);
+}
+
+function showTimeoutConfirmation(card, task, timeoutButton){
+    timeoutButton.style.display = 'none';
+    const confirmation = document.createElement('div'); confirmation.className = 'task-timeout-confirm visible';
+    confirmation.innerHTML = '<span>Time out now? This will stop the timer.</span><span class="confirm-actions"><button type="button" class="btn">Cancel</button><button type="button" class="btn danger-outline">Confirm time out</button></span>';
+    confirmation.querySelector('.btn').addEventListener('click', function(){ confirmation.classList.remove('visible'); window.setTimeout(function(){ confirmation.remove(); timeoutButton.style.display = ''; }, 180); });
+    confirmation.querySelector('.danger-outline').addEventListener('click', function(){
+        submitAttendance(task, 'time_out', confirmation.querySelector('.danger-outline'), 'Confirm time out');
+    });
+    card.appendChild(confirmation);
+}
+
+function renderCompleted(){
+    const el = $('completed-list'); el.innerHTML='';
+    const completed = tasks.filter(function(task){ return task.status === 'completed'; });
+    if(completed.length===0){ el.innerHTML='<div class="empty">No completed tasks yet.</div>'; return; }
+    const rows = [];
+    completed.forEach(function(task){
+        const confirmedRecords = (Array.isArray(task.attendance) ? task.attendance : []).filter(function(record){ return record.status === 'confirmed'; });
+        if(confirmedRecords.length === 0){ rows.push({ task: task, record: null }); }
+        else { confirmedRecords.forEach(function(record){ rows.push({ task: task, record: record }); }); }
+    });
+
+    const wrap = document.createElement('div'); wrap.className = 'completed-history-wrap';
+    const table = document.createElement('table'); table.className = 'completed-history-table';
+    table.innerHTML = '<thead><tr><th>Task</th><th>Date</th><th>Location</th><th>Time In</th><th>Time Out</th><th>Duration</th><th>Status</th></tr></thead><tbody></tbody>';
+    const body = table.querySelector('tbody');
+    rows.forEach(function(entry){
+        const task = entry.task; const record = entry.record; const row = document.createElement('tr');
+        const scheduledDate = task.datetimeFrom ? formatDateOnly(new Date(task.datetimeFrom)) : '—';
+        const timeIn = record && record.time_in ? formatTimeOnly(new Date(record.time_in)) : '—';
+        const timeOut = record && record.time_out ? formatTimeOnly(new Date(record.time_out)) : '—';
+        const duration = record ? (Number(record.duration_minutes || 0) / 60).toFixed(2) + ' hrs' : '—';
+        row.innerHTML = '<td></td><td></td><td></td><td></td><td></td><td></td><td><span class="completed-history-status">Confirmed</span></td>';
+        row.cells[0].textContent = task.title;
+        row.cells[1].textContent = scheduledDate;
+        row.cells[2].textContent = task.location;
+        row.cells[3].textContent = timeIn;
+        row.cells[4].textContent = timeOut;
+        row.cells[5].textContent = duration;
+        body.appendChild(row);
+    });
+    wrap.appendChild(table); el.appendChild(wrap);
+}
+
+function logHoursFromInputs(task, inEl, outEl, errorEl){
+    const tin = inEl.value.trim(); const tout = outEl.value.trim();
+    errorEl.textContent = '';
+    if(!tin||!tout){ errorEl.textContent = 'Enter both times'; return; }
+    const partsIn = tin.split(':'); const partsOut = tout.split(':'); if(partsIn.length<2||partsOut.length<2){ errorEl.textContent = 'Use HH:MM'; return; }
+    const a = new Date(); a.setHours(parseInt(partsIn[0],10), parseInt(partsIn[1],10),0,0); const b = new Date(); b.setHours(parseInt(partsOut[0],10), parseInt(partsOut[1],10),0,0);
+    if(b<=a){ errorEl.textContent = 'Time out must be after time in'; return; }
+    const hours = Math.round(((b - a)/ (1000*60*60))*10)/10;
+    task.logged = { in: tin, out: tout, total: hours };
+    updateStrip(); renderCompleted();
+}
+
+function updateStrip(){
+    const required = ojtRequiredHours; let logged = ojtHours;
+    const activeTask = tasks.find(function(task){ return task.status === 'time_in' || task.status === 'in_progress'; });
+    const activeDutyAttendance = attendanceRecords.find(function(record){ return record.status === 'active' && !record.assignment_id && record.time_in; });
+    const activeStartedAt = activeTask && activeTask.attendanceStartedAt ? activeTask.attendanceStartedAt : activeDutyAttendance ? activeDutyAttendance.time_in : '';
+    const liveLabel = $('toj-live-label');
+    if(activeStartedAt){
+        const startedAt = new Date(activeStartedAt);
+        const elapsedMilliseconds = Math.max(0, Date.now() - startedAt.getTime());
+        liveLabel.classList.add('visible');
+        logged += elapsedMilliseconds / 3600000;
+    } else { liveLabel.classList.remove('visible'); }
+    $('toj-hours').textContent = formatHourDuration(logged) + ' / ' + formatHourDuration(required);
+    const pct = Math.min(100, Math.round((logged / required)*1000)/10 || 0);
+    const remaining = Math.max(0, required - logged);
+    $('toj-percent').textContent = remaining > 0 ? formatHourDuration(remaining) + ' remaining' : 'Required hours completed';
+    $('toj-bar').style.width = pct + '%';
+}
+
+setInterval(function(){
+    const activeTask = tasks.find(function(task){ return task.status === 'time_in' || task.status === 'in_progress'; });
+    if(activeTask && activeTask.attendanceStartedAt){
+        const liveValue = document.querySelector('[data-live-task="' + activeTask.id + '"]');
+        if(liveValue) liveValue.textContent = formatElapsed(Date.now() - new Date(activeTask.attendanceStartedAt).getTime());
+    }
+    updateStrip();
+}, 1000);
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+{% endblock %}

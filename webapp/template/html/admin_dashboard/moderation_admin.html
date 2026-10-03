@@ -1,0 +1,1056 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Engagement - Moderation | HappYness{% endblock %}
+
+{% block extra_head %}
+<style data-admin-panel-style="admin-moderation">
+    .mod-page {
+        --mod-green-50: #f0fdf4;
+        --mod-green-100: #dcfce7;
+        --mod-green-500: #22c55e;
+        --mod-green-700: #15803d;
+        --mod-red-500: #ef4444;
+        --mod-amber-500: #f59e0b;
+        --mod-cyan-500: #06b6d4;
+        --mod-border: rgba(21, 128, 61, 0.14);
+        --mod-shadow: 0 10px 24px rgba(2, 44, 34, 0.06);
+        display: grid;
+        grid-template-columns: minmax(380px, 1fr) minmax(360px, 0.95fr);
+        gap: 1rem;
+        align-items: start;
+    }
+
+    .mod-panel {
+        background: #ffffff;
+        border: 1px solid var(--mod-border);
+        border-radius: 1rem;
+        box-shadow: var(--mod-shadow);
+    }
+
+    .mod-left {
+        overflow: hidden;
+    }
+
+    .mod-tabs {
+        display: flex;
+        gap: 0.25rem;
+        border-bottom: 1px solid rgba(15, 118, 110, 0.11);
+        padding: 0.55rem;
+        flex-wrap: wrap;
+    }
+
+    .mod-tab {
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--ink-700);
+        border-radius: 0.7rem;
+        padding: 0.42rem 0.62rem;
+        font-size: 0.79rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        cursor: pointer;
+    }
+
+    .mod-tab:hover {
+        background: var(--mod-green-50);
+        border-color: rgba(34, 197, 94, 0.2);
+    }
+
+    .mod-tab.is-active {
+        color: var(--mod-green-700);
+        font-weight: 700;
+        background: linear-gradient(180deg, var(--mod-green-50), #ffffff);
+        border-color: rgba(34, 197, 94, 0.4);
+    }
+
+    .mod-tab-count {
+        border-radius: 999px;
+        background: #f8fafc;
+        border: 1px solid rgba(100, 116, 139, 0.2);
+        min-width: 1.45rem;
+        text-align: center;
+        font-size: 0.68rem;
+        padding: 0.16rem 0.34rem;
+    }
+
+    .mod-bulkbar {
+        padding: 0.56rem 0.68rem;
+        border-bottom: 1px solid rgba(15, 118, 110, 0.11);
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+    }
+
+    .mod-selected-count {
+        color: var(--ink-600);
+        font-size: 0.76rem;
+        margin-right: 0.35rem;
+    }
+
+    .mod-bulk-btn {
+        border: 1px solid rgba(15, 118, 110, 0.22);
+        background: #ffffff;
+        color: var(--ink-700);
+        border-radius: 0.65rem;
+        padding: 0.36rem 0.52rem;
+        font-size: 0.76rem;
+        cursor: pointer;
+    }
+
+    .mod-bulk-btn:hover {
+        background: #f8fffb;
+    }
+
+    .mod-bulk-btn.is-danger {
+        color: #b91c1c;
+        border-color: rgba(239, 68, 68, 0.28);
+    }
+
+    .mod-queue {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: calc(100vh - 255px);
+        overflow-y: auto;
+        display: grid;
+    }
+
+    .mod-item {
+        border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+        padding: 0.74rem;
+        display: grid;
+        gap: 0.5rem;
+        cursor: pointer;
+        position: relative;
+        background: #ffffff;
+        transition: background-color 160ms ease;
+    }
+
+    .mod-item:hover {
+        background: #f8fffb;
+    }
+
+    .mod-item.is-active {
+        background: var(--mod-green-50);
+    }
+
+    .mod-item.is-priority {
+        box-shadow: inset 3px 0 0 rgba(239, 68, 68, 0.95);
+    }
+
+    .mod-item-head {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .mod-item-left {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 0;
+    }
+
+    .mod-check {
+        width: 0.92rem;
+        height: 0.92rem;
+        cursor: pointer;
+    }
+
+    .mod-user-wrap {
+        min-width: 0;
+    }
+
+    .mod-user {
+        margin: 0;
+        color: var(--ink-900);
+        font-size: 0.83rem;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .mod-sub {
+        margin: 0.16rem 0 0;
+        color: var(--ink-500);
+        font-size: 0.72rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .mod-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        flex-wrap: wrap;
+    }
+
+    .mod-badge {
+        border-radius: 999px;
+        padding: 0.15rem 0.45rem;
+        font-size: 0.67rem;
+        font-weight: 700;
+        border: 1px solid transparent;
+    }
+
+    .mod-type-post {
+        background: rgba(34, 197, 94, 0.12);
+        color: #166534;
+        border-color: rgba(34, 197, 94, 0.24);
+    }
+
+    .mod-type-comment {
+        background: rgba(6, 182, 212, 0.12);
+        color: #155e75;
+        border-color: rgba(6, 182, 212, 0.24);
+    }
+
+    .mod-type-feedback {
+        background: rgba(168, 85, 247, 0.12);
+        color: #6d28d9;
+        border-color: rgba(168, 85, 247, 0.24);
+    }
+
+    .mod-status-pending-approval {
+        background: rgba(245, 158, 11, 0.14);
+        color: #92400e;
+        border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .mod-status-reported {
+        background: rgba(239, 68, 68, 0.14);
+        color: #b91c1c;
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .mod-status-flagged {
+        background: rgba(249, 115, 22, 0.14);
+        color: #9a3412;
+        border-color: rgba(249, 115, 22, 0.3);
+    }
+
+    .mod-status-removed {
+        background: rgba(148, 163, 184, 0.16);
+        color: #475569;
+        border-color: rgba(148, 163, 184, 0.28);
+    }
+
+    .mod-status-approved {
+        background: rgba(34, 197, 94, 0.14);
+        color: #166534;
+        border-color: rgba(34, 197, 94, 0.26);
+    }
+
+    .mod-report-count {
+        color: #b91c1c;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+
+    .mod-preview {
+        margin: 0;
+        color: var(--ink-700);
+        font-size: 0.81rem;
+        line-height: 1.45;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .mod-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.28rem;
+        position: relative;
+    }
+
+    .mod-action {
+        border: 0;
+        border-radius: 0.56rem;
+        background: transparent;
+        color: #0f766e;
+        font-size: 0.73rem;
+        padding: 0.3rem 0.47rem;
+        cursor: pointer;
+    }
+
+    .mod-action:hover {
+        background: rgba(20, 184, 166, 0.1);
+    }
+
+    .mod-action.is-danger {
+        color: #b91c1c;
+    }
+
+    .mod-more-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 0.3rem);
+        min-width: 140px;
+        border: 1px solid var(--mod-border);
+        background: #ffffff;
+        border-radius: 0.7rem;
+        box-shadow: 0 14px 24px rgba(2, 6, 23, 0.14);
+        padding: 0.35rem;
+        display: none;
+        z-index: 9;
+    }
+
+    .mod-more-menu[data-open="true"] {
+        display: block;
+    }
+
+    .mod-more-item {
+        width: 100%;
+        border: 0;
+        border-radius: 0.5rem;
+        background: transparent;
+        text-align: left;
+        color: var(--ink-700);
+        font-size: 0.76rem;
+        padding: 0.4rem 0.46rem;
+        cursor: pointer;
+    }
+
+    .mod-more-item:hover {
+        background: rgba(15, 118, 110, 0.1);
+    }
+
+    .mod-empty {
+        margin: 0.78rem;
+        border: 1px dashed rgba(15, 118, 110, 0.2);
+        border-radius: 0.7rem;
+        padding: 0.72rem;
+        text-align: center;
+        color: var(--ink-500);
+        font-size: 0.8rem;
+    }
+
+    .mod-detail {
+        display: grid;
+        grid-template-rows: auto auto auto 1fr auto;
+        overflow: hidden;
+        min-height: 620px;
+    }
+
+    .mod-detail-head {
+        border-bottom: 1px solid rgba(15, 118, 110, 0.11);
+        padding: 0.84rem;
+        display: grid;
+        gap: 0.4rem;
+    }
+
+    .mod-detail-title {
+        margin: 0;
+        color: var(--ink-900);
+        font-size: 0.98rem;
+        font-weight: 700;
+    }
+
+    .mod-detail-sub {
+        margin: 0;
+        color: var(--ink-500);
+        font-size: 0.76rem;
+    }
+
+    .mod-detail-actions {
+        padding: 0.68rem 0.84rem;
+        border-bottom: 1px solid rgba(15, 118, 110, 0.11);
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        flex-wrap: wrap;
+    }
+
+    .mod-detail-btn {
+        border: 1px solid rgba(15, 118, 110, 0.24);
+        background: #ffffff;
+        color: var(--ink-700);
+        border-radius: 0.65rem;
+        font-size: 0.76rem;
+        padding: 0.36rem 0.56rem;
+        cursor: pointer;
+    }
+
+    .mod-detail-btn:hover {
+        background: #f8fffb;
+    }
+
+    .mod-detail-btn.is-danger {
+        color: #b91c1c;
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .mod-content,
+    .mod-reports,
+    .mod-comments,
+    .mod-user-info {
+        margin: 0.78rem;
+        border: 1px solid rgba(15, 118, 110, 0.12);
+        border-radius: 0.76rem;
+        padding: 0.68rem;
+        background: #fcfffd;
+    }
+
+    .mod-block-title {
+        margin: 0;
+        color: var(--ink-500);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .mod-block-value {
+        margin: 0.34rem 0 0;
+        color: var(--ink-800);
+        font-size: 0.84rem;
+        line-height: 1.52;
+        white-space: pre-wrap;
+    }
+
+    .mod-report-list,
+    .mod-comment-list {
+        list-style: none;
+        margin: 0.36rem 0 0;
+        padding: 0;
+        display: grid;
+        gap: 0.35rem;
+    }
+
+    .mod-report-item,
+    .mod-comment-item {
+        border: 1px solid rgba(15, 118, 110, 0.12);
+        border-radius: 0.62rem;
+        background: #ffffff;
+        padding: 0.45rem 0.5rem;
+        font-size: 0.79rem;
+        color: var(--ink-700);
+    }
+
+    .mod-focus:focus-visible {
+        outline: 2px solid #14b8a6;
+        outline-offset: 2px;
+    }
+
+    @media (max-width: 1120px) {
+        .mod-page {
+            grid-template-columns: 1fr;
+        }
+
+        .mod-queue {
+            max-height: 360px;
+        }
+
+        .mod-detail {
+            min-height: auto;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mod-page" id="mod-page">
+    <section class="mod-panel mod-left" aria-label="Moderation queue">
+        <div class="mod-tabs" role="tablist" aria-label="Moderation filters">
+            <button type="button" class="mod-tab mod-focus is-active" data-tab="all" role="tab" aria-selected="true">All <span class="mod-tab-count" data-count="all">0</span></button>
+            <button type="button" class="mod-tab mod-focus" data-tab="pending-approval" role="tab" aria-selected="false">Pending Approval <span class="mod-tab-count" data-count="pending-approval">0</span></button>
+            <button type="button" class="mod-tab mod-focus" data-tab="reported" role="tab" aria-selected="false">Reported <span class="mod-tab-count" data-count="reported">0</span></button>
+            <button type="button" class="mod-tab mod-focus" data-tab="flagged" role="tab" aria-selected="false">Flagged <span class="mod-tab-count" data-count="flagged">0</span></button>
+            <button type="button" class="mod-tab mod-focus" data-tab="removed" role="tab" aria-selected="false">Removed <span class="mod-tab-count" data-count="removed">0</span></button>
+        </div>
+
+        <div class="mod-bulkbar" aria-label="Bulk moderation actions">
+            <span class="mod-selected-count" id="mod-selected-count">0 selected</span>
+            <button type="button" class="mod-bulk-btn mod-focus" id="mod-bulk-approve">Approve Selected</button>
+            <button type="button" class="mod-bulk-btn mod-focus" id="mod-bulk-remove">Remove Selected</button>
+            <button type="button" class="mod-bulk-btn mod-focus" id="mod-bulk-ignore">Ignore Selected</button>
+            <button type="button" class="mod-bulk-btn is-danger mod-focus" id="mod-bulk-clear">Clear Selection</button>
+        </div>
+
+        <ul class="mod-queue" id="mod-queue"></ul>
+        <div class="mod-empty" id="mod-empty" style="display:none;">No items in this queue.</div>
+    </section>
+
+    <section class="mod-panel mod-detail" aria-label="Moderation detail panel">
+        <header class="mod-detail-head">
+            <h3 class="mod-detail-title" id="mod-detail-title">Select an item</h3>
+            <p class="mod-detail-sub" id="mod-detail-sub">Review full content and reports from the queue.</p>
+            <div class="mod-meta" id="mod-detail-badges"></div>
+        </header>
+
+        <div class="mod-detail-actions">
+            <button type="button" class="mod-detail-btn mod-focus" id="mod-detail-approve">Approve</button>
+            <button type="button" class="mod-detail-btn mod-focus is-danger" id="mod-detail-remove">Remove</button>
+            <button type="button" class="mod-detail-btn mod-focus is-danger" id="mod-detail-ban">Ban User</button>
+            <button type="button" class="mod-detail-btn mod-focus" id="mod-detail-ignore">Ignore Reports</button>
+        </div>
+
+        <article class="mod-content">
+            <p class="mod-block-title">Content</p>
+            <p class="mod-block-value" id="mod-content"></p>
+        </article>
+
+        <article class="mod-reports">
+            <p class="mod-block-title">Report Reasons</p>
+            <ul class="mod-report-list" id="mod-report-list"></ul>
+        </article>
+
+        <article class="mod-comments">
+            <p class="mod-block-title">Comments</p>
+            <ul class="mod-comment-list" id="mod-comment-list"></ul>
+        </article>
+
+        <article class="mod-user-info">
+            <p class="mod-block-title">User Information</p>
+            <p class="mod-block-value" id="mod-user-info"></p>
+        </article>
+    </section>
+</div>
+
+<template id="mod-item-template">
+    <li class="mod-item" data-id="">
+        <div class="mod-item-head">
+            <div class="mod-item-left">
+                <input type="checkbox" class="mod-check mod-focus" data-select="true" aria-label="Select for bulk actions" />
+                <div class="mod-user-wrap">
+                    <p class="mod-user"></p>
+                    <p class="mod-sub"></p>
+                </div>
+            </div>
+            <div class="mod-meta">
+                <span class="mod-badge mod-type"></span>
+                <span class="mod-badge mod-status"></span>
+            </div>
+        </div>
+
+        <p class="mod-preview"></p>
+
+        <div class="mod-item-head">
+            <p class="mod-report-count"></p>
+            <div class="mod-actions">
+                <button type="button" class="mod-action mod-focus" data-action="approve">Approve</button>
+                <button type="button" class="mod-action mod-focus is-danger" data-action="remove">Remove</button>
+                <button type="button" class="mod-action mod-focus" data-action="ignore">Ignore</button>
+                <button type="button" class="mod-action mod-focus" data-action="more">More</button>
+                <div class="mod-more-menu" data-open="false">
+                    <button type="button" class="mod-more-item mod-focus" data-more-action="view">View Details</button>
+                    <button type="button" class="mod-more-item mod-focus" data-more-action="ban">Ban User</button>
+                    <button type="button" class="mod-more-item mod-focus" data-more-action="mark-flagged">Mark Flagged</button>
+                </div>
+            </div>
+        </div>
+    </li>
+</template>
+
+<script id="mod-sample-data" type="application/json">
+{
+  "items": [
+    {
+      "id": 201,
+      "user": "Nina R.",
+      "userRole": "Volunteer",
+      "contentType": "Post",
+      "preview": "This post includes links that were reported as suspicious and possibly misleading.",
+      "content": "Sharing this quickly: a community discount campaign appears to ask for personal credentials on an external site. Please verify before anyone clicks.",
+      "status": "Reported",
+      "reportCount": 5,
+      "reportReasons": ["Suspicious links", "Possible scam", "Misleading information"],
+      "comments": ["Please verify source", "Looks unsafe to me"],
+      "userInfo": "Member since Jan 2025 · 42 posts · 3 previous warnings",
+      "timestamp": "Apr 11, 2026 · 08:21"
+    },
+    {
+      "id": 202,
+      "user": "Jerome D.",
+      "userRole": "Beneficiary",
+      "contentType": "Comment",
+      "preview": "Comment flagged for abusive tone in a support thread.",
+      "content": "This service is useless and everyone running it should be ashamed.",
+      "status": "Flagged",
+      "reportCount": 3,
+      "reportReasons": ["Abusive language", "Harassment"],
+      "comments": ["Please stay respectful"],
+      "userInfo": "Member since Jun 2024 · 18 comments · no bans",
+      "timestamp": "Apr 10, 2026 · 18:10"
+    },
+    {
+      "id": 203,
+      "user": "Maya S.",
+      "userRole": "Volunteer",
+      "contentType": "Feedback",
+      "preview": "Feedback submitted and awaiting moderation due to mention of sensitive personal info.",
+      "content": "I accidentally included my contact number in public feedback. Please redact before publishing.",
+      "status": "Pending Approval",
+      "reportCount": 1,
+      "reportReasons": ["Contains personal information"],
+      "comments": ["Redaction needed before approval"],
+      "userInfo": "Member since Jul 2023 · 6 feedback submissions",
+      "timestamp": "Apr 10, 2026 · 11:45"
+    },
+    {
+      "id": 204,
+      "user": "Paul T.",
+      "userRole": "Community Member",
+      "contentType": "Post",
+      "preview": "Previously removed announcement reposted without changes.",
+      "content": "Reminder of an old unofficial event with outdated details and no organizer reference.",
+      "status": "Removed",
+      "reportCount": 4,
+      "reportReasons": ["Outdated information", "Repeated spam"],
+      "comments": ["Removed due to duplicate violations"],
+      "userInfo": "Member since Mar 2022 · 91 posts · 1 temporary suspension",
+      "timestamp": "Apr 09, 2026 · 16:32"
+    },
+    {
+      "id": 205,
+      "user": "Ari K.",
+      "userRole": "Volunteer",
+      "contentType": "Comment",
+      "preview": "Comment approved after context review.",
+      "content": "Thanks everyone for reporting, the issue appears fixed now.",
+      "status": "Approved",
+      "reportCount": 0,
+      "reportReasons": [],
+      "comments": ["Reviewed and approved"],
+      "userInfo": "Member since Nov 2024 · 35 comments",
+      "timestamp": "Apr 09, 2026 · 09:05"
+    }
+  ]
+}
+</script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function initModerationQueue() {
+    "use strict";
+
+    var state = {
+        items: [],
+        currentTab: "all",
+        selectedId: null,
+        selectedIds: []
+    };
+
+    function slug(value) {
+        return String(value || "").toLowerCase().replace(/\s+/g, "-");
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function findItem(id) {
+        return state.items.find(function(item) { return item.id === id; });
+    }
+
+    function filteredItems() {
+        if (state.currentTab === "all") {
+            return state.items.slice();
+        }
+        return state.items.filter(function(item) {
+            return slug(item.status) === state.currentTab;
+        });
+    }
+
+    function updateTabCounts() {
+        var counts = {
+            all: state.items.length,
+            "pending-approval": state.items.filter(function(item) { return slug(item.status) === "pending-approval"; }).length,
+            reported: state.items.filter(function(item) { return slug(item.status) === "reported"; }).length,
+            flagged: state.items.filter(function(item) { return slug(item.status) === "flagged"; }).length,
+            removed: state.items.filter(function(item) { return slug(item.status) === "removed"; }).length
+        };
+
+        Object.keys(counts).forEach(function(key) {
+            var node = document.querySelector('[data-count="' + key + '"]');
+            if (node) {
+                node.textContent = String(counts[key]);
+            }
+        });
+    }
+
+    function closeMenus() {
+        document.querySelectorAll(".mod-more-menu").forEach(function(node) {
+            node.setAttribute("data-open", "false");
+        });
+    }
+
+    function setStatus(id, status) {
+        var item = findItem(id);
+        if (!item) {
+            return;
+        }
+        item.status = status;
+        renderAll();
+    }
+
+    function removeItem(id) {
+        var item = findItem(id);
+        if (!item) {
+            return;
+        }
+        item.status = "Removed";
+        renderAll();
+    }
+
+    function ignoreReports(id) {
+        var item = findItem(id);
+        if (!item) {
+            return;
+        }
+        item.reportCount = 0;
+        item.reportReasons = [];
+        if (slug(item.status) === "reported" || slug(item.status) === "flagged") {
+            item.status = "Pending Approval";
+        }
+        renderAll();
+    }
+
+    function banUser(id) {
+        var item = findItem(id);
+        if (!item) {
+            return;
+        }
+        item.userInfo = item.userInfo + " · Banned by moderator";
+        item.status = "Removed";
+        renderAll();
+    }
+
+    function updateSelectedCount() {
+        var node = document.getElementById("mod-selected-count");
+        node.textContent = String(state.selectedIds.length) + " selected";
+    }
+
+    function syncVisibleSelection() {
+        var visibleIds = filteredItems().map(function(item) { return item.id; });
+        state.selectedIds = state.selectedIds.filter(function(id) {
+            return visibleIds.indexOf(id) !== -1;
+        });
+        updateSelectedCount();
+    }
+
+    function toggleSelect(id, checked) {
+        var index = state.selectedIds.indexOf(id);
+        if (checked && index === -1) {
+            state.selectedIds.push(id);
+        }
+        if (!checked && index !== -1) {
+            state.selectedIds.splice(index, 1);
+        }
+        updateSelectedCount();
+    }
+
+    function applyBulk(action) {
+        if (!state.selectedIds.length) {
+            return;
+        }
+        state.selectedIds.forEach(function(id) {
+            if (action === "approve") {
+                setStatus(id, "Approved");
+            } else if (action === "remove") {
+                removeItem(id);
+            } else if (action === "ignore") {
+                ignoreReports(id);
+            }
+        });
+        state.selectedIds = [];
+        renderAll();
+    }
+
+    function renderQueue() {
+        var root = document.getElementById("mod-queue");
+        var empty = document.getElementById("mod-empty");
+        var template = document.getElementById("mod-item-template");
+        var items = filteredItems();
+
+        root.innerHTML = "";
+
+        if (!items.length) {
+            empty.style.display = "block";
+            return;
+        }
+
+        empty.style.display = "none";
+
+        items.forEach(function(item) {
+            var frag = template.content.cloneNode(true);
+            var row = frag.querySelector(".mod-item");
+            var check = frag.querySelector(".mod-check");
+            var typeBadge = frag.querySelector(".mod-type");
+            var statusBadge = frag.querySelector(".mod-status");
+            var menu = frag.querySelector(".mod-more-menu");
+
+            row.setAttribute("data-id", String(item.id));
+            if (item.id === state.selectedId) {
+                row.classList.add("is-active");
+            }
+            if (item.reportCount >= 3 || slug(item.status) === "reported" || slug(item.status) === "flagged") {
+                row.classList.add("is-priority");
+            }
+
+            frag.querySelector(".mod-user").textContent = item.user;
+            frag.querySelector(".mod-sub").textContent = item.userRole + " · " + item.timestamp;
+            frag.querySelector(".mod-preview").textContent = item.preview;
+            frag.querySelector(".mod-report-count").textContent = (item.reportCount || 0) + " reports";
+
+            typeBadge.textContent = item.contentType;
+            typeBadge.className = "mod-badge mod-type mod-type-" + slug(item.contentType);
+
+            statusBadge.textContent = item.status;
+            statusBadge.className = "mod-badge mod-status mod-status-" + slug(item.status);
+
+            check.checked = state.selectedIds.indexOf(item.id) !== -1;
+            check.addEventListener("click", function(event) {
+                event.stopPropagation();
+                toggleSelect(item.id, check.checked);
+            });
+
+            row.addEventListener("click", function() {
+                state.selectedId = item.id;
+                renderQueue();
+                renderDetail();
+            });
+
+            frag.querySelector('[data-action="approve"]').addEventListener("click", function(event) {
+                event.stopPropagation();
+                setStatus(item.id, "Approved");
+            });
+
+            frag.querySelector('[data-action="remove"]').addEventListener("click", function(event) {
+                event.stopPropagation();
+                removeItem(item.id);
+            });
+
+            frag.querySelector('[data-action="ignore"]').addEventListener("click", function(event) {
+                event.stopPropagation();
+                ignoreReports(item.id);
+            });
+
+            frag.querySelector('[data-action="more"]').addEventListener("click", function(event) {
+                event.stopPropagation();
+                closeMenus();
+                menu.setAttribute("data-open", "true");
+            });
+
+            frag.querySelector('[data-more-action="view"]').addEventListener("click", function(event) {
+                event.stopPropagation();
+                state.selectedId = item.id;
+                renderQueue();
+                renderDetail();
+                closeMenus();
+            });
+
+            frag.querySelector('[data-more-action="ban"]').addEventListener("click", function(event) {
+                event.stopPropagation();
+                banUser(item.id);
+                closeMenus();
+            });
+
+            frag.querySelector('[data-more-action="mark-flagged"]').addEventListener("click", function(event) {
+                event.stopPropagation();
+                setStatus(item.id, "Flagged");
+                closeMenus();
+            });
+
+            root.appendChild(frag);
+        });
+    }
+
+    function renderDetail() {
+        var item = findItem(state.selectedId);
+        var title = document.getElementById("mod-detail-title");
+        var sub = document.getElementById("mod-detail-sub");
+        var badges = document.getElementById("mod-detail-badges");
+        var content = document.getElementById("mod-content");
+        var reports = document.getElementById("mod-report-list");
+        var comments = document.getElementById("mod-comment-list");
+        var user = document.getElementById("mod-user-info");
+
+        if (!item) {
+            title.textContent = "Select an item";
+            sub.textContent = "Review full content and reports from the queue.";
+            badges.innerHTML = "";
+            content.textContent = "No content selected.";
+            reports.innerHTML = '<li class="mod-report-item">No reports.</li>';
+            comments.innerHTML = '<li class="mod-comment-item">No comments.</li>';
+            user.textContent = "No user selected.";
+            return;
+        }
+
+        title.textContent = item.contentType + " by " + item.user;
+        sub.textContent = item.userRole + " · " + item.timestamp;
+
+        badges.innerHTML = ''
+            + '<span class="mod-badge mod-type-' + slug(item.contentType) + '">' + escapeHtml(item.contentType) + '</span>'
+            + '<span class="mod-badge mod-status-' + slug(item.status) + '">' + escapeHtml(item.status) + '</span>'
+            + '<span class="mod-badge">' + String(item.reportCount || 0) + ' reports</span>';
+
+        content.textContent = item.content;
+
+        reports.innerHTML = "";
+        if (item.reportReasons && item.reportReasons.length) {
+            item.reportReasons.forEach(function(reason) {
+                var li = document.createElement("li");
+                li.className = "mod-report-item";
+                li.textContent = reason;
+                reports.appendChild(li);
+            });
+        } else {
+            reports.innerHTML = '<li class="mod-report-item">No report reasons.</li>';
+        }
+
+        comments.innerHTML = "";
+        if (item.comments && item.comments.length) {
+            item.comments.forEach(function(note) {
+                var li = document.createElement("li");
+                li.className = "mod-comment-item";
+                li.textContent = note;
+                comments.appendChild(li);
+            });
+        } else {
+            comments.innerHTML = '<li class="mod-comment-item">No comments.</li>';
+        }
+
+        user.textContent = item.userInfo;
+    }
+
+    function ensureSelectedVisible() {
+        var visible = filteredItems();
+        if (!visible.length) {
+            state.selectedId = null;
+            return;
+        }
+
+        var exists = visible.some(function(item) { return item.id === state.selectedId; });
+        if (!exists) {
+            state.selectedId = visible[0].id;
+        }
+    }
+
+    function bindTabs() {
+        var tabs = document.querySelectorAll(".mod-tab");
+        tabs.forEach(function(tab) {
+            tab.addEventListener("click", function() {
+                tabs.forEach(function(btn) {
+                    btn.classList.remove("is-active");
+                    btn.setAttribute("aria-selected", "false");
+                });
+                tab.classList.add("is-active");
+                tab.setAttribute("aria-selected", "true");
+                state.currentTab = tab.getAttribute("data-tab");
+                ensureSelectedVisible();
+                syncVisibleSelection();
+                renderQueue();
+                renderDetail();
+            });
+        });
+    }
+
+    function bindBulkActions() {
+        document.getElementById("mod-bulk-approve").addEventListener("click", function() {
+            applyBulk("approve");
+        });
+
+        document.getElementById("mod-bulk-remove").addEventListener("click", function() {
+            applyBulk("remove");
+        });
+
+        document.getElementById("mod-bulk-ignore").addEventListener("click", function() {
+            applyBulk("ignore");
+        });
+
+        document.getElementById("mod-bulk-clear").addEventListener("click", function() {
+            state.selectedIds = [];
+            renderQueue();
+            updateSelectedCount();
+        });
+    }
+
+    function bindDetailActions() {
+        document.getElementById("mod-detail-approve").addEventListener("click", function() {
+            if (state.selectedId) {
+                setStatus(state.selectedId, "Approved");
+            }
+        });
+
+        document.getElementById("mod-detail-remove").addEventListener("click", function() {
+            if (state.selectedId) {
+                removeItem(state.selectedId);
+            }
+        });
+
+        document.getElementById("mod-detail-ban").addEventListener("click", function() {
+            if (state.selectedId) {
+                banUser(state.selectedId);
+            }
+        });
+
+        document.getElementById("mod-detail-ignore").addEventListener("click", function() {
+            if (state.selectedId) {
+                ignoreReports(state.selectedId);
+            }
+        });
+    }
+
+    function bindGlobal() {
+        document.addEventListener("click", function(event) {
+            if (!event.target.closest(".mod-actions")) {
+                closeMenus();
+            }
+        });
+
+        document.addEventListener("keydown", function(event) {
+            if (event.key === "Escape") {
+                closeMenus();
+            }
+        });
+    }
+
+    function renderAll() {
+        updateTabCounts();
+        ensureSelectedVisible();
+        syncVisibleSelection();
+        renderQueue();
+        renderDetail();
+    }
+
+    function init() {
+        var raw = document.getElementById("mod-sample-data").textContent;
+        var parsed = JSON.parse(raw);
+        state.items = Array.isArray(parsed.items) ? parsed.items : [];
+        state.selectedId = state.items.length ? state.items[0].id : null;
+
+        bindTabs();
+        bindBulkActions();
+        bindDetailActions();
+        bindGlobal();
+        renderAll();
+
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
+})();
+</script>
+{% endblock %}

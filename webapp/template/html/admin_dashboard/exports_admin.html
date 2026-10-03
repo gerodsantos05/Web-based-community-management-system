@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reports - Exports | HappYness{% endblock %}
+
+{% block extra_head %}
+<style data-admin-panel-style="admin-exports">
+    .ex-page { --ex-border: rgba(15, 118, 110, 0.14); --ex-shadow: 0 10px 24px rgba(2, 44, 34, 0.06); display: grid; gap: 0.9rem; }
+    .ex-card { background: #fff; border: 1px solid var(--ex-border); border-radius: 1rem; box-shadow: var(--ex-shadow); }
+    .ex-focus:focus-visible { outline: 2px solid #14b8a6; outline-offset: 2px; }
+    .ex-grid { display: grid; gap: 0.9rem; grid-template-columns: 1fr; }
+    .ex-form, .ex-presets, .ex-history { padding: 0.9rem; }
+    .ex-form { display: grid; gap: 0.75rem; }
+    .ex-section-title { margin: 0; color: var(--ink-900); font-size: 0.98rem; font-weight: 800; }
+    .ex-form-grid { display: grid; gap: 0.6rem; grid-template-columns: 1fr; }
+    .ex-field { display: grid; gap: 0.24rem; }
+    .ex-label { margin: 0; color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.67rem; }
+    .ex-input { width: 100%; border: 1px solid rgba(15, 118, 110, 0.2); border-radius: 0.68rem; background: #fff; color: var(--ink-800); padding: 0.46rem 0.56rem; font-size: 0.79rem; }
+    .ex-format-row { display: flex; flex-wrap: wrap; gap: 0.42rem; }
+    .ex-format-pill { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.38rem 0.55rem; border: 1px solid var(--ex-border); border-radius: 0.6rem; font-size: 0.76rem; }
+    .ex-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .ex-btn { border: 1px solid rgba(15, 118, 110, 0.22); border-radius: 0.68rem; background: #fff; color: var(--ink-700); font-size: 0.76rem; font-weight: 700; padding: 0.48rem 0.72rem; cursor: pointer; }
+    .ex-btn-primary { border: 0; background: linear-gradient(135deg, #22c55e, #14b8a6); color: #fff; }
+    .ex-preset-grid { display: grid; gap: 0.55rem; grid-template-columns: 1fr; margin-top: 0.75rem; }
+    .ex-preset { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.65rem; border: 1px solid var(--ex-border); border-radius: 0.7rem; }
+    .ex-preset-main { margin: 0; color: var(--ink-900); font-size: 0.8rem; font-weight: 700; }
+    .ex-preset-sub { margin: 0.18rem 0 0; color: var(--ink-500); font-size: 0.7rem; }
+    .ex-progress { display: none; }
+    .ex-progress[data-open="true"] { display: block; }
+    .ex-progress-head { display: flex; justify-content: space-between; color: var(--ink-500); font-size: 0.74rem; }
+    .ex-progress-track { height: 0.42rem; margin-top: 0.35rem; overflow: hidden; border-radius: 999px; background: #e6f2ed; }
+    .ex-progress-fill { width: 0; height: 100%; background: #0f766e; transition: width 160ms ease; }
+    .ex-table-wrap { margin-top: 0.65rem; overflow: auto; border: 1px solid var(--ex-border); border-radius: 0.7rem; }
+    .ex-table { width: 100%; border-collapse: collapse; min-width: 640px; font-size: 0.76rem; }
+    .ex-table th, .ex-table td { padding: 0.55rem 0.65rem; text-align: left; border-bottom: 1px solid var(--ex-border); }
+    .ex-table th { background: #f3faf7; color: var(--ink-500); font-size: 0.67rem; text-transform: uppercase; }
+    .ex-chip { display: inline-flex; padding: 0.14rem 0.45rem; border-radius: 999px; font-size: 0.68rem; font-weight: 700; }
+    .ex-chip-csv { background: rgba(34, 197, 94, 0.13); color: #166534; }
+    .ex-chip-excel { background: rgba(6, 182, 212, 0.12); color: #155e75; }
+    .ex-chip-pdf { background: rgba(239, 68, 68, 0.13); color: #b91c1c; }
+    .ex-link-btn { border: 0; background: transparent; color: #0f766e; font-size: 0.73rem; padding: 0.25rem 0.45rem; cursor: pointer; }
+    .ex-link-btn.is-danger { color: #b91c1c; }
+    .ex-empty { border: 1px dashed var(--ex-border); border-radius: 0.72rem; color: var(--ink-500); font-size: 0.78rem; text-align: center; padding: 0.72rem; }
+    @media (min-width: 760px) { .ex-form-grid { grid-template-columns: 1fr 1fr; } .ex-preset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (min-width: 1024px) { .ex-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="exports-page" class="ex-page">
+    <div class="ex-grid">
+        <section class="ex-card ex-form" aria-label="Report generation form">
+            <h2 class="ex-section-title">Generate Report</h2>
+            <div class="ex-form-grid">
+                <div class="ex-field"><label class="ex-label" for="ex-report-type">Report Type</label><select id="ex-report-type" class="ex-input ex-focus"><option value="donations">Donations</option><option value="volunteers">Volunteers</option><option value="activities">Activities</option><option value="inventory">Inventory</option><option value="payments">Payments</option></select></div>
+                <div class="ex-field"><label class="ex-label" for="ex-date-range">Date Range</label><select id="ex-date-range" class="ex-input ex-focus"><option value="last-30-days">Last 30 days</option><option value="last-90-days">Last 90 days</option><option value="this-month">This month</option><option value="last-month">Last month</option><option value="custom">Custom range</option></select></div>
+                <div class="ex-field"><label class="ex-label" for="ex-status">Status Filter</label><select id="ex-status" class="ex-input ex-focus"><option value="all">All</option><option value="active">Active</option><option value="in-progress">In Progress</option><option value="completed">Completed</option><option value="archived">Archived</option></select></div>
+                <div class="ex-field"><label class="ex-label" for="ex-category">Category Filter</label><select id="ex-category" class="ex-input ex-focus"><option value="all">All</option><option value="community">Community</option><option value="education">Education</option><option value="health">Health</option><option value="operations">Operations</option></select></div>
+                <div class="ex-field"><label class="ex-label" for="ex-program">Program Filter</label><select id="ex-program" class="ex-input ex-focus"><option value="all">All Programs</option><option value="food-drive">Food Drive</option><option value="medical-mission">Medical Mission</option><option value="scholarship">Scholarship</option><option value="livelihood">Livelihood</option></select></div>
+                <div class="ex-field"><label class="ex-label">Export Format</label><div class="ex-format-row" id="ex-format-row"><label class="ex-format-pill"><input class="ex-focus" type="radio" name="ex-format" value="csv" checked /> CSV</label><label class="ex-format-pill"><input class="ex-focus" type="radio" name="ex-format" value="excel" /> Excel</label><label class="ex-format-pill"><input class="ex-focus" type="radio" name="ex-format" value="pdf" /> PDF</label></div></div>
+            </div>
+            <div class="ex-actions"><button type="button" id="ex-generate" class="ex-btn ex-btn-primary ex-focus">Generate Report</button><button type="button" id="ex-clear" class="ex-btn ex-focus">Clear</button></div>
+            <div id="ex-progress" class="ex-progress" data-open="false" aria-live="polite"><div class="ex-progress-head"><span>Generating report...</span><span id="ex-progress-text">0%</span></div><div class="ex-progress-track"><div id="ex-progress-fill" class="ex-progress-fill"></div></div></div>
+        </section>
+        <section class="ex-card ex-presets" aria-label="Quick export presets"><h2 class="ex-section-title">Quick Export Presets</h2><div class="ex-preset-grid" id="ex-presets"></div></section>
+    </div>
+    <section class="ex-card ex-history" aria-label="Export history">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;"><h2 class="ex-section-title">Export History</h2><span class="ex-meta" id="ex-history-count">0 files</span></div>
+        <div class="ex-table-wrap"><table class="ex-table"><thead><tr><th>File Name</th><th>Type</th><th>Date Generated</th><th>Format</th><th>Actions</th></tr></thead><tbody id="ex-history-body"></tbody></table></div>
+        <div id="ex-history-empty" class="ex-empty" style="display:none;">No export history yet.</div>
+    </section>
+</div>
+<script id="ex-sample-data" type="application/json">
+{
+  "presets": [
+    {"id":"monthly-donations","label":"Monthly Donations","description":"Donations report for last month in Excel.","config":{"reportType":"donations","dateRange":"last-month","status":"all","category":"community","program":"all","format":"excel"}},
+    {"id":"volunteer-hours","label":"Volunteer Hours","description":"Last 30 days volunteer summary in CSV.","config":{"reportType":"volunteers","dateRange":"last-30-days","status":"active","category":"operations","program":"all","format":"csv"}},
+    {"id":"activity-rollup","label":"Activity Rollup","description":"This month activities report in PDF.","config":{"reportType":"activities","dateRange":"this-month","status":"completed","category":"community","program":"all","format":"pdf"}},
+    {"id":"payments-quarterly","label":"Quarterly Payments","description":"Payments for last 90 days in CSV.","config":{"reportType":"payments","dateRange":"last-90-days","status":"all","category":"operations","program":"all","format":"csv"}}
+  ],
+  "history": [
+    {"id":1,"fileName":"donations_last-month_2026-04-09.xlsx","type":"donations","generatedAt":"2026-04-09 09:42","format":"excel"},
+    {"id":2,"fileName":"volunteers_last-30-days_2026-04-08.csv","type":"volunteers","generatedAt":"2026-04-08 16:15","format":"csv"},
+    {"id":3,"fileName":"activities_this-month_2026-04-07.pdf","type":"activities","generatedAt":"2026-04-07 10:26","format":"pdf"}
+  ]
+}
+</script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function initExportsPage() {
+    "use strict";
+    var state = { presets: [], history: [], generating: false, progress: 0, progressTimer: null };
+    function capitalize(value) { return String(value).split("-").map(function(part) { return part.charAt(0).toUpperCase() + part.slice(1); }).join(" "); }
+    function currentFormat() { var checked = document.querySelector('input[name="ex-format"]:checked'); return checked ? checked.value : "csv"; }
+    function getFormConfig() { return { reportType: document.getElementById("ex-report-type").value, dateRange: document.getElementById("ex-date-range").value, status: document.getElementById("ex-status").value, category: document.getElementById("ex-category").value, program: document.getElementById("ex-program").value, format: currentFormat() }; }
+    function applyConfig(config) { document.getElementById("ex-report-type").value=config.reportType; document.getElementById("ex-date-range").value=config.dateRange; document.getElementById("ex-status").value=config.status; document.getElementById("ex-category").value=config.category; document.getElementById("ex-program").value=config.program; var radio=document.querySelector('input[name="ex-format"][value="'+config.format+'"]'); if(radio)radio.checked=true; }
+    function updateHistoryCount() { var count=state.history.length; document.getElementById("ex-history-count").textContent=count+(count===1?" file":" files"); }
+    function renderHistory() { var tbody=document.getElementById("ex-history-body"), empty=document.getElementById("ex-history-empty"); tbody.innerHTML=""; if(!state.history.length){empty.style.display="block";updateHistoryCount();return;} empty.style.display="none"; state.history.forEach(function(item){var tr=document.createElement("tr");tr.innerHTML='<td>'+item.fileName+'</td><td>'+capitalize(item.type)+'</td><td>'+item.generatedAt+'</td><td><span class="ex-chip ex-chip-'+item.format+'">'+String(item.format).toUpperCase()+'</span></td><td><button type="button" class="ex-link-btn ex-focus" data-action="download" data-id="'+item.id+'">Download</button> <button type="button" class="ex-link-btn ex-focus is-danger" data-action="delete" data-id="'+item.id+'">Delete</button></td>';tbody.appendChild(tr);});updateHistoryCount(); }
+    function renderPresets() { var root=document.getElementById("ex-presets");root.innerHTML="";state.presets.forEach(function(preset){var card=document.createElement("article");card.className="ex-preset";card.innerHTML='<div><p class="ex-preset-main">'+preset.label+'</p><p class="ex-preset-sub">'+preset.description+'</p></div><button type="button" class="ex-btn ex-focus" data-preset-id="'+preset.id+'">Run</button>';root.appendChild(card);}); }
+    function setProgress(value) { state.progress=Math.max(0,Math.min(100,value));document.getElementById("ex-progress-fill").style.width=state.progress+"%";document.getElementById("ex-progress-text").textContent=state.progress+"%"; }
+    function setGenerating(open) { state.generating=open;document.getElementById("ex-progress").setAttribute("data-open",open?"true":"false");document.getElementById("ex-generate").disabled=open;document.getElementById("ex-generate").textContent=open?"Generating...":"Generate Report"; }
+    function addHistoryEntry(config) { var now=new Date(), generatedAt=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0")+" "+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"), ext=config.format==="excel"?"xlsx":config.format;state.history.unshift({id:Date.now(),fileName:config.reportType+"_"+config.dateRange+"_"+now.toISOString().slice(0,10)+"."+ext,type:config.reportType,generatedAt:generatedAt,format:config.format});renderHistory(); }
+    function startGenerate(config) { if(state.generating)return;setGenerating(true);setProgress(0);state.progressTimer=window.setInterval(function(){var next=state.progress+Math.floor(Math.random()*16+8);if(next>=100){window.clearInterval(state.progressTimer);state.progressTimer=null;setProgress(100);addHistoryEntry(config);window.setTimeout(function(){setGenerating(false);setProgress(0);},320);return;}setProgress(next);},180); }
+    function downloadEntry(id) { var item=state.history.find(function(entry){return entry.id===id;});if(!item)return;var blob=new Blob(["Report File: "+item.fileName+"\nType: "+capitalize(item.type)+"\nGenerated At: "+item.generatedAt+"\nFormat: "+String(item.format).toUpperCase()],{type:"text/plain;charset=utf-8"}),url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download=item.fileName;document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url); }
+    function init() { var parsed=JSON.parse(document.getElementById("ex-sample-data").textContent);state.presets=parsed.presets||[];state.history=parsed.history||[];renderPresets();renderHistory();document.getElementById("ex-generate").addEventListener("click",function(){startGenerate(getFormConfig());});document.getElementById("ex-clear").addEventListener("click",function(){document.getElementById("ex-report-type").value="donations";document.getElementById("ex-date-range").value="last-30-days";document.getElementById("ex-status").value="all";document.getElementById("ex-category").value="all";document.getElementById("ex-program").value="all";document.querySelector('input[name="ex-format"][value="csv"]').checked=true;});document.getElementById("ex-presets").addEventListener("click",function(event){var id=event.target.getAttribute("data-preset-id"),preset=state.presets.find(function(item){return item.id===id;});if(preset){applyConfig(preset.config);startGenerate(preset.config);}});document.getElementById("ex-history-body").addEventListener("click",function(event){var id=Number(event.target.getAttribute("data-id")),action=event.target.getAttribute("data-action");if(action==="download")downloadEntry(id);if(action==="delete"){state.history=state.history.filter(function(item){return item.id!==id;});renderHistory();}}); }
+    if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
+})();
+</script>
+{% endblock %}

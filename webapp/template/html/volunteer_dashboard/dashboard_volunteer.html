@@ -1,0 +1,1331 @@
+{% extends "volunteer_dashboard/base.html" %}
+
+{% block title %}Volunteer Dashboard | HappYness{% endblock %}
+
+{% block extra_head %}
+<style>
+    #dashboard-content-scroll #dashboard-overview {
+        --vd-card-bg: #ffffff;
+        --vd-card-border: #d7e7df;
+        --vd-muted: #607a70;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 1.05rem;
+        padding: 1.05rem;
+    }
+
+    #dashboard-content-scroll .ud-panel.hidden {
+        display: none !important;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-shell {
+        display: grid;
+        gap: 0.95rem;
+        max-width: 1120px;
+        margin: 0 auto;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-header {
+        display: grid;
+        gap: 0.32rem;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-greeting {
+        margin: 0;
+        font-size: clamp(1.5rem, 2.5vw, 2.1rem);
+        line-height: 1.2;
+        font-weight: 700;
+        color: #133529;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-greeting-name {
+        color: #0f9b8e;
+        font-weight: 800;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-date {
+        margin: 0;
+        font-size: 0.96rem;
+        color: var(--vd-muted);
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-metrics-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.72rem;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-metric-card,
+    #dashboard-content-scroll #dashboard-overview .vd-card {
+        background: var(--vd-card-bg);
+        border: 1px solid var(--vd-card-border);
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-metric-card {
+        padding: 0.9rem;
+        display: grid;
+        gap: 0.35rem;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-metric-label {
+        margin: 0;
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-metric-value {
+        margin: 0;
+        font-size: 1.95rem;
+        line-height: 1;
+        font-weight: 800;
+        color: #111827;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-metric-desc {
+        margin: 0.3rem 0 0;
+        font-size: 0.84rem;
+        color: #374151;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.72rem;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-card {
+        padding: 0.95rem;
+        display: grid;
+        gap: 0.62rem;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-card-title {
+        margin: 0;
+        font-size: 0.8rem;
+        line-height: 1.25;
+        font-weight: 800;
+        color: #111827;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-ojt-hours {
+        display: flex;
+        align-items: baseline;
+        gap: 0.4rem;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-ojt-value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #0f9b8e;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-ojt-unit,
+    #dashboard-content-scroll #dashboard-overview .vd-ojt-percentage {
+        font-size: 0.88rem;
+        color: var(--vd-muted);
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-progress-wrap {
+        width: 100%;
+        height: 6px;
+        border-radius: 999px;
+        background: #e0ebe6;
+        overflow: hidden;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-progress-bar {
+        display: block;
+        width: 52.5%;
+        height: 100%;
+        background: linear-gradient(90deg, #0f9b8e, #0b7f75);
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-ojt-meta {
+        display: grid;
+        gap: 0.45rem;
+        font-size: 0.82rem;
+        color: #2f584a;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-ojt-meta-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-ojt-meta-label {
+        font-weight: 600;
+        color: #607a70;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-ojt-meta-value {
+        font-weight: 700;
+        color: #0f9b8e;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-tasks-list,
+    #dashboard-content-scroll #dashboard-overview .vd-announcements-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 0.7rem;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-task-item,
+    #dashboard-content-scroll #dashboard-overview .vd-certificate-item {
+        padding: 0.72rem;
+        border: 1px solid #e3ede8;
+        border-radius: 0.75rem;
+        background: #fafcfb;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-task-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.6rem;
+        margin-bottom: 0.35rem;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-task-name,
+    #dashboard-content-scroll #dashboard-overview .vd-announcement-title,
+    #dashboard-content-scroll #dashboard-overview .vd-certificate-name {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-task-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0.24rem 0.56rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-task-badge.today {
+        background: #ccfbf1;
+        color: #115e59;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-task-badge.pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-task-meta,
+    #dashboard-content-scroll #dashboard-overview .vd-announcement-meta,
+    #dashboard-content-scroll #dashboard-overview .vd-certificate-date {
+        margin: 0.25rem 0 0;
+        font-size: 0.84rem;
+        color: #374151;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-announcement-item {
+        padding: 0.7rem 0.75rem;
+        border-left: 3px solid #0f9b8e;
+        border-top: 1px solid #e3ede8;
+        border-right: 1px solid #e3ede8;
+        border-bottom: 1px solid #e3ede8;
+        border-radius: 0.6rem;
+        background: #ffffff;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-certificate-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.8rem;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-certificate-info {
+        min-width: 0;
+        flex: 1;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-certificate-btn {
+        border: 0;
+        border-radius: 0.6rem;
+        background: #0f9b8e;
+        color: #ffffff;
+        padding: 0.48rem 0.84rem;
+        font-size: 0.74rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-certificate-btn:hover {
+        background: #0b7f75;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .volunteer-task-shell {
+        border-radius: 1rem;
+        border: 1px solid #d7e7df;
+        background: #ffffff;
+        padding: 1.2rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    #dashboard-content-scroll #distribution-outreach .volunteer-task-header {
+        display: grid;
+        gap: 0.25rem;
+        margin-bottom: 1rem;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .volunteer-task-title {
+        margin: 0;
+        font-size: 1.35rem;
+        line-height: 1.25;
+        font-weight: 700;
+        color: #133529;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .volunteer-task-subtitle {
+        margin: 0;
+        font-size: 0.88rem;
+        color: #607a70;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .module-filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin-bottom: 1rem;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .module-filter-pill {
+        border: 1px solid #c9ded3;
+        background: #ffffff;
+        color: #2f584a;
+        border-radius: 999px;
+        padding: 0.36rem 0.72rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .module-filter-pill.is-active,
+    #dashboard-content-scroll #distribution-outreach .module-filter-pill[aria-selected="true"] {
+        background: #0f9b8e;
+        border-color: #0f9b8e;
+        color: #ffffff;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .task-group-block {
+        margin-top: 1rem;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .task-group-title {
+        margin: 0 0 0.6rem;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #133529;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .task-group-list {
+        display: grid;
+        gap: 0.65rem;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .volunteer-task-card {
+        border: 1px solid #deebe4;
+        border-radius: 0.85rem;
+        background: #fafcfb;
+        padding: 0.9rem;
+        cursor: pointer;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .volunteer-task-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.7rem;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .volunteer-task-name {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #133529;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .volunteer-task-meta {
+        margin: 0.2rem 0 0;
+        font-size: 0.79rem;
+        color: #607a70;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .status-pill,
+    #dashboard-content-scroll #distribution-outreach .module-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0.24rem 0.56rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .status-pill.is-today {
+        background: #ccfbf1;
+        color: #115e59;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .status-pill.is-pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .status-pill.is-done {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .module-pill {
+        margin-top: 0.55rem;
+        background: #e8f5f1;
+        color: #1f6c57;
+    }
+
+    #dashboard-content-scroll #distribution-outreach .task-group-empty {
+        margin: 0.5rem 0 0;
+        font-size: 0.8rem;
+        color: #6b7f76;
+    }
+
+    .ud-panel-title {
+        font-size: 1.15rem;
+        line-height: 1.2;
+        font-weight: 700;
+        color: #111827;
+        margin: 0;
+    }
+
+    .ud-panel-subtitle {
+        font-size: 0.78rem;
+        color: #64748b;
+        margin-top: 0.25rem;
+    }
+
+    /* Lock volunteer task modal typography to match user schedule modal sizing */
+    #scheduled-modal .ud-panel-title {
+        font-size: 1.15rem !important;
+        line-height: 1.2 !important;
+        font-weight: 700 !important;
+        color: #111827 !important;
+        margin: 0 !important;
+    }
+
+    #scheduled-modal .ud-panel-subtitle {
+        font-size: 0.78rem !important;
+        line-height: 1.3 !important;
+        color: #64748b !important;
+        margin-top: 0.25rem !important;
+    }
+
+    #scheduled-modal #scheduled-modal-location,
+    #scheduled-modal #scheduled-modal-bring,
+    #scheduled-modal #scheduled-modal-receive,
+    #scheduled-modal #scheduled-modal-note {
+        font-size: 1rem !important;
+        line-height: 1.45 !important;
+    }
+
+    #scheduled-modal .text-sm.font-semibold {
+        font-size: 1rem !important;
+        line-height: 1.45 !important;
+        font-weight: 700 !important;
+        color: #111827 !important;
+    }
+
+    .scheduled-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.56);
+        backdrop-filter: blur(1.5px);
+        z-index: 120;
+    }
+
+    .scheduled-modal-card {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        max-height: 78vh;
+        overflow-y: auto;
+        z-index: 130;
+        border-top-left-radius: 1rem;
+        border-top-right-radius: 1rem;
+        border: 1px solid #d7e7df;
+        background: #ffffff;
+        box-shadow: 0 28px 58px rgba(15, 23, 42, 0.24);
+        padding: 1.1rem;
+    }
+
+    @media (min-width: 768px) {
+        .scheduled-modal-card {
+            left: 50%;
+            right: auto;
+            top: 50%;
+            bottom: auto;
+            transform: translate(-50%, -50%);
+            width: min(760px, 94vw);
+            max-height: 88vh;
+            border-radius: 1rem;
+        }
+    }
+
+    .task-modal-progress-wrap {
+        margin-top: 0.65rem;
+        width: 100%;
+        height: 3px;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.28);
+        overflow: hidden;
+    }
+
+    .task-modal-progress-bar {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #14b8a6, #0f766e);
+    }
+
+    .scheduled-modal-card .ud-feedback-btn {
+        display: inline-flex !important;
+        width: 100%;
+        justify-content: center;
+        align-items: center;
+        min-height: 44px;
+        border: 0;
+        border-radius: 0.75rem;
+        background: #0f9b8e;
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    .scheduled-modal-card .ud-feedback-btn:hover {
+        background: #0b7f75;
+    }
+
+    .scheduled-modal-card .ud-feedback-btn:disabled {
+        background: #d1d5db;
+        color: #475569;
+        cursor: not-allowed;
+    }
+
+    .task-modal-undo {
+        margin: 0.48rem auto 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: #0f766e;
+        font: inherit;
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        cursor: pointer;
+        padding: 0.22rem 0.56rem;
+        display: block;
+        width: fit-content;
+        text-align: center;
+    }
+
+    .task-modal-undo:hover {
+        color: #115e59;
+    }
+
+    .task-modal-undo.hidden {
+        display: none !important;
+    }
+
+    .task-modal-undo:not(.hidden) {
+        display: block !important;
+    }
+
+    .task-modal-confirmation {
+        margin-top: 0.45rem;
+        color: #0f766e;
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    @media (max-width: 1024px) {
+        #dashboard-content-scroll #dashboard-overview .vd-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 640px) {
+        #dashboard-content-scroll #dashboard-overview .vd-metrics-row {
+            grid-template-columns: 1fr;
+        }
+
+        #dashboard-content-scroll #dashboard-overview .vd-card {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section id="dashboard-overview" class="ud-panel" aria-label="Volunteer dashboard overview">
+    <div class="vd-shell">
+        <div class="vd-header">
+            <h1 class="vd-greeting">Good Day, <span class="vd-greeting-name">{{ user.first_name }}</span></h1>
+            <p class="vd-date">Today is {{ current_date }}</p>
+        </div>
+
+        <div class="vd-metrics-row">
+            <div class="vd-metric-card">
+                <p class="vd-metric-label">OJT Hours Logged</p>
+                <p class="vd-metric-value">{{ ojt_hours_display }}</p>
+                <p class="vd-metric-desc">of {{ ojt_required_hours_display }} required hours</p>
+            </div>
+            <div class="vd-metric-card">
+                <p class="vd-metric-label">Tasks Assigned</p>
+                <p class="vd-metric-value">{{ tasks_assigned }}</p>
+                <p class="vd-metric-desc">{{ tasks_pending_this_week }} pending this week</p>
+            </div>
+            <div class="vd-metric-card">
+                <p class="vd-metric-label">Content You Manage</p>
+                <p class="vd-metric-value">{{ content_topics_count }}</p>
+                <p class="vd-metric-desc">{{ content_materials_total }} materials added</p>
+            </div>
+        </div>
+
+        {% if active_assignment %}
+        <div class="vd-row">
+            <div class="vd-card vd-live-card" aria-live="polite">
+                <div class="vd-live-header">
+                    <span class="vd-live-pill"><span class="vd-live-dot"></span> Currently timed in</span>
+                </div>
+                <h2 class="vd-card-title">{{ active_assignment.activity_name }}</h2>
+                <div class="vd-live-meta-row">
+                    <span class="vd-live-label">Location</span>
+                    <span class="vd-live-value">{{ active_assignment.location }}</span>
+                </div>
+                <div class="vd-live-meta-row">
+                    <span class="vd-live-label">Timed in</span>
+                    <span class="vd-live-value" data-live-activity-timein="{{ active_assignment.time_in }}">{{ active_assignment.time_in_label }}</span>
+                </div>
+                <div class="vd-live-timer" data-live-timer-for="{{ active_assignment.id }}">00:00:00</div>
+                <button type="button" class="vd-live-timeout-btn" data-timeout-assignment-id="{{ active_assignment.id }}">Time out</button>
+                <div class="vd-live-confirmation hidden" data-timeout-confirmation-for="{{ active_assignment.id }}">
+                    <span>Time out now? This will stop the live timer.</span>
+                    <div class="vd-live-confirm-actions">
+                        <button type="button" class="vd-live-cancel-btn" data-timeout-cancel="{{ active_assignment.id }}">Cancel</button>
+                        <button type="button" class="vd-live-confirm-btn" data-timeout-confirm="{{ active_assignment.id }}">Confirm time out</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="vd-card">
+                <h2 class="vd-card-title">OJT Progress</h2>
+                <div class="vd-ojt-hours">
+                    <span class="vd-ojt-value">{{ ojt_hours_display }}</span>
+                    <span class="vd-ojt-unit">/ {{ ojt_required_hours_display }}</span>
+                </div>
+                <p class="vd-ojt-percentage">{{ ojt_remaining_display }}</p>
+                <div class="vd-progress-wrap"><span class="vd-progress-bar" style="width: {{ ojt_progress_percent }}%;" aria-hidden="true"></span></div>
+                <div class="vd-ojt-meta">
+                    <div class="vd-ojt-meta-item">
+                        <span class="vd-ojt-meta-label">Supervisor</span>
+                        <span class="vd-ojt-meta-value">{{ supervisor_name }}</span>
+                    </div>
+                    <div class="vd-ojt-meta-item">
+                        <span class="vd-ojt-meta-label">Next Check-In</span>
+                        <span class="vd-ojt-meta-value">{{ next_check_in_label }}</span>
+                    </div>
+                    <div class="vd-ojt-meta-item">
+                        <span class="vd-ojt-meta-label">Status</span>
+                        <span class="vd-ojt-meta-value">{{ ojt_status_label }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="vd-row">
+            <div class="vd-card">
+                <h2 class="vd-card-title">OJT Progress</h2>
+                <div class="vd-ojt-hours">
+                    <span class="vd-ojt-value">{{ ojt_hours_display }}</span>
+                    <span class="vd-ojt-unit">/ {{ ojt_required_hours_display }}</span>
+                </div>
+                <p class="vd-ojt-percentage">{{ ojt_remaining_display }}</p>
+                <div class="vd-progress-wrap"><span class="vd-progress-bar" style="width: {{ ojt_progress_percent }}%;" aria-hidden="true"></span></div>
+                <div class="vd-ojt-meta">
+                    <div class="vd-ojt-meta-item">
+                        <span class="vd-ojt-meta-label">Supervisor</span>
+                        <span class="vd-ojt-meta-value">{{ supervisor_name }}</span>
+                    </div>
+                    <div class="vd-ojt-meta-item">
+                        <span class="vd-ojt-meta-label">Next Check-In</span>
+                        <span class="vd-ojt-meta-value">{{ next_check_in_label }}</span>
+                    </div>
+                    <div class="vd-ojt-meta-item">
+                        <span class="vd-ojt-meta-label">Status</span>
+                        <span class="vd-ojt-meta-value">{{ ojt_status_label }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="vd-card">
+                <h2 class="vd-card-title">Upcoming Tasks</h2>
+                {% if upcoming_tasks %}
+                <ul class="vd-tasks-list">
+                    {% for task in upcoming_tasks %}
+                    <li class="vd-task-item">
+                        <div class="vd-task-head">
+                            <h3 class="vd-task-name">{{ task.title }}</h3>
+                            {% if task.is_today %}<span class="vd-task-badge today">Today</span>{% else %}<span class="vd-task-badge pending">Upcoming</span>{% endif %}
+                        </div>
+                        <p class="vd-task-meta">{{ task.location }}, {{ task.schedule_label }}</p>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="vd-empty-state">No upcoming tasks scheduled.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="vd-row">
+            <div class="vd-card">
+                <h2 class="vd-card-title">Announcements</h2>
+                {% if announcements %}
+                <ul class="vd-announcements-list">
+                    {% for announcement in announcements %}
+                    <li class="vd-announcement-item">
+                        <h3 class="vd-announcement-title">{{ announcement.title }}</h3>
+                        <p class="vd-announcement-meta">{{ announcement.date_label }}</p>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="vd-empty-state">No recent announcements.</p>
+                {% endif %}
+            </div>
+
+            <div class="vd-card">
+                <h2 class="vd-card-title">Certificates</h2>
+                {% if certificates %}
+                {% for certificate in certificates %}
+                <div class="vd-certificate-item">
+                    <div class="vd-certificate-info">
+                        <h3 class="vd-certificate-name">Certificate of Appreciation</h3>
+                        <p class="vd-certificate-date">Issued: {{ certificate.issued_date }}</p>
+                    </div>
+                    <a class="vd-certificate-btn" href="{{ certificate.download_url }}">Download</a>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="vd-empty-state">No certificates issued yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="distribution-outreach" class="ud-panel hidden" aria-label="Tasks and schedule section" hidden>
+    <article class="volunteer-task-shell" aria-labelledby="scheduled-for-you-title">
+        <header class="volunteer-task-header">
+            <h2 id="scheduled-for-you-title" class="volunteer-task-title">Tasks &amp; Schedule</h2>
+            <p class="volunteer-task-subtitle">Your assigned tasks, dates, and locations</p>
+        </header>
+
+        <div class="module-filter-row" role="tablist" aria-label="Task module filters">
+            <button type="button" class="focus-ring module-filter-pill is-active" data-module-filter="all" aria-selected="true">All</button>
+            <button type="button" class="focus-ring module-filter-pill" data-module-filter="rag-making" aria-selected="false">Rag-making</button>
+            <button type="button" class="focus-ring module-filter-pill" data-module-filter="teaching-kids" aria-selected="false">Teaching Kids</button>
+            <button type="button" class="focus-ring module-filter-pill" data-module-filter="pagtatanim" aria-selected="false">Planting</button>
+            <button type="button" class="focus-ring module-filter-pill" data-module-filter="outreach" aria-selected="false">Outreach</button>
+        </div>
+
+        <div class="task-group-block" data-task-group="today">
+            <h3 class="task-group-title">Today</h3>
+            <div class="task-group-list">
+                <article class="volunteer-task-card" data-module-tag="rag-making" data-event-name="Rag-making Workshop Support" data-event-date="Apr 25, 2026 - 9:00 AM to 11:30 AM" data-event-location="Barangay Hall Craft Room" data-event-bring="Bring attendance sheet, scissors, and sample weave guides." data-event-receive="Hands-on output review and attendance completion." data-event-note="Assist first-time participants and document workshop photos." data-action-type="today" data-action-label="Today">
+                    <div class="volunteer-task-head">
+                        <div>
+                            <p class="volunteer-task-name">Rag-making Workshop Support</p>
+                            <p class="volunteer-task-meta">Apr 25, 2026 - 9:00 AM to 11:30 AM - Barangay Hall Craft Room</p>
+                        </div>
+                        <span class="status-pill is-today">Today</span>
+                    </div>
+                    <span class="module-pill">Rag-making</span>
+                </article>
+
+                <article class="volunteer-task-card" data-module-tag="teaching-kids" data-event-name="Reading Session - Grade 3" data-event-date="Apr 25, 2026 - 1:00 PM to 3:00 PM" data-event-location="Community Library Room 2" data-event-bring="Bring story cards, worksheet copies, and marker pens." data-event-receive="Facilitator acknowledgment and attendance credit." data-event-note="Coordinate with lead teacher before starting group reading." data-action-type="today" data-action-label="Today">
+                    <div class="volunteer-task-head">
+                        <div>
+                            <p class="volunteer-task-name">Reading Session - Grade 3</p>
+                            <p class="volunteer-task-meta">Apr 25, 2026 - 1:00 PM to 3:00 PM - Community Library Room 2</p>
+                        </div>
+                        <span class="status-pill is-today">Today</span>
+                    </div>
+                    <span class="module-pill">Teaching Kids</span>
+                </article>
+            </div>
+            <p class="task-group-empty hidden" data-empty-state="today">No matching tasks in this section.</p>
+        </div>
+
+        <div class="task-group-block" data-task-group="upcoming">
+            <h3 class="task-group-title">Upcoming</h3>
+            <div class="task-group-list">
+                <article class="volunteer-task-card" data-module-tag="pagtatanim" data-event-name="Seedling Planting Drive" data-event-date="Apr 27, 2026 - 7:30 AM to 10:00 AM" data-event-location="Riverside Community Garden" data-event-bring="Bring gloves, hat, and water bottle." data-event-receive="Site assignment and planting kit." data-event-note="Meet the coordinator by 7:15 AM for orientation." data-action-type="pending" data-action-label="Pending">
+                    <div class="volunteer-task-head">
+                        <div>
+                            <p class="volunteer-task-name">Seedling Planting Drive</p>
+                            <p class="volunteer-task-meta">Apr 27, 2026 - 7:30 AM to 10:00 AM - Riverside Community Garden</p>
+                        </div>
+                        <span class="status-pill is-pending">Pending</span>
+                    </div>
+                    <span class="module-pill">Planting</span>
+                </article>
+
+                <article class="volunteer-task-card" data-module-tag="outreach" data-event-name="Family Visit and Supply Check" data-event-date="Apr 30, 2026 - 2:00 PM to 4:00 PM" data-event-location="Sitio Mabini Zone 3" data-event-bring="Bring checklist forms, volunteer ID, and hygiene packs." data-event-receive="Coordinator sign-off and route completion record." data-event-note="Travel in pairs and submit forms before end of day." data-action-type="pending" data-action-label="Pending">
+                    <div class="volunteer-task-head">
+                        <div>
+                            <p class="volunteer-task-name">Family Visit and Supply Check</p>
+                            <p class="volunteer-task-meta">Apr 30, 2026 - 2:00 PM to 4:00 PM - Sitio Mabini Zone 3</p>
+                        </div>
+                        <span class="status-pill is-pending">Pending</span>
+                    </div>
+                    <span class="module-pill">Outreach</span>
+                </article>
+            </div>
+            <p class="task-group-empty hidden" data-empty-state="upcoming">No matching tasks in this section.</p>
+        </div>
+
+        <div class="task-group-block" data-task-group="completed">
+            <h3 class="task-group-title">Completed</h3>
+            <div class="task-group-list">
+                <article class="volunteer-task-card" data-module-tag="rag-making" data-event-name="Rag Sorting and Packing" data-event-date="Apr 20, 2026 - 8:30 AM to 10:30 AM" data-event-location="Livelihood Hub Warehouse" data-event-bring="No additional items required." data-event-receive="Task completion log." data-event-note="Completed successfully." data-action-type="done" data-action-label="Done">
+                    <div class="volunteer-task-head">
+                        <div>
+                            <p class="volunteer-task-name">Rag Sorting and Packing</p>
+                            <p class="volunteer-task-meta">Apr 20, 2026 - 8:30 AM to 10:30 AM - Livelihood Hub Warehouse</p>
+                        </div>
+                        <span class="status-pill is-done">Done</span>
+                    </div>
+                    <span class="module-pill">Rag-making</span>
+                </article>
+
+                <article class="volunteer-task-card" data-module-tag="teaching-kids" data-event-name="Math Mentoring Session" data-event-date="Apr 19, 2026 - 10:00 AM to 12:00 PM" data-event-location="Barangay Learning Center" data-event-bring="No additional items required." data-event-receive="Attendance and lesson notes filed." data-event-note="Completed successfully." data-action-type="done" data-action-label="Done">
+                    <div class="volunteer-task-head">
+                        <div>
+                            <p class="volunteer-task-name">Math Mentoring Session</p>
+                            <p class="volunteer-task-meta">Apr 19, 2026 - 10:00 AM to 12:00 PM - Barangay Learning Center</p>
+                        </div>
+                        <span class="status-pill is-done">Done</span>
+                    </div>
+                    <span class="module-pill">Teaching Kids</span>
+                </article>
+            </div>
+            <p class="task-group-empty hidden" data-empty-state="completed">No matching tasks in this section.</p>
+        </div>
+    </article>
+</section>
+
+<div id="scheduled-modal-overlay" class="scheduled-modal-overlay hidden" aria-hidden="true" hidden></div>
+<article id="scheduled-modal" class="scheduled-modal-card hidden" role="dialog" aria-modal="true" aria-labelledby="scheduled-modal-title" hidden>
+    <div class="mb-3 flex items-start justify-between gap-3">
+        <div>
+            <h3 id="scheduled-modal-title" class="ud-panel-title">Event details</h3>
+            <p id="scheduled-modal-datetime" class="ud-panel-subtitle"></p>
+            <p id="scheduled-modal-location" class="mt-1 text-sm text-ink-600"></p>
+        </div>
+        <button type="button" id="scheduled-modal-close" class="focus-ring inline-flex h-10 w-10 items-center justify-center rounded-full border border-brand-100 bg-white text-ink-700" aria-label="Close modal">
+            <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+        </button>
+    </div>
+
+    <div class="space-y-3">
+        <div class="rounded-xl border border-brand-100 bg-white p-3">
+            <p class="text-sm font-semibold text-ink-900">What to bring</p>
+            <p id="scheduled-modal-bring" class="mt-1 text-sm text-ink-600"></p>
+        </div>
+        <div class="rounded-xl border border-brand-100 bg-white p-3">
+            <p class="text-sm font-semibold text-ink-900">What you'll receive</p>
+            <p id="scheduled-modal-receive" class="mt-1 text-sm text-ink-600"></p>
+        </div>
+        <div class="rounded-xl border border-brand-100 bg-white p-3">
+            <p class="text-sm font-semibold text-ink-900">Coordinator note</p>
+            <p id="scheduled-modal-note" class="mt-1 text-sm text-ink-600"></p>
+        </div>
+    </div>
+
+    <div id="scheduled-modal-countdown-wrap" class="task-modal-progress-wrap hidden" aria-hidden="true">
+        <span id="scheduled-modal-countdown-bar" class="task-modal-progress-bar"></span>
+    </div>
+    <button type="button" id="scheduled-modal-action" class="focus-ring ud-feedback-btn mt-4">Mark as Done</button>
+    <button type="button" id="scheduled-modal-undo" class="focus-ring task-modal-undo hidden">Undo</button>
+    <p id="scheduled-modal-confirmation" class="task-modal-confirmation hidden"></p>
+</article>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function initVolunteerSectionRouter() {
+    "use strict";
+
+    var panels = Array.prototype.slice.call(document.querySelectorAll(".ud-panel"));
+    var links = Array.prototype.slice.call(document.querySelectorAll("#dashboard-sidebar a[data-section]"));
+    if (!panels.length || !links.length) {
+        return;
+    }
+
+    function resolveTarget() {
+        var target = String(window.location.hash || "").replace("#", "").trim();
+        if (!target) {
+            return "dashboard-overview";
+        }
+        if (target === "distribution-events-all") {
+            return "distribution-outreach";
+        }
+        return target;
+    }
+
+    function activate(target) {
+        var found = false;
+
+        panels.forEach(function (panel) {
+            var isActive = panel.id === target;
+            panel.classList.toggle("hidden", !isActive);
+            if (isActive) {
+                found = true;
+            }
+        });
+
+        if (!found) {
+            panels.forEach(function (panel) {
+                panel.classList.toggle("hidden", panel.id !== "dashboard-overview");
+            });
+            target = "dashboard-overview";
+        }
+
+        links.forEach(function (link) {
+            var isActive = (link.getAttribute("data-section") || "") === target;
+            link.classList.toggle("is-active", isActive);
+            link.classList.toggle("active", isActive);
+            link.setAttribute("aria-current", isActive ? "page" : "false");
+        });
+
+        window.scrollTo({ top: 0, behavior: "auto" });
+    }
+
+    function syncFromHash() {
+        activate(resolveTarget());
+    }
+
+    window.addEventListener("hashchange", syncFromHash);
+    syncFromHash();
+})();
+</script>
+<script>
+(function initVolunteerTasksFilter() {
+    "use strict";
+
+    var root = document.getElementById("distribution-outreach");
+    if (!root || root.dataset.filterBound === "true") {
+        return;
+    }
+    root.dataset.filterBound = "true";
+
+    var buttons = Array.prototype.slice.call(root.querySelectorAll("[data-module-filter]"));
+    var cards = Array.prototype.slice.call(root.querySelectorAll("[data-module-tag]"));
+    var groups = Array.prototype.slice.call(root.querySelectorAll("[data-task-group]"));
+
+    function updateEmptyStates() {
+        groups.forEach(function (group) {
+            var visible = Array.prototype.some.call(group.querySelectorAll("[data-module-tag]"), function (card) {
+                return !card.classList.contains("hidden");
+            });
+            var empty = group.querySelector("[data-empty-state]");
+            if (empty) {
+                empty.classList.toggle("hidden", visible);
+            }
+        });
+    }
+
+    function applyFilter(filter) {
+        var key = String(filter || "all").trim();
+        cards.forEach(function (card) {
+            var tag = String(card.getAttribute("data-module-tag") || "").trim();
+            var show = key === "all" || tag === key;
+            card.classList.toggle("hidden", !show);
+        });
+
+        buttons.forEach(function (button) {
+            var active = (button.getAttribute("data-module-filter") || "") === key;
+            button.classList.toggle("is-active", active);
+            button.setAttribute("aria-selected", active ? "true" : "false");
+        });
+
+        updateEmptyStates();
+    }
+
+    buttons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            applyFilter(button.getAttribute("data-module-filter") || "all");
+        });
+    });
+
+    applyFilter("all");
+})();
+</script>
+<script>
+(function initVolunteerTaskModal() {
+    "use strict";
+
+    var root = document.getElementById("distribution-outreach");
+    if (!root || root.dataset.modalBound === "true") {
+        return;
+    }
+    root.dataset.modalBound = "true";
+
+    var rows = Array.prototype.slice.call(root.querySelectorAll(".volunteer-task-card"));
+    var overlay = document.getElementById("scheduled-modal-overlay");
+    var modal = document.getElementById("scheduled-modal");
+    var closeBtn = document.getElementById("scheduled-modal-close");
+    var actionBtn = document.getElementById("scheduled-modal-action");
+    var undoBtn = document.getElementById("scheduled-modal-undo");
+    var countdownWrap = document.getElementById("scheduled-modal-countdown-wrap");
+    var countdownBar = document.getElementById("scheduled-modal-countdown-bar");
+    var confirmation = document.getElementById("scheduled-modal-confirmation");
+
+    var titleEl = document.getElementById("scheduled-modal-title");
+    var dateEl = document.getElementById("scheduled-modal-datetime");
+    var locationEl = document.getElementById("scheduled-modal-location");
+    var bringEl = document.getElementById("scheduled-modal-bring");
+    var receiveEl = document.getElementById("scheduled-modal-receive");
+    var noteEl = document.getElementById("scheduled-modal-note");
+
+    if (!rows.length || !overlay || !modal || !closeBtn || !actionBtn || !titleEl || !dateEl || !locationEl || !bringEl || !receiveEl || !noteEl) {
+        return;
+    }
+
+    var doneTasksKey = "volunteer_ojt_done_tasks_v1";
+    var lastTaskKey = "volunteer_ojt_last_entry";
+    var activeRow = null;
+    var doneTimer = null;
+    var doneStartedAt = 0;
+    var doneDuration = 5000;
+    var preDoneSnapshot = null;
+
+    function normalizeDateDisplay(value) {
+        return String(value || "")
+            .replace(/\s+-\s+/g, " · ")
+            .replace(/\s+to\s+/gi, " - ");
+    }
+
+    function readJSON(key, fallback) {
+        try {
+            var raw = localStorage.getItem(key);
+            if (!raw) {
+                return fallback;
+            }
+            var parsed = JSON.parse(raw);
+            return parsed === null || typeof parsed === "undefined" ? fallback : parsed;
+        } catch (error) {
+            return fallback;
+        }
+    }
+
+    function writeJSON(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch (error) {
+            // Non-fatal.
+        }
+    }
+
+    function getTaskRecord(row) {
+        var title = String(row.getAttribute("data-event-name") || row.querySelector(".volunteer-task-name")?.textContent || "Task").trim();
+        var date = String(row.getAttribute("data-event-date") || "").trim();
+        var location = String(row.getAttribute("data-event-location") || "").trim();
+        var module = String(row.getAttribute("data-module-tag") || "rag-making").trim();
+        return {
+            title: title,
+            date: date,
+            location: location,
+            module: module
+        };
+    }
+
+    function taskKey(task) {
+        return [task.title, task.date, task.location].join("|").toLowerCase();
+    }
+
+    function persistDoneTask(row) {
+        var task = getTaskRecord(row);
+        var all = readJSON(doneTasksKey, []);
+        if (!Array.isArray(all)) {
+            all = [];
+        }
+
+        var key = taskKey(task);
+        var exists = all.some(function (item) {
+            return taskKey({
+                title: String(item.title || ""),
+                date: String(item.date || ""),
+                location: String(item.location || "")
+            }) === key;
+        });
+
+        if (!exists) {
+            all.unshift(task);
+            writeJSON(doneTasksKey, all);
+        }
+
+        writeJSON(lastTaskKey, {
+            task: task.title,
+            date: task.date,
+            location: task.location,
+            completedAt: new Date().toISOString()
+        });
+
+        window.dispatchEvent(new CustomEvent("volunteer:ojt-hours-logged", {
+            detail: {
+                task: task.title,
+                date: task.date,
+                location: task.location
+            }
+        }));
+    }
+
+    function setRowDoneVisual(row) {
+        row.classList.add("is-done");
+        var pill = row.querySelector(".status-pill");
+        if (pill) {
+            pill.classList.remove("is-today", "is-pending");
+            pill.classList.add("is-done");
+            pill.textContent = "Done";
+        }
+        row.setAttribute("data-action-type", "done");
+        row.setAttribute("data-action-label", "Done");
+
+        var completedList = root.querySelector('[data-task-group="completed"] .task-group-list');
+        if (completedList && row.parentElement !== completedList) {
+            completedList.prepend(row);
+        }
+    }
+
+    function restoreRowVisual(row, snapshot) {
+        if (!snapshot) {
+            return;
+        }
+
+        var group = root.querySelector('[data-task-group="' + snapshot.group + '"] .task-group-list');
+        if (group) {
+            group.prepend(row);
+        }
+
+        var pill = row.querySelector(".status-pill");
+        if (pill) {
+            pill.classList.remove("is-done", "is-today", "is-pending");
+            pill.classList.add(snapshot.pillClass);
+            pill.textContent = snapshot.label;
+        }
+
+        row.setAttribute("data-action-type", snapshot.type);
+        row.setAttribute("data-action-label", snapshot.label);
+    }
+
+    function closeModal() {
+        overlay.classList.add("hidden");
+        modal.classList.add("hidden");
+        overlay.setAttribute("aria-hidden", "true");
+    }
+
+    function openModal(row) {
+        activeRow = row;
+
+        var name = String(row.getAttribute("data-event-name") || row.querySelector(".volunteer-task-name")?.textContent || "Task").trim();
+        var date = String(row.getAttribute("data-event-date") || "").trim();
+        var location = String(row.getAttribute("data-event-location") || "").trim();
+        var bring = String(row.getAttribute("data-event-bring") || "Follow coordinator instructions.").trim();
+        var receive = String(row.getAttribute("data-event-receive") || "Task acknowledgment.").trim();
+        var note = String(row.getAttribute("data-event-note") || "Check in before task start.").trim();
+        var type = String(row.getAttribute("data-action-type") || "pending").trim();
+
+        titleEl.textContent = name;
+        dateEl.textContent = normalizeDateDisplay(date);
+        locationEl.textContent = location;
+        bringEl.textContent = bring;
+        receiveEl.textContent = receive;
+        noteEl.textContent = note;
+
+        if (type === "done") {
+            actionBtn.textContent = "Completed ✓";
+            actionBtn.disabled = true;
+        } else {
+            actionBtn.textContent = "Mark as Done";
+            actionBtn.disabled = false;
+        }
+
+        if (undoBtn) {
+            undoBtn.classList.add("hidden");
+        }
+        if (countdownWrap) {
+            countdownWrap.classList.add("hidden");
+        }
+        if (confirmation) {
+            confirmation.classList.add("hidden");
+            confirmation.textContent = "";
+        }
+
+        overlay.classList.remove("hidden");
+        modal.classList.remove("hidden");
+        overlay.setAttribute("aria-hidden", "false");
+    }
+
+    function stopDoneTimer() {
+        if (doneTimer) {
+            window.clearInterval(doneTimer);
+            doneTimer = null;
+        }
+    }
+
+    function finalizeDone() {
+        if (!activeRow) {
+            return;
+        }
+
+        stopDoneTimer();
+        if (countdownWrap) {
+            countdownWrap.classList.add("hidden");
+        }
+        if (undoBtn) {
+            undoBtn.classList.add("hidden");
+        }
+
+        persistDoneTask(activeRow);
+        if (confirmation) {
+            confirmation.textContent = "Task marked as done. Hours logged to OJT Monitoring.";
+            confirmation.classList.remove("hidden");
+        }
+
+        actionBtn.textContent = "Done";
+        actionBtn.disabled = true;
+        preDoneSnapshot = null;
+    }
+
+    function startDoneCountdown() {
+        if (!activeRow || !countdownWrap || !countdownBar) {
+            finalizeDone();
+            return;
+        }
+
+        stopDoneTimer();
+        doneStartedAt = Date.now();
+        countdownWrap.classList.remove("hidden");
+        if (undoBtn) {
+            undoBtn.classList.remove("hidden");
+        }
+        countdownBar.style.width = "100%";
+
+        doneTimer = window.setInterval(function () {
+            var elapsed = Date.now() - doneStartedAt;
+            var remaining = Math.max(0, doneDuration - elapsed);
+            var pct = (remaining / doneDuration) * 100;
+            countdownBar.style.width = String(pct) + "%";
+
+            if (remaining <= 0) {
+                finalizeDone();
+            }
+        }, 80);
+    }
+
+    function snapshotForUndo(row) {
+        var groupEl = row.closest("[data-task-group]");
+        var currentType = String(row.getAttribute("data-action-type") || "pending");
+        var label = currentType === "today" ? "Today" : (currentType === "done" ? "Done" : "Pending");
+        return {
+            group: groupEl ? String(groupEl.getAttribute("data-task-group") || "upcoming") : "upcoming",
+            type: currentType,
+            label: label,
+            pillClass: currentType === "today" ? "is-today" : (currentType === "done" ? "is-done" : "is-pending")
+        };
+    }
+
+    rows.forEach(function (row) {
+        row.addEventListener("click", function () {
+            openModal(row);
+        });
+    });
+
+    actionBtn.addEventListener("click", function () {
+        if (!activeRow || actionBtn.disabled) {
+            return;
+        }
+
+        preDoneSnapshot = snapshotForUndo(activeRow);
+        setRowDoneVisual(activeRow);
+        startDoneCountdown();
+    });
+
+    if (undoBtn) {
+        undoBtn.addEventListener("click", function () {
+            if (!activeRow || !preDoneSnapshot) {
+                return;
+            }
+
+            stopDoneTimer();
+            if (countdownWrap) {
+                countdownWrap.classList.add("hidden");
+            }
+            undoBtn.classList.add("hidden");
+            restoreRowVisual(activeRow, preDoneSnapshot);
+            preDoneSnapshot = null;
+
+            actionBtn.textContent = "Mark as Done";
+            actionBtn.disabled = false;
+            if (confirmation) {
+                confirmation.classList.add("hidden");
+                confirmation.textContent = "";
+            }
+        });
+    }
+
+    closeBtn.addEventListener("click", function () {
+        closeModal();
+    });
+
+    overlay.addEventListener("click", function () {
+        closeModal();
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && !modal.classList.contains("hidden")) {
+            closeModal();
+        }
+    });
+})();
+</script>
+{% endblock %}

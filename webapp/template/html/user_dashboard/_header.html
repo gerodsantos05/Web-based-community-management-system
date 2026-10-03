@@ -1,0 +1,136 @@
+{% firstof user_display_name request.user.first_name request.user.username as display_name %}
+{% if dashboard_scope == "admin" %}
+    {% url 'community_posts' as dashboard_community_url %}
+    {% url 'settings' as dashboard_settings_url %}
+{% else %}
+    {% url 'user_dashboard_community' as dashboard_community_url %}
+    {% url 'user_dashboard_settings' as dashboard_settings_url %}
+{% endif %}
+<header id="app-header" data-scrolled="false" class="sticky top-0 z-40 border-b border-brand-100 bg-white/85 backdrop-blur-sm" role="banner">
+    <div class="h-20 px-3 sm:px-4 md:px-6 lg:px-8 flex items-center justify-between gap-2 md:grid md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)_auto] md:gap-3">
+        <div class="flex min-w-0 flex-1 items-center gap-2 md:flex-none md:gap-2">
+            <button id="sidebar-toggle-desktop" type="button" aria-label="Toggle sidebar" aria-controls="dashboard-sidebar" aria-expanded="true" class="header-toggle focus-ring hidden lg:inline-flex">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/>
+                </svg>
+            </button>
+            <button id="sidebar-toggle-mobile" data-sidebar-toggle="{% if dashboard_scope == 'volunteer' %}volunteer{% elif dashboard_scope == 'beneficiary' %}beneficiary{% else %}user{% endif %}" type="button" class="focus-ring inline-flex h-9 w-9 items-center justify-center rounded-lg border border-brand-100 bg-white text-ink-700 hover:bg-brand-50 lg:hidden" aria-label="Open sidebar navigation" aria-controls="dashboard-sidebar" aria-expanded="false" data-open="false">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-menu h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-close hidden h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+            <div class="min-w-0">
+                <h1 class="truncate text-lg font-semibold text-ink-900">Dashboard</h1>
+                <p class="truncate text-xs text-ink-500">Community operations snapshot</p>
+            </div>
+        </div>
+
+        <div class="hidden md:block">
+            <label for="dashboard-search" class="sr-only">Search resources and events</label>
+            <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                </span>
+                <input id="dashboard-search" type="search" aria-label="Search resources and events" placeholder="Search resources, events..." class="focus-ring w-full rounded-full border border-brand-100 bg-brand-50/70 py-2.5 pl-10 pr-4 text-sm text-ink-900 placeholder:text-ink-500" />
+            </div>
+        </div>
+
+        <div class="flex shrink-0 items-center justify-end gap-2">
+            <button id="header-notifications" data-toggle="notifications" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="dropdown-notifications" data-notifications="{{ community_notification_unread_count|default:0 }}" class="focus-ring relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-brand-100 bg-white text-ink-700 hover:bg-brand-50" aria-label="Notifications">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5"/><path d="M9 17a3 3 0 0 0 6 0"/></svg>
+                <span id="header-notifications-badge" class="header-notification-badge" aria-live="polite" aria-atomic="true" {% if not community_notification_unread_count %}hidden{% endif %}>{{ community_notification_unread_count|default:0 }}</span>
+            </button>
+
+            <div id="dropdown-notifications" data-dropdown="notifications" role="region" aria-label="Notifications" aria-hidden="true" class="dropdown-card notification-panel" data-notifications-feed-endpoint="{{ dashboard_notifications_feed_url|default:'/dashboard/notifications/feed/' }}" data-mark-read-endpoint="{{ dashboard_notification_mark_read_url|default:'/dashboard/notifications/mark-read/' }}" data-mark-all-read-endpoint="{{ dashboard_notification_mark_all_read_url|default:'/dashboard/notifications/mark-all-read/' }}" hidden>
+                <header class="notification-header">
+                    <h3 class="notification-title text-sm font-semibold text-ink-900">Notifications</h3>
+                    <span class="notification-count-badge" id="notif-count" aria-live="polite" aria-atomic="true">{{ community_notification_unread_count|default:0 }}</span>
+                </header>
+                <div class="notification-body" role="list" id="notif-list" aria-label="Recent notifications">
+                    {% if community_notifications %}
+                    <section class="notif-group" role="group" aria-labelledby="notif-group-recent">
+                        <h4 class="notif-group-title" id="notif-group-recent">Recent</h4>
+                        {% for notification in community_notifications %}
+                        <button type="button" class="notif-item {% if notification.is_read %}read{% else %}unread{% endif %}" role="listitem" tabindex="0" data-id="{{ notification.id }}" data-unread="{% if notification.is_read %}false{% else %}true{% endif %}" data-href="{{ notification.url }}">
+                            <span class="notif-dot {% if notification.is_read %}read{% else %}unread{% endif %}" aria-hidden="true"></span>
+                            <span class="notif-type-icon" aria-hidden="true">
+                                {% if notification.type == 'post_like' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21s-6.5-4.4-6.5-10A3.5 3.5 0 0 1 9 7.5c1.2 0 2.3.6 3 1.6.7-1 1.8-1.6 3-1.6a3.5 3.5 0 0 1 3.5 3.5c0 5.6-6.5 10-6.5 10Z"/></svg>
+                                {% elif notification.type == 'post_comment' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/></svg>
+                                {% else %}
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M8 8h8M8 12h6M4 4h16v12H7l-3 4V4Z"/></svg>
+                                {% endif %}
+                            </span>
+                            <span class="notif-text">
+                                <span class="notif-title">{{ notification.title }}</span>
+                                <span class="notif-meta">{{ notification.time_ago }}</span>
+                            </span>
+                        </button>
+                        {% endfor %}
+                    </section>
+                    {% else %}
+                    <p class="notif-group-title" role="listitem">No notifications yet.</p>
+                    {% endif %}
+                </div>
+                <footer class="notification-footer">
+                    <div class="footer-actions">
+                        <a id="view-all-notifications" href="{% url 'dashboard_notifications' %}" class="notif-btn notif-btn-primary">View all notifications</a>
+                        <button id="mark-all-read" type="button" class="notif-btn notif-btn-secondary" {% if not community_notification_unread_count %}disabled{% endif %}>Mark all as read</button>
+                    </div>
+                </footer>
+            </div>
+
+            <button id="header-profile" data-toggle="profile" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="dropdown-profile" class="focus-ring inline-flex h-10 w-10 items-center justify-center rounded-full border border-brand-100 bg-white p-0 text-sm text-ink-700 hover:bg-brand-50 sm:h-auto sm:w-auto sm:gap-2 sm:px-2.5 sm:py-1.5" aria-label="Profile">
+                <span class="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-xs font-semibold text-white" id="header-profile-avatar-wrap">
+                    {% if user_avatar_url %}
+                    <img id="header-profile-avatar-image" src="{{ user_avatar_url }}" alt="{{ display_name|default:'User' }} profile photo" class="h-full w-full object-cover">
+                    {% endif %}
+                    <span id="header-profile-avatar-initials" {% if user_avatar_url %}hidden{% endif %}>{{ user_initials|default:display_name|slice:":1"|upper }}</span>
+                </span>
+                <span class="hidden sm:inline font-medium" id="header-profile-name">{{ display_name|default:"User" }}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="hidden sm:inline h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+            </button>
+
+            <div id="dropdown-profile" data-dropdown="profile" role="menu" aria-label="Account" aria-hidden="true" class="dropdown-card user-dropdown" hidden>
+                <header class="user-dropdown__header">
+                    <div class="user-avatar inline-flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-semibold text-white" aria-hidden="true">
+                        {% if user_avatar_url %}
+                        <img id="dropdown-profile-avatar-image" src="{{ user_avatar_url }}" alt="{{ display_name|default:'User' }} profile photo" class="h-full w-full object-cover">
+                        {% endif %}
+                        <span id="dropdown-profile-avatar-initials" {% if user_avatar_url %}hidden{% endif %}>{{ user_initials|default:display_name|slice:":1"|upper }}</span>
+                    </div>
+                    <div class="user-meta">
+                        <div class="user-title text-sm font-semibold text-ink-900" id="header-profile-display-name">{{ display_name|default:"User" }}</div>
+                        <div class="user-role text-xs text-ink-500">{% if dashboard_scope == "admin" %}Administrator{% elif dashboard_scope == "volunteer" %}Volunteer{% else %}User{% endif %}</div>
+                    </div>
+                    <a href="{{ dashboard_settings_url }}" class="user-shortcut" aria-label="Open account settings">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6"/></svg>
+                    </a>
+                </header>
+
+                <div class="user-dropdown__list" role="none">
+                    <a role="menuitem" data-autofocus="true" href="{{ dashboard_settings_url }}" class="user-item">
+                        <span class="user-item__icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4a1 1 0 0 1 1 1v.4a6.6 6.6 0 0 1 2 .8l.3-.3a1 1 0 1 1 1.4 1.4l-.3.3c.3.6.6 1.3.8 2H19a1 1 0 1 1 0 2h-.4a6.6 6.6 0 0 1-.8 2l.3.3a1 1 0 1 1-1.4 1.4l-.3-.3a6.6 6.6 0 0 1-2 .8V19a1 1 0 1 1-2 0v-.4a6.6 6.6 0 0 1-2-.8l-.3.3a1 1 0 1 1-1.4-1.4l.3-.3a6.6 6.6 0 0 1-.8-2H5a1 1 0 1 1 0-2h.4c.2-.7.5-1.4.8-2l-.3-.3a1 1 0 1 1 1.4-1.4l.3.3c.6-.3 1.3-.6 2-.8V5a1 1 0 0 1 1-1Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                        </span>
+                        <span class="user-item__label">Account Settings</span>
+                        <span class="user-item__chevron" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6"/></svg>
+                        </span>
+                    </a>
+                </div>
+
+                <div class="user-divider" aria-hidden="true"></div>
+
+                <footer class="user-footer" role="none">
+                    <form method="post" action="{% url 'logout' %}" class="user-signout-form">
+                        {% csrf_token %}
+                        <button type="submit" role="menuitem" class="user-signout">Sign out</button>
+                    </form>
+                </footer>
+            </div>
+
+            {% block header_buttons %}{% endblock %}
+        </div>
+    </div>
+</header>

@@ -1,0 +1,1864 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Operations - Inventory | HappYness{% endblock %}
+
+{% block extra_head %}
+<style data-admin-panel-style="operations-inventory">
+    .inv-page {
+        --inv-surface: rgba(255, 255, 255, 0.95);
+        --inv-stroke: rgba(15, 118, 110, 0.16);
+        --inv-shadow: 0 10px 24px rgba(8, 83, 76, 0.1);
+        --admin-ops-card-shadow: var(--inv-shadow);
+        --inv-ink: #14352d;
+        --inv-sub: #56766c;
+        --inv-accent: #0f766e;
+        display: grid;
+        gap: 0.95rem;
+        width: 100%;
+        max-width: 100%;
+        overflow: visible;
+        padding: 0.24rem;
+    }
+
+    /* Avoid clipping card shadows by page safety wrappers. */
+    #dashboard-shell.admin-page #inventory-page,
+    #dashboard-shell.admin-page #inventory-page > section,
+    #dashboard-shell.admin-page #inventory-page > article,
+    #dashboard-shell.admin-page #inventory-page article[class*="kpi"] {
+        overflow: visible !important;
+    }
+
+    .inv-card {
+        background: var(--inv-surface);
+        border: 1px solid var(--inv-stroke);
+        border-radius: 16px;
+        box-shadow: var(--inv-shadow);
+        min-width: 0;
+    }
+
+    .inv-card,
+    .inv-kpi,
+    .inv-grid,
+    .inv-table-wrap,
+    .inv-list-item,
+    .inv-block,
+    .inv-modal {
+        background-color: #ffffff !important;
+    }
+
+    .inv-summary {
+        display: grid;
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .inv-kpi {
+        min-height: 100px;
+        padding: 0.76rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .inv-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.65rem;
+        padding: 0.82rem 0.95rem;
+        border-bottom: 1px solid #deefe8;
+    }
+
+    .inv-table-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .inv-table-heading {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .inv-table-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-left: auto;
+    }
+
+    .inv-table-actions .inv-chip,
+    .inv-table-actions .inv-btn {
+        white-space: nowrap;
+    }
+
+    .inv-filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.8rem 0.95rem 0.92rem;
+        border-bottom: 1px solid #deefe8;
+    }
+
+    .inv-filter-field {
+        display: block;
+        min-width: 0;
+    }
+
+    .inv-filter-search {
+        flex: 1 1 240px;
+        max-width: 360px;
+    }
+
+    .inv-filter-select,
+    .inv-filter-date {
+        flex: 0 1 160px;
+    }
+
+    .inv-filter-btn {
+        margin-left: auto;
+        flex: 0 0 auto;
+    }
+
+    .inv-filter-row .inv-input,
+    .inv-filter-row .inv-select {
+        min-height: 2.1rem;
+        padding: 0.46rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        line-height: 1.2;
+    }
+
+    @media (max-width: 767px) {
+        .inv-table-header {
+            align-items: flex-start;
+        }
+
+        .inv-table-actions {
+            width: 100%;
+            justify-content: flex-start;
+            margin-left: 0;
+        }
+
+        .inv-filter-row {
+            align-items: stretch;
+        }
+
+        .inv-filter-search,
+        .inv-filter-select,
+        .inv-filter-date,
+        .inv-filter-btn {
+            flex: 1 1 100%;
+            max-width: none;
+            width: 100%;
+        }
+
+        .inv-filter-btn {
+            margin-left: 0;
+        }
+
+        .inv-status-stack {
+            align-items: flex-start;
+        }
+
+        .inv-item-name-wrap {
+            gap: 0.4rem;
+        }
+    }
+
+    .inv-kpi-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .inv-kpi-label {
+        margin: 0;
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #618176;
+        font-weight: 700;
+    }
+
+    .inv-kpi-value {
+        margin: 0.36rem 0 0;
+        font-size: 1.72rem;
+        line-height: 1.05;
+        font-weight: 800;
+        color: #16372e;
+    }
+
+    .inv-kpi-meta {
+        margin: 0.32rem 0 0;
+        font-size: 0.72rem;
+        color: #4f766b;
+    }
+
+    .inv-kpi-icon {
+        width: 1.76rem;
+        height: 1.76rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        color: var(--inv-accent);
+        background: rgba(16, 185, 129, 0.14);
+    }
+
+    .inv-btn,
+    .inv-chip {
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        background: #fff;
+        color: #1b4f43;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.45rem 0.7rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.28rem;
+        cursor: pointer;
+    }
+
+    .inv-chip {
+        border-radius: 999px;
+        background: #f3fbf7;
+        padding: 0.24rem 0.52rem;
+        font-size: 0.67rem;
+    }
+
+    .inv-grid {
+        padding: 0.86rem 0.95rem;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.6rem;
+    }
+
+    .inv-field {
+        display: grid;
+        gap: 0.28rem;
+    }
+
+    .inv-field label {
+        font-size: 0.67rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #58766c;
+        font-weight: 700;
+    }
+
+    .inv-input,
+    .inv-select {
+        width: 100%;
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        min-height: 2.2rem;
+        padding: 0.52rem 0.66rem;
+        font-size: 0.82rem;
+        color: #1b4f43;
+        background: #fff;
+    }
+
+    .inv-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .inv-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 980px;
+    }
+
+    .inv-table th,
+    .inv-table td {
+        padding: 0.62rem 0.75rem;
+        font-size: 0.8rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #e7f2ed;
+    }
+
+    .inv-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        white-space: nowrap;
+        background: rgba(236, 253, 245, 0.9);
+        border-bottom: 1px solid rgba(15, 118, 110, 0.16);
+        color: #2f6659;
+        text-align: left;
+        font-weight: 700;
+    }
+
+    .inv-table tbody tr:hover {
+        background: rgba(236, 253, 245, 0.42);
+    }
+
+    .inv-table tbody tr {
+        background: #ffffff;
+    }
+
+    .inv-badge {
+        display: inline-flex;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        font-size: 0.69rem;
+        font-weight: 700;
+        padding: 0.18rem 0.52rem;
+        white-space: nowrap;
+    }
+
+    .inv-status-in { color: #14532d; background: #dcfce7; border-color: #bbf7d0; }
+    .inv-status-low { color: #8a4b10; background: #ffedd5; border-color: #fed7aa; }
+    .inv-status-out { color: #9a3412; background: #fee2e2; border-color: #fecaca; }
+
+    .inv-table-legend {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.72rem 0.95rem 0.12rem;
+        color: #58766c;
+        font-size: 0.72rem;
+    }
+
+    .inv-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.38rem;
+        font-weight: 600;
+    }
+
+    .inv-legend-swatch {
+        width: 0.6rem;
+        height: 0.6rem;
+        border-radius: 999px;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+
+    .inv-status-stack {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.38rem;
+        flex-wrap: wrap;
+    }
+
+    .inv-item-name-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        min-width: 0;
+    }
+
+    .inv-item-thumb {
+        position: relative;
+        width: 1.7rem;
+        height: 1.7rem;
+        border-radius: 8px;
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 95, 70, 0.14));
+        color: #0f5f4c;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .inv-item-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .inv-item-thumb-placeholder {
+        width: 100%;
+        height: 100%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+
+    .inv-item-label {
+        display: inline-block;
+        white-space: nowrap;
+        max-width: 100%;
+    }
+
+    .inv-category-pill {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        border-radius: 999px;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        background: rgba(236, 253, 245, 0.9);
+        color: #0f5f4c;
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 0.14rem 0.54rem;
+        white-space: nowrap;
+        transition: filter 160ms ease, transform 120ms ease;
+    }
+
+    .inv-category-pill.inv-status-in {
+        background: rgba(22, 163, 74, 0.12);
+        color: #166534;
+        border-color: rgba(22, 163, 74, 0.22);
+    }
+
+    .inv-category-pill.inv-status-low {
+        background: rgba(245, 158, 11, 0.12);
+        color: #9a5a00;
+        border-color: rgba(245, 158, 11, 0.24);
+    }
+
+    .inv-category-pill.inv-status-out {
+        background: rgba(239, 68, 68, 0.11);
+        color: #991b1b;
+        border-color: rgba(239, 68, 68, 0.2);
+    }
+
+    .inv-category-pill.inv-status-out.is-restockable {
+        cursor: pointer;
+    }
+
+    .inv-category-pill.inv-status-out.is-restockable:hover,
+    .inv-category-pill.inv-status-out.is-restockable:focus-visible {
+        filter: brightness(0.98);
+        transform: translateY(-1px);
+    }
+
+    .inv-row-action-btn {
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        background: #fff;
+        color: #1b4f43;
+        font-size: 0.75rem;
+        font-weight: 700;
+        width: 2.1rem;
+        height: 2.1rem;
+        padding: 0;
+        display: inline-grid;
+        place-items: center;
+        cursor: pointer;
+        transition: background-color 160ms ease, border-color 160ms ease, box-shadow 180ms ease, transform 120ms ease;
+    }
+
+    .inv-row-action-btn:hover {
+        background: #f5fcf9;
+        border-color: #b8dfd1;
+    }
+
+    .inv-row-action-btn:active {
+        transform: scale(0.94);
+    }
+
+    .inv-row-action-btn.is-active {
+        background: rgba(16, 185, 129, 0.16);
+        border-color: rgba(15, 118, 110, 0.45);
+        color: #0f5f4c;
+        box-shadow: 0 8px 16px rgba(15, 118, 110, 0.16);
+        animation: invBtnPop 180ms ease;
+    }
+
+    .inv-ellipsis {
+        width: 0.24rem;
+        height: 0.24rem;
+        border-radius: 999px;
+        background: currentColor;
+        box-shadow: -0.36rem 0 0 currentColor, 0.36rem 0 0 currentColor;
+    }
+
+    .inv-menu {
+        position: fixed;
+        min-width: 15rem;
+        border-radius: 12px;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        background: #fff;
+        box-shadow: 0 20px 34px rgba(8, 83, 76, 0.18);
+        padding: 0.4rem;
+        display: grid;
+        gap: 0.16rem;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(8px) scale(0.97);
+        transform-origin: top center;
+        transition: opacity 180ms ease, transform 180ms ease, visibility 0s linear 180ms;
+        z-index: 30;
+    }
+
+    .inv-menu[data-open="true"] {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0) scale(1);
+        transition: opacity 180ms ease, transform 180ms ease, visibility 0s;
+        animation: invCardReveal 180ms ease;
+    }
+
+    @keyframes invBtnPop {
+        0% { transform: scale(0.95); }
+        100% { transform: scale(1); }
+    }
+
+    @keyframes invCardReveal {
+        0% { opacity: 0; transform: translateY(12px) scale(0.96); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .inv-menu-item {
+        width: 100%;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: #264e43;
+        text-align: left;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.45rem 0.55rem;
+        cursor: pointer;
+    }
+
+    .inv-menu-item:hover {
+        background: rgba(236, 253, 245, 0.9);
+        color: #0f766e;
+    }
+
+    .inv-list {
+        list-style: none;
+        margin: 0;
+        padding: 0.56rem 0.82rem 0.82rem;
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .inv-list-item {
+        border: 1px solid #e2f1eb;
+        border-radius: 12px;
+        background: #fff;
+        padding: 0.55rem 0.62rem;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.45rem;
+        align-items: center;
+    }
+
+    .inv-list-item strong {
+        display: block;
+        font-size: 0.8rem;
+        color: #173a31;
+    }
+
+    .inv-list-item small {
+        display: block;
+        font-size: 0.7rem;
+        color: #5e7d73;
+    }
+
+    .inv-layout-two {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.9rem;
+    }
+
+    .inv-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(5, 46, 43, 0.45);
+        display: none;
+        z-index: 92;
+    }
+
+    .inv-modal-backdrop[data-open="true"] {
+        display: block;
+    }
+
+    .inv-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(94vw, 940px);
+        max-height: 88vh;
+        overflow: auto;
+        background: #fff;
+        border: 1px solid rgba(15, 118, 110, 0.22);
+        border-radius: 14px;
+        box-shadow: 0 24px 34px rgba(8, 83, 76, 0.25);
+        display: none;
+        z-index: 95;
+    }
+
+    .inv-modal[data-open="true"] {
+        display: block;
+    }
+
+    .inv-modal > .inv-head {
+        position: relative;
+        padding-right: 4rem;
+    }
+
+    .inv-detail-close-btn {
+        position: absolute;
+        top: 0.8rem;
+        right: 0.9rem;
+        width: 2.2rem;
+        height: 2.2rem;
+        padding: 0;
+        border: 1px solid #d4e9e1;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #48665d;
+        font-size: 1.2rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    #inv-delete-modal .inv-delete-footer {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.7rem 0.85rem 0.85rem;
+    }
+
+    #inv-delete-modal .inv-delete-footer .inv-chip,
+    #inv-delete-modal .inv-delete-footer .inv-btn {
+        border-radius: 999px;
+        padding: 0.7rem 1rem;
+        font-size: 0.95rem;
+    }
+
+    #inv-delete-modal .inv-delete-footer .inv-chip {
+        background: #f3fbf7;
+    }
+
+    #inv-delete-modal .inv-delete-footer .inv-btn {
+        border: 1px solid rgba(180, 35, 24, 0.24);
+        border-radius: 10px;
+        background: #B42318;
+        color: #ffffff;
+    }
+
+    #inv-delete-modal .inv-delete-footer .inv-btn:hover {
+        border-color: #9F1F15;
+        background: #9F1F15;
+    }
+
+    #inv-restock-modal .inv-restock-footer {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.7rem 0.85rem 0.85rem;
+    }
+
+    #inv-restock-modal .inv-restock-footer .inv-chip,
+    #inv-restock-modal .inv-restock-footer .inv-btn {
+        border-radius: 999px;
+        padding: 0.7rem 1rem;
+        font-size: 0.95rem;
+    }
+
+    #inv-restock-modal .inv-restock-footer .inv-chip {
+        background: #f3fbf7;
+    }
+
+    #inv-restock-modal .inv-restock-footer .inv-btn {
+        border: 0;
+        background: #0f766e;
+        color: #ffffff;
+    }
+
+    #inv-restock-modal .inv-restock-footer .inv-btn:hover {
+        background: #115e52;
+    }
+
+    @media (max-width: 767px) {
+        #inv-detail-modal {
+            top: 100px;
+            bottom: 20px;
+            max-height: none;
+            transform: translateX(-50%);
+            overflow-y: auto;
+        }
+    }
+
+    .inv-detail-grid {
+        padding: 0.9rem;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.7rem;
+    }
+
+    .inv-block {
+        border: 1px solid #deefe8;
+        border-radius: 12px;
+        padding: 0.66rem;
+        background: #fff;
+    }
+
+    .inv-block h4 {
+        margin: 0;
+        font-size: 0.79rem;
+        color: #1a4f43;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .inv-block ul {
+        list-style: none;
+        margin: 0.38rem 0 0;
+        padding: 0;
+        display: grid;
+        gap: 0.3rem;
+    }
+
+    .inv-block li {
+        border: 1px solid #e2f1eb;
+        border-radius: 8px;
+        background: #fbfefd;
+        padding: 0.42rem 0.5rem;
+        font-size: 0.73rem;
+        color: #355d52;
+    }
+
+    .inv-chart-wrap {
+        height: 18rem;
+    }
+
+    .inv-chart-wrap canvas {
+        width: 100%;
+        height: 100%;
+    }
+
+    .inv-toast {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 99;
+        border: 1px solid rgba(15, 118, 110, 0.24);
+        background: #ffffff;
+        color: #1b4f43;
+        border-radius: 10px;
+        padding: 0.56rem 0.72rem;
+        font-size: 0.76rem;
+        font-weight: 600;
+        box-shadow: 0 14px 26px rgba(8, 83, 76, 0.15);
+        display: none;
+    }
+
+    .inv-toast[data-show="true"] {
+        display: block;
+    }
+
+    @media (min-width: 760px) {
+        .inv-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1120px) {
+        .inv-summary {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 767px) {
+        .inv-page {
+            gap: 0.7rem;
+        }
+
+        .inv-head {
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .inv-summary {
+            grid-template-columns: 1fr;
+        }
+
+        .inv-kpi-value {
+            font-size: clamp(1.3rem, 7vw, 1.8rem);
+        }
+
+        .inv-table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .inv-list-item {
+            grid-template-columns: 1fr;
+        }
+
+        .inv-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .inv-layout-two {
+            grid-template-columns: 1fr;
+        }
+
+        .inv-detail-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="inventory-page" class="inv-page">
+    <section class="inv-summary" aria-label="Inventory summary cards">
+        <article class="inv-card inv-kpi">
+            <div class="inv-kpi-head">
+                <p class="inv-kpi-label">Total Inventory Value</p>
+                <span class="inv-kpi-icon" aria-hidden="true"><i data-lucide="wallet"></i></span>
+            </div>
+            <p id="inv-kpi-value" class="inv-kpi-value" data-no-animate="true">₱{{ total_value|floatformat:0 }}</p>
+            <p class="inv-kpi-meta">Current stock valuation</p>
+        </article>
+        <article class="inv-card inv-kpi">
+            <div class="inv-kpi-head">
+                <p class="inv-kpi-label">Total Items</p>
+                <span class="inv-kpi-icon" aria-hidden="true"><i data-lucide="boxes"></i></span>
+            </div>
+            <p id="inv-kpi-items" class="inv-kpi-value" data-no-animate="true">{{ total_items }}</p>
+            <p class="inv-kpi-meta">Tracked SKUs</p>
+        </article>
+        <article class="inv-card inv-kpi">
+            <div class="inv-kpi-head">
+                <p class="inv-kpi-label">Low Stock Items</p>
+                <span class="inv-kpi-icon" aria-hidden="true"><i data-lucide="triangle-alert"></i></span>
+            </div>
+            <p id="inv-kpi-low" class="inv-kpi-value" data-no-animate="true">{{ low_stock_count }}</p>
+            <p class="inv-kpi-meta">At or below reorder level</p>
+        </article>
+        <article class="inv-card inv-kpi">
+            <div class="inv-kpi-head">
+                <p class="inv-kpi-label">Out of Stock Items</p>
+                <span class="inv-kpi-icon" aria-hidden="true"><i data-lucide="x-circle"></i></span>
+            </div>
+            <p id="inv-kpi-out" class="inv-kpi-value" data-no-animate="true">{{ out_of_stock_count }}</p>
+            <p class="inv-kpi-meta">Immediate replenishment needed</p>
+        </article>
+    </section>
+
+    <section class="inv-card" aria-label="Inventory table">
+        <header class="inv-head inv-table-header">
+            <div class="inv-table-heading">
+                <h2 class="inv-title">Inventory Table</h2>
+                <p id="inv-table-count" class="inv-sub" aria-live="polite">0 items</p>
+            </div>
+            <div class="inv-table-actions">
+                <button id="inv-export-csv" type="button" class="inv-chip">Export CSV</button>
+                <button id="inv-export-pdf" type="button" class="inv-chip">Export PDF</button>
+                <button id="inv-open-form" class="inv-btn" type="button"><i data-lucide="plus"></i> Add Item</button>
+            </div>
+        </header>
+
+        <div class="inv-filter-row" aria-label="Inventory filters">
+            <div class="inv-filter-field inv-filter-search">
+                <input id="inv-search" class="inv-input" type="text" placeholder="Search item name or SKU" aria-label="Search inventory items" />
+            </div>
+            <div class="inv-filter-field inv-filter-select">
+                <select id="inv-category-filter" class="inv-select" aria-label="Filter by category">
+                    <option value="all">All categories</option>
+                </select>
+            </div>
+            <div class="inv-filter-field inv-filter-select">
+                <select id="inv-status-filter" class="inv-select" aria-label="Filter by status">
+                    <option value="all">All status</option>
+                    <option value="In Stock">In Stock</option>
+                    <option value="Low Stock">Low Stock</option>
+                    <option value="Out of Stock">Out of Stock</option>
+                </select>
+            </div>
+            <div class="inv-filter-field inv-filter-date">
+                <input id="inv-updated-filter" class="inv-input" type="date" aria-label="Filter by last updated date" />
+            </div>
+            <button id="inv-clear-filters" type="button" class="inv-chip inv-filter-btn">Clear</button>
+        </div>
+
+        <div class="inv-table-legend" aria-label="Inventory stock legend">
+            <span class="inv-legend-item"><span class="inv-legend-swatch" style="background:#16a34a;"></span>In stock</span>
+            <span class="inv-legend-item"><span class="inv-legend-swatch" style="background:#f59e0b;"></span>Low stock</span>
+            <span class="inv-legend-item"><span class="inv-legend-swatch" style="background:#ef4444;"></span>Out of stock · tap to restock</span>
+        </div>
+
+        <div class="inv-table-wrap">
+            <table class="inv-table" aria-describedby="inv-table-count">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Item Name</th>
+                        <th>Category</th>
+                        <th>Quantity</th>
+                        <th>Reorder Level</th>
+                        <th>Last Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="inv-table-body"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="grid grid-cols-1 gap-4 xl:grid-cols-12" aria-label="Stock status and movement charts">
+        <article class="inv-card p-4 xl:col-span-5" aria-labelledby="inv-status-title">
+            <h2 id="inv-status-title" class="mb-3 text-base font-semibold text-ink-900">Stock Status Overview</h2>
+            <div class="inv-chart-wrap"><canvas id="inv-status-chart"></canvas></div>
+        </article>
+        <article class="inv-card p-4 xl:col-span-7" aria-labelledby="inv-movement-title">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 id="inv-movement-title" class="text-base font-semibold text-ink-900">Inventory Movement (Stock In/Out)</h2>
+            </div>
+            <div class="inv-chart-wrap"><canvas id="inv-movement-chart"></canvas></div>
+        </article>
+    </section>
+
+    <div id="inv-actions-menu" class="inv-menu" role="menu" aria-label="Inventory item actions" data-open="false"></div>
+</div>
+
+{% include "admin_dashboard/inventory_add_modal.html" %}
+{% comment %}<div id="inv-modal-backdrop" class="inv-modal-backdrop" data-open="false"></div>
+
+<div id="inv-form-modal" class="inv-modal" role="dialog" aria-modal="true" aria-labelledby="inv-form-title" data-open="false">
+    <header class="inv-head">
+        <div>
+            <h3 id="inv-form-title" class="inv-title">Add Item</h3>
+            <p class="inv-sub">Create or edit inventory records.</p>
+        </div>
+        <button type="button" class="inv-btn" data-close-form="true">Close</button>
+    </header>
+    <form id="inv-form" class="inv-grid" novalidate>
+        <div class="inv-field">
+            <label for="inv-item-name">Item Name</label>
+            <input id="inv-item-name" class="inv-input" type="text" required />
+        </div>
+        <div class="inv-field">
+            <label for="inv-item-category">Category</label>
+            <select id="inv-item-category" class="inv-input" required>
+                <option value="">Select a category</option>
+                <option value="store_product">Store Products</option>
+                <option value="relief_goods">Relief Goods</option>
+                <option value="hygiene_kit">Hygiene Kits</option>
+                <option value="school_supplies">School Supplies</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+        <div class="inv-field">
+            <label for="inv-item-qty">Quantity</label>
+            <input id="inv-item-qty" class="inv-input" type="number" min="0" required />
+        </div>
+        <div class="inv-field">
+            <label for="inv-item-unit">Unit</label>
+            <input id="inv-item-unit" class="inv-input" type="text" required placeholder="pcs, box, bottle" />
+        </div>
+        <div class="inv-field">
+            <label for="inv-item-reorder">Reorder Level</label>
+            <input id="inv-item-reorder" class="inv-input" type="number" min="0" required />
+        </div>
+        <div class="inv-field">
+            <label for="inv-item-supplier">Supplier (optional)</label>
+            <input id="inv-item-supplier" class="inv-input" type="text" />
+        </div>
+        <div style="grid-column:1 / -1; display:flex; justify-content:flex-end; gap:0.5rem; flex-wrap:wrap;">
+            <button type="button" class="inv-chip" data-close-form="true">Cancel</button>
+            <button type="submit" class="inv-btn">Save Item</button>
+        </div>
+    </form>
+</div>{% endcomment %}
+
+<div id="inv-restock-modal" class="inv-modal" role="dialog" aria-modal="true" aria-labelledby="inv-restock-title" data-open="false">
+    <header class="inv-head">
+        <div>
+            <h3 id="inv-restock-title" class="inv-title">Restock Item</h3>
+            <p id="inv-restock-sub" class="inv-sub">Add inventory quantity for this item.</p>
+        </div>
+        <button type="button" class="inv-detail-close-btn" data-close-restock="true" aria-label="Close restock item modal" title="Close">×</button>
+    </header>
+    <form id="inv-restock-form" class="inv-grid" novalidate>
+        <div class="inv-field">
+            <label for="inv-restock-item-name">Item</label>
+            <input id="inv-restock-item-name" class="inv-input" type="text" readonly />
+        </div>
+        <div class="inv-field">
+            <label for="inv-restock-qty">Quantity</label>
+            <input id="inv-restock-qty" class="inv-input" type="number" min="1" required />
+        </div>
+        <div class="inv-restock-footer">
+            <button type="button" class="inv-chip" data-close-restock="true">Cancel</button>
+            <button type="submit" class="inv-btn">Save</button>
+        </div>
+    </form>
+</div>
+
+<div id="inv-deduct-modal" class="inv-modal" role="dialog" aria-modal="true" aria-labelledby="inv-deduct-title" data-open="false">
+    <header class="inv-head">
+        <div>
+            <h3 id="inv-deduct-title" class="inv-title">Deduct / Issue Item</h3>
+            <p id="inv-deduct-sub" class="inv-sub">Record issued inventory and persist the deduction.</p>
+        </div>
+        <button type="button" class="inv-btn" data-close-deduct="true">Close</button>
+    </header>
+    <form id="inv-deduct-form" class="inv-grid" novalidate>
+        <div class="inv-field">
+            <label for="inv-deduct-item-name">Item</label>
+            <input id="inv-deduct-item-name" class="inv-input" type="text" readonly />
+        </div>
+        <div class="inv-field">
+            <label for="inv-deduct-qty">Quantity</label>
+            <input id="inv-deduct-qty" class="inv-input" type="number" min="1" required />
+        </div>
+        <div class="inv-field">
+            <label for="inv-deduct-reason">Reason</label>
+            <select id="inv-deduct-reason" class="inv-input">
+                <option value="Internal Use">Internal Use</option>
+                <option value="Damaged">Damaged</option>
+                <option value="Expired">Expired</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        <div style="grid-column:1 / -1; display:flex; justify-content:flex-end; gap:0.5rem; flex-wrap:wrap;">
+            <button type="button" class="inv-chip" data-close-deduct="true">Cancel</button>
+            <button type="submit" class="inv-btn">Save</button>
+        </div>
+    </form>
+</div>
+
+<div id="inv-delete-modal" class="inv-modal" role="dialog" aria-modal="true" aria-labelledby="inv-delete-title" data-open="false">
+    <header class="inv-head">
+        <div>
+            <h3 id="inv-delete-title" class="inv-title">Delete Item</h3>
+        </div>
+        <button type="button" class="inv-detail-close-btn" data-close-delete="true" aria-label="Close delete item modal" title="Close">×</button>
+    </header>
+    <div class="inv-block">
+        <p id="inv-delete-message" class="inv-sub"></p>
+    </div>
+    <div class="inv-delete-footer">
+        <button type="button" class="inv-chip" data-close-delete="true">Cancel</button>
+        <button id="inv-delete-confirm" type="button" class="inv-btn">Delete</button>
+    </div>
+</div>
+
+<div id="inv-detail-modal" class="inv-modal" role="dialog" aria-modal="true" aria-labelledby="inv-detail-title" data-open="false">
+    <header class="inv-head">
+        <div>
+            <h3 id="inv-detail-title" class="inv-title">Item Details</h3>
+            <p id="inv-detail-sub" class="inv-sub">Stock movement history and logs</p>
+        </div>
+        <button type="button" class="inv-detail-close-btn" data-close-detail="true" aria-label="Close item details" title="Close">×</button>
+    </header>
+    <div id="inv-detail-content" class="inv-detail-grid"></div>
+</div>
+
+<div id="inv-toast" class="inv-toast" role="status" aria-live="polite" data-show="false"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ inventory_data|json_script:"inventory-data" }}
+{{ movement_data|json_script:"movement-data" }}
+<script>
+(function () {
+    "use strict";
+
+    var dataEl = document.getElementById('inventory-data');
+    var ITEMS = dataEl ? JSON.parse(dataEl.textContent) : [];
+
+    var movementDataEl = document.getElementById('movement-data');
+    var MOVEMENT_DATA = movementDataEl ? JSON.parse(movementDataEl.textContent) : [];
+
+    // Process movement data for chart
+    var MOVEMENT_SERIES = processMovementData(MOVEMENT_DATA);
+
+    function processMovementData(movements) {
+        if (!movements || movements.length === 0) {
+            return {
+                labels: [],
+                stockIn: [],
+                stockOut: []
+            };
+        }
+
+        // Group by date
+        var grouped = {};
+        movements.forEach(function(movement) {
+            if (!grouped[movement.date]) {
+                grouped[movement.date] = { stockIn: 0, stockOut: 0 };
+            }
+            if (movement.action === 'restock') {
+                grouped[movement.date].stockIn += movement.quantity;
+            } else if (movement.action === 'deduct') {
+                grouped[movement.date].stockOut += movement.quantity;
+            }
+        });
+
+        // Sort dates
+        var dates = Object.keys(grouped).sort();
+
+        return {
+            labels: dates,
+            stockIn: dates.map(function(date) { return grouped[date].stockIn; }),
+            stockOut: dates.map(function(date) { return grouped[date].stockOut; })
+        };
+    }
+
+    var state = {
+        selectedSku: null,
+        editingId: null,
+        filters: {
+            search: "",
+            category: "all",
+            status: "all",
+            updated: ""
+        },
+        charts: {
+            movement: null,
+            status: null
+        }
+    };
+
+    var tableBody = document.getElementById("inv-table-body");
+    var tableCount = document.getElementById("inv-table-count");
+    var menu = document.getElementById("inv-actions-menu");
+    var tableWrap = document.querySelector(".inv-table-wrap");
+    var backdrop = document.getElementById("inv-modal-backdrop");
+    var formModal = document.getElementById("inv-form-modal");
+    var detailModal = document.getElementById("inv-detail-modal");
+    var restockModal = document.getElementById("inv-restock-modal");
+    var deductModal = document.getElementById("inv-deduct-modal");
+    var deleteModal = document.getElementById("inv-delete-modal");
+    var restockItemName = document.getElementById("inv-restock-item-name");
+    var restockQty = document.getElementById("inv-restock-qty");
+    var deductItemName = document.getElementById("inv-deduct-item-name");
+    var deductQty = document.getElementById("inv-deduct-qty");
+    var deductReason = document.getElementById("inv-deduct-reason");
+    var deleteMessage = document.getElementById("inv-delete-message");
+    var deleteConfirmButton = document.getElementById("inv-delete-confirm");
+    var actionModalItem = null;
+    var detailSub = document.getElementById("inv-detail-sub");
+    var detailContent = document.getElementById("inv-detail-content");
+    var openMenuFor = null;
+    var openMenuTrigger = null;
+
+    function esc(value) {
+        return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function showToast(message) {
+        var toast = document.getElementById("inv-toast");
+        toast.textContent = message;
+        toast.setAttribute("data-show", "true");
+        window.clearTimeout(showToast._timer);
+        showToast._timer = window.setTimeout(function () {
+            toast.setAttribute("data-show", "false");
+        }, 1800);
+    }
+
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function statusOf(item) {
+        // Use the status property from the API (computed on the model)
+        var status = item.status;
+        if (status === "out_of_stock") return "Out of Stock";
+        if (status === "low_stock") return "Low Stock";
+        return "In Stock";
+    }
+
+    function postJson(url, data) {
+        return fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken"),
+            },
+            body: JSON.stringify(data || {}),
+        }).then(function (response) {
+            return response.json().then(function (json) {
+                if (!response.ok) {
+                    throw json.error || json.message || response.statusText || "Request failed.";
+                }
+                return json;
+            });
+        });
+    }
+
+    function statusBadge(status) {
+        if (status === "Out of Stock") return "inv-badge inv-status-out";
+        if (status === "Low Stock") return "inv-badge inv-status-low";
+        return "inv-badge inv-status-in";
+    }
+
+    var PRODUCT_IMAGES = {
+        "handwoven doormat": "{% static 'media/hand woven doormat.jpg' %}",
+        "braided doormat": "{% static 'media/braided doormat.jpg' %}",
+        "pot holder rag": "{% static 'media/pot holder rag.png' %}",
+        "tote bag": "{% static 'media/tote bag.jpg' %}",
+        "champion of kindness bag": "{% static 'media/champion of kindness bag.png' %}",
+        "handknit sweater": "{% static 'media/handkit sweater.png' %}",
+        "happyness t-shirt": "{% static 'media/Happyness T-shirt.png' %}",
+        "homemade candle": "{% static 'media/Homemade Candle.jpg' %}",
+        "handcrafted perfume": "{% static 'media/Handcrafted Perfume.jpg' %}",
+        "hygiene kit": "{% static 'media/Handcrafted Perfume.jpg' %}"
+    };
+
+    function formatCategory(value) {
+        var normalized = String(value || "other").trim();
+        var friendly = normalized.replace(/_/g, " ");
+        return friendly.replace(/\b\w/g, function (letter) {
+            return letter.toUpperCase();
+        });
+    }
+
+    function productImageForItem(name) {
+        return PRODUCT_IMAGES[String(name || "").trim().toLowerCase()] || "";
+    }
+
+    function itemThumbMarkup(item) {
+        var imageUrl = productImageForItem(item.name);
+        var imageMarkup = imageUrl
+            ? "<img src=\"" + esc(imageUrl) + "\" alt=\"\" onerror=\"this.hidden=true; this.nextElementSibling.hidden=false;\">"
+            : "";
+        var placeholderMarkup = "<span class=\"inv-item-thumb-placeholder\"" + (imageUrl ? " hidden" : "") + " aria-hidden=\"true\"><i data-lucide=\"image\"></i></span>";
+        return "<span class=\"inv-item-thumb\">" + imageMarkup + placeholderMarkup + "</span>";
+    }
+
+    function categoryBadgeMarkup(item) {
+        var status = statusOf(item);
+        var className = "inv-category-pill inv-status-in";
+        if (status === "Low Stock") className = "inv-category-pill inv-status-low";
+        if (status === "Out of Stock") className = "inv-category-pill inv-status-out is-restockable";
+
+        var markup = "<span class=\"" + className + "\"";
+        if (status === "Out of Stock") {
+            markup += " data-restock-sku=\"" + esc(item.sku) + "\" tabindex=\"0\" role=\"button\" aria-label=\"Restock \" + esc(item.name) + \"\"";
+        }
+        markup += ">" + esc(formatCategory(item.category)) + "</span>";
+        return markup;
+    }
+
+    function currency(value) {
+        return "P " + Number(value || 0).toLocaleString();
+    }
+
+    function estimateValue(item) {
+        return item.quantity * (item.price || 0);
+    }
+
+    function filteredItems() {
+        return ITEMS.filter(function (item) {
+            var status = statusOf(item);
+            var searchHit = !state.filters.search
+                || item.name.toLowerCase().indexOf(state.filters.search) >= 0
+                || item.sku.toLowerCase().indexOf(state.filters.search) >= 0;
+            var categoryHit = state.filters.category === "all" || item.category === state.filters.category;
+            var statusHit = state.filters.status === "all" || status === state.filters.status;
+            var dateHit = !state.filters.updated || item.lastUpdated === state.filters.updated;
+            return searchHit && categoryHit && statusHit && dateHit;
+        });
+    }
+
+    function updateKpis(rows) {
+        var totalValue = rows.reduce(function (sum, item) { return sum + estimateValue(item); }, 0);
+        var low = rows.filter(function (item) { return statusOf(item) === "Low Stock"; }).length;
+        var out = rows.filter(function (item) { return statusOf(item) === "Out of Stock"; }).length;
+
+        document.getElementById("inv-kpi-value").textContent = currency(totalValue);
+        document.getElementById("inv-kpi-items").textContent = String(rows.length);
+        document.getElementById("inv-kpi-low").textContent = String(low);
+        document.getElementById("inv-kpi-out").textContent = String(out);
+    }
+
+    function renderTable() {
+        var rows = filteredItems();
+        tableBody.innerHTML = rows.map(function (item) {
+            var itemName = "<div class=\"inv-item-name-wrap\">" + itemThumbMarkup(item) + "<span class=\"inv-item-label\"><strong>" + esc(item.name) + "</strong></span></div>";
+            return "<tr>"
+                + "<td>" + esc(item.sku) + "</td>"
+                + "<td>" + itemName + "</td>"
+                + "<td>" + categoryBadgeMarkup(item) + "</td>"
+                + "<td>" + esc(item.quantity) + "</td>"
+                + "<td>" + esc(item.reorderLevel) + "</td>"
+                + "<td>" + esc(item.lastUpdated) + "</td>"
+                + "<td><button type=\"button\" class=\"inv-row-action-btn\" data-open-actions=\"" + esc(item.sku) + "\" aria-expanded=\"false\" aria-label=\"Open inventory item actions\" title=\"Actions\"><span class=\"inv-ellipsis\" aria-hidden=\"true\"></span></button></td>"
+                + "</tr>";
+        }).join("");
+
+        tableCount.textContent = rows.length + " items";
+        updateKpis(rows);
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    }
+
+    function renderCharts() {
+        if (typeof Chart === "undefined") return;
+
+        var statusCounts = {
+            inStock: ITEMS.filter(function (item) { return statusOf(item) === "In Stock"; }).length,
+            lowStock: ITEMS.filter(function (item) { return statusOf(item) === "Low Stock"; }).length,
+            outStock: ITEMS.filter(function (item) { return statusOf(item) === "Out of Stock"; }).length
+        };
+
+        var movementCanvas = document.getElementById("inv-movement-chart");
+        var statusCanvas = document.getElementById("inv-status-chart");
+        var movementLabels = MOVEMENT_SERIES.labels && MOVEMENT_SERIES.labels.length ? MOVEMENT_SERIES.labels : ["No movement yet"];
+        var movementIn = MOVEMENT_SERIES.stockIn && MOVEMENT_SERIES.stockIn.length ? MOVEMENT_SERIES.stockIn : [0];
+        var movementOut = MOVEMENT_SERIES.stockOut && MOVEMENT_SERIES.stockOut.length ? MOVEMENT_SERIES.stockOut : [0];
+
+        if (!state.charts.movement && movementCanvas) {
+            state.charts.movement = new Chart(movementCanvas, {
+                type: "bar",
+                data: {
+                    labels: movementLabels,
+                    datasets: [
+                        {
+                            label: "Stock In",
+                            data: movementIn,
+                            backgroundColor: "rgba(16, 185, 129, 0.72)",
+                            borderColor: "rgba(16, 185, 129, 0.95)",
+                            borderRadius: 6,
+                            borderSkipped: false
+                        },
+                        {
+                            label: "Stock Out",
+                            data: movementOut,
+                            backgroundColor: "rgba(245, 158, 11, 0.72)",
+                            borderColor: "rgba(245, 158, 11, 0.95)",
+                            borderRadius: 6,
+                            borderSkipped: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 700, easing: "easeOutCubic" },
+                    plugins: {
+                        legend: { labels: { color: "#0f4e48" } }
+                    },
+                    scales: {
+                        x: { ticks: { color: "#236e67" }, grid: { color: "rgba(35,110,103,0.1)" } },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: "#236e67", precision: 0 },
+                            grid: { color: "rgba(35,110,103,0.1)" }
+                        }
+                    }
+                }
+            });
+        }
+
+        if (state.charts.movement) {
+            state.charts.movement.data.labels = movementLabels;
+            state.charts.movement.data.datasets[0].data = movementIn;
+            state.charts.movement.data.datasets[1].data = movementOut;
+            state.charts.movement.update();
+        }
+
+        if (!state.charts.status && statusCanvas) {
+            state.charts.status = new Chart(statusCanvas, {
+                type: "doughnut",
+                data: {
+                    labels: ["In Stock", "Low Stock", "Out of Stock"],
+                    datasets: [{
+                        data: [statusCounts.inStock, statusCounts.lowStock, statusCounts.outStock],
+                        backgroundColor: ["rgba(16,185,129,0.9)", "rgba(245,158,11,0.82)", "rgba(239,68,68,0.82)"],
+                        borderColor: "#ffffff",
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: "62%",
+                    animation: { duration: 700, easing: "easeOutCubic" },
+                    plugins: { legend: { position: "bottom", labels: { color: "#0f4e48", boxWidth: 12 } } }
+                }
+            });
+        }
+
+        if (state.charts.status) {
+            state.charts.status.data.datasets[0].data = [statusCounts.inStock, statusCounts.lowStock, statusCounts.outStock];
+            state.charts.status.update();
+        }
+    }
+
+    function openActionsMenu(sku, trigger) {
+        menu.innerHTML = [
+            ["restock", "Restock Item"],
+            ["deduct", "Deduct/Issue Item"],
+            ["edit", "Edit Item"],
+            ["delete", "Delete Item"],
+            ["detail", "View Details"]
+        ].map(function (entry) {
+            return "<button type=\"button\" class=\"inv-menu-item\" data-action=\"" + entry[0] + "\" data-sku=\"" + esc(sku) + "\">" + entry[1] + "</button>";
+        }).join("");
+
+        document.querySelectorAll("[data-open-actions]").forEach(function (btn) {
+            btn.setAttribute("aria-expanded", "false");
+            btn.classList.remove("is-active");
+        });
+        menu.setAttribute("data-open", "true");
+        trigger.setAttribute("aria-expanded", "true");
+        trigger.classList.add("is-active");
+        openMenuFor = sku;
+        openMenuTrigger = trigger;
+
+        positionActionsMenu(trigger);
+    }
+
+    function closeActionsMenu() {
+        menu.setAttribute("data-open", "false");
+        openMenuFor = null;
+        openMenuTrigger = null;
+        document.querySelectorAll("[data-open-actions]").forEach(function (btn) {
+            btn.setAttribute("aria-expanded", "false");
+            btn.classList.remove("is-active");
+        });
+    }
+
+    function positionActionsMenu(trigger) {
+        if (!trigger || menu.getAttribute("data-open") !== "true") {
+            return;
+        }
+
+        var menuMargin = 8;
+        var edgePadding = 10;
+        var rect = trigger.getBoundingClientRect();
+        var menuWidth = menu.offsetWidth || 240;
+        var menuHeight = menu.offsetHeight || 220;
+
+        var left = rect.left + (rect.width / 2) - (menuWidth / 2);
+        var maxLeft = window.innerWidth - menuWidth - edgePadding;
+        left = Math.max(edgePadding, Math.min(left, Math.max(edgePadding, maxLeft)));
+
+        var top = rect.bottom + menuMargin;
+        var maxTop = window.innerHeight - menuHeight - edgePadding;
+        if (top > maxTop) {
+            top = Math.max(edgePadding, rect.top - menuHeight - menuMargin);
+        }
+
+        menu.style.top = top + "px";
+        menu.style.left = left + "px";
+    }
+
+    function openForm(item) {
+        state.editingId = item ? item.id : null;
+        document.getElementById("inv-form-title").textContent = item ? "Edit Item" : "Add Item";
+        document.getElementById("inv-item-name").value = item ? item.name : "";
+        document.getElementById("inv-item-category").value = item ? item.category : "";
+        document.getElementById("inv-item-qty").value = item ? item.quantity : "";
+        document.getElementById("inv-item-unit").value = item ? item.unit : "";
+        document.getElementById("inv-item-reorder").value = item ? item.reorderLevel : "";
+        document.getElementById("inv-item-supplier").value = item ? (item.supplier || "") : "";
+        backdrop.setAttribute("data-open", "true");
+        formModal.setAttribute("data-open", "true");
+    }
+
+    function openDetail(item) {
+        detailSub.textContent = item.name + " • " + item.sku + " • " + statusOf(item);
+        var history = item.movementHistory || [];
+        var logs = item.updateLogs || [];
+        detailContent.innerHTML = ""
+            + "<section class=\"inv-block\"><h4>Item Details</h4><ul>"
+            + "<li>SKU: " + esc(item.sku) + "</li>"
+            + "<li>Item Name: " + esc(item.name) + "</li>"
+            + "<li>Category: " + esc(item.category) + "</li>"
+            + "<li>Quantity: " + esc(item.quantity) + "</li>"
+            + "<li>Unit: " + esc(item.unit) + "</li>"
+            + "<li>Status: " + esc(statusOf(item)) + "</li>"
+            + "<li>Reorder Level: " + esc(item.reorderLevel) + "</li>"
+            + "<li>Supplier: " + esc(item.supplier || "N/A") + "</li>"
+            + "<li>Last Updated: " + esc(item.lastUpdated) + "</li>"
+            + "</ul></section>"
+            + "<section class=\"inv-block\"><h4>Stock Movement History</h4><ul>" + history.map(function (h) { return "<li>" + esc(h) + "</li>"; }).join("") + "</ul></section>"
+            + "<section class=\"inv-block\"><h4>Update Logs</h4><ul>" + logs.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul></section>";
+
+        backdrop.setAttribute("data-open", "true");
+        detailModal.setAttribute("data-open", "true");
+    }
+
+    function openRestock(item) {
+        actionModalItem = item;
+        document.getElementById("inv-restock-title").textContent = "Restock Item";
+        document.getElementById("inv-restock-sub").textContent = "Add inventory quantity for this item.";
+        restockItemName.value = item.name + " (" + item.sku + ")";
+        restockQty.value = 10;
+        backdrop.setAttribute("data-open", "true");
+        restockModal.setAttribute("data-open", "true");
+    }
+
+    function openDeduct(item) {
+        actionModalItem = item;
+        document.getElementById("inv-deduct-title").textContent = "Deduct / Issue Item";
+        document.getElementById("inv-deduct-sub").textContent = "Record issued inventory and persist the deduction.";
+        deductItemName.value = item.name + " (" + item.sku + ")";
+        deductQty.value = 1;
+        deductReason.value = "Internal Use";
+        backdrop.setAttribute("data-open", "true");
+        deductModal.setAttribute("data-open", "true");
+    }
+
+    function openDelete(item) {
+        actionModalItem = item;
+        deleteMessage.textContent = "Are you sure you want to delete " + item.name + "? This cannot be undone.";
+        backdrop.setAttribute("data-open", "true");
+        deleteModal.setAttribute("data-open", "true");
+    }
+
+    function submitRestockForm(e) {
+        e.preventDefault();
+        if (!actionModalItem) {
+            showToast("No item selected for restock.");
+            return;
+        }
+        var quantity = Number(restockQty.value || 0);
+        if (!quantity || quantity <= 0) {
+            showToast("Please enter a valid quantity.");
+            return;
+        }
+
+        postJson("/inventory/" + actionModalItem.id + "/restock/", { quantity: quantity })
+            .then(function () { location.reload(); })
+            .catch(function (error) { showToast(String(error)); });
+    }
+
+    function submitDeductForm(e) {
+        e.preventDefault();
+        if (!actionModalItem) {
+            showToast("No item selected for deduction.");
+            return;
+        }
+        var quantity = Number(deductQty.value || 0);
+        if (!quantity || quantity <= 0) {
+            showToast("Please enter a valid quantity.");
+            return;
+        }
+
+        postJson("/inventory/" + actionModalItem.id + "/deduct/", {
+            quantity: quantity,
+            reason: deductReason.value || "Internal Use"
+        })
+            .then(function () { location.reload(); })
+            .catch(function (error) { showToast(String(error)); });
+    }
+
+    function confirmDeleteItem() {
+        if (!actionModalItem) {
+            showToast("No item selected for delete.");
+            return;
+        }
+
+        postJson("/inventory/" + actionModalItem.id + "/delete/", {})
+            .then(function () { location.reload(); })
+            .catch(function (error) { showToast(String(error)); });
+    }
+
+    function closeModals() {
+        backdrop.setAttribute("data-open", "false");
+        formModal.setAttribute("data-open", "false");
+        restockModal.setAttribute("data-open", "false");
+        deductModal.setAttribute("data-open", "false");
+        deleteModal.setAttribute("data-open", "false");
+        detailModal.setAttribute("data-open", "false");
+        actionModalItem = null;
+    }
+
+    function handleRowAction(action, sku) {
+        var item = ITEMS.find(function (x) { return x.sku === sku; });
+        if (!item) return;
+
+        if (action === "restock") {
+            openRestock(item);
+            return;
+        }
+        if (action === "quick_restock") {
+            openRestock(item);
+            return;
+        }
+        if (action === "deduct") {
+            openDeduct(item);
+            return;
+        }
+        if (action === "edit") {
+            openForm(item);
+            return;
+        }
+        if (action === "delete") {
+            openDelete(item);
+            return;
+        }
+        if (action === "detail") {
+            openDetail(item);
+            return;
+        }
+    }
+
+    function exportCsv() {
+        var headers = ["sku", "item_name", "category", "quantity", "unit", "status", "reorder_level", "last_updated", "supplier"];
+        var rows = ITEMS.map(function (item) {
+            return [item.sku, item.name, item.category, item.quantity, item.unit, statusOf(item), item.reorderLevel, item.lastUpdated, item.supplier || ""];
+        });
+
+        var csv = [headers.join(",")].concat(rows.map(function (row) {
+            return row.map(function (value) { return '"' + String(value).replace(/"/g, '""') + '"'; }).join(",");
+        })).join("\n");
+
+        var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "inventory.csv";
+        a.click();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    }
+
+    function exportPdf() {
+        var win = window.open("", "_blank", "noopener,noreferrer,width=1000,height=800");
+        if (!win) {
+            showToast("Pop-up blocked. Enable pop-ups to export PDF.");
+            return;
+        }
+
+        var html = "<html><head><title>Inventory PDF</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#173a31}h1{margin:0 0 12px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #dbe8e2;padding:8px;text-align:left}th{background:#edf8f3}</style></head><body>"
+            + "<h1>Inventory Export</h1>"
+            + "<p>Total items: " + ITEMS.length + "</p>"
+            + "<table><thead><tr><th>SKU</th><th>Item</th><th>Category</th><th>Qty</th><th>Unit</th><th>Status</th><th>Reorder</th><th>Updated</th></tr></thead><tbody>"
+            + ITEMS.map(function (item) {
+                return "<tr><td>" + esc(item.sku) + "</td><td>" + esc(item.name) + "</td><td>" + esc(item.category) + "</td><td>" + esc(item.quantity) + "</td><td>" + esc(item.unit) + "</td><td>" + esc(statusOf(item)) + "</td><td>" + esc(item.reorderLevel) + "</td><td>" + esc(item.lastUpdated) + "</td></tr>";
+            }).join("")
+            + "</tbody></table></body></html>";
+
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+        win.focus();
+        setTimeout(function () { win.print(); }, 350);
+    }
+
+    function renderCategoryFilter() {
+        var select = document.getElementById("inv-category-filter");
+        var categoryMap = {
+            "store_product": "Store Products",
+            "relief_goods": "Relief Goods",
+            "hygiene_kit": "Hygiene Kits",
+            "school_supplies": "School Supplies",
+            "other": "Other"
+        };
+        
+        var existing = select.value;
+        select.innerHTML = "<option value=\"all\">All categories</option>";
+        Object.keys(categoryMap).forEach(function (key) {
+            select.innerHTML += "<option value=\"" + esc(key) + "\">" + esc(categoryMap[key]) + "</option>";
+        });
+        if (existing && existing !== "all") {
+            select.value = existing;
+        }
+    }
+
+    function refresh() {
+        renderCategoryFilter();
+        renderTable();
+        renderCharts();
+        closeActionsMenu();
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    }
+
+    function bind() {
+        document.getElementById("inv-open-form").addEventListener("click", function () { openForm(null); });
+        document.getElementById("inv-export-csv").addEventListener("click", exportCsv);
+        document.getElementById("inv-export-pdf").addEventListener("click", exportPdf);
+
+        document.getElementById("inv-search").addEventListener("input", function (e) {
+            state.filters.search = e.target.value.trim().toLowerCase();
+            renderTable();
+        });
+
+        document.getElementById("inv-category-filter").addEventListener("change", function (e) {
+            state.filters.category = e.target.value;
+            renderTable();
+        });
+
+        document.getElementById("inv-status-filter").addEventListener("change", function (e) {
+            state.filters.status = e.target.value;
+            renderTable();
+        });
+
+        document.getElementById("inv-updated-filter").addEventListener("change", function (e) {
+            state.filters.updated = e.target.value;
+            renderTable();
+        });
+
+        document.getElementById("inv-clear-filters").addEventListener("click", function () {
+            state.filters = { search: "", category: "all", status: "all", updated: "" };
+            document.getElementById("inv-search").value = "";
+            document.getElementById("inv-category-filter").value = "all";
+            document.getElementById("inv-status-filter").value = "all";
+            document.getElementById("inv-updated-filter").value = "";
+            renderTable();
+        });
+
+        tableBody.addEventListener("click", function (e) {
+            var trigger = e.target.closest("[data-open-actions]");
+            if (!trigger) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var sku = trigger.getAttribute("data-open-actions");
+            if (openMenuFor === sku && menu.getAttribute("data-open") === "true") {
+                closeActionsMenu();
+                return;
+            }
+            closeActionsMenu();
+            openActionsMenu(sku, trigger);
+        });
+
+        document.addEventListener("click", function (e) {
+            var actionBtn = e.target.closest("[data-action]");
+            if (actionBtn) {
+                handleRowAction(actionBtn.getAttribute("data-action"), actionBtn.getAttribute("data-sku"));
+                closeActionsMenu();
+                return;
+            }
+
+            var restockBtn = e.target.closest("[data-quick-restock]");
+            if (restockBtn) {
+                handleRowAction("quick_restock", restockBtn.getAttribute("data-quick-restock"));
+                return;
+            }
+
+            var restockInlineBtn = e.target.closest("[data-restock-sku]");
+            if (restockInlineBtn) {
+                handleRowAction("quick_restock", restockInlineBtn.getAttribute("data-restock-sku"));
+                return;
+            }
+
+            if (!e.target.closest("#inv-actions-menu")) {
+                closeActionsMenu();
+            }
+        });
+
+        document.addEventListener("keydown", function (e) {
+            if ((e.key === "Enter" || e.key === " ") && e.target.closest("[data-restock-sku]")) {
+                e.preventDefault();
+                var restockTarget = e.target.closest("[data-restock-sku]");
+                handleRowAction("quick_restock", restockTarget.getAttribute("data-restock-sku"));
+            }
+        });
+
+        document.getElementById("inv-form").addEventListener("submit", function (e) {
+            e.preventDefault();
+            var name = document.getElementById("inv-item-name").value.trim();
+            var category = document.getElementById("inv-item-category").value.trim();
+            var quantity = Number(document.getElementById("inv-item-qty").value || 0);
+            var unit = document.getElementById("inv-item-unit").value.trim();
+            var reorder = Number(document.getElementById("inv-item-reorder").value || 0);
+
+            if (!name || !category || !unit) {
+                showToast("Fill required fields");
+                return;
+            }
+
+            var payload = {
+                name: name,
+                category: category,
+                stock: quantity,
+                unit: unit,
+                low_stock_threshold: reorder,
+            };
+
+            var url = "/inventory/add/";
+            if (state.editingId) {
+                url = "/inventory/" + state.editingId + "/edit/";
+            }
+
+            postJson(url, payload)
+                .then(function () {
+                    location.reload();
+                })
+                .catch(function (error) {
+                    showToast(String(error));
+                });
+        });
+
+        document.getElementById("inv-restock-form").addEventListener("submit", submitRestockForm);
+        document.getElementById("inv-deduct-form").addEventListener("submit", submitDeductForm);
+        deleteConfirmButton.addEventListener("click", function (e) { e.preventDefault(); confirmDeleteItem(); });
+
+        backdrop.addEventListener("click", closeModals);
+        document.querySelectorAll("[data-close-form]").forEach(function (b) { b.addEventListener("click", closeModals); });
+        document.querySelectorAll("[data-close-restock]").forEach(function (b) { b.addEventListener("click", closeModals); });
+        document.querySelectorAll("[data-close-deduct]").forEach(function (b) { b.addEventListener("click", closeModals); });
+        document.querySelectorAll("[data-close-delete]").forEach(function (b) { b.addEventListener("click", closeModals); });
+        document.querySelectorAll("[data-close-detail]").forEach(function (b) { b.addEventListener("click", closeModals); });
+
+        window.addEventListener("resize", function () {
+            if (openMenuTrigger) {
+                positionActionsMenu(openMenuTrigger);
+            }
+        });
+
+        window.addEventListener("scroll", function () {
+            if (openMenuTrigger) {
+                positionActionsMenu(openMenuTrigger);
+            }
+        }, true);
+
+        if (tableWrap) {
+            tableWrap.addEventListener("scroll", function () {
+                if (openMenuTrigger) {
+                    positionActionsMenu(openMenuTrigger);
+                }
+            });
+        }
+    }
+
+    function init() {
+        if (menu && menu.parentElement !== document.body) {
+            document.body.appendChild(menu);
+        }
+
+        bind();
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+        refresh();
+    }
+
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+    else init();
+})();
+</script>
+{% endblock %}

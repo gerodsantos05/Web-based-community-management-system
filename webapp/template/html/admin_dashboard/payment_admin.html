@@ -1,0 +1,1650 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Operations - Payments | HappYness{% endblock %}
+
+{% block extra_head %}
+<style data-admin-panel-style="operations-payment">
+    .pay-page {
+        --pay-surface: rgba(255, 255, 255, 0.95);
+        --pay-stroke: rgba(15, 118, 110, 0.16);
+        --pay-shadow: 0 10px 24px rgba(8, 83, 76, 0.1);
+        --admin-ops-card-shadow: var(--pay-shadow);
+        --pay-ink: #14352d;
+        --pay-sub: #56766c;
+        --pay-accent: #0f766e;
+        display: grid;
+        gap: 0.95rem;
+        width: 100%;
+        max-width: 100%;
+        overflow: visible;
+        padding: 0.24rem;
+    }
+
+    /* Avoid clipping card shadows by page safety wrappers. */
+    #dashboard-shell.admin-page #payments-page,
+    #dashboard-shell.admin-page #payments-page > section,
+    #dashboard-shell.admin-page #payments-page > article,
+    #dashboard-shell.admin-page #payments-page article[class*="kpi"] {
+        overflow: visible !important;
+    }
+
+    .pay-card {
+        background: var(--pay-surface);
+        border: 1px solid var(--pay-stroke);
+        border-radius: 16px;
+        box-shadow: var(--pay-shadow);
+        min-width: 0;
+    }
+
+    .pay-card,
+    .pay-kpi,
+    .pay-table-wrap,
+    .pay-block,
+    .pay-modal {
+        background-color: #ffffff !important;
+    }
+
+    .pay-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.65rem;
+        padding: 0.82rem 0.95rem;
+        border-bottom: 1px solid #deefe8;
+    }
+
+    .pay-title {
+        margin: 0;
+        font-size: 0.96rem;
+        font-weight: 700;
+        color: var(--pay-ink);
+    }
+
+    .pay-sub {
+        margin: 0.14rem 0 0;
+        font-size: 0.72rem;
+        color: var(--pay-sub);
+    }
+
+    .pay-chip {
+        border: 1px solid #d4e9e1;
+        border-radius: 999px;
+        background: #f3fbf7;
+        color: #1b4f43;
+        font-size: 0.67rem;
+        font-weight: 700;
+        padding: 0.24rem 0.52rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        cursor: pointer;
+    }
+
+    .pay-chip:hover {
+        background: #f5fffa;
+    }
+
+    .pay-form-btn {
+        border: 1px solid #d4e9e1;
+        border-radius: 9px;
+        background: #fff;
+        color: #1b4f43;
+        font-size: 0.76rem;
+        font-weight: 700;
+        padding: 0.42rem 0.68rem;
+        cursor: pointer;
+    }
+
+    .pay-form-btn:hover {
+        background: #f5fcf9;
+        border-color: #b8dfd1;
+    }
+
+    .pay-summary {
+        display: grid;
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+        gap: 0.75rem;
+        padding: 0;
+    }
+
+    .pay-kpi {
+        min-height: 100px;
+        padding: 0.76rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .pay-kpi-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .pay-kpi-label {
+        margin: 0;
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #618176;
+        font-weight: 700;
+    }
+
+    .pay-kpi-value {
+        margin: 0.36rem 0 0;
+        font-size: 1.72rem;
+        line-height: 1.05;
+        font-weight: 800;
+        color: #16372e;
+    }
+
+    .pay-kpi-meta {
+        margin: 0.32rem 0 0;
+        font-size: 0.72rem;
+        color: #4f766b;
+    }
+
+    .pay-kpi-icon {
+        width: 1.76rem;
+        height: 1.76rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        color: var(--pay-accent);
+        background: rgba(16, 185, 129, 0.14);
+    }
+
+    .pay-table-card .pay-head {
+        border-bottom-color: #deefe8;
+    }
+
+    .pay-filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-left: auto;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .pay-search-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: min(100%, 300px);
+        flex: 1 1 180px;
+        min-width: 0;
+    }
+
+    .pay-search-input,
+    .pay-status-filter,
+    .pay-method-filter {
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        color: #173a31;
+        background: #fff;
+    }
+
+    .pay-search-input {
+        width: 100%;
+        padding: 0.5rem 0.75rem 0.5rem 2.2rem;
+    }
+
+    .pay-search-input::placeholder {
+        color: #9db5ac;
+    }
+
+    .pay-search-icon {
+        position: absolute;
+        left: 0.6rem;
+        color: #5e7d73;
+        pointer-events: none;
+    }
+
+    .pay-status-filter,
+    .pay-method-filter {
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+        width: min(100%, 160px);
+        flex: 1 1 120px;
+    }
+
+    .pay-show-more-btn {
+        padding: 0.5rem 0.85rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #173a31;
+        background: #fff;
+        cursor: pointer;
+        transition: background-color 160ms ease, border-color 160ms ease;
+        flex: 0 0 auto;
+    }
+
+    .pay-show-more-btn:hover {
+        background: #f5fcf9;
+        border-color: #b8dfd1;
+    }
+
+    .pay-columns-btn {
+        padding: 0.5rem 0.7rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #173a31;
+        background: #fff;
+        cursor: pointer;
+        transition: background-color 160ms ease, border-color 160ms ease;
+        flex: 0 0 auto;
+    }
+
+    .pay-columns-btn:hover {
+        background: #f5fcf9;
+        border-color: #b8dfd1;
+    }
+
+    .pay-table-wrap {
+        width: 100%;
+        max-height: 22rem;
+        overflow: auto;
+        overscroll-behavior: contain;
+    }
+
+    .pay-table-wrap.pay-table-expanded {
+        max-height: 32rem;
+    }
+
+    .pay-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 0;
+    }
+
+    .pay-table:not(.pay-columns-expanded) th:nth-child(3),
+    .pay-table:not(.pay-columns-expanded) td:nth-child(3),
+    .pay-table:not(.pay-columns-expanded) th:nth-child(7),
+    .pay-table:not(.pay-columns-expanded) td:nth-child(7),
+    .pay-table:not(.pay-columns-expanded) th:nth-child(10),
+    .pay-table:not(.pay-columns-expanded) td:nth-child(10),
+    .pay-table:not(.pay-columns-expanded) th:nth-child(11),
+    .pay-table:not(.pay-columns-expanded) td:nth-child(11) {
+        display: none;
+    }
+
+    .pay-table.pay-columns-expanded {
+        min-width: 1450px;
+    }
+
+    @media (max-width: 767px) {
+        .pay-table-card .pay-head {
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .pay-filter-bar {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            width: 100%;
+            margin-left: 0;
+            gap: 0.6rem;
+        }
+
+        .pay-search-wrapper {
+            grid-column: 1 / -1;
+            width: 100%;
+            flex: 1 1 100%;
+        }
+
+        .pay-status-filter,
+        .pay-method-filter,
+        .pay-show-more-btn,
+        .pay-columns-btn {
+            width: 100%;
+            min-width: 0;
+        }
+    }
+
+    .pay-table th,
+    .pay-table td {
+        padding: 0.62rem 0.75rem;
+        font-size: 0.8rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #e7f2ed;
+    }
+
+    .pay-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        white-space: nowrap;
+        background: rgba(236, 253, 245, 0.9);
+        border-bottom: 1px solid rgba(15, 118, 110, 0.16);
+        color: #2f6659;
+        text-align: left;
+        font-weight: 700;
+    }
+
+    .pay-table tbody tr:hover {
+        background: rgba(236, 253, 245, 0.42);
+    }
+
+    .pay-table tbody tr {
+        background: #ffffff;
+    }
+
+    .pay-product-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 0;
+    }
+
+    .pay-product-thumb,
+    .pay-product-placeholder {
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        border-radius: 7px;
+        display: grid;
+        place-items: center;
+    }
+
+    .pay-product-thumb {
+        object-fit: cover;
+        background: #f1f8f4;
+    }
+
+    .pay-product-placeholder {
+        color: #6a897d;
+        background: #edf6f1;
+        border: 1px solid #d8ebe2;
+    }
+
+    .pay-product-placeholder svg,
+    .pay-product-placeholder i {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .pay-product-name {
+        min-width: 0;
+    }
+
+    .pay-badge {
+        display: inline-flex;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        font-size: 0.69rem;
+        font-weight: 700;
+        padding: 0.18rem 0.52rem;
+        white-space: nowrap;
+    }
+
+    .pay-status-completed { color: #14532d; background: #dcfce7; border-color: #bbf7d0; }
+    .pay-status-pending { color: #8a4b10; background: #ffedd5; border-color: #fed7aa; }
+    .pay-status-failed { color: #9a3412; background: #fee2e2; border-color: #fecaca; }
+    .pay-status-refunded { color: #475569; background: #e2e8f0; border-color: #cbd5e1; }
+
+    .pay-method {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.18rem 0.5rem;
+        border-radius: 999px;
+        background: #f3fbf7;
+        color: #195144;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+
+    .pay-row-action-btn {
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        background: #fff;
+        color: #1b4f43;
+        font-size: 0.75rem;
+        font-weight: 700;
+        width: 2.08rem;
+        height: 2.08rem;
+        padding: 0;
+        display: inline-grid;
+        place-items: center;
+        cursor: pointer;
+        transition: background-color 160ms ease, border-color 160ms ease, box-shadow 180ms ease, transform 120ms ease;
+    }
+
+    .pay-row-action-btn:hover {
+        background: #f5fcf9;
+        border-color: #b8dfd1;
+    }
+
+    .pay-row-action-btn:active {
+        transform: scale(0.94);
+    }
+
+    .pay-row-action-btn.is-active {
+        background: rgba(16, 185, 129, 0.16);
+        border-color: rgba(15, 118, 110, 0.45);
+        color: #0f5f4c;
+        box-shadow: 0 8px 16px rgba(15, 118, 110, 0.16);
+        animation: payBtnPop 180ms ease;
+    }
+
+    @keyframes payBtnPop {
+        0% { transform: scale(0.95); }
+        100% { transform: scale(1); }
+    }
+
+    @keyframes payCardReveal {
+        0% { opacity: 0; transform: translateY(12px) scale(0.96); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .pay-ellipsis {
+        width: 0.24rem;
+        height: 0.24rem;
+        border-radius: 999px;
+        background: currentColor;
+        box-shadow: -0.36rem 0 0 currentColor, 0.36rem 0 0 currentColor;
+    }
+
+    .pay-menu {
+        position: fixed;
+        min-width: 16rem;
+        border-radius: 12px;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        background: #fff;
+        box-shadow: 0 20px 34px rgba(8, 83, 76, 0.18);
+        padding: 0.4rem;
+        display: grid;
+        gap: 0.16rem;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(8px) scale(0.97);
+        transform-origin: top center;
+        transition: opacity 180ms ease, transform 180ms ease, visibility 0s linear 180ms;
+        z-index: 30;
+    }
+
+    .pay-menu[data-open="true"] {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0) scale(1);
+        transition: opacity 180ms ease, transform 180ms ease, visibility 0s;
+        animation: payCardReveal 180ms ease;
+    }
+
+    .pay-menu-item {
+        width: 100%;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: #264e43;
+        text-align: left;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.45rem 0.55rem;
+        cursor: pointer;
+    }
+
+    .pay-menu-item:hover {
+        background: rgba(236, 253, 245, 0.9);
+        color: #0f766e;
+    }
+
+    .pay-menu-item-danger {
+        margin-top: 0.25rem;
+        border-top: 1px solid #e2eee9;
+        padding-top: 0.62rem;
+        color: #b42318;
+    }
+
+    .pay-menu-item-danger:hover {
+        background: #fef2f2;
+        color: #b42318;
+    }
+
+    .pay-chart-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.9rem;
+    }
+
+    .pay-chart-wrap {
+        height: 18rem;
+    }
+
+    .pay-chart-wrap canvas {
+        width: 100%;
+        height: 100%;
+    }
+
+    .pay-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: none;
+        z-index: 92;
+    }
+
+    .pay-modal-backdrop[data-open="true"] {
+        display: block;
+    }
+
+    .pay-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(94vw, 920px);
+        max-height: 88vh;
+        overflow: auto;
+        background: #fff;
+        border: 1px solid rgba(15, 118, 110, 0.22);
+        border-radius: 14px;
+        box-shadow: 0 24px 34px rgba(8, 83, 76, 0.25);
+        display: none;
+        z-index: 95;
+    }
+
+    .pay-modal[data-open="true"] {
+        display: block;
+    }
+
+    #pay-detail-modal > .pay-head {
+        position: relative;
+        padding-right: 4rem;
+    }
+
+    .pay-detail-close-btn {
+        position: absolute;
+        top: 0.8rem;
+        right: 0.9rem;
+        width: 2.2rem;
+        height: 2.2rem;
+        padding: 0;
+        border: 1px solid #d4e9e1;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #48665d;
+        font-size: 1.2rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    @media (max-width: 767px) {
+        #pay-detail-modal {
+            top: 100px;
+            bottom: 20px;
+            max-height: none;
+            transform: translateX(-50%);
+            overflow-y: auto;
+        }
+    }
+
+    #pay-delete-modal {
+        width: min(92vw, 420px);
+        max-height: none;
+        overflow: visible;
+        border-radius: 12px;
+    }
+
+    #pay-delete-modal .pay-head {
+        position: relative;
+        padding: 0.7rem 3.6rem 0.7rem 0.85rem;
+    }
+
+    .pay-delete-close-btn {
+        position: absolute;
+        top: 0.55rem;
+        right: 0.7rem;
+        width: 2.2rem;
+        height: 2.2rem;
+        padding: 0;
+        border: 1px solid #d4e9e1;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #48665d;
+        font-size: 1.2rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    #pay-delete-modal .pay-title {
+        font-size: 0.92rem;
+        color: #14352D;
+    }
+
+    .pay-confirm-copy {
+        margin: 0;
+        padding: 0.75rem 0.85rem 0.15rem;
+        color: #355d52;
+        font-size: 0.84rem;
+    }
+
+    .pay-confirm-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.45rem;
+        padding: 0.65rem 0.85rem 0.85rem;
+    }
+
+    .pay-danger-btn {
+        border-color: rgba(180, 35, 24, 0.24);
+        background: #b42318;
+        color: #fff;
+    }
+
+    .pay-danger-btn:hover {
+        border-color: #9f1f15;
+        background: #9f1f15;
+        color: #fff;
+    }
+
+    .pay-detail-grid {
+        padding: 0.9rem;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.7rem;
+    }
+
+    .pay-block {
+        border: 1px solid #deefe8;
+        border-radius: 12px;
+        padding: 0.66rem;
+        background: #fff;
+    }
+
+    .pay-block h4 {
+        margin: 0;
+        font-size: 0.79rem;
+        color: #1a4f43;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .pay-block ul {
+        list-style: none;
+        margin: 0.38rem 0 0;
+        padding: 0;
+        display: grid;
+        gap: 0.3rem;
+    }
+
+    .pay-block li {
+        border: 1px solid #e2f1eb;
+        border-radius: 8px;
+        background: #fbfefd;
+        padding: 0.42rem 0.5rem;
+        font-size: 0.73rem;
+        color: #355d52;
+    }
+
+    .pay-toast {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 99;
+        border: 1px solid rgba(15, 118, 110, 0.24);
+        background: #ffffff;
+        color: #1b4f43;
+        border-radius: 10px;
+        padding: 0.56rem 0.72rem;
+        font-size: 0.76rem;
+        font-weight: 600;
+        box-shadow: 0 14px 26px rgba(8, 83, 76, 0.15);
+        display: none;
+    }
+
+    .pay-toast[data-show="true"] {
+        display: block;
+    }
+
+    @media (min-width: 760px) {
+        .pay-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .pay-detail-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+    }
+
+    @media (min-width: 1120px) {
+        .pay-summary {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+    }
+
+    .pay-lightbox-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.88);
+        display: none;
+        z-index: 110;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .pay-lightbox-backdrop[data-open="true"] {
+        display: flex;
+    }
+
+    .pay-lightbox-img {
+        max-width: min(90vw, 1000px);
+        max-height: 85vh;
+        object-fit: contain;
+        border-radius: 8px;
+        display: block;
+    }
+
+    .pay-lightbox-close {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        width: 2.2rem;
+        height: 2.2rem;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(0, 0, 0, 0.5);
+        color: #fff;
+        font-size: 1.1rem;
+        font-weight: 700;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    .pay-lightbox-close:hover {
+        background: rgba(0, 0, 0, 0.75);
+    }
+
+    .pay-receipt-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        margin-top: 0.5rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        background: #f3fbf7;
+        color: #1b4f43;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.38rem 0.62rem;
+        cursor: pointer;
+    }
+
+    .pay-receipt-btn:hover {
+        background: #e8f7f0;
+        border-color: #b8dfd1;
+    }
+
+    .pay-receipt-none {
+        margin-top: 0.3rem;
+        font-size: 0.72rem;
+        color: #94a3b8;
+        font-style: italic;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="payments-page" class="pay-page">
+    <section class="pay-summary" aria-label="Payments summary cards">
+        <article class="pay-card pay-kpi">
+            <div class="pay-kpi-head">
+                <p class="pay-kpi-label">Total Revenue</p>
+                <span class="pay-kpi-icon" aria-hidden="true"><i data-lucide="wallet"></i></span>
+            </div>
+            <p id="pay-kpi-revenue" class="pay-kpi-value" data-kpi-value="true">{{ total_revenue }}</p>
+            <p class="pay-kpi-meta">Gross processed amount</p>
+        </article>
+        <article class="pay-card pay-kpi">
+            <div class="pay-kpi-head">
+                <p class="pay-kpi-label">Completed Payments</p>
+                <span class="pay-kpi-icon" aria-hidden="true"><i data-lucide="badge-check"></i></span>
+            </div>
+            <p id="pay-kpi-completed" class="pay-kpi-value" data-kpi-value="true">{{ confirmed_count }}</p>
+            <p class="pay-kpi-meta">Successfully settled</p>
+        </article>
+        <article class="pay-card pay-kpi">
+            <div class="pay-kpi-head">
+                <p class="pay-kpi-label">Pending Payments</p>
+                <span class="pay-kpi-icon" aria-hidden="true"><i data-lucide="clock-3"></i></span>
+            </div>
+            <p id="pay-kpi-pending" class="pay-kpi-value" data-kpi-value="true">{{ pending_count }}</p>
+            <p class="pay-kpi-meta">Awaiting verification</p>
+        </article>
+        <article class="pay-card pay-kpi">
+            <div class="pay-kpi-head">
+                <p class="pay-kpi-label">Refunded / Failed</p>
+                <span class="pay-kpi-icon" aria-hidden="true"><i data-lucide="rotate-ccw"></i></span>
+            </div>
+            <p id="pay-kpi-risk" class="pay-kpi-value" data-kpi-value="true">{{ risk_count }}</p>
+            <p class="pay-kpi-meta">Transactions needing action</p>
+        </article>
+    </section>
+
+    <section class="pay-card pay-table-card" aria-label="Payments table">
+        <header class="pay-head">
+            <div>
+                <h2 class="pay-title">Transactions Table</h2>
+                <p id="pay-table-count" class="pay-sub" aria-live="polite">0 payments</p>
+            </div>
+            <div class="pay-filter-bar">
+                <div class="pay-search-wrapper">
+                    <svg class="pay-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                    <input type="search" id="pay-table-search" class="pay-search-input" placeholder="Search by order, customer, email..." aria-label="Search payments">
+                </div>
+                <select id="pay-table-status-filter" class="pay-status-filter" aria-label="Filter by payment status">
+                    <option value="">All Statuses</option>
+                </select>
+                <select id="pay-table-method-filter" class="pay-method-filter" aria-label="Filter by payment method">
+                    <option value="">All Methods</option>
+                </select>
+                <button type="button" id="pay-columns-toggle" class="pay-columns-btn" aria-pressed="false">More Columns</button>
+                <button type="button" id="pay-show-more" class="pay-show-more-btn" aria-expanded="false">Show More</button>
+            </div>
+        </header>
+        <div class="pay-table-wrap">
+            <table class="pay-table" aria-describedby="pay-table-count">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Email</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Total</th>
+                        <th>Amount</th>
+                        <th>Payment Method</th>
+                        <th>Payment Status</th>
+                        <th>Payment Date</th>
+                        <th>Reference Number</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="pay-table-body"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="grid grid-cols-1 gap-4 xl:grid-cols-12" aria-label="Payments charts">
+        <article class="pay-card p-4 xl:col-span-7">
+            <h2 class="mb-3 text-base font-semibold text-ink-900">Sales Trend</h2>
+            <div class="pay-chart-wrap"><canvas id="pay-sales-chart"></canvas></div>
+        </article>
+        <article class="pay-card p-4 xl:col-span-5">
+            <h2 class="mb-3 text-base font-semibold text-ink-900">Payment Method Breakdown</h2>
+            <div class="pay-chart-wrap"><canvas id="pay-method-chart"></canvas></div>
+        </article>
+    </section>
+
+    <div id="pay-actions-menu" class="pay-menu" role="menu" aria-label="Payment row actions" data-open="false"></div>
+</div>
+
+<div id="pay-modal-backdrop" class="pay-modal-backdrop" data-open="false"></div>
+<div id="pay-detail-modal" class="pay-modal" role="dialog" aria-modal="true" aria-labelledby="pay-detail-title" data-open="false">
+    <header class="pay-head">
+        <div>
+            <h3 id="pay-detail-title" class="pay-title">Payment Details</h3>
+            <p id="pay-detail-sub" class="pay-sub">Transaction summary</p>
+        </div>
+        <button type="button" class="pay-detail-close-btn" data-close-detail="true" aria-label="Close payment details" title="Close">×</button>
+    </header>
+    <div id="pay-detail-content" class="pay-detail-grid"></div>
+</div>
+
+<div id="pay-delete-modal" class="pay-modal" role="dialog" aria-modal="true" aria-labelledby="pay-delete-title" data-open="false">
+    <header class="pay-head">
+        <div>
+            <h3 id="pay-delete-title" class="pay-title">Delete Transaction</h3>
+        </div>
+        <button type="button" class="pay-delete-close-btn" data-close-delete="true" aria-label="Close delete transaction modal" title="Close">×</button>
+    </header>
+    <p class="pay-confirm-copy">Delete this transaction? This can't be undone.</p>
+    <div class="pay-confirm-actions">
+        <button type="button" id="pay-delete-cancel" class="pay-form-btn">Cancel</button>
+        <button type="button" id="pay-delete-confirm" class="pay-form-btn pay-danger-btn">Delete</button>
+    </div>
+</div>
+
+<div id="pay-lightbox" class="pay-lightbox-backdrop" role="dialog" aria-modal="true" aria-label="Receipt image" data-open="false">
+    <button type="button" class="pay-lightbox-close" id="pay-lightbox-close" aria-label="Close receipt">&#x2715;</button>
+    <img id="pay-lightbox-img" class="pay-lightbox-img" src="" alt="Payment receipt" />
+</div>
+
+<div id="pay-toast" class="pay-toast" role="status" aria-live="polite" data-show="false"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ payments_json|json_script:"payments-data" }}
+<script>
+(function () {
+    "use strict";
+
+    var dataEl = document.getElementById('payments-data');
+    var PAYMENTS = dataEl ? JSON.parse(dataEl.textContent) : [];
+
+    var CSRF_TOKEN = '{{ csrf_token }}';
+    var state = {
+        charts: { sales: null, method: null }
+    };
+
+    var tableBody = document.getElementById("pay-table-body");
+    var tableCount = document.getElementById("pay-table-count");
+    var tableSearch = document.getElementById("pay-table-search");
+    var tableStatusFilter = document.getElementById("pay-table-status-filter");
+    var tableMethodFilter = document.getElementById("pay-table-method-filter");
+    var columnsToggle = document.getElementById("pay-columns-toggle");
+    var showMoreButton = document.getElementById("pay-show-more");
+    var menu = document.getElementById("pay-actions-menu");
+    var tableWrap = document.querySelector(".pay-table-wrap");
+    var detailModal = document.getElementById("pay-detail-modal");
+    var detailSub = document.getElementById("pay-detail-sub");
+    var detailContent = document.getElementById("pay-detail-content");
+    var backdrop = document.getElementById("pay-modal-backdrop");
+    var lightbox = document.getElementById("pay-lightbox");
+    var lightboxImg = document.getElementById("pay-lightbox-img");
+    var openMenuFor = null;
+    var openMenuTrigger = null;
+    var showAllRows = false;
+    var showAllColumns = false;
+    var TABLE_ROW_LIMIT = 6;
+
+    function esc(value) {
+        return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function money(v) {
+        return "P " + Number(v || 0).toLocaleString();
+    }
+
+    function orderItemsFor(payment) {
+        if (Array.isArray(payment.orderItems)) return payment.orderItems;
+        return payment.orderItems && typeof payment.orderItems === "object" ? [payment.orderItems] : [];
+    }
+
+    var PRODUCT_IMAGES = {
+        "handwoven doormat": "{% static 'media/hand woven doormat.jpg' %}",
+        "braided doormat": "{% static 'media/braided doormat.jpg' %}",
+        "pot holder rag": "{% static 'media/pot holder rag.png' %}",
+        "tote bag": "{% static 'media/tote bag.jpg' %}",
+        "champion of kindness bag": "{% static 'media/champion of kindness bag.png' %}",
+        "handknit sweater": "{% static 'media/handkit sweater.png' %}",
+        "happyness t-shirt": "{% static 'media/Happyness T-shirt.png' %}",
+        "homemade candle": "{% static 'media/Homemade Candle.jpg' %}",
+        "handcrafted perfume": "{% static 'media/Handcrafted Perfume.jpg' %}"
+    };
+
+    function productNameForItem(item) {
+        if (typeof item === "string") return item;
+        item = item || {};
+        var product = item.product && typeof item.product === "object" ? item.product : {};
+        return item.productName || item.product_name || item.name || item.title
+            || (typeof item.product === "string" ? item.product : "")
+            || item.item || product.productName || product.product_name || product.name || product.title || "";
+    }
+
+    function productImage(payment) {
+        var items = orderItemsFor(payment);
+        if (!items.length) return "";
+        var item = items[0] || {};
+        var product = item.product && typeof item.product === "object" ? item.product : {};
+        var catalogImage = PRODUCT_IMAGES[String(productNameForItem(item)).trim().toLowerCase()];
+        return catalogImage || item.image || item.imageUrl || item.image_url || item.productImage || item.product_image
+            || item.thumbnail || item.thumbnailUrl || item.thumbnail_url
+            || product.image || product.imageUrl || product.image_url || product.thumbnail || "";
+    }
+
+    function productCell(payment) {
+        var imageUrl = productImage(payment);
+        var imageMarkup = imageUrl
+            ? "<img class=\"pay-product-thumb\" src=\"" + esc(imageUrl) + "\" alt=\"\" onerror=\"this.hidden=true; this.nextElementSibling.hidden=false;\">"
+            : "";
+        var placeholderMarkup = "<span class=\"pay-product-placeholder\"" + (imageUrl ? " hidden" : "") + "><i data-lucide=\"image\" aria-hidden=\"true\"></i></span>";
+        return "<div class=\"pay-product-cell\">"
+            + imageMarkup
+            + placeholderMarkup
+            + "<span class=\"pay-product-name\">" + esc(productSummary(payment)) + "</span>"
+            + "</div>";
+    }
+
+    function productSummary(payment) {
+        var items = orderItemsFor(payment);
+        if (!items.length) return "Product unavailable";
+
+        return items.map(function (item) {
+            if (typeof item === "string") return item;
+            item = item || {};
+            var name = productNameForItem(item) || "Product";
+            var variation = item.variation || item.selectedVariation || item.selected_variation || item.variant || item.option || item.options;
+            if (variation && typeof variation === "object") {
+                variation = Array.isArray(variation)
+                    ? variation.join(", ")
+                    : Object.keys(variation).map(function (key) { return key + ": " + variation[key]; }).join(", ");
+            }
+            return variation ? name + " (" + variation + ")" : name;
+        }).join(", ");
+    }
+
+    function quantitySummary(payment) {
+        var items = orderItemsFor(payment);
+        return items.reduce(function (total, item) {
+            if (typeof item === "string") return total + 1;
+            item = item || {};
+            var quantity = Number(item.quantity || item.qty || item.count || 1);
+            return total + (Number.isFinite(quantity) && quantity > 0 ? quantity : 1);
+        }, 0);
+    }
+
+    function peso(v) {
+        return "₱" + Number(v || 0).toLocaleString();
+    }
+
+    function methodLabel(method) {
+        if (method === "Cash on Delivery") return "COD";
+        if (method === "Bank Transfer") return "Card";
+        return method;
+    }
+
+    function statusClass(status) {
+        if (status === "Completed" || status === "Verified") return "pay-badge pay-status-completed";
+        if (status === "Pending") return "pay-badge pay-status-pending";
+        if (status === "Refunded") return "pay-badge pay-status-refunded";
+        return "pay-badge pay-status-failed";
+    }
+
+    function updateRowBadge(ref, newStatus) {
+        var trigger = document.querySelector('[data-open-actions="' + ref + '"]');
+        if (!trigger) return;
+        var row = trigger.closest('tr');
+        if (!row) return;
+        var badge = row.querySelector('.pay-badge');
+        if (!badge) return;
+        badge.className = statusClass(newStatus);
+        badge.textContent = newStatus;
+    }
+
+    function updateSummaryCards() {
+        // Exact status strings produced by inq.status.title() in payments_json:
+        // "Pending", "Verified", "Completed", "Failed", "Refunded", "Cancelled"
+        var confirmedStatuses = { "Verified": true, "Completed": true };
+        var riskStatuses      = { "Failed": true, "Refunded": true, "Cancelled": true };
+
+        var completed = PAYMENTS.filter(function (p) { return confirmedStatuses[p.status]; });
+        var pending   = PAYMENTS.filter(function (p) { return p.status === "Pending"; });
+        var risk      = PAYMENTS.filter(function (p) { return riskStatuses[p.status]; });
+        var revenue   = completed.reduce(function (sum, p) { return sum + p.amount; }, 0);
+
+        document.getElementById("pay-kpi-revenue").textContent   = money(revenue);
+        document.getElementById("pay-kpi-completed").textContent = String(completed.length);
+        document.getElementById("pay-kpi-pending").textContent   = String(pending.length);
+        document.getElementById("pay-kpi-risk").textContent      = String(risk.length);
+
+        // Debug: log unique status values present in PAYMENTS
+        var seen = {};
+        PAYMENTS.forEach(function (p) { seen[p.status] = true; });
+        console.log("[updateSummaryCards] unique statuses in PAYMENTS:", Object.keys(seen));
+    }
+
+    function toast(msg) {
+        var el = document.getElementById("pay-toast");
+        el.textContent = msg;
+        el.setAttribute("data-show", "true");
+        clearTimeout(toast._t);
+        toast._t = setTimeout(function () { el.setAttribute("data-show", "false"); }, 1800);
+    }
+
+    function renderTable() {
+        var searchTerm = (tableSearch.value || "").trim().toLowerCase();
+        var statusValue = tableStatusFilter.value;
+        var methodValue = tableMethodFilter.value;
+        var filteredRows = PAYMENTS.filter(function (p) {
+            var matchesSearch = !searchTerm
+                || p.orderId.toLowerCase().indexOf(searchTerm) >= 0
+                || p.customer.toLowerCase().indexOf(searchTerm) >= 0
+                || p.email.toLowerCase().indexOf(searchTerm) >= 0;
+            var matchesStatus = !statusValue || p.status === statusValue;
+            var matchesMethod = !methodValue || p.method === methodValue;
+            return matchesSearch && matchesStatus && matchesMethod;
+        });
+        var rows = filteredRows;
+        tableBody.closest("table").classList.toggle("pay-columns-expanded", showAllColumns);
+        tableWrap.classList.toggle("pay-table-expanded", showAllRows);
+        tableWrap.scrollTop = 0;
+        tableBody.innerHTML = rows.map(function (p) {
+            return "<tr>"
+                + "<td>" + esc(p.orderId) + "</td>"
+                + "<td><strong>" + esc(p.customer) + "</strong></td>"
+                + "<td>" + esc(p.email) + "</td>"
+                + "<td>" + productCell(p) + "</td>"
+                + "<td>" + quantitySummary(p) + "</td>"
+                + "<td class=\"font-semibold\">" + peso(p.amount) + "</td>"
+                + "<td class=\"font-semibold\">" + money(p.amount) + "</td>"
+                + "<td><span class=\"pay-method\">" + esc(methodLabel(p.method)) + "</span></td>"
+                + "<td><span class=\"" + statusClass(p.status) + "\">" + esc(p.status) + "</span></td>"
+                + "<td>" + esc(p.paymentDate) + "</td>"
+                + "<td>" + esc(p.reference) + "</td>"
+                + "<td><button type=\"button\" class=\"pay-row-action-btn\" data-open-actions=\"" + esc(p.reference) + "\" aria-expanded=\"false\" aria-label=\"Open payment actions\" title=\"Actions\"><span class=\"pay-ellipsis\" aria-hidden=\"true\"></span></button></td>"
+                + "</tr>";
+        }).join("");
+
+        tableCount.textContent = filteredRows.length + " payments shown";
+        showMoreButton.hidden = filteredRows.length <= TABLE_ROW_LIMIT;
+        showMoreButton.textContent = showAllRows ? "Show Less" : "Show More";
+        showMoreButton.setAttribute("aria-expanded", showAllRows ? "true" : "false");
+        columnsToggle.textContent = showAllColumns ? "Fewer Columns" : "More Columns";
+        columnsToggle.setAttribute("aria-pressed", showAllColumns ? "true" : "false");
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    }
+
+    function populateTableFilters() {
+        var statuses = [];
+        var methods = [];
+        PAYMENTS.forEach(function (p) {
+            if (statuses.indexOf(p.status) === -1) statuses.push(p.status);
+            if (methods.indexOf(p.method) === -1) methods.push(p.method);
+        });
+        statuses.sort();
+        methods.sort();
+        tableStatusFilter.innerHTML = "<option value=\"\">All Statuses</option>"
+            + statuses.map(function (status) { return "<option value=\"" + esc(status) + "\">" + esc(status) + "</option>"; }).join("");
+        tableMethodFilter.innerHTML = "<option value=\"\">All Methods</option>"
+            + methods.map(function (method) { return "<option value=\"" + esc(method) + "\">" + esc(methodLabel(method)) + "</option>"; }).join("");
+    }
+
+    function renderCharts() {
+        if (typeof Chart === "undefined") return;
+
+        var methodTotals = {};
+        PAYMENTS.forEach(function (p) {
+            var method = methodLabel(p.method);
+            methodTotals[method] = (methodTotals[method] || 0) + 1;
+        });
+
+        var dateTotals = {};
+        var latestDate = new Date();
+        latestDate.setHours(0, 0, 0, 0);
+        PAYMENTS.forEach(function (p) {
+            var dateKey = String(p.paymentDate || "");
+            if (!dateKey) return;
+            if (!dateTotals[dateKey]) dateTotals[dateKey] = { revenue: 0, count: 0 };
+            dateTotals[dateKey].count += 1;
+            if (p.status === "Verified" || p.status === "Completed") {
+                dateTotals[dateKey].revenue += Number(p.amount || 0);
+            }
+            var paymentDate = new Date(dateKey + "T00:00:00");
+            if (!Number.isNaN(paymentDate.getTime()) && paymentDate > latestDate) latestDate = paymentDate;
+        });
+
+        var trendLabels = [];
+        var trendRevenue = [];
+        var trendCount = [];
+        for (var offset = 6; offset >= 0; offset -= 1) {
+            var trendDate = new Date(latestDate);
+            trendDate.setDate(latestDate.getDate() - offset);
+            var trendKey = trendDate.getFullYear() + "-"
+                + String(trendDate.getMonth() + 1).padStart(2, "0") + "-"
+                + String(trendDate.getDate()).padStart(2, "0");
+            trendLabels.push(trendDate.toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+            trendRevenue.push(dateTotals[trendKey] ? dateTotals[trendKey].revenue : 0);
+            trendCount.push(dateTotals[trendKey] ? dateTotals[trendKey].count : 0);
+        }
+
+        if (!state.charts.sales) {
+            state.charts.sales = new Chart(document.getElementById("pay-sales-chart"), {
+                type: "line",
+                data: {
+                    labels: trendLabels,
+                    datasets: [
+                        { label: "Revenue", data: trendRevenue, borderColor: "#0f766e", backgroundColor: "rgba(15, 118, 110, 0.14)", fill: true, pointRadius: 2, tension: 0.35 },
+                        { label: "Transactions", data: trendCount, borderColor: "#14b8a6", backgroundColor: "rgba(20, 184, 166, 0.1)", fill: true, pointRadius: 2, tension: 0.3, yAxisID: "y1" }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: "#0f4e48" } } },
+                    scales: {
+                        x: { ticks: { color: "#236e67" }, grid: { color: "rgba(35,110,103,0.12)" } },
+                        y: { beginAtZero: true, ticks: { color: "#236e67" }, grid: { color: "rgba(35,110,103,0.12)" } },
+                        y1: { beginAtZero: true, position: "right", ticks: { color: "#236e67" }, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+
+            state.charts.method = new Chart(document.getElementById("pay-method-chart"), {
+                type: "doughnut",
+                data: {
+                    labels: Object.keys(methodTotals),
+                    datasets: [{ data: Object.values(methodTotals), backgroundColor: ["rgba(15,118,110,0.9)", "rgba(16,185,129,0.85)", "rgba(110,231,183,0.82)", "rgba(20,184,166,0.78)"], borderColor: "#ffffff", borderWidth: 2 }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: "62%",
+                    plugins: { legend: { position: "bottom", labels: { color: "#0f4e48", boxWidth: 12 } } }
+                }
+            });
+            return;
+        }
+
+        state.charts.sales.data.labels = trendLabels;
+        state.charts.sales.data.datasets[0].data = trendRevenue;
+        state.charts.sales.data.datasets[1].data = trendCount;
+        state.charts.sales.update();
+        state.charts.method.data.labels = Object.keys(methodTotals);
+        state.charts.method.data.datasets[0].data = Object.values(methodTotals);
+        state.charts.method.update();
+    }
+
+    function openMenu(reference, trigger) {
+        var p = PAYMENTS.find(function (x) { return x.reference === reference; });
+        var items = [["detail", "View Payment Details"]];
+        if (p && p.screenshot) {
+            items.push(["view-screenshot", "View Receipt"]);
+        }
+        items = items.concat([
+            ["verify", "Verify Payment"],
+            ["paid", "Mark as Paid"],
+            ["failed", "Mark as Failed"],
+            ["refund", "Refund Payment"],
+            ["receipt", "Download Receipt"],
+            ["delete", "Delete"]
+        ]);
+        menu.innerHTML = items.map(function (item) {
+            var itemClass = item[0] === "delete" ? " pay-menu-item-danger" : "";
+            return "<button type=\"button\" class=\"pay-menu-item" + itemClass + "\" data-action=\"" + item[0] + "\" data-ref=\"" + esc(reference) + "\">" + item[1] + "</button>";
+        }).join("");
+
+        document.querySelectorAll("[data-open-actions]").forEach(function (btn) {
+            btn.setAttribute("aria-expanded", "false");
+            btn.classList.remove("is-active");
+        });
+        menu.setAttribute("data-open", "true");
+        trigger.setAttribute("aria-expanded", "true");
+        trigger.classList.add("is-active");
+        openMenuFor = reference;
+        openMenuTrigger = trigger;
+
+        positionMenu(trigger);
+    }
+
+    function closeMenu() {
+        menu.setAttribute("data-open", "false");
+        openMenuFor = null;
+        openMenuTrigger = null;
+        document.querySelectorAll("[data-open-actions]").forEach(function (btn) {
+            btn.setAttribute("aria-expanded", "false");
+            btn.classList.remove("is-active");
+        });
+    }
+
+    function positionMenu(trigger) {
+        if (!trigger || menu.getAttribute("data-open") !== "true") {
+            return;
+        }
+
+        var menuMargin = 8;
+        var edgePadding = 10;
+        var rect = trigger.getBoundingClientRect();
+        var menuWidth = menu.offsetWidth || 260;
+        var menuHeight = menu.offsetHeight || 220;
+
+        var left = rect.left + (rect.width / 2) - (menuWidth / 2);
+        var maxLeft = window.innerWidth - menuWidth - edgePadding;
+        left = Math.max(edgePadding, Math.min(left, Math.max(edgePadding, maxLeft)));
+
+        var top = rect.bottom + menuMargin;
+        var maxTop = window.innerHeight - menuHeight - edgePadding;
+        if (top > maxTop) {
+            top = Math.max(edgePadding, rect.top - menuHeight - menuMargin);
+        }
+
+        menu.style.top = top + "px";
+        menu.style.left = left + "px";
+    }
+
+    function openDetail(payment) {
+        detailSub.textContent = payment.orderId + " • " + payment.reference + " • " + payment.status;
+        var receiptHtml = payment.screenshot
+            ? "<button type=\"button\" class=\"pay-receipt-btn\" data-lightbox-src=\"" + esc(payment.screenshot) + "\">View Receipt</button>"
+            : "<p class=\"pay-receipt-none\">No receipt uploaded</p>";
+        detailContent.innerHTML = ""
+            + "<section class=\"pay-block\"><h4>Customer</h4><ul><li>Name: " + esc(payment.customer) + "</li><li>Email: " + esc(payment.email) + "</li></ul></section>"
+            + "<section class=\"pay-block\"><h4>Payment Snapshot</h4><ul><li>Amount: " + money(payment.amount) + "</li><li>Method: " + esc(payment.method) + "</li><li>Date: " + esc(payment.paymentDate) + "</li></ul>" + receiptHtml + "</section>"
+            + "<section class=\"pay-block\"><h4>Delivery Address</h4><ul>"
+            + "<li>Street: " + esc(payment.delivery_street || "Not provided") + "</li>"
+            + "<li>City: " + esc(payment.delivery_city || "—") + ", " + esc(payment.delivery_province || "—") + "</li>"
+            + "<li>ZIP: " + esc(payment.delivery_zip || "—") + "</li>"
+            + "<li>Country: " + esc(payment.delivery_country || "Philippines") + "</li>"
+            + "</ul></section>"
+            + "<section class=\"pay-block\"><h4>Reference</h4><ul><li>Order ID: " + esc(payment.orderId) + "</li><li>Reference: " + esc(payment.reference) + "</li><li>Status: " + esc(payment.status) + "</li></ul></section>"
+            + "<section class=\"pay-block\"><h4>Logs</h4><ul>" + payment.logs.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul></section>";
+
+        backdrop.setAttribute("data-open", "true");
+        detailModal.setAttribute("data-open", "true");
+    }
+
+    function closeDetail() {
+        backdrop.setAttribute("data-open", "false");
+        detailModal.setAttribute("data-open", "false");
+    }
+
+    function openLightbox(src) {
+        lightboxImg.src = src;
+        lightbox.setAttribute("data-open", "true");
+    }
+
+    function closeLightbox() {
+        lightbox.setAttribute("data-open", "false");
+        lightboxImg.src = "";
+    }
+
+    var deleteConfirmModal = document.getElementById("pay-delete-modal");
+    var pendingDeletePayment = null;
+
+    function openDeleteConfirm(payment) {
+        pendingDeletePayment = payment;
+        closeMenu();
+        backdrop.setAttribute("data-open", "true");
+        deleteConfirmModal.setAttribute("data-open", "true");
+    }
+
+    function closeDeleteConfirm() {
+        pendingDeletePayment = null;
+        deleteConfirmModal.setAttribute("data-open", "false");
+        if (detailModal.getAttribute("data-open") !== "true") {
+            backdrop.setAttribute("data-open", "false");
+        }
+    }
+
+    function deletePayment() {
+        if (!pendingDeletePayment) return;
+        var payment = pendingDeletePayment;
+        fetch('/payment/' + payment.id + '/delete/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF_TOKEN },
+        }).then(function (res) {
+            return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+        }).then(function (result) {
+            if (!result.ok) {
+                toast(result.data.error || 'Could not delete transaction');
+                return;
+            }
+            PAYMENTS = PAYMENTS.filter(function (item) { return item.id !== payment.id; });
+            closeDeleteConfirm();
+            renderAll();
+            updateSummaryCards();
+            toast('Transaction deleted');
+        }).catch(function () {
+            toast('Could not delete transaction');
+        });
+    }
+
+    function actionOnPayment(action, ref) {
+        var payment = PAYMENTS.find(function (p) { return p.reference === ref; });
+        if (!payment) return;
+
+        if (action === "delete") {
+            openDeleteConfirm(payment);
+            return;
+        }
+
+        if (action === "detail") {
+            openDetail(payment);
+            return;
+        }
+
+        if (action === "view-screenshot") {
+            if (payment.screenshot) openLightbox(payment.screenshot);
+            return;
+        }
+
+        if (action === "verify") {
+            fetch('/payment/' + payment.id + '/verify/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN },
+            }).then(function (res) {
+                return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+            }).then(function (result) {
+                if (result.ok) {
+                    payment.status = result.data.status || 'Verified';
+                    updateRowBadge(ref, payment.status);
+                    updateSummaryCards();
+                    renderCharts();
+                    toast('Payment verified');
+                } else {
+                    toast(result.data.error || 'Verification failed');
+                }
+            }).catch(function () {
+                toast('Verification failed');
+            });
+            return;
+        }
+
+        if (action === "paid") {
+            fetch('/payment/' + payment.id + '/mark-paid/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN },
+            }).then(function (res) {
+                return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+            }).then(function (result) {
+                if (result.ok) {
+                    payment.status = result.data.status || 'Completed';
+                    updateRowBadge(ref, payment.status);
+                    updateSummaryCards();
+                    renderCharts();
+                    toast('Payment marked as paid');
+                } else {
+                    toast(result.data.error || 'Action failed');
+                }
+            }).catch(function () { toast('Action failed'); });
+            return;
+        }
+
+        if (action === "failed") {
+            fetch('/payment/' + payment.id + '/mark-failed/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN },
+            }).then(function (res) {
+                return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+            }).then(function (result) {
+                if (result.ok) {
+                    payment.status = result.data.status || 'Failed';
+                    updateRowBadge(ref, payment.status);
+                    updateSummaryCards();
+                    renderCharts();
+                    toast('Payment marked as failed');
+                } else {
+                    toast(result.data.error || 'Action failed');
+                }
+            }).catch(function () { toast('Action failed'); });
+            return;
+        }
+
+        if (action === "refund") {
+            fetch('/payment/' + payment.id + '/refund/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN },
+            }).then(function (res) {
+                return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+            }).then(function (result) {
+                if (result.ok) {
+                    payment.status = result.data.status || 'Refunded';
+                    updateRowBadge(ref, payment.status);
+                    updateSummaryCards();
+                    renderCharts();
+                    toast('Payment refunded');
+                } else {
+                    toast(result.data.error || 'Action failed');
+                }
+            }).catch(function () { toast('Action failed'); });
+            return;
+        }
+
+        if (action === "receipt") {
+            var receipt = [
+                "Receipt",
+                "Order: " + payment.orderId,
+                "Customer: " + payment.customer,
+                "Amount: " + money(payment.amount),
+                "Method: " + payment.method,
+                "Status: " + payment.status,
+                "Reference: " + payment.reference
+            ].join("\n");
+            var blob = new Blob([receipt], { type: "text/plain;charset=utf-8;" });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url;
+            a.download = payment.reference + "-receipt.txt";
+            a.click();
+            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+            toast("Receipt downloaded");
+        }
+
+        renderAll();
+    }
+
+    function renderAll() {
+        renderTable();
+        renderCharts();
+        closeMenu();
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    }
+
+    function bind() {
+        tableSearch.addEventListener("input", function () {
+            showAllRows = false;
+            renderTable();
+        });
+
+        tableStatusFilter.addEventListener("change", function () {
+            showAllRows = false;
+            renderTable();
+        });
+
+        tableMethodFilter.addEventListener("change", function () {
+            showAllRows = false;
+            renderTable();
+        });
+
+        showMoreButton.addEventListener("click", function () {
+            showAllRows = !showAllRows;
+            renderTable();
+        });
+
+        columnsToggle.addEventListener("click", function () {
+            showAllColumns = !showAllColumns;
+            renderTable();
+        });
+
+        tableBody.addEventListener("click", function (e) {
+            var trigger = e.target.closest("[data-open-actions]");
+            if (!trigger) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var ref = trigger.getAttribute("data-open-actions");
+            if (openMenuFor === ref && menu.getAttribute("data-open") === "true") {
+                closeMenu();
+                return;
+            }
+            closeMenu();
+            openMenu(ref, trigger);
+        });
+
+        document.addEventListener("click", function (e) {
+            var actionBtn = e.target.closest("[data-action]");
+            if (actionBtn) {
+                actionOnPayment(actionBtn.getAttribute("data-action"), actionBtn.getAttribute("data-ref"));
+                closeMenu();
+                return;
+            }
+
+            var rowAction = e.target.closest("[data-row-action]");
+            if (rowAction) {
+                actionOnPayment(rowAction.getAttribute("data-row-action"), rowAction.getAttribute("data-ref"));
+                return;
+            }
+
+            if (!e.target.closest("#pay-actions-menu")) closeMenu();
+        });
+
+        backdrop.addEventListener("click", function () {
+            closeDetail();
+            closeDeleteConfirm();
+        });
+        document.querySelectorAll("[data-close-detail]").forEach(function (b) { b.addEventListener("click", closeDetail); });
+        document.getElementById("pay-delete-cancel").addEventListener("click", closeDeleteConfirm);
+        document.querySelectorAll("[data-close-delete]").forEach(function (button) {
+            button.addEventListener("click", closeDeleteConfirm);
+        });
+        document.getElementById("pay-delete-confirm").addEventListener("click", deletePayment);
+
+        detailContent.addEventListener("click", function (e) {
+            var btn = e.target.closest("[data-lightbox-src]");
+            if (btn) openLightbox(btn.getAttribute("data-lightbox-src"));
+        });
+
+        document.getElementById("pay-lightbox-close").addEventListener("click", closeLightbox);
+        lightbox.addEventListener("click", function (e) {
+            if (e.target === lightbox) closeLightbox();
+        });
+
+        window.addEventListener("resize", function () {
+            if (openMenuTrigger) {
+                positionMenu(openMenuTrigger);
+            }
+        });
+
+        window.addEventListener("scroll", function () {
+            if (openMenuTrigger) {
+                positionMenu(openMenuTrigger);
+            }
+        }, true);
+
+        if (tableWrap) {
+            tableWrap.addEventListener("scroll", function () {
+                if (openMenuTrigger) {
+                    positionMenu(openMenuTrigger);
+                }
+            });
+        }
+    }
+
+    function init() {
+        if (menu && menu.parentElement !== document.body) {
+            document.body.appendChild(menu);
+        }
+
+        populateTableFilters();
+        bind();
+        renderAll();
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+    }
+
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+    else init();
+})();
+</script>
+{% endblock %}

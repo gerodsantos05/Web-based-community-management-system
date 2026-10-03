@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+        {% block title %}Admins | HappYness{% endblock %}
+
+        {% block extra_head %}
+        <style data-admin-panel-style="admin-admins-management">
+            :root {
+                --admin-surface: rgba(255, 255, 255, 0.94);
+                --admin-stroke: rgba(15, 118, 110, 0.16);
+                --admin-shadow: 0 10px 24px rgba(8, 83, 76, 0.1);
+                --admin-text: #14352d;
+                --admin-subtext: #54756b;
+                --admin-brand: #119c77;
+                --admin-brand-strong: #0f766e;
+            }
+
+            .admins-page { display: grid; gap: 1rem; }
+            .admins-card {
+                background: var(--admin-surface);
+                border: 1px solid var(--admin-stroke);
+                border-radius: 16px;
+                box-shadow: var(--admin-shadow);
+            }
+
+            .admins-add-btn {
+                border: 1px solid rgba(16, 185, 129, 0.32);
+                background: linear-gradient(180deg, #17b388, #119c77);
+                color: #fff;
+                border-radius: 12px;
+                padding: 0.56rem 0.95rem;
+                font-size: 0.8rem;
+                font-weight: 700;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.42rem;
+                cursor: pointer;
+            }
+
+            .admins-summary { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 0.75rem; }
+            .admins-kpi { min-height: 100px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; }
+            .admins-kpi-head { display: flex; justify-content: space-between; gap: 0.5rem; }
+            .admins-kpi-label { margin: 0; font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; color: #628074; font-weight: 700; }
+            .admins-kpi-value { margin: 0.35rem 0 0; font-size: 1.74rem; line-height: 1.05; font-weight: 800; color: #16372e; }
+            .admins-kpi-meta { margin: 0.35rem 0 0; font-size: 0.72rem; color: #4f766b; }
+            .admins-kpi-icon { width: 1.75rem; height: 1.75rem; border-radius: 999px; display: grid; place-items: center; color: var(--admin-brand-strong); background: rgba(16, 185, 129, 0.1); }
+
+            @media (min-width: 760px) {
+                .admins-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            }
+
+            @media (min-width: 1024px) {
+                .admins-layout { grid-template-columns: 1.72fr 1fr; }
+            }
+        </style>
+        {% endblock %}
+
+        {% block content %}
+        <div id="admins-page" class="admins-page">
+            <section class="admins-summary" aria-label="Admin summary">
+                <article class="admins-card admins-kpi" aria-labelledby="kpi-total-admins">
+                    <div class="admins-kpi-head"><p id="kpi-total-admins" class="admins-kpi-label">Total Admins</p><span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="users"></i></span></div>
+                    <p id="kpi-total-admins-value" class="admins-kpi-value" data-kpi-value="true">0</p>
+                    <p class="admins-kpi-meta">All admin accounts</p>
+                </article>
+                <article class="admins-card admins-kpi" aria-labelledby="kpi-active-admins">
+                    <div class="admins-kpi-head"><p id="kpi-active-admins" class="admins-kpi-label">Active Admins</p><span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="user-check"></i></span></div>
+                    <p id="kpi-active-admins-value" class="admins-kpi-value" data-kpi-value="true">0</p>
+                    <p class="admins-kpi-meta">Status marked active</p>
+                </article>
+                <article class="admins-card admins-kpi" aria-labelledby="kpi-recent-admins">
+                    <div class="admins-kpi-head"><p id="kpi-recent-admins" class="admins-kpi-label">Recently Active</p><span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="clock-3"></i></span></div>
+                    <p id="kpi-recent-admins-value" class="admins-kpi-value" data-kpi-value="true">0</p>
+                    <p class="admins-kpi-meta">Active in the last 7 days</p>
+                </article>
+            </section>
+
+            <!-- Admins table and activity logs removed -->
+        </div>
+        {% endblock %}
+
+        {% block extra_scripts %}{% endblock %}

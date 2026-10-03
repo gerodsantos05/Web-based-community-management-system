@@ -77,12 +77,12 @@
         var shell = document.getElementById("dashboard-shell");
         var sidebar = document.getElementById("dashboard-sidebar");
         var overlay = document.getElementById("mobile-overlay");
-        var desktopToggle = document.getElementById("sidebar-toggle-desktop");
+        var desktopToggle = document.getElementById("sidebar-toggle-desktop") || document.getElementById("header-sidebar-toggle");
         var mobileToggle = document.getElementById("sidebar-toggle-mobile");
         var rangeSelect = document.getElementById("activity-range");
         var activityCanvas = document.getElementById("community-activity-chart");
 
-        if (desktopToggle && shell) {
+        if (desktopToggle && shell && desktopToggle.dataset.sidebarStateBound !== "true") {
             desktopToggle.addEventListener("click", function () {
                 var collapsed = shell.getAttribute("data-sidebar") === "collapsed";
                 setSidebarCollapsedState(shell, !collapsed);

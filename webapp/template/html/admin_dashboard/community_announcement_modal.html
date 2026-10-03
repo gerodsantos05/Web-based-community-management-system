@@ -1,0 +1,90 @@
+{% load static %}
+<style>
+    .dashboard-post-modal-backdrop { position: fixed; inset: 0; z-index: 998; background: rgba(15,23,42,.52); }
+    .dashboard-post-modal-backdrop[hidden], .dashboard-post-modal[hidden] { display: none; }
+    .dashboard-post-modal { position: fixed; z-index: 999; inset: 50% auto auto 50%; transform: translate(-50%,-50%); width: min(92vw, 600px); background: #fff; border-radius: 16px; box-shadow: 0 24px 70px rgba(15,23,42,.24); overflow: hidden; }
+    .dashboard-post-modal-head { display:flex; align-items:center; justify-content:space-between; padding: 1rem 1.2rem; border-bottom:1px solid #e2e8f0; }
+    .dashboard-post-modal-title { margin:0; color:#14261f; font-size:1rem; }
+    .dashboard-post-modal-close { border:1px solid #cbd5e1; border-radius:50%; background:#fff; width:2rem; height:2rem; cursor:pointer; }
+    .dashboard-post-composer { padding: 1.1rem 1.2rem 1.2rem; }
+    .dashboard-post-composer textarea { width:100%; min-height:120px; box-sizing:border-box; resize:vertical; border:1px solid #cbd5e1; border-radius:12px; padding:.85rem; font:inherit; color:#1e293b; }
+    .dashboard-post-composer-actions { display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin-top:.8rem; }
+    .dashboard-post-announcement-toggle { display:inline-flex; align-items:center; gap:.4rem; border:1px solid #cbd5e1; border-radius:999px; padding:.55rem .75rem; background:#fff; color:#475569; cursor:pointer; font-weight:700; }
+    .dashboard-post-announcement-toggle.is-active { border-color:#0f766e; background:#ecfdf5; color:#0f766e; }
+    .dashboard-post-send { display:inline-flex; align-items:center; gap:.4rem; border:0; border-radius:999px; padding:.65rem 1rem; background:#0f766e; color:#fff; font-weight:700; cursor:pointer; }
+    .dashboard-post-send:disabled { opacity:.55; cursor:wait; }
+    .dashboard-post-attachments { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.75rem; }
+    .dashboard-post-attachment-tools { display:flex; gap:.35rem; align-items:center; }
+    .dashboard-post-attachment-tool { border:1px solid #cbd5e1; border-radius:50%; background:#fff; color:#475569; width:2rem; height:2rem; cursor:pointer; }
+    .dashboard-post-attachment-picker[hidden], .dashboard-post-attachment-tools[hidden] { display:none; }
+    .community-attachment-name { max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.72rem; color:#475569; }
+    @media (max-width: 767px) {
+        .dashboard-post-modal { top:100px; bottom:20px; width:min(92vw,600px); max-height:none; height:calc(100vh - 120px); transform:translateX(-50%); display:flex; flex-direction:column; overflow:hidden; }
+        .dashboard-post-composer { display:flex; flex:1 1 auto; flex-direction:column; min-height:0; }
+        .dashboard-post-composer textarea { flex:1 1 auto; min-height:260px; }
+        .dashboard-post-composer-actions { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:.5rem; }
+        .dashboard-post-announcement-toggle { min-width:0; justify-content:center; padding-inline:.55rem; white-space:nowrap; }
+        .dashboard-post-send { min-width:0; padding-inline:.75rem; white-space:nowrap; }
+    }
+</style>
+
+<div id="dashboard-post-modal-backdrop" class="dashboard-post-modal-backdrop" hidden></div>
+<div id="dashboard-post-modal" class="dashboard-post-modal" role="dialog" aria-modal="true" aria-labelledby="dashboard-post-modal-title" hidden>
+    <div class="dashboard-post-modal-head"><h2 id="dashboard-post-modal-title" class="dashboard-post-modal-title">Post to the community</h2><button type="button" class="dashboard-post-modal-close" aria-label="Close post composer">&#215;</button></div>
+    <form id="dashboard-post-composer" class="dashboard-post-composer">
+        <textarea id="dashboard-post-input" required placeholder="Write an announcement for the community..." aria-label="Share something with the community..."></textarea>
+        <div id="dashboard-post-attachment-tools" class="dashboard-post-attachment-tools" hidden>
+            <button type="button" id="dashboard-post-attach-images" class="dashboard-post-attachment-tool" aria-label="Attach images"><i data-lucide="image"></i></button>
+            <button type="button" id="dashboard-post-attach-files" class="dashboard-post-attachment-tool" aria-label="Attach files"><i data-lucide="paperclip"></i></button>
+        </div>
+        <input id="dashboard-post-images-input" class="dashboard-post-attachment-picker" type="file" accept="image/*" multiple hidden>
+        <input id="dashboard-post-files-input" class="dashboard-post-attachment-picker" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar" multiple hidden>
+        <div id="dashboard-post-attachments" class="dashboard-post-attachments" aria-live="polite" hidden></div>
+        <div class="dashboard-post-composer-actions">
+            <button type="button" id="dashboard-post-plus" class="dashboard-post-attachment-tool" aria-label="Add attachment" aria-expanded="false"><i data-lucide="plus"></i></button>
+            <button type="button" id="dashboard-post-announcement-toggle" class="dashboard-post-announcement-toggle is-active" aria-pressed="true"><i data-lucide="megaphone"></i><span>Announcement</span></button>
+            <button type="submit" id="dashboard-post-send" class="dashboard-post-send"><i data-lucide="send-horizontal"></i><span>Send</span></button>
+        </div>
+    </form>
+</div>
+<script src="{% static 'js/community-post-composer.js' %}"></script>
+<script src="{% static 'js/community-attachments.js' %}"></script>
+<script>
+(function () {
+    "use strict";
+    var modal = document.getElementById("dashboard-post-modal");
+    var backdrop = document.getElementById("dashboard-post-modal-backdrop");
+    var form = document.getElementById("dashboard-post-composer");
+    var input = document.getElementById("dashboard-post-input");
+    var toggle = document.getElementById("dashboard-post-announcement-toggle");
+    var send = document.getElementById("dashboard-post-send");
+    var plus = document.getElementById("dashboard-post-plus");
+    var attachmentTools = document.getElementById("dashboard-post-attachment-tools");
+    var imageInput = document.getElementById("dashboard-post-images-input");
+    var fileInput = document.getElementById("dashboard-post-files-input");
+    var trigger = document.querySelector('[data-open-post-announcement="true"]');
+    if (!modal || !backdrop || !form || !trigger || typeof window.communityCreatePost !== "function" || typeof window.createCommunityAttachmentManager !== "function") return;
+    var attachmentManager = window.createCommunityAttachmentManager({ host: document.getElementById("dashboard-post-attachments"), pickers: [imageInput, fileInput] });
+    var announcement = true;
+    function setOpen(open) { modal.hidden = !open; backdrop.hidden = !open; document.body.style.overflow = open ? "hidden" : ""; if (!open) attachmentManager.clear(); if (open) input.focus(); }
+    function setAnnouncement(value) { announcement = !!value; toggle.classList.toggle("is-active", announcement); toggle.setAttribute("aria-pressed", String(announcement)); input.placeholder = announcement ? "Write an announcement for the community..." : "Share something with the community..."; }
+    trigger.addEventListener("click", function () { setAnnouncement(true); input.value = ""; setOpen(true); });
+    modal.querySelector(".dashboard-post-modal-close").addEventListener("click", function () { setOpen(false); });
+    backdrop.addEventListener("click", function () { setOpen(false); });
+    plus.addEventListener("click", function () { var open = attachmentTools.hidden; attachmentTools.hidden = !open; plus.setAttribute("aria-expanded", String(open)); });
+    document.getElementById("dashboard-post-attach-images").addEventListener("click", function () { imageInput.click(); });
+    document.getElementById("dashboard-post-attach-files").addEventListener("click", function () { fileInput.click(); });
+    toggle.addEventListener("click", function () { setAnnouncement(!announcement); });
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        var content = input.value.trim();
+        if (!content) { input.focus(); return; }
+        send.disabled = true;
+        window.communityCreatePost("{% url 'dashboard_community_post_create' %}", content, announcement ? "announcements" : "discussions", attachmentManager.items())
+            .then(function () { setOpen(false); })
+            .catch(function (error) { alert(error.message || "Unable to publish post."); })
+            .finally(function () { send.disabled = false; });
+    });
+    if (window.lucide && typeof window.lucide.createIcons === "function") window.lucide.createIcons();
+})();
+</script>

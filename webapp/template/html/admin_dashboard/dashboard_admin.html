@@ -1,0 +1,2931 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard | HappYness{% endblock %}
+
+{% block extra_head %}
+<style>
+    .ops-dashboard {
+        --surface: #ffffff;
+        --surface-soft: #f5fbf8;
+        --stroke: #d6ebe1;
+        --ink-strong: #14352d;
+        --ink-soft: #55766c;
+        --brand: #119c77;
+        --brand-deep: #0b7f62;
+        display: grid;
+        gap: 1rem;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        padding: 0.2rem 0.15rem 0.25rem;
+    }
+
+    .ops-card {
+        background: var(--surface);
+        border: 1px solid var(--stroke);
+        border-radius: 16px;
+        box-shadow: 0 10px 24px rgba(6, 78, 59, 0.08);
+        padding: 0.95rem;
+    }
+
+    .ops-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.8rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .ops-title {
+        margin: 0;
+        font-size: 0.96rem;
+        font-weight: 700;
+        color: var(--ink-strong);
+    }
+
+    .ops-sub {
+        margin: 0.14rem 0 0;
+        font-size: 0.74rem;
+        color: var(--ink-soft);
+    }
+
+    .ops-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 100%;
+        border-radius: 999px;
+        padding: 0.24rem 0.52rem;
+        font-size: 0.66rem;
+        font-weight: 700;
+        line-height: 1.2;
+        text-align: center;
+        color: #0f5f4d;
+        background: #dcf7ed;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .ops-kpi-grid {
+        display: grid;
+        gap: 0.7rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ops-kpi {
+        border: 1px solid #dcefe7;
+        border-radius: 12px;
+        background: linear-gradient(180deg, #ffffff, #f4fbf8);
+        padding: 0.75rem;
+    }
+
+    .ops-kpi-label {
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #5f7f75;
+        font-size: 0.62rem;
+        font-weight: 700;
+    }
+
+    .ops-kpi-value {
+        margin: 0.36rem 0 0;
+        color: #16372e;
+        font-size: 1.38rem;
+        font-weight: 800;
+        line-height: 1.05;
+    }
+
+    .ops-kpi-meta {
+        margin: 0.34rem 0 0;
+        font-size: 0.72rem;
+        color: #4f766b;
+    }
+
+    .ops-main-grid {
+        display: grid;
+        gap: 0.9rem;
+        grid-template-columns: 1fr;
+    }
+
+    .ops-priority-list,
+    .ops-mini-list,
+    .ops-activity-list,
+    .ops-moderation-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.44rem;
+    }
+
+    .ops-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 0.58rem;
+        border-bottom: 1px solid #e7f2ed;
+        padding: 0.48rem 0;
+    }
+
+    .ops-row:last-child {
+        border-bottom: 0;
+    }
+
+    .ops-dot {
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 999px;
+        flex-shrink: 0;
+    }
+
+    .ops-dot-critical { background: #dc2626; }
+    .ops-dot-high { background: #ea580c; }
+    .ops-dot-medium { background: #d97706; }
+    .ops-dot-low { background: #16a34a; }
+
+    .ops-row strong {
+        display: block;
+        color: #173a31;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .ops-row small {
+        display: block;
+        color: #5e7d73;
+        font-size: 0.7rem;
+    }
+
+    .ops-badge {
+        border-radius: 999px;
+        font-size: 0.63rem;
+        font-weight: 700;
+        padding: 0.22rem 0.5rem;
+        white-space: nowrap;
+    }
+
+    .ops-badge-critical { color: #8c1d1d; background: #fee2e2; }
+    .ops-badge-high { color: #9a3412; background: #ffedd5; }
+    .ops-badge-medium { color: #92400e; background: #fef3c7; }
+    .ops-badge-low { color: #166534; background: #dcfce7; }
+
+    .ops-calendar {
+        border: 1px solid #dceee7;
+        border-radius: 12px;
+        background: var(--surface-soft);
+        padding: 0.64rem;
+    }
+
+    .ops-calendar-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.45rem;
+        font-size: 0.72rem;
+        color: #44685e;
+        font-weight: 700;
+    }
+
+    .ops-calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 0.22rem;
+        font-size: 0.64rem;
+        color: #5c7b71;
+    }
+
+    .ops-day {
+        border-radius: 7px;
+        text-align: center;
+        padding: 0.23rem 0;
+        background: #fff;
+        border: 1px solid #e4f1eb;
+    }
+
+    .ops-day.is-muted {
+        opacity: 0.45;
+    }
+
+    .ops-day.is-today {
+        background: #d9f6eb;
+        border-color: #7ad7b9;
+        color: #0a664f;
+        font-weight: 800;
+    }
+
+    .ops-analytics-grid,
+    .ops-lower-grid {
+        display: grid;
+        gap: 0.9rem;
+        grid-template-columns: 1fr;
+    }
+
+    .ops-chart-wrap {
+        height: 220px;
+    }
+
+    .ops-quick-grid {
+        display: grid;
+        gap: 0.5rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .ops-quick-btn {
+        border: 1px solid #d7e9e2;
+        border-radius: 11px;
+        background: #ffffff;
+        color: #195144;
+        min-height: 58px;
+        padding: 0.5rem 0.45rem;
+        font-size: 0.69rem;
+        font-weight: 700;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.24rem;
+        text-align: center;
+        line-height: 1.2;
+        cursor: pointer;
+        transition: transform 140ms ease, background-color 140ms ease;
+    }
+
+    .ops-quick-btn:hover {
+        transform: translateY(-1px);
+        background: #f2fbf7;
+    }
+
+    .ops-quick-btn span {
+        display: block;
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .ops-quick-btn i {
+        width: 0.82rem;
+        height: 0.82rem;
+        flex-shrink: 0;
+    }
+
+@media (max-width: 560px) {
+        .ops-quick-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 420px) {
+        .ops-quick-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .ops-chip {
+            font-size: 0.62rem;
+            padding: 0.2rem 0.45rem;
+        }
+    }
+
+    @media (min-width: 820px) {
+        .ops-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .ops-main-grid { grid-template-columns: 1.2fr 1fr; }
+        .ops-analytics-grid { grid-template-columns: 1fr 1fr; }
+        .ops-lower-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (min-width: 1240px) {
+        .ops-kpi-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+        .ops-main-grid { grid-template-columns: 1.45fr 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ops-dashboard">
+    <section class="ops-kpi-grid" aria-label="Performance indicators">
+        <article class="ops-kpi"><p class="ops-kpi-label">Active Volunteers</p><p class="ops-kpi-value">214</p><p class="ops-kpi-meta">+9 this week</p></article>
+        <article class="ops-kpi"><p class="ops-kpi-label">Active Beneficiaries</p><p class="ops-kpi-value">386</p><p class="ops-kpi-meta">+17 this cycle</p></article>
+        <article class="ops-kpi"><p class="ops-kpi-label">Donations This Month</p><p class="ops-kpi-value">PHP 248,400</p><p class="ops-kpi-meta">+12.4% vs last month</p></article>
+        <article class="ops-kpi"><p class="ops-kpi-label">Low Stock Items</p><p class="ops-kpi-value">12</p><p class="ops-kpi-meta">4 critical</p></article>
+        <article class="ops-kpi"><p class="ops-kpi-label">Upcoming Activities</p><p class="ops-kpi-value">8</p><p class="ops-kpi-meta">3 this weekend</p></article>
+        <article class="ops-kpi"><p class="ops-kpi-label">Pending Approvals</p><p class="ops-kpi-value">26</p><p class="ops-kpi-meta">Needs review today</p></article>
+    </section>
+
+    <section class="ops-main-grid" aria-label="Priority and schedule">
+        <article class="ops-card" aria-labelledby="today-priority-title">
+            <div class="ops-head">
+                <div>
+                    <h2 id="today-priority-title" class="ops-title">Today's Priorities</h2>
+                    <p class="ops-sub">Work queue ranked by urgency</p>
+                </div>
+                <span class="ops-chip">6 urgent</span>
+            </div>
+            <ul class="ops-priority-list">
+                <li class="ops-row"><span class="ops-dot ops-dot-critical"></span><div><strong>Volunteer approvals</strong><small>7 profiles waiting for verification</small></div><span class="ops-badge ops-badge-critical">Critical</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-high"></span><div><strong>Activity approvals</strong><small>3 events pending safety sign-off</small></div><span class="ops-badge ops-badge-high">High</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-high"></span><div><strong>Low stock alerts</strong><small>Hygiene kits and rice packs below threshold</small></div><span class="ops-badge ops-badge-high">High</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-medium"></span><div><strong>Donation verification</strong><small>11 transfers pending validation</small></div><span class="ops-badge ops-badge-medium">Medium</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-medium"></span><div><strong>Beneficiary requests</strong><small>9 requests awaiting case review</small></div><span class="ops-badge ops-badge-medium">Medium</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-low"></span><div><strong>Reports due</strong><small>Weekly impact summary due by 4:00 PM</small></div><span class="ops-badge ops-badge-low">Due Today</span></li>
+            </ul>
+        </article>
+
+        <article class="ops-card" aria-labelledby="schedule-title">
+            <div class="ops-head">
+                <div>
+                    <h2 id="schedule-title" class="ops-title">Upcoming Schedule</h2>
+                    <p class="ops-sub">Calendar and near-term events</p>
+                </div>
+                <span class="ops-chip">This week</span>
+            </div>
+            <div class="ops-calendar" aria-label="Mini calendar">
+                <div class="ops-calendar-head"><span id="ops-calendar-month">April 2026</span><span>APR</span></div>
+                <div id="ops-calendar-grid" class="ops-calendar-grid"></div>
+            </div>
+            <ul class="ops-mini-list" style="margin-top:0.55rem;">
+                <li class="ops-row"><span class="ops-dot ops-dot-low"></span><div><strong>Relief Packing Briefing</strong><small>09:00 - Warehouse A</small></div><span class="ops-badge ops-badge-low">Ops</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-medium"></span><div><strong>Donor Verification Checkpoint</strong><small>11:30 - Finance Desk</small></div><span class="ops-badge ops-badge-medium">Review</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-low"></span><div><strong>Volunteer Orientation</strong><small>14:00 - Community Hall</small></div><span class="ops-badge ops-badge-low">Ready</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-high"></span><div><strong>Reports Sign-off</strong><small>16:00 - Operations Office</small></div><span class="ops-badge ops-badge-high">Due</span></li>
+            </ul>
+        </article>
+    </section>
+
+    <section class="ops-analytics-grid" aria-label="Analytics trends">
+        <article class="ops-card">
+            <div class="ops-head">
+                <div>
+                    <h2 class="ops-title">Donations Trend</h2>
+                    <p class="ops-sub">Weekly donation momentum</p>
+                </div>
+            </div>
+            <div class="ops-chart-wrap"><canvas id="donations-trend-chart" aria-label="Donations trend chart"></canvas></div>
+        </article>
+
+        <article class="ops-card">
+            <div class="ops-head">
+                <div>
+                    <h2 class="ops-title">Volunteer Participation Trend</h2>
+                    <p class="ops-sub">Attendance and assignment completion</p>
+                </div>
+            </div>
+            <div class="ops-chart-wrap"><canvas id="volunteer-trend-chart" aria-label="Volunteer trend chart"></canvas></div>
+        </article>
+    </section>
+
+    <section class="ops-lower-grid" aria-label="Operational panels">
+        <article class="ops-card">
+            <div class="ops-head"><h2 class="ops-title">Inventory Status</h2><a href="{% url 'inventory' %}" class="ops-chip">View all</a></div>
+            <ul class="ops-mini-list">
+                <li class="ops-row"><span class="ops-dot ops-dot-critical"></span><div><strong>Hygiene Kits</strong><small>18 units left</small></div><span class="ops-badge ops-badge-critical">Critical</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-high"></span><div><strong>Rice Packs</strong><small>42 units left</small></div><span class="ops-badge ops-badge-high">Low</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-medium"></span><div><strong>Blankets</strong><small>Reorder recommended</small></div><span class="ops-badge ops-badge-medium">Monitor</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-low"></span><div><strong>Water Containers</strong><small>Stock healthy</small></div><span class="ops-badge ops-badge-low">OK</span></li>
+            </ul>
+        </article>
+
+        <article class="ops-card">
+            <div class="ops-head"><h2 class="ops-title">Approval Queue</h2><a href="{% url 'users' %}" class="ops-chip">Open queue</a></div>
+            <ul class="ops-mini-list">
+                <li class="ops-row"><span class="ops-dot ops-dot-critical"></span><div><strong>Volunteer verification</strong><small>7 pending profiles</small></div><span class="ops-badge ops-badge-critical">Urgent</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-high"></span><div><strong>Activity approvals</strong><small>3 events pending</small></div><span class="ops-badge ops-badge-high">High</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-medium"></span><div><strong>Donation checks</strong><small>11 payments awaiting match</small></div><span class="ops-badge ops-badge-medium">Queue</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-low"></span><div><strong>Beneficiary intake</strong><small>9 forms ready for screening</small></div><span class="ops-badge ops-badge-low">Review</span></li>
+            </ul>
+        </article>
+
+        <article class="ops-card">
+            <div class="ops-head"><h2 class="ops-title">Recent Activity Feed</h2><a href="{% url 'reports' %}" class="ops-chip">Logs</a></div>
+            <ul class="ops-activity-list">
+                <li class="ops-row"><span class="ops-dot ops-dot-low"></span><div><strong>Donation verified from Redwood Trust</strong><small>8 minutes ago</small></div><span class="ops-badge ops-badge-low">Done</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-low"></span><div><strong>Volunteer assigned to Barangay outreach</strong><small>15 minutes ago</small></div><span class="ops-badge ops-badge-low">Assigned</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-medium"></span><div><strong>Inventory intake updated for Hygiene Kits</strong><small>26 minutes ago</small></div><span class="ops-badge ops-badge-medium">Updated</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-high"></span><div><strong>Report export completed</strong><small>41 minutes ago</small></div><span class="ops-badge ops-badge-high">Export</span></li>
+            </ul>
+        </article>
+
+        <article class="ops-card">
+            <div class="ops-head"><h2 class="ops-title">Community Moderation</h2><a href="{% url 'reports' %}?tab=moderation" class="ops-chip">Moderate</a></div>
+            <ul class="ops-moderation-list">
+                <li class="ops-row"><span class="ops-dot ops-dot-high"></span><div><strong>Flagged comment in aid thread</strong><small>Needs response from admin team</small></div><span class="ops-badge ops-badge-high">Review</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-medium"></span><div><strong>Pending post approval</strong><small>Fundraiser announcement draft</small></div><span class="ops-badge ops-badge-medium">Moderate</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-critical"></span><div><strong>Escalated abuse report</strong><small>1 account locked pending decision</small></div><span class="ops-badge ops-badge-critical">Escalated</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-low"></span><div><strong>Feedback triage complete</strong><small>14 items categorized</small></div><span class="ops-badge ops-badge-low">Complete</span></li>
+            </ul>
+        </article>
+    </section>
+
+    <section class="ops-card" aria-label="Quick actions">
+        <div class="ops-head">
+            <div>
+                <h2 class="ops-title">Quick Actions</h2>
+                <p class="ops-sub">Launch frequent admin tasks instantly</p>
+            </div>
+        </div>
+        <div class="ops-quick-grid">
+            <button class="ops-quick-btn" type="button"><i data-lucide="calendar-plus"></i><span>Add Activity</span></button>
+            <button class="ops-quick-btn" type="button"><i data-lucide="hand-coins"></i><span>Record Donation</span></button>
+            <button class="ops-quick-btn" type="button"><i data-lucide="user-plus"></i><span>Add Beneficiary</span></button>
+            <button class="ops-quick-btn" type="button"><i data-lucide="user-check"></i><span>Assign Volunteer</span></button>
+            <button class="ops-quick-btn" type="button"><i data-lucide="megaphone"></i><span>Post Announcement</span></button>
+            <button class="ops-quick-btn" type="button"><i data-lucide="file-chart-column"></i><span>Generate Report</span></button>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    "use strict";
+
+    function renderMiniCalendar() {
+        var grid = document.getElementById("ops-calendar-grid");
+        if (!grid) return;
+
+        var now = new Date();
+        var year = now.getFullYear();
+        var month = now.getMonth();
+        var today = now.getDate();
+
+        var first = new Date(year, month, 1);
+        var startDay = first.getDay();
+        var daysInMonth = new Date(year, month + 1, 0).getDate();
+        var prevDays = new Date(year, month, 0).getDate();
+
+        var cells = [];
+        for (var i = 0; i < startDay; i += 1) {
+            cells.push({ day: prevDays - startDay + i + 1, muted: true });
+        }
+        for (var d = 1; d <= daysInMonth; d += 1) {
+            cells.push({ day: d, muted: false, today: d === today });
+        }
+        while (cells.length % 7 !== 0) {
+            cells.push({ day: cells.length % 7 + 1, muted: true });
+        }
+
+        grid.innerHTML = "";
+        cells.forEach(function (cell) {
+            var span = document.createElement("span");
+            span.className = "ops-day" + (cell.muted ? " is-muted" : "") + (cell.today ? " is-today" : "");
+            span.textContent = String(cell.day);
+            grid.appendChild(span);
+        });
+    }
+
+    function createCharts() {
+        if (typeof Chart === "undefined") return;
+
+        var donationCtx = document.getElementById("donations-trend-chart");
+        if (donationCtx && window.dashboardChartSeries && window.dashboardChartSeries.donations) {
+            var donationSeriesData = window.dashboardChartSeries.donations.weekly || { labels: [], values: [] };
+            new Chart(donationCtx, {
+                type: "line",
+                data: {
+                    labels: donationSeriesData.labels,
+                    datasets: [{
+                        label: "Donations",
+                        data: donationSeriesData.values,
+                        borderColor: "#119c77",
+                        backgroundColor: "rgba(17, 156, 119, 0.15)",
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: "#5b7b71", font: { size: 11 } }, grid: { color: "rgba(221,236,229,0.7)", drawBorder: false } },
+                        y: { ticks: { color: "#5b7b71", font: { size: 11 } }, grid: { color: "rgba(221,236,229,0.7)", drawBorder: false } }
+                    }
+                }
+            });
+        }
+
+        var volunteerCtx = document.getElementById("volunteer-trend-chart");
+        if (volunteerCtx && window.dashboardChartSeries && window.dashboardChartSeries.volunteers) {
+            var volunteerSeriesData = window.dashboardChartSeries.volunteers.weekly || { labels: [], values: [] };
+            new Chart(volunteerCtx, {
+                type: "line",
+                data: {
+                    labels: volunteerSeriesData.labels,
+                    datasets: [{
+                        label: "Participation",
+                        data: volunteerSeriesData.values,
+                        borderColor: "#0f7a95",
+                        backgroundColor: "rgba(15, 122, 149, 0.14)",
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: "#5b7b71", font: { size: 11 } }, grid: { color: "rgba(221,236,229,0.7)", drawBorder: false } },
+                        y: { ticks: { color: "#5b7b71", font: { size: 11 } }, grid: { color: "rgba(221,236,229,0.7)", drawBorder: false } }
+                    }
+                }
+            });
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        renderMiniCalendar();
+        createCharts();
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+    });
+})();
+</script>
+{% endblock %}
+{% extends "base.html" %}
+
+{% block title %}Dashboard | HappYness{% endblock %}
+
+{% block extra_head %}
+<style>
+    .ngo-dashboard { display: grid; gap: 16px; }
+    .ngo-shell { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .ngo-main, .ngo-side { display: grid; gap: 16px; }
+    .ngo-panel { background: rgba(255,255,255,.95); border-radius: 14px; box-shadow: 0 6px 18px rgba(15,23,42,.06); padding: 16px; }
+    .ngo-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .ngo-title { margin: 0; font-size: 1rem; font-weight: 700; color: #14261f; }
+    .ngo-subtle { margin: 0; color: #64748b; font-size: .75rem; }
+    .ngo-kpis { display: grid; grid-template-columns: repeat(1,minmax(0,1fr)); gap: 12px; }
+    .ngo-kpi { border-radius: 12px; padding: 12px; background: linear-gradient(180deg,rgba(255,255,255,.95),rgba(248,250,252,.95)); }
+    .ngo-kpi-label { margin: 0; text-transform: uppercase; letter-spacing: .06em; font-size: .68rem; color: #64748b; font-weight: 700; }
+    .ngo-kpi-value { margin: 8px 0 0; font-size: 1.6rem; line-height: 1.1; font-weight: 700; color: #0f172a; }
+    .ngo-kpi-note { margin: 6px 0 0; font-size: .73rem; color: #475569; }
+    .ngo-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+    .ngo-list li { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(148,163,184,.2); }
+    .ngo-list li:last-child { border-bottom: 0; }
+    .ngo-actions-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+    .ngo-action-btn { border: 1px solid rgba(148,163,184,.25); border-radius: 12px; background: #fff; color: #1e293b; min-height: 66px; font-size: .68rem; font-weight: 700; cursor: pointer; }
+    .ngo-action-btn:hover { background: rgba(248,250,252,.9); }
+    .ngo-toggle { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; border: 1px solid rgba(15,118,110,.24); background: rgba(240,253,250,.9); padding: 2px; }
+    .ngo-toggle-btn { border: 0; border-radius: 999px; background: transparent; color: #475569; font-size: .7rem; font-weight: 700; padding: 4px 9px; cursor: pointer; }
+    .ngo-toggle-btn[aria-pressed="true"] { color: #0f766e; background: rgba(15,118,110,.14); }
+    .ngo-chart-wrap { height: 220px; }
+    @media (min-width: 760px) { .ngo-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+    @media (min-width: 1200px) { .ngo-shell { grid-template-columns: minmax(0,1.8fr) minmax(0,1fr); gap: 16px; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ngo-dashboard" id="ngo-dashboard">
+    <section class="ngo-kpis" aria-label="Top metrics">
+        <article class="ngo-panel ngo-kpi"><p class="ngo-kpi-label">Active Volunteers</p><p class="ngo-kpi-value">214</p><p class="ngo-kpi-note">+9 this week</p></article>
+        <article class="ngo-panel ngo-kpi"><p class="ngo-kpi-label">Active Beneficiaries</p><p class="ngo-kpi-value">386</p><p class="ngo-kpi-note">+17 this cycle</p></article>
+        <article class="ngo-panel ngo-kpi"><p class="ngo-kpi-label">Donations This Month</p><p class="ngo-kpi-value">PHP 248,400</p><p class="ngo-kpi-note">+12.4% vs last month</p></article>
+        <article class="ngo-panel ngo-kpi"><p class="ngo-kpi-label">Pending Approvals</p><p class="ngo-kpi-value">26</p><p class="ngo-kpi-note">6 require urgent review</p></article>
+    </section>
+
+    <section class="ngo-shell" aria-label="Monitor triage act layout">
+        <div class="ngo-main">
+            <article class="ngo-panel">
+                <div class="ngo-title-row"><div><h2 class="ngo-title">Priority Tasks</h2><p class="ngo-subtle">Triage urgent operations first</p></div></div>
+                <ul class="ngo-list">
+                    <li><div><strong>Volunteer approvals pending</strong><div class="ngo-subtle">7 new volunteer profiles await identity verification.</div></div><span>Critical</span></li>
+                    <li><div><strong>Activity approvals</strong><div class="ngo-subtle">3 community events need policy sign-off.</div></div><span>High</span></li>
+                    <li><div><strong>Low stock alerts</strong><div class="ngo-subtle">Hygiene kits and rice packs are below threshold.</div></div><span>High</span></li>
+                    <li><div><strong>Reports due</strong><div class="ngo-subtle">Weekly outreach report due by 4:00 PM.</div></div><span>Today</span></li>
+                </ul>
+            </article>
+
+            <article class="ngo-panel">
+                <div class="ngo-title-row">
+                    <div><h2 class="ngo-title">Donations Trend</h2><p class="ngo-subtle">Monitor contribution momentum</p></div>
+                    <div class="ngo-toggle" role="group" aria-label="Donation trend range">
+                        <button type="button" class="ngo-toggle-btn" data-range="weekly" aria-pressed="true">Weekly</button>
+                        <button type="button" class="ngo-toggle-btn" data-range="monthly" aria-pressed="false">Monthly</button>
+                    </div>
+                </div>
+                <div class="ngo-chart-wrap"><canvas id="ngo-donation-chart" role="img" aria-label="Donations trend line chart"></canvas></div>
+            </article>
+        </div>
+
+        <aside class="ngo-side">
+            <article class="ngo-panel">
+                <div class="ngo-title-row"><h2 class="ngo-title">Today's Schedule</h2></div>
+                <ul class="ngo-list">
+                    <li><div><strong>09:00 Relief Packing Briefing</strong><div class="ngo-subtle">Warehouse A</div></div><span>Ops</span></li>
+                    <li><div><strong>11:30 Donor Verification</strong><div class="ngo-subtle">Finance Desk</div></div><span>Review</span></li>
+                    <li><div><strong>14:00 Volunteer Orientation</strong><div class="ngo-subtle">Community Hall</div></div><span>Ready</span></li>
+                    <li><div><strong>16:00 Reports Sign-off</strong><div class="ngo-subtle">Operations Office</div></div><span>Due</span></li>
+                </ul>
+            </article>
+
+            <article class="ngo-panel">
+                <div class="ngo-title-row"><h2 class="ngo-title">Quick Actions</h2></div>
+                <div class="ngo-actions-grid">
+                    <button type="button" class="ngo-action-btn">Add Activity</button>
+                    <button type="button" class="ngo-action-btn">Record Donation</button>
+                    <button type="button" class="ngo-action-btn">Add Beneficiary</button>
+                    <button type="button" class="ngo-action-btn">Assign Volunteer</button>
+                    <button type="button" class="ngo-action-btn">Post Announcement</button>
+                    <button type="button" class="ngo-action-btn">Generate Report</button>
+                </div>
+            </article>
+        </aside>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    "use strict";
+    var chart = null;
+    var donationSeries = {
+        weekly: { labels: ["W1","W2","W3","W4","W5","W6","W7","W8"], values: [12400,13100,13800,14600,15900,16600,17400,18600] },
+        monthly: { labels: ["Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"], values: [102000,109000,114000,122000,131000,139000,146000,153000] }
+    };
+
+    function createDonationChart(canvas) {
+        return new Chart(canvas, {
+            type: "line",
+            data: {
+                labels: donationSeries.weekly.labels,
+                datasets: [{
+                    label: "Donations",
+                    data: donationSeries.weekly.values,
+                    borderColor: "#0f766e",
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    fill: false,
+                    tension: 0.32
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: "#64748b" }, grid: { color: "rgba(226, 232, 240, 0.45)", drawBorder: false } },
+                    y: { beginAtZero: true, ticks: { color: "#64748b" }, grid: { color: "rgba(226, 232, 240, 0.45)", drawBorder: false } }
+                }
+            }
+        });
+    }
+
+    function updateRange(range) {
+        var next = donationSeries[range];
+        if (!chart || !next) return;
+        chart.data.labels = next.labels;
+        chart.data.datasets[0].data = next.values;
+        chart.update();
+        document.querySelectorAll(".ngo-toggle-btn").forEach(function (btn) {
+            btn.setAttribute("aria-pressed", String(btn.getAttribute("data-range") === range));
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var canvas = document.getElementById("ngo-donation-chart");
+        if (canvas && typeof Chart !== "undefined") {
+            chart = createDonationChart(canvas);
+            document.querySelectorAll(".ngo-toggle-btn").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    updateRange(btn.getAttribute("data-range") || "weekly");
+                });
+            });
+        }
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+        document.dispatchEvent(new Event("admin:panel-rendered"));
+    });
+})();
+</script>
+{% endblock %}
+{% extends "base.html" %}
+
+{% block title %}Dashboard | HappYness{% endblock %}
+
+{% block extra_head %}
+<style>
+    .ngo-dashboard { display: grid; gap: 16px; }
+    .ngo-shell { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .ngo-main, .ngo-side { display: grid; gap: 16px; }
+    .ngo-panel { background: rgba(255,255,255,.95); border-radius: 14px; box-shadow: 0 6px 18px rgba(15,23,42,.06); padding: 16px; }
+    .ngo-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .ngo-title { margin: 0; font-size: 1rem; font-weight: 700; color: #14261f; }
+    .ngo-subtle { margin: 0; color: #64748b; font-size: .75rem; }
+    .ngo-kpis { display: grid; grid-template-columns: repeat(1,minmax(0,1fr)); gap: 12px; }
+    .ngo-kpi { border-radius: 12px; padding: 12px; background: linear-gradient(180deg,rgba(255,255,255,.95),rgba(248,250,252,.95)); }
+    .ngo-kpi-label { margin: 0; text-transform: uppercase; letter-spacing: .06em; font-size: .68rem; color: #64748b; font-weight: 700; }
+    .ngo-kpi-value { margin: 8px 0 0; font-size: 1.6rem; line-height: 1.1; font-weight: 700; color: #0f172a; }
+    .ngo-kpi-note { margin: 6px 0 0; font-size: .73rem; color: #475569; }
+    .ngo-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+    .ngo-list li { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(148,163,184,.2); }
+    .ngo-list li:last-child { border-bottom: 0; }
+    .ngo-actions-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+    .ngo-action-btn { border: 1px solid rgba(148,163,184,.25); border-radius: 12px; background: #fff; color: #1e293b; min-height: 66px; font-size: .68rem; font-weight: 700; cursor: pointer; }
+    .ngo-action-btn:hover { background: rgba(248,250,252,.9); }
+    .ngo-toggle { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; border: 1px solid rgba(15,118,110,.24); background: rgba(240,253,250,.9); padding: 2px; }
+    .ngo-toggle-btn { border: 0; border-radius: 999px; background: transparent; color: #475569; font-size: .7rem; font-weight: 700; padding: 4px 9px; cursor: pointer; }
+    .ngo-toggle-btn[aria-pressed="true"] { color: #0f766e; background: rgba(15,118,110,.14); }
+    .ngo-chart-wrap { height: 220px; }
+    @media (min-width: 760px) { .ngo-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+    @media (min-width: 1200px) { .ngo-shell { grid-template-columns: minmax(0,1.8fr) minmax(0,1fr); gap: 16px; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ngo-dashboard" id="ngo-dashboard">
+    <section class="ngo-kpis" aria-label="Top metrics">
+        <article class="ngo-panel ngo-kpi"><p class="ngo-kpi-label">Active Volunteers</p><p class="ngo-kpi-value">214</p><p class="ngo-kpi-note">+9 this week</p></article>
+        <article class="ngo-panel ngo-kpi"><p class="ngo-kpi-label">Active Beneficiaries</p><p class="ngo-kpi-value">386</p><p class="ngo-kpi-note">+17 this cycle</p></article>
+        <article class="ngo-panel ngo-kpi"><p class="ngo-kpi-label">Donations This Month</p><p class="ngo-kpi-value">PHP 248,400</p><p class="ngo-kpi-note">+12.4% vs last month</p></article>
+        <article class="ngo-panel ngo-kpi"><p class="ngo-kpi-label">Pending Approvals</p><p class="ngo-kpi-value">26</p><p class="ngo-kpi-note">6 require urgent review</p></article>
+    </section>
+
+    <section class="ngo-shell" aria-label="Monitor triage act layout">
+        <div class="ngo-main">
+            <article class="ngo-panel">
+                <div class="ngo-title-row"><div><h2 class="ngo-title">Priority Tasks</h2><p class="ngo-subtle">Triage urgent operations first</p></div></div>
+                <ul class="ngo-list">
+                    <li><div><strong>Volunteer approvals pending</strong><div class="ngo-subtle">7 new volunteer profiles await identity verification.</div></div><span>Critical</span></li>
+                    <li><div><strong>Activity approvals</strong><div class="ngo-subtle">3 community events need policy sign-off.</div></div><span>High</span></li>
+                    <li><div><strong>Low stock alerts</strong><div class="ngo-subtle">Hygiene kits and rice packs are below threshold.</div></div><span>High</span></li>
+                    <li><div><strong>Reports due</strong><div class="ngo-subtle">Weekly outreach report due by 4:00 PM.</div></div><span>Today</span></li>
+                </ul>
+            </article>
+
+            <article class="ngo-panel">
+                <div class="ngo-title-row">
+                    <div><h2 class="ngo-title">Donations Trend</h2><p class="ngo-subtle">Monitor contribution momentum</p></div>
+                    <div class="ngo-toggle" role="group" aria-label="Donation trend range">
+                        <button type="button" class="ngo-toggle-btn" data-range="weekly" aria-pressed="true">Weekly</button>
+                        <button type="button" class="ngo-toggle-btn" data-range="monthly" aria-pressed="false">Monthly</button>
+                    </div>
+                </div>
+                <div class="ngo-chart-wrap"><canvas id="ngo-donation-chart" role="img" aria-label="Donations trend line chart"></canvas></div>
+            </article>
+        </div>
+
+        <aside class="ngo-side">
+            <article class="ngo-panel">
+                <div class="ngo-title-row"><h2 class="ngo-title">Today's Schedule</h2></div>
+                <ul class="ngo-list">
+                    <li><div><strong>09:00 Relief Packing Briefing</strong><div class="ngo-subtle">Warehouse A</div></div><span>Ops</span></li>
+                    <li><div><strong>11:30 Donor Verification</strong><div class="ngo-subtle">Finance Desk</div></div><span>Review</span></li>
+                    <li><div><strong>14:00 Volunteer Orientation</strong><div class="ngo-subtle">Community Hall</div></div><span>Ready</span></li>
+                    <li><div><strong>16:00 Reports Sign-off</strong><div class="ngo-subtle">Operations Office</div></div><span>Due</span></li>
+                </ul>
+            </article>
+
+            <article class="ngo-panel">
+                <div class="ngo-title-row"><h2 class="ngo-title">Quick Actions</h2></div>
+                <div class="ngo-actions-grid">
+                    <button type="button" class="ngo-action-btn">Add Activity</button>
+                    <button type="button" class="ngo-action-btn">Record Donation</button>
+                    <button type="button" class="ngo-action-btn">Add Beneficiary</button>
+                    <button type="button" class="ngo-action-btn">Assign Volunteer</button>
+                    <button type="button" class="ngo-action-btn">Post Announcement</button>
+                    <button type="button" class="ngo-action-btn">Generate Report</button>
+                </div>
+            </article>
+        </aside>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    "use strict";
+    var chart = null;
+    var donationSeries = {
+        weekly: { labels: ["W1","W2","W3","W4","W5","W6","W7","W8"], values: [12400,13100,13800,14600,15900,16600,17400,18600] },
+        monthly: { labels: ["Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"], values: [102000,109000,114000,122000,131000,139000,146000,153000] }
+    };
+
+    function createDonationChart(canvas) {
+        return new Chart(canvas, {
+            type: "line",
+            data: {
+                labels: donationSeries.weekly.labels,
+                datasets: [{
+                    label: "Donations",
+                    data: donationSeries.weekly.values,
+                    borderColor: "#0f766e",
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    fill: false,
+                    tension: 0.32
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: "#64748b" }, grid: { color: "rgba(226, 232, 240, 0.45)", drawBorder: false } },
+                    y: { beginAtZero: true, ticks: { color: "#64748b" }, grid: { color: "rgba(226, 232, 240, 0.45)", drawBorder: false } }
+                }
+            }
+        });
+    }
+
+    function updateRange(range) {
+        var next = donationSeries[range];
+        if (!chart || !next) return;
+        chart.data.labels = next.labels;
+        chart.data.datasets[0].data = next.values;
+        chart.update();
+        document.querySelectorAll(".ngo-toggle-btn").forEach(function (btn) {
+            btn.setAttribute("aria-pressed", String(btn.getAttribute("data-range") === range));
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var canvas = document.getElementById("ngo-donation-chart");
+        if (canvas && typeof Chart !== "undefined") {
+            chart = createDonationChart(canvas);
+            document.querySelectorAll(".ngo-toggle-btn").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    updateRange(btn.getAttribute("data-range") || "weekly");
+                });
+            });
+        }
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+        document.dispatchEvent(new Event("admin:panel-rendered"));
+    });
+})();
+</script>
+{% endblock %}{% extends "base.html" %}
+
+{% block title %}Dashboard | HappYness{% endblock %}
+
+{% block extra_head %}
+<style>
+    .ngo-dashboard { display: grid; gap: 16px; }
+    .ngo-shell { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .ngo-main, .ngo-side { display: grid; gap: 16px; }
+    .ngo-panel { background: rgba(255,255,255,.95); border-radius: 14px; box-shadow: 0 6px 18px rgba(15,23,42,.06); padding: 16px; }
+    .ngo-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .ngo-title { margin: 0; font-size: 1rem; font-weight: 700; color: #14261f; }
+    .ngo-subtle { margin: 0; color: #64748b; font-size: .75rem; }
+    .ngo-link { font-size: .75rem; font-weight: 600; color: #0f766e; text-decoration: none; border-radius: 8px; padding: 4px 8px; }
+    .ngo-link:hover { background: rgba(15,118,110,.08); }
+    .ngo-kpis { display: grid; grid-template-columns: repeat(1,minmax(0,1fr)); gap: 12px; }
+    .ngo-kpi { border-radius: 12px; padding: 12px; background: linear-gradient(180deg,rgba(255,255,255,.95),rgba(248,250,252,.95)); }
+    .ngo-kpi-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .ngo-kpi-label { margin: 0; text-transform: uppercase; letter-spacing: .06em; font-size: .68rem; color: #64748b; font-weight: 700; }
+    .ngo-kpi-icon { width: 1.65rem; height: 1.65rem; border-radius: 10px; background: rgba(15,118,110,.1); color: #0f766e; display: inline-flex; align-items: center; justify-content: center; }
+    .ngo-kpi-icon i { width: .85rem; height: .85rem; }
+    .ngo-kpi-value { margin: 8px 0 0; font-size: 1.6rem; line-height: 1.1; font-weight: 700; color: #0f172a; }
+    .ngo-kpi-note { margin: 6px 0 0; font-size: .73rem; color: #475569; }
+    .ngo-priority-list, .ngo-feed-list, .ngo-stack-list, .ngo-agenda { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+    .ngo-priority-item { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(148,163,184,.2); }
+    .ngo-priority-item:last-child, .ngo-feed-item:last-child, .ngo-stack-item:last-child, .ngo-agenda-item:last-child { border-bottom: 0; }
+    .ngo-dot { width: 8px; height: 8px; border-radius: 999px; }
+    .is-critical { background: #dc2626; }
+    .is-warning { background: #d97706; }
+    .is-success { background: #16a34a; }
+    .ngo-priority-item strong, .ngo-feed-item strong, .ngo-stack-item strong, .ngo-agenda-item strong { display: block; font-size: .82rem; color: #0f172a; }
+    .ngo-priority-item span, .ngo-feed-item span, .ngo-stack-item span, .ngo-agenda-item span { font-size: .72rem; color: #64748b; }
+    .ngo-badge { border-radius: 999px; padding: 4px 8px; font-size: .66rem; font-weight: 700; white-space: nowrap; }
+    .ngo-badge-critical { color: #991b1b; background: rgba(254,226,226,.9); }
+    .ngo-badge-high { color: #9a3412; background: rgba(255,237,213,.9); }
+    .ngo-badge-medium { color: #92400e; background: rgba(254,243,199,.9); }
+    .ngo-badge-success { color: #166534; background: rgba(220,252,231,.9); }
+    .ngo-toggle { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; border: 1px solid rgba(15,118,110,.24); background: rgba(240,253,250,.9); padding: 2px; }
+    .ngo-toggle-btn { border: 0; border-radius: 999px; background: transparent; color: #475569; font-size: .7rem; font-weight: 700; padding: 4px 9px; cursor: pointer; }
+    .ngo-toggle-btn[aria-pressed="true"] { color: #0f766e; background: rgba(15,118,110,.14); }
+    .ngo-chart-wrap { height: 220px; }
+    .ngo-feed-item, .ngo-stack-item, .ngo-agenda-item { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(148,163,184,.18); }
+    .ngo-feed-icon, .ngo-agenda-time { width: 1.55rem; height: 1.55rem; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: rgba(15,118,110,.1); color: #0f766e; flex-shrink: 0; }
+    .ngo-feed-icon i { width: .78rem; height: .78rem; }
+    .ngo-agenda-time { width: auto; min-width: 52px; font-size: .67rem; font-weight: 700; padding: 0 6px; }
+    .ngo-actions-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+    .ngo-action-btn { border: 1px solid rgba(148,163,184,.25); border-radius: 12px; background: #fff; color: #1e293b; min-height: 66px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: .68rem; font-weight: 700; cursor: pointer; }
+    .ngo-action-btn i { width: .86rem; height: .86rem; }
+    .ngo-action-btn:hover { background: rgba(248,250,252,.9); }
+    .ngo-action-btn.is-primary { border-color: rgba(15,118,110,.35); background: rgba(15,118,110,.1); color: #0f766e; }
+    .ngo-stack-panel { padding-top: 12px; border-top: 1px solid rgba(148,163,184,.18); }
+    .ngo-stack-panel:first-child { border-top: 0; padding-top: 0; }
+    .ngo-stack-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+    .ngo-stack-title { margin: 0; font-size: .83rem; font-weight: 700; color: #0f172a; }
+    .ngo-count { border-radius: 999px; background: rgba(15,118,110,.12); color: #0f766e; font-size: .66rem; font-weight: 700; padding: 3px 8px; }
+    @media (min-width: 760px) { .ngo-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+    @media (min-width: 1200px) { .ngo-shell { grid-template-columns: minmax(0,1.86fr) minmax(0,1fr); gap: 16px; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ngo-dashboard" id="ngo-dashboard">
+    <section class="ngo-kpis" aria-label="Top metrics">
+        <article class="ngo-panel ngo-kpi"><div class="ngo-kpi-head"><p class="ngo-kpi-label">Active Volunteers</p><span class="ngo-kpi-icon"><i data-lucide="user-check"></i></span></div><p class="ngo-kpi-value">214</p><p class="ngo-kpi-note">+9 this week</p></article>
+        <article class="ngo-panel ngo-kpi"><div class="ngo-kpi-head"><p class="ngo-kpi-label">Active Beneficiaries</p><span class="ngo-kpi-icon"><i data-lucide="heart-handshake"></i></span></div><p class="ngo-kpi-value">386</p><p class="ngo-kpi-note">+17 this cycle</p></article>
+        <article class="ngo-panel ngo-kpi"><div class="ngo-kpi-head"><p class="ngo-kpi-label">Donations This Month</p><span class="ngo-kpi-icon"><i data-lucide="hand-coins"></i></span></div><p class="ngo-kpi-value">PHP 248,400</p><p class="ngo-kpi-note">+12.4% vs last month</p></article>
+        <article class="ngo-panel ngo-kpi"><div class="ngo-kpi-head"><p class="ngo-kpi-label">Pending Approvals</p><span class="ngo-kpi-icon"><i data-lucide="shield-alert"></i></span></div><p class="ngo-kpi-value">26</p><p class="ngo-kpi-note">6 require urgent review</p></article>
+    </section>
+
+    <section class="ngo-shell" aria-label="Monitor triage act layout">
+        <div class="ngo-main">
+            <article class="ngo-panel" aria-labelledby="priority-title">
+                <div class="ngo-title-row"><div><h2 id="priority-title" class="ngo-title">Priority Tasks</h2><p class="ngo-subtle">Triage and handle urgent operations first</p></div></div>
+                <ul class="ngo-priority-list">
+                    <li class="ngo-priority-item"><span class="ngo-dot is-critical"></span><div><strong>Volunteer approvals pending</strong><span>7 new volunteer profiles await identity verification.</span></div><span class="ngo-badge ngo-badge-critical">Critical</span></li>
+                    <li class="ngo-priority-item"><span class="ngo-dot is-warning"></span><div><strong>Activity approvals</strong><span>3 community events need policy and safety sign-off.</span></div><span class="ngo-badge ngo-badge-high">High</span></li>
+                    <li class="ngo-priority-item"><span class="ngo-dot is-warning"></span><div><strong>Low stock alerts</strong><span>Hygiene kits and rice packs are below minimum threshold.</span></div><span class="ngo-badge ngo-badge-high">High</span></li>
+                    <li class="ngo-priority-item"><span class="ngo-dot is-success"></span><div><strong>Reports due</strong><span>Weekly outreach report is due by 4:00 PM.</span></div><span class="ngo-badge ngo-badge-success">Due Today</span></li>
+                </ul>
+            </article>
+
+            <article class="ngo-panel" aria-labelledby="donation-trend-title">
+                <div class="ngo-title-row"><div><h2 id="donation-trend-title" class="ngo-title">Donations Trend</h2><p class="ngo-subtle">Monitor contribution momentum over time</p></div><div class="ngo-toggle" role="group" aria-label="Donation trend range"><button type="button" class="ngo-toggle-btn" data-range="weekly" aria-pressed="true">Weekly</button><button type="button" class="ngo-toggle-btn" data-range="monthly" aria-pressed="false">Monthly</button></div></div>
+                <div class="ngo-chart-wrap"><canvas id="ngo-donation-chart" role="img" aria-label="Donations trend line chart"></canvas></div>
+            </article>
+
+            <article class="ngo-panel" aria-labelledby="activity-feed-title">
+                <div class="ngo-title-row"><div><h2 id="activity-feed-title" class="ngo-title">Recent Activity</h2><p class="ngo-subtle">Live operational updates across the platform</p></div></div>
+                <ul class="ngo-feed-list">
+                    <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="badge-check"></i></span><div><strong>Donation verified from Redwood Trust</strong><span>8 minutes ago</span></div><span class="ngo-badge ngo-badge-success">Done</span></li>
+                    <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="clipboard-check"></i></span><div><strong>Volunteer assigned to Barangay outreach</strong><span>15 minutes ago</span></div><span class="ngo-badge ngo-badge-success">Assigned</span></li>
+                    <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="package"></i></span><div><strong>Inventory intake updated for Hygiene Kits</strong><span>26 minutes ago</span></div><span class="ngo-badge ngo-badge-medium">Updated</span></li>
+                    <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="alert-triangle"></i></span><div><strong>Comment escalated for moderation review</strong><span>43 minutes ago</span></div><span class="ngo-badge ngo-badge-high">Escalated</span></li>
+                </ul>
+            </article>
+        </div>
+
+        <aside class="ngo-side" aria-label="Supporting panels and actions">
+            <article class="ngo-panel" aria-labelledby="today-schedule-title">
+                <div class="ngo-title-row"><div><h2 id="today-schedule-title" class="ngo-title">Today's Schedule</h2><p class="ngo-subtle">Agenda view of upcoming commitments</p></div></div>
+                <ul class="ngo-agenda">
+                    <li class="ngo-agenda-item"><span class="ngo-agenda-time">09:00</span><div><strong>Relief Packing Briefing</strong><span>Warehouse A</span></div><span class="ngo-badge ngo-badge-medium">Ops</span></li>
+                    <li class="ngo-agenda-item"><span class="ngo-agenda-time">11:30</span><div><strong>Donor Verification Checkpoint</strong><span>Finance Desk</span></div><span class="ngo-badge ngo-badge-high">Review</span></li>
+                    <li class="ngo-agenda-item"><span class="ngo-agenda-time">14:00</span><div><strong>Volunteer Orientation</strong><span>Community Hall</span></div><span class="ngo-badge ngo-badge-success">Ready</span></li>
+                    <li class="ngo-agenda-item"><span class="ngo-agenda-time">16:00</span><div><strong>Reports Sign-off</strong><span>Operations Office</span></div><span class="ngo-badge ngo-badge-medium">Due</span></li>
+                </ul>
+            </article>
+
+            <article class="ngo-panel" aria-labelledby="quick-actions-title">
+                <div class="ngo-title-row"><h2 id="quick-actions-title" class="ngo-title">Quick Actions</h2></div>
+                <div class="ngo-actions-grid">
+                    <button type="button" class="ngo-action-btn is-primary"><i data-lucide="calendar-plus"></i><span>Add Activity</span></button>
+                    <button type="button" class="ngo-action-btn"><i data-lucide="badge-dollar-sign"></i><span>Record Donation</span></button>
+                    <button type="button" class="ngo-action-btn"><i data-lucide="user-plus"></i><span>Add Beneficiary</span></button>
+                    <button type="button" class="ngo-action-btn"><i data-lucide="user-check"></i><span>Assign Volunteer</span></button>
+                    <button type="button" class="ngo-action-btn"><i data-lucide="megaphone"></i><span>Post Announcement</span></button>
+                    <button type="button" class="ngo-action-btn"><i data-lucide="file-chart-column"></i><span>Generate Report</span></button>
+                </div>
+            </article>
+
+            <article class="ngo-panel" aria-labelledby="ops-panels-title">
+                <div class="ngo-title-row"><h2 id="ops-panels-title" class="ngo-title">Operational Panels</h2></div>
+                <section class="ngo-stack-panel" aria-label="Inventory alerts"><div class="ngo-stack-head"><h3 class="ngo-stack-title">Inventory Alerts</h3><div><span class="ngo-count">12</span><a class="ngo-link" href="{% url 'inventory' %}">View all</a></div></div><ul class="ngo-stack-list"><li class="ngo-stack-item"><span class="ngo-dot is-critical"></span><div><strong>Hygiene Kits</strong><span>18 units left</span></div><span class="ngo-badge ngo-badge-critical">Critical</span></li><li class="ngo-stack-item"><span class="ngo-dot is-warning"></span><div><strong>Rice Packs</strong><span>42 units left</span></div><span class="ngo-badge ngo-badge-high">Low</span></li><li class="ngo-stack-item"><span class="ngo-dot is-warning"></span><div><strong>Blankets</strong><span>Reorder recommended</span></div><span class="ngo-badge ngo-badge-medium">Monitor</span></li></ul></section>
+                <section class="ngo-stack-panel" aria-label="Approval queue"><div class="ngo-stack-head"><h3 class="ngo-stack-title">Approval Queue</h3><div><span class="ngo-count">26</span><a class="ngo-link" href="{% url 'users' %}">View all</a></div></div><ul class="ngo-stack-list"><li class="ngo-stack-item"><span class="ngo-dot is-critical"></span><div><strong>Volunteer verification</strong><span>7 awaiting review</span></div><span class="ngo-badge ngo-badge-critical">Urgent</span></li><li class="ngo-stack-item"><span class="ngo-dot is-warning"></span><div><strong>Activity approvals</strong><span>3 pending sign-off</span></div><span class="ngo-badge ngo-badge-high">High</span></li><li class="ngo-stack-item"><span class="ngo-dot is-success"></span><div><strong>Donation checks</strong><span>11 to validate</span></div><span class="ngo-badge ngo-badge-medium">Queue</span></li></ul></section>
+                <section class="ngo-stack-panel" aria-label="Community moderation"><div class="ngo-stack-head"><h3 class="ngo-stack-title">Community Moderation</h3><div><span class="ngo-count">5</span><a class="ngo-link" href="{% url 'reports' %}?tab=moderation">View all</a></div></div><ul class="ngo-stack-list"><li class="ngo-stack-item"><span class="ngo-dot is-warning"></span><div><strong>Flagged comment</strong><span>Aid misuse claim thread</span></div><span class="ngo-badge ngo-badge-high">Review</span></li><li class="ngo-stack-item"><span class="ngo-dot is-warning"></span><div><strong>Pending post</strong><span>Fundraiser announcement</span></div><span class="ngo-badge ngo-badge-medium">Moderate</span></li><li class="ngo-stack-item"><span class="ngo-dot is-critical"></span><div><strong>Escalated feedback</strong><span>Needs admin response</span></div><span class="ngo-badge ngo-badge-critical">Escalated</span></li></ul></section>
+            </article>
+        </aside>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    "use strict";
+    var chart = null;
+    var donationSeries = {
+        weekly: { labels: ["W1","W2","W3","W4","W5","W6","W7","W8"], values: [12400,13100,13800,14600,15900,16600,17400,18600] },
+        monthly: { labels: ["Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"], values: [102000,109000,114000,122000,131000,139000,146000,153000] }
+    };
+
+    function createDonationChart(canvas) {
+        return new Chart(canvas, {
+            type: "line",
+            data: {
+                labels: donationSeries.weekly.labels,
+                datasets: [{
+                    label: "Donations",
+                    data: donationSeries.weekly.values,
+                    borderColor: "#0f766e",
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    pointHoverRadius: 4,
+                    fill: false,
+                    tension: 0.32
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 900, easing: "easeInOutCubic" },
+                plugins: { legend: { display: false }, tooltip: { backgroundColor: "rgba(15, 23, 42, 0.9)", padding: 10 } },
+                scales: {
+                    x: { ticks: { color: "#64748b", font: { size: 11 } }, grid: { color: "rgba(226, 232, 240, 0.45)", drawBorder: false } },
+                    y: { beginAtZero: true, ticks: { color: "#64748b", font: { size: 11 } }, grid: { color: "rgba(226, 232, 240, 0.45)", drawBorder: false } }
+                }
+            }
+        });
+    }
+
+    function updateRange(range) {
+        var next = donationSeries[range];
+        if (!chart || !next) return;
+        chart.data.labels = next.labels;
+        chart.data.datasets[0].data = next.values;
+        chart.update();
+        document.querySelectorAll(".ngo-toggle-btn").forEach(function (btn) {
+            btn.setAttribute("aria-pressed", String(btn.getAttribute("data-range") === range));
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var canvas = document.getElementById("ngo-donation-chart");
+        if (canvas && typeof Chart !== "undefined") {
+            chart = createDonationChart(canvas);
+            document.querySelectorAll(".ngo-toggle-btn").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    updateRange(btn.getAttribute("data-range") || "weekly");
+                });
+            });
+        }
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+        document.dispatchEvent(new Event("admin:panel-rendered"));
+    });
+})();
+</script>
+{% endblock %}{% extends "base.html" %}
+
+{% block title %}Dashboard | HappYness{% endblock %}
+
+{% block extra_head %}
+<style>
+    .ngo-dashboard { display: grid; gap: 16px; }
+    .ngo-shell { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .ngo-main, .ngo-side { display: grid; gap: 16px; }
+    .ngo-panel { background: rgba(255,255,255,.95); border-radius: 14px; box-shadow: 0 6px 18px rgba(15,23,42,.06); padding: 16px; }
+    .ngo-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .ngo-title { margin: 0; font-size: 1rem; font-weight: 700; color: #14261f; }
+    .ngo-subtle { margin: 0; color: #64748b; font-size: .75rem; }
+    .ngo-link { font-size: .75rem; font-weight: 600; color: #0f766e; text-decoration: none; border-radius: 8px; padding: 4px 8px; }
+    .ngo-link:hover { background: rgba(15,118,110,.08); }
+
+    .ngo-kpis { display: grid; grid-template-columns: repeat(1,minmax(0,1fr)); gap: 12px; }
+    .ngo-kpi { border-radius: 12px; padding: 12px; background: linear-gradient(180deg,rgba(255,255,255,.95),rgba(248,250,252,.95)); }
+    .ngo-kpi-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .ngo-kpi-label { margin: 0; text-transform: uppercase; letter-spacing: .06em; font-size: .68rem; color: #64748b; font-weight: 700; }
+    .ngo-kpi-icon { width: 1.65rem; height: 1.65rem; border-radius: 10px; background: rgba(15,118,110,.1); color: #0f766e; display: inline-flex; align-items: center; justify-content: center; }
+    .ngo-kpi-icon i { width: .85rem; height: .85rem; }
+    .ngo-kpi-value { margin: 8px 0 0; font-size: 1.6rem; line-height: 1.1; font-weight: 700; color: #0f172a; }
+    .ngo-kpi-note { margin: 6px 0 0; font-size: .73rem; color: #475569; }
+
+    .ngo-priority-list, .ngo-feed-list, .ngo-stack-list, .ngo-agenda { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+    .ngo-priority-item { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(148,163,184,.2); }
+    .ngo-priority-item:last-child, .ngo-feed-item:last-child, .ngo-stack-item:last-child, .ngo-agenda-item:last-child { border-bottom: 0; }
+    .ngo-dot { width: 8px; height: 8px; border-radius: 999px; }
+    .is-critical { background: #dc2626; }
+    .is-warning { background: #d97706; }
+    .is-success { background: #16a34a; }
+
+    .ngo-priority-item strong, .ngo-feed-item strong, .ngo-stack-item strong, .ngo-agenda-item strong { display: block; font-size: .82rem; color: #0f172a; }
+    .ngo-priority-item span, .ngo-feed-item span, .ngo-stack-item span, .ngo-agenda-item span { font-size: .72rem; color: #64748b; }
+
+    .ngo-badge { border-radius: 999px; padding: 4px 8px; font-size: .66rem; font-weight: 700; white-space: nowrap; }
+    .ngo-badge-critical { color: #991b1b; background: rgba(254,226,226,.9); }
+    .ngo-badge-high { color: #9a3412; background: rgba(255,237,213,.9); }
+    .ngo-badge-medium { color: #92400e; background: rgba(254,243,199,.9); }
+    .ngo-badge-success { color: #166534; background: rgba(220,252,231,.9); }
+
+    .ngo-toggle { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; border: 1px solid rgba(15,118,110,.24); background: rgba(240,253,250,.9); padding: 2px; }
+    .ngo-toggle-btn { border: 0; border-radius: 999px; background: transparent; color: #475569; font-size: .7rem; font-weight: 700; padding: 4px 9px; cursor: pointer; }
+    .ngo-toggle-btn[aria-pressed="true"] { color: #0f766e; background: rgba(15,118,110,.14); }
+    .ngo-chart-wrap { height: 220px; }
+
+    .ngo-feed-item, .ngo-stack-item, .ngo-agenda-item { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(148,163,184,.18); }
+    .ngo-feed-icon, .ngo-agenda-time { width: 1.55rem; height: 1.55rem; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: rgba(15,118,110,.1); color: #0f766e; flex-shrink: 0; }
+    .ngo-feed-icon i { width: .78rem; height: .78rem; }
+    .ngo-agenda-time { width: auto; min-width: 52px; font-size: .67rem; font-weight: 700; padding: 0 6px; }
+
+    .ngo-actions-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+    .ngo-action-btn { border: 1px solid rgba(148,163,184,.25); border-radius: 12px; background: #fff; color: #1e293b; min-height: 66px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: .68rem; font-weight: 700; cursor: pointer; }
+    .ngo-action-btn i { width: .86rem; height: .86rem; }
+    .ngo-action-btn:hover { background: rgba(248,250,252,.9); }
+    .ngo-action-btn.is-primary { border-color: rgba(15,118,110,.35); background: rgba(15,118,110,.1); color: #0f766e; }
+
+    .ngo-stack-panel { padding-top: 12px; border-top: 1px solid rgba(148,163,184,.18); }
+    .ngo-stack-panel:first-child { border-top: 0; padding-top: 0; }
+    .ngo-stack-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+    .ngo-stack-title { margin: 0; font-size: .83rem; font-weight: 700; color: #0f172a; }
+    .ngo-count { border-radius: 999px; background: rgba(15,118,110,.12); color: #0f766e; font-size: .66rem; font-weight: 700; padding: 3px 8px; }
+
+    @media (min-width: 760px) { .ngo-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+    @media (min-width: 1200px) { .ngo-shell { grid-template-columns: minmax(0,1.86fr) minmax(0,1fr); gap: 16px; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ngo-dashboard" id="ngo-dashboard">
+    <section class="ngo-kpis" aria-label="Top metrics">
+        <article class="ngo-panel ngo-kpi"><div class="ngo-kpi-head"><p class="ngo-kpi-label">Active Volunteers</p><span class="ngo-kpi-icon"><i data-lucide="user-check"></i></span></div><p class="ngo-kpi-value">214</p><p class="ngo-kpi-note">+9 this week</p></article>
+        <article class="ngo-panel ngo-kpi"><div class="ngo-kpi-head"><p class="ngo-kpi-label">Active Beneficiaries</p><span class="ngo-kpi-icon"><i data-lucide="heart-handshake"></i></span></div><p class="ngo-kpi-value">386</p><p class="ngo-kpi-note">+17 this cycle</p></article>
+        <article class="ngo-panel ngo-kpi"><div class="ngo-kpi-head"><p class="ngo-kpi-label">Donations This Month</p><span class="ngo-kpi-icon"><i data-lucide="hand-coins"></i></span></div><p class="ngo-kpi-value">PHP 248,400</p><p class="ngo-kpi-note">+12.4% vs last month</p></article>
+        <article class="ngo-panel ngo-kpi"><div class="ngo-kpi-head"><p class="ngo-kpi-label">Pending Approvals</p><span class="ngo-kpi-icon"><i data-lucide="shield-alert"></i></span></div><p class="ngo-kpi-value">26</p><p class="ngo-kpi-note">6 require urgent review</p></article>
+    </section>
+
+    <section class="ngo-shell" aria-label="Monitor triage act layout">
+        <div class="ngo-main">
+            <article class="ngo-panel" aria-labelledby="priority-title">
+                <div class="ngo-title-row"><div><h2 id="priority-title" class="ngo-title">Priority Tasks</h2><p class="ngo-subtle">Triage and handle urgent operations first</p></div></div>
+                <ul class="ngo-priority-list">
+                    <li class="ngo-priority-item"><span class="ngo-dot is-critical"></span><div><strong>Volunteer approvals pending</strong><span>7 new volunteer profiles await identity verification.</span></div><span class="ngo-badge ngo-badge-critical">Critical</span></li>
+                    <li class="ngo-priority-item"><span class="ngo-dot is-warning"></span><div><strong>Activity approvals</strong><span>3 community events need policy and safety sign-off.</span></div><span class="ngo-badge ngo-badge-high">High</span></li>
+                    <li class="ngo-priority-item"><span class="ngo-dot is-warning"></span><div><strong>Low stock alerts</strong><span>Hygiene kits and rice packs are below minimum threshold.</span></div><span class="ngo-badge ngo-badge-high">High</span></li>
+                    <li class="ngo-priority-item"><span class="ngo-dot is-success"></span><div><strong>Reports due</strong><span>Weekly outreach report is due by 4:00 PM.</span></div><span class="ngo-badge ngo-badge-success">Due Today</span></li>
+                </ul>
+            </article>
+
+            <article class="ngo-panel" aria-labelledby="donation-trend-title">
+                <div class="ngo-title-row"><div><h2 id="donation-trend-title" class="ngo-title">Donations Trend</h2><p class="ngo-subtle">Monitor contribution momentum over time</p></div><div class="ngo-toggle" role="group" aria-label="Donation trend range"><button type="button" class="ngo-toggle-btn" data-range="weekly" aria-pressed="true">Weekly</button><button type="button" class="ngo-toggle-btn" data-range="monthly" aria-pressed="false">Monthly</button></div></div>
+                <div class="ngo-chart-wrap"><canvas id="ngo-donation-chart" role="img" aria-label="Donations trend line chart"></canvas></div>
+            </article>
+
+            <article class="ngo-panel" aria-labelledby="activity-feed-title">
+                <div class="ngo-title-row"><div><h2 id="activity-feed-title" class="ngo-title">Recent Activity</h2><p class="ngo-subtle">Live operational updates across the platform</p></div></div>
+                <ul class="ngo-feed-list">
+                    <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="badge-check"></i></span><div><strong>Donation verified from Redwood Trust</strong><span>8 minutes ago</span></div><span class="ngo-badge ngo-badge-success">Done</span></li>
+                    <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="clipboard-check"></i></span><div><strong>Volunteer assigned to Barangay outreach</strong><span>15 minutes ago</span></div><span class="ngo-badge ngo-badge-success">Assigned</span></li>
+                    <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="package"></i></span><div><strong>Inventory intake updated for Hygiene Kits</strong><span>26 minutes ago</span></div><span class="ngo-badge ngo-badge-medium">Updated</span></li>
+                    <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="alert-triangle"></i></span><div><strong>Comment escalated for moderation review</strong><span>43 minutes ago</span></div><span class="ngo-badge ngo-badge-high">Escalated</span></li>
+                </ul>
+            </article>
+        </div>
+
+        <aside class="ngo-side" aria-label="Supporting panels and actions">
+            <article class="ngo-panel" aria-labelledby="today-schedule-title">
+                <div class="ngo-title-row"><div><h2 id="today-schedule-title" class="ngo-title">Today's Schedule</h2><p class="ngo-subtle">Agenda view of upcoming commitments</p></div></div>
+                <ul class="ngo-agenda">
+                    <li class="ngo-agenda-item"><span class="ngo-agenda-time">09:00</span><div><strong>Relief Packing Briefing</strong><span>Warehouse A</span></div><span class="ngo-badge ngo-badge-medium">Ops</span></li>
+                    <li class="ngo-agenda-item"><span class="ngo-agenda-time">11:30</span><div><strong>Donor Verification Checkpoint</strong><span>Finance Desk</span></div><span class="ngo-badge ngo-badge-high">Review</span></li>
+                    <li class="ngo-agenda-item"><span class="ngo-agenda-time">14:00</span><div><strong>Volunteer Orientation</strong><span>Community Hall</span></div><span class="ngo-badge ngo-badge-success">Ready</span></li>
+                    <li class="ngo-agenda-item"><span class="ngo-agenda-time">16:00</span><div><strong>Reports Sign-off</strong><span>Operations Office</span></div><span class="ngo-badge ngo-badge-medium">Due</span></li>
+                </ul>
+            </article>
+
+            <article class="ngo-panel" aria-labelledby="quick-actions-title">
+                <div class="ngo-title-row"><h2 id="quick-actions-title" class="ngo-title">Quick Actions</h2></div>
+                <div class="ngo-actions-grid">
+                    <button type="button" class="ngo-action-btn is-primary"><i data-lucide="calendar-plus"></i><span>Add Activity</span></button>
+                    <button type="button" class="ngo-action-btn"><i data-lucide="badge-dollar-sign"></i><span>Record Donation</span></button>
+                    <button type="button" class="ngo-action-btn"><i data-lucide="user-plus"></i><span>Add Beneficiary</span></button>
+                    <button type="button" class="ngo-action-btn"><i data-lucide="user-check"></i><span>Assign Volunteer</span></button>
+                    <button type="button" class="ngo-action-btn"><i data-lucide="megaphone"></i><span>Post Announcement</span></button>
+                    <button type="button" class="ngo-action-btn"><i data-lucide="file-chart-column"></i><span>Generate Report</span></button>
+                </div>
+            </article>
+
+            <article class="ngo-panel" aria-labelledby="ops-panels-title">
+                <div class="ngo-title-row"><h2 id="ops-panels-title" class="ngo-title">Operational Panels</h2></div>
+                <section class="ngo-stack-panel" aria-label="Inventory alerts"><div class="ngo-stack-head"><h3 class="ngo-stack-title">Inventory Alerts</h3><div><span class="ngo-count">12</span><a class="ngo-link" href="{% url 'inventory' %}">View all</a></div></div><ul class="ngo-stack-list"><li class="ngo-stack-item"><span class="ngo-dot is-critical"></span><div><strong>Hygiene Kits</strong><span>18 units left</span></div><span class="ngo-badge ngo-badge-critical">Critical</span></li><li class="ngo-stack-item"><span class="ngo-dot is-warning"></span><div><strong>Rice Packs</strong><span>42 units left</span></div><span class="ngo-badge ngo-badge-high">Low</span></li><li class="ngo-stack-item"><span class="ngo-dot is-warning"></span><div><strong>Blankets</strong><span>Reorder recommended</span></div><span class="ngo-badge ngo-badge-medium">Monitor</span></li></ul></section>
+                <section class="ngo-stack-panel" aria-label="Approval queue"><div class="ngo-stack-head"><h3 class="ngo-stack-title">Approval Queue</h3><div><span class="ngo-count">26</span><a class="ngo-link" href="{% url 'users' %}">View all</a></div></div><ul class="ngo-stack-list"><li class="ngo-stack-item"><span class="ngo-dot is-critical"></span><div><strong>Volunteer verification</strong><span>7 awaiting review</span></div><span class="ngo-badge ngo-badge-critical">Urgent</span></li><li class="ngo-stack-item"><span class="ngo-dot is-warning"></span><div><strong>Activity approvals</strong><span>3 pending sign-off</span></div><span class="ngo-badge ngo-badge-high">High</span></li><li class="ngo-stack-item"><span class="ngo-dot is-success"></span><div><strong>Donation checks</strong><span>11 to validate</span></div><span class="ngo-badge ngo-badge-medium">Queue</span></li></ul></section>
+                <section class="ngo-stack-panel" aria-label="Community moderation"><div class="ngo-stack-head"><h3 class="ngo-stack-title">Community Moderation</h3><div><span class="ngo-count">5</span><a class="ngo-link" href="{% url 'reports' %}?tab=moderation">View all</a></div></div><ul class="ngo-stack-list"><li class="ngo-stack-item"><span class="ngo-dot is-warning"></span><div><strong>Flagged comment</strong><span>Aid misuse claim thread</span></div><span class="ngo-badge ngo-badge-high">Review</span></li><li class="ngo-stack-item"><span class="ngo-dot is-warning"></span><div><strong>Pending post</strong><span>Fundraiser announcement</span></div><span class="ngo-badge ngo-badge-medium">Moderate</span></li><li class="ngo-stack-item"><span class="ngo-dot is-critical"></span><div><strong>Escalated feedback</strong><span>Needs admin response</span></div><span class="ngo-badge ngo-badge-critical">Escalated</span></li></ul></section>
+            </article>
+        </aside>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    "use strict";
+    var chart = null;
+    var donationSeries = {
+        weekly: { labels: ["W1","W2","W3","W4","W5","W6","W7","W8"], values: [12400,13100,13800,14600,15900,16600,17400,18600] },
+        monthly: { labels: ["Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"], values: [102000,109000,114000,122000,131000,139000,146000,153000] }
+    };
+
+    function createDonationChart(canvas) {
+        return new Chart(canvas, {
+            type: "line",
+            data: {
+                labels: donationSeries.weekly.labels,
+                datasets: [{
+                    label: "Donations",
+                    data: donationSeries.weekly.values,
+                    borderColor: "#0f766e",
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    pointHoverRadius: 4,
+                    fill: false,
+                    tension: 0.32
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 900, easing: "easeInOutCubic" },
+                plugins: { legend: { display: false }, tooltip: { backgroundColor: "rgba(15, 23, 42, 0.9)", padding: 10 } },
+                scales: {
+                    x: { ticks: { color: "#64748b", font: { size: 11 } }, grid: { color: "rgba(226, 232, 240, 0.45)", drawBorder: false } },
+                    y: { beginAtZero: true, ticks: { color: "#64748b", font: { size: 11 } }, grid: { color: "rgba(226, 232, 240, 0.45)", drawBorder: false } }
+                }
+            }
+        });
+    }
+
+    function updateRange(range) {
+        var next = donationSeries[range];
+        if (!chart || !next) return;
+        chart.data.labels = next.labels;
+        chart.data.datasets[0].data = next.values;
+        chart.update();
+        document.querySelectorAll(".ngo-toggle-btn").forEach(function (btn) {
+            btn.setAttribute("aria-pressed", String(btn.getAttribute("data-range") === range));
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var canvas = document.getElementById("ngo-donation-chart");
+        if (canvas && typeof Chart !== "undefined") {
+            chart = createDonationChart(canvas);
+            document.querySelectorAll(".ngo-toggle-btn").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    updateRange(btn.getAttribute("data-range") || "weekly");
+                });
+            });
+        }
+
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+        document.dispatchEvent(new Event("admin:panel-rendered"));
+    });
+})();
+</script>
+{% endblock %}
+{% extends "base.html" %}
+
+{% block title %}Dashboard | HappYness{% endblock %}
+
+{% block extra_head %}
+<style>
+    .ngo-dashboard {
+        display: grid;
+        gap: 16px;
+    }
+
+    .ngo-shell {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .ngo-main,
+    .ngo-side {
+        display: grid;
+        gap: 16px;
+    }
+
+    .ngo-panel {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 14px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+        padding: 16px;
+    }
+
+    .ngo-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .ngo-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #14261f;
+    }
+
+    .ngo-subtle {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.75rem;
+    }
+
+    .ngo-link {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #0f766e;
+        text-decoration: none;
+        border-radius: 8px;
+        padding: 4px 8px;
+    }
+
+    .ngo-link:hover {
+        background: rgba(15, 118, 110, 0.08);
+    }
+
+    .ngo-kpis {
+        display: grid;
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .ngo-kpi {
+        border-radius: 12px;
+        padding: 12px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
+    }
+
+    .ngo-kpi-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .ngo-kpi-label {
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: 0.68rem;
+        color: #64748b;
+        font-weight: 700;
+    }
+
+    .ngo-kpi-icon {
+        width: 1.65rem;
+        height: 1.65rem;
+        border-radius: 10px;
+        background: rgba(15, 118, 110, 0.1);
+        color: #0f766e;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .ngo-kpi-icon i {
+        width: 0.85rem;
+        height: 0.85rem;
+    }
+
+    .ngo-kpi-value {
+        margin: 8px 0 0;
+        font-size: 1.6rem;
+        line-height: 1.1;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .ngo-kpi-note {
+        margin: 6px 0 0;
+        font-size: 0.73rem;
+        color: #475569;
+    }
+
+    .ngo-priority-list,
+    .ngo-feed-list,
+    .ngo-stack-list,
+    .ngo-agenda {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 8px;
+    }
+
+    .ngo-priority-item {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .ngo-priority-item:last-child,
+    .ngo-feed-item:last-child,
+    .ngo-stack-item:last-child,
+    .ngo-agenda-item:last-child {
+        border-bottom: 0;
+    }
+
+    .ngo-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+    }
+
+    .is-critical {
+        background: #dc2626;
+    }
+
+    .is-warning {
+        background: #d97706;
+    }
+
+    .is-success {
+        background: #16a34a;
+    }
+
+    .ngo-priority-item strong,
+    .ngo-feed-item strong,
+    .ngo-stack-item strong,
+    .ngo-agenda-item strong {
+        display: block;
+        font-size: 0.82rem;
+        color: #0f172a;
+    }
+
+    .ngo-priority-item span,
+    .ngo-feed-item span,
+    .ngo-stack-item span,
+    .ngo-agenda-item span {
+        font-size: 0.72rem;
+        color: #64748b;
+    }
+
+    .ngo-badge {
+        border-radius: 999px;
+        padding: 4px 8px;
+        font-size: 0.66rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .ngo-badge-critical {
+        color: #991b1b;
+        background: rgba(254, 226, 226, 0.9);
+    }
+
+    .ngo-badge-high {
+        color: #9a3412;
+        background: rgba(255, 237, 213, 0.9);
+    }
+
+    .ngo-badge-medium {
+        color: #92400e;
+        background: rgba(254, 243, 199, 0.9);
+    }
+
+    .ngo-badge-success {
+        color: #166534;
+        background: rgba(220, 252, 231, 0.9);
+    }
+
+    .ngo-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border-radius: 999px;
+        border: 1px solid rgba(15, 118, 110, 0.24);
+        background: rgba(240, 253, 250, 0.9);
+        padding: 2px;
+    }
+
+    .ngo-toggle-btn {
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: #475569;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 4px 9px;
+        cursor: pointer;
+    }
+
+    .ngo-toggle-btn[aria-pressed="true"] {
+        color: #0f766e;
+        background: rgba(15, 118, 110, 0.14);
+    }
+
+    .ngo-chart-wrap {
+        height: 220px;
+    }
+
+    .ngo-feed-item,
+    .ngo-stack-item,
+    .ngo-agenda-item {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    }
+
+    .ngo-feed-icon,
+    .ngo-agenda-time {
+        width: 1.55rem;
+        height: 1.55rem;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(15, 118, 110, 0.1);
+        color: #0f766e;
+        flex-shrink: 0;
+    }
+
+    .ngo-feed-icon i {
+        width: 0.78rem;
+        height: 0.78rem;
+    }
+
+    .ngo-agenda-time {
+        width: auto;
+        min-width: 52px;
+        font-size: 0.67rem;
+        font-weight: 700;
+        padding: 0 6px;
+    }
+
+    .ngo-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .ngo-action-btn {
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        border-radius: 12px;
+        background: #ffffff;
+        color: #1e293b;
+        min-height: 66px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .ngo-action-btn i {
+        width: 0.86rem;
+        height: 0.86rem;
+    }
+
+    .ngo-action-btn:hover {
+        background: rgba(248, 250, 252, 0.9);
+    }
+
+    .ngo-action-btn.is-primary {
+        border-color: rgba(15, 118, 110, 0.35);
+        background: rgba(15, 118, 110, 0.1);
+        color: #0f766e;
+    }
+
+    .ngo-stack-panel {
+        padding-top: 12px;
+        border-top: 1px solid rgba(148, 163, 184, 0.18);
+    }
+
+    .ngo-stack-panel:first-child {
+        border-top: 0;
+        padding-top: 0;
+    }
+
+    .ngo-stack-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 6px;
+    }
+
+    .ngo-stack-title {
+        margin: 0;
+        font-size: 0.83rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .ngo-count {
+        border-radius: 999px;
+        background: rgba(15, 118, 110, 0.12);
+        color: #0f766e;
+        font-size: 0.66rem;
+        font-weight: 700;
+        padding: 3px 8px;
+    }
+
+    @media (min-width: 760px) {
+        .ngo-kpis {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1200px) {
+        .ngo-shell {
+            grid-template-columns: minmax(0, 1.86fr) minmax(0, 1fr);
+            gap: 16px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ngo-dashboard" id="ngo-dashboard">
+    <section class="ngo-kpis" aria-label="Top metrics">
+        <article class="ngo-panel ngo-kpi">
+            <div class="ngo-kpi-head">
+                <p class="ngo-kpi-label">Active Volunteers</p>
+                <span class="ngo-kpi-icon" aria-hidden="true"><i data-lucide="user-check"></i></span>
+            </div>
+            <p class="ngo-kpi-value">214</p>
+            <p class="ngo-kpi-note">+9 this week</p>
+        </article>
+
+        <article class="ngo-panel ngo-kpi">
+            <div class="ngo-kpi-head">
+                <p class="ngo-kpi-label">Active Beneficiaries</p>
+                <span class="ngo-kpi-icon" aria-hidden="true"><i data-lucide="heart-handshake"></i></span>
+            </div>
+            <p class="ngo-kpi-value">386</p>
+            <p class="ngo-kpi-note">+17 this cycle</p>
+        </article>
+
+        <article class="ngo-panel ngo-kpi">
+            <div class="ngo-kpi-head">
+                <p class="ngo-kpi-label">Donations This Month</p>
+                <span class="ngo-kpi-icon" aria-hidden="true"><i data-lucide="hand-coins"></i></span>
+            </div>
+            <p class="ngo-kpi-value">PHP 248,400</p>
+            <p class="ngo-kpi-note">+12.4% vs last month</p>
+        </article>
+
+        <article class="ngo-panel ngo-kpi">
+            <div class="ngo-kpi-head">
+                <p class="ngo-kpi-label">Pending Approvals</p>
+                <span class="ngo-kpi-icon" aria-hidden="true"><i data-lucide="shield-alert"></i></span>
+            </div>
+            <p class="ngo-kpi-value">26</p>
+            <p class="ngo-kpi-note">6 require urgent review</p>
+        </article>
+    </section>
+
+    <section class="ngo-shell" aria-label="Monitor triage act layout">
+        <div class="ngo-main">
+            <article class="ngo-panel" aria-labelledby="priority-title">
+                <div class="ngo-title-row">
+                    <div>
+                        <h2 id="priority-title" class="ngo-title">Priority Tasks</h2>
+                        <p class="ngo-subtle">Triage and handle urgent operations first</p>
+                    </div>
+                </div>
+
+                <ul class="ngo-priority-list">
+                    <li class="ngo-priority-item">
+                        <span class="ngo-dot is-critical" aria-hidden="true"></span>
+                        <div>
+                            <strong>Volunteer approvals pending</strong>
+                            <span>7 new volunteer profiles await identity verification.</span>
+                        </div>
+                        <span class="ngo-badge ngo-badge-critical">Critical</span>
+                    </li>
+                    <li class="ngo-priority-item">
+                        <span class="ngo-dot is-warning" aria-hidden="true"></span>
+                        <div>
+                            <strong>Activity approvals</strong>
+                            <span>3 community events need policy and safety sign-off.</span>
+                        </div>
+                        <span class="ngo-badge ngo-badge-high">High</span>
+                    </li>
+                    <li class="ngo-priority-item">
+                        <span class="ngo-dot is-warning" aria-hidden="true"></span>
+                        <div>
+                            <strong>Low stock alerts</strong>
+                            <span>Hygiene kits and rice packs are below minimum threshold.</span>
+                        </div>
+                        <span class="ngo-badge ngo-badge-high">High</span>
+                    </li>
+                    <li class="ngo-priority-item">
+                        <span class="ngo-dot is-success" aria-hidden="true"></span>
+                        <div>
+                            <strong>Reports due</strong>
+                            <span>Weekly outreach report is due by 4:00 PM.</span>
+                        </div>
+                        <span class="ngo-badge ngo-badge-success">Due Today</span>
+                    </li>
+                </ul>
+            </article>
+
+            <article class="ngo-panel" aria-labelledby="donation-trend-title">
+                <div class="ngo-title-row">
+                    <div>
+                        <h2 id="donation-trend-title" class="ngo-title">Donations Trend</h2>
+                        <p class="ngo-subtle">Monitor contribution momentum over time</p>
+                    </div>
+                    <div class="ngo-toggle" role="group" aria-label="Donation trend range">
+                        <button type="button" class="ngo-toggle-btn" data-range="weekly" aria-pressed="true">Weekly</button>
+                        <button type="button" class="ngo-toggle-btn" data-range="monthly" aria-pressed="false">Monthly</button>
+                    </div>
+                </div>
+                <div class="ngo-chart-wrap">
+                    <canvas id="ngo-donation-chart" role="img" aria-label="Donations trend line chart"></canvas>
+                </div>
+            </article>
+
+            <article class="ngo-panel" aria-labelledby="activity-feed-title">
+                <div class="ngo-title-row">
+                    <div>
+                        <h2 id="activity-feed-title" class="ngo-title">Recent Activity</h2>
+                        <p class="ngo-subtle">Live operational updates across the platform</p>
+                    </div>
+                </div>
+
+                <ul class="ngo-feed-list">
+                    <li class="ngo-feed-item">
+                        <span class="ngo-feed-icon"><i data-lucide="badge-check"></i></span>
+                        <div>
+                            <strong>Donation verified from Redwood Trust</strong>
+                            <span>8 minutes ago</span>
+                        </div>
+                        <span class="ngo-badge ngo-badge-success">Done</span>
+                    </li>
+                    <li class="ngo-feed-item">
+                        <span class="ngo-feed-icon"><i data-lucide="clipboard-check"></i></span>
+                        <div>
+                            <strong>Volunteer assigned to Barangay outreach</strong>
+                            <span>15 minutes ago</span>
+                        </div>
+                        <span class="ngo-badge ngo-badge-success">Assigned</span>
+                    </li>
+                    <li class="ngo-feed-item">
+                        <span class="ngo-feed-icon"><i data-lucide="package"></i></span>
+                        <div>
+                            <strong>Inventory intake updated for Hygiene Kits</strong>
+                            <span>26 minutes ago</span>
+                        </div>
+                        <span class="ngo-badge ngo-badge-medium">Updated</span>
+                    </li>
+                    <li class="ngo-feed-item">
+                        <span class="ngo-feed-icon"><i data-lucide="alert-triangle"></i></span>
+                        <div>
+                            <strong>Comment escalated for moderation review</strong>
+                            <span>43 minutes ago</span>
+                        </div>
+                        <span class="ngo-badge ngo-badge-high">Escalated</span>
+                    </li>
+                </ul>
+            </article>
+        </div>
+
+        <aside class="ngo-side" aria-label="Supporting panels and actions">
+            <article class="ngo-panel" aria-labelledby="today-schedule-title">
+                <div class="ngo-title-row">
+                    <div>
+                        <h2 id="today-schedule-title" class="ngo-title">Today's Schedule</h2>
+                        <p class="ngo-subtle">Agenda view of upcoming commitments</p>
+                    </div>
+                </div>
+
+                <ul class="ngo-agenda">
+                    <li class="ngo-agenda-item">
+                        <span class="ngo-agenda-time">09:00</span>
+                        <div>
+                            <strong>Relief Packing Briefing</strong>
+                            <span>Warehouse A</span>
+                        </div>
+                        <span class="ngo-badge ngo-badge-medium">Ops</span>
+                    </li>
+                    <li class="ngo-agenda-item">
+                        <span class="ngo-agenda-time">11:30</span>
+                        <div>
+                            <strong>Donor Verification Checkpoint</strong>
+                            <span>Finance Desk</span>
+                        </div>
+                        <span class="ngo-badge ngo-badge-high">Review</span>
+                    </li>
+                    <li class="ngo-agenda-item">
+                        <span class="ngo-agenda-time">14:00</span>
+                        <div>
+                            <strong>Volunteer Orientation</strong>
+                            <span>Community Hall</span>
+                        </div>
+                        <span class="ngo-badge ngo-badge-success">Ready</span>
+                    </li>
+                    <li class="ngo-agenda-item">
+                        <span class="ngo-agenda-time">16:00</span>
+                        <div>
+                            <strong>Reports Sign-off</strong>
+                            <span>Operations Office</span>
+                        </div>
+                        <span class="ngo-badge ngo-badge-medium">Due</span>
+                    </li>
+                </ul>
+            </article>
+
+            <article class="ngo-panel" aria-labelledby="quick-actions-title">
+                <div class="ngo-title-row">
+                    <h2 id="quick-actions-title" class="ngo-title">Quick Actions</h2>
+                </div>
+                <div class="ngo-actions-grid">
+                    <button type="button" class="ngo-action-btn is-primary"><i data-lucide="calendar-plus"></i><span>Add Activity</span></button>
+                    <button type="button" class="ngo-action-btn"><i data-lucide="badge-dollar-sign"></i><span>Record Donation</span></button>
+                    <button type="button" class="ngo-action-btn"><i data-lucide="user-plus"></i><span>Add Beneficiary</span></button>
+                    <button type="button" class="ngo-action-btn"><i data-lucide="user-check"></i><span>Assign Volunteer</span></button>
+                    <button type="button" class="ngo-action-btn"><i data-lucide="megaphone"></i><span>Post Announcement</span></button>
+                    <button type="button" class="ngo-action-btn"><i data-lucide="file-chart-column"></i><span>Generate Report</span></button>
+                </div>
+            </article>
+
+            <article class="ngo-panel" aria-labelledby="ops-panels-title">
+                <div class="ngo-title-row">
+                    <h2 id="ops-panels-title" class="ngo-title">Operational Panels</h2>
+                </div>
+
+                <section class="ngo-stack-panel" aria-label="Inventory alerts">
+                    <div class="ngo-stack-head">
+                        <h3 class="ngo-stack-title">Inventory Alerts</h3>
+                        <div>
+                            <span class="ngo-count">12</span>
+                            <a class="ngo-link" href="{% url 'inventory' %}">View all</a>
+                        </div>
+                    </div>
+                    <ul class="ngo-stack-list">
+                        <li class="ngo-stack-item"><span class="ngo-dot is-critical"></span><div><strong>Hygiene Kits</strong><span>18 units left</span></div><span class="ngo-badge ngo-badge-critical">Critical</span></li>
+                        <li class="ngo-stack-item"><span class="ngo-dot is-warning"></span><div><strong>Rice Packs</strong><span>42 units left</span></div><span class="ngo-badge ngo-badge-high">Low</span></li>
+                        <li class="ngo-stack-item"><span class="ngo-dot is-warning"></span><div><strong>Blankets</strong><span>Reorder recommended</span></div><span class="ngo-badge ngo-badge-medium">Monitor</span></li>
+                    </ul>
+                </section>
+
+                <section class="ngo-stack-panel" aria-label="Approval queue">
+                    <div class="ngo-stack-head">
+                        <h3 class="ngo-stack-title">Approval Queue</h3>
+                        <div>
+                            <span class="ngo-count">26</span>
+                            <a class="ngo-link" href="{% url 'users' %}">View all</a>
+                        </div>
+                    </div>
+                    <ul class="ngo-stack-list">
+                        <li class="ngo-stack-item"><span class="ngo-dot is-critical"></span><div><strong>Volunteer verification</strong><span>7 awaiting review</span></div><span class="ngo-badge ngo-badge-critical">Urgent</span></li>
+                        <li class="ngo-stack-item"><span class="ngo-dot is-warning"></span><div><strong>Activity approvals</strong><span>3 pending sign-off</span></div><span class="ngo-badge ngo-badge-high">High</span></li>
+                        <li class="ngo-stack-item"><span class="ngo-dot is-success"></span><div><strong>Donation checks</strong><span>11 to validate</span></div><span class="ngo-badge ngo-badge-medium">Queue</span></li>
+                    </ul>
+                </section>
+
+                <section class="ngo-stack-panel" aria-label="Community moderation">
+                    <div class="ngo-stack-head">
+                        <h3 class="ngo-stack-title">Community Moderation</h3>
+                        <div>
+                            <span class="ngo-count">5</span>
+                            <a class="ngo-link" href="{% url 'reports' %}?tab=moderation">View all</a>
+                        </div>
+                    </div>
+                    <ul class="ngo-stack-list">
+                        <li class="ngo-stack-item"><span class="ngo-dot is-warning"></span><div><strong>Flagged comment</strong><span>Aid misuse claim thread</span></div><span class="ngo-badge ngo-badge-high">Review</span></li>
+                        <li class="ngo-stack-item"><span class="ngo-dot is-warning"></span><div><strong>Pending post</strong><span>Fundraiser announcement</span></div><span class="ngo-badge ngo-badge-medium">Moderate</span></li>
+                        <li class="ngo-stack-item"><span class="ngo-dot is-critical"></span><div><strong>Escalated feedback</strong><span>Needs admin response</span></div><span class="ngo-badge ngo-badge-critical">Escalated</span></li>
+                    </ul>
+                </section>
+            </article>
+        </aside>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    "use strict";
+
+    var chart = null;
+
+    var donationSeries = window.dashboardChartSeries && window.dashboardChartSeries.donations ? window.dashboardChartSeries.donations : {
+        weekly: { labels: [], values: [] },
+        monthly: { labels: [], values: [] }
+    };
+
+    function createDonationChart(canvas) {
+        if (!canvas || typeof Chart === "undefined") return null;
+        return new Chart(canvas, {
+            type: "line",
+            data: {
+                labels: donationSeries.weekly.labels,
+                datasets: [{
+                    label: "Donations",
+                    data: donationSeries.weekly.values,
+                    borderColor: "#0f766e",
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    pointHoverRadius: 4,
+                    fill: false,
+                    tension: 0.32
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 900,
+                    easing: "easeInOutCubic"
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: "rgba(15, 23, 42, 0.9)",
+                        padding: 10
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: "#64748b", font: { size: 11 } },
+                        grid: { color: "rgba(226, 232, 240, 0.45)", drawBorder: false }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: "#64748b", font: { size: 11 } },
+                        grid: { color: "rgba(226, 232, 240, 0.45)", drawBorder: false }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateRange(range) {
+        var next = donationSeries[range];
+        if (!chart || !next) {
+            return;
+        }
+
+        chart.data.labels = next.labels;
+        chart.data.datasets[0].data = next.values;
+        chart.update();
+
+        document.querySelectorAll(".ngo-toggle-btn").forEach(function (btn) {
+            btn.setAttribute("aria-pressed", String(btn.getAttribute("data-range") === range));
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var canvas = document.getElementById("ngo-donation-chart");
+
+        if (canvas && typeof Chart !== "undefined") {
+            chart = createDonationChart(canvas);
+
+            document.querySelectorAll(".ngo-toggle-btn").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    updateRange(btn.getAttribute("data-range") || "weekly");
+                });
+            });
+        }
+
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+
+        document.dispatchEvent(new Event("admin:panel-rendered"));
+    });
+})();
+</script>
+{% endblock %}
+        border-radius: 999px;
+        background: linear-gradient(135deg, #0f766e, #14b8a6);
+        color: #ffffff;
+        font-size: 0.68rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .ops-profile-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 0.4rem);
+        min-width: 170px;
+        border-radius: 0.8rem;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        background: #ffffff;
+        box-shadow: 0 12px 28px rgba(5, 46, 43, 0.14);
+        padding: 0.35rem;
+        display: none;
+        z-index: 20;
+    }
+
+    .ops-profile-menu[data-open="true"] {
+        display: block;
+    }
+
+    .ops-profile-menu a {
+        display: block;
+        border-radius: 0.55rem;
+        color: #264f45;
+        font-size: 0.8rem;
+        text-decoration: none;
+        padding: 0.42rem 0.5rem;
+    }
+
+    .ops-profile-menu a:hover {
+        background: rgba(16, 185, 129, 0.1);
+    }
+
+    .ops-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .ops-kpi {
+        padding: 0.8rem;
+    }
+
+    .ops-kpi-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.45rem;
+    }
+
+    .ops-kpi-label {
+        margin: 0;
+        color: #5f7f74;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: 700;
+    }
+
+    .ops-kpi-icon {
+        width: 1.8rem;
+        height: 1.8rem;
+        border-radius: 0.65rem;
+        background: rgba(16, 185, 129, 0.14);
+        color: #0f766e;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .ops-kpi-icon i {
+        width: 0.95rem;
+        height: 0.95rem;
+    }
+
+    .ops-kpi-value {
+        margin: 0.35rem 0 0;
+        color: #10241f;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .ops-kpi-trend {
+        margin: 0.3rem 0 0;
+        font-size: 0.76rem;
+        color: #0f766e;
+        font-weight: 600;
+    }
+
+    .ops-grid-main {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.9rem;
+    }
+
+    .ops-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .ops-card-title {
+        margin: 0;
+        color: #10241f;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .ops-card-sub {
+        margin: 0;
+        color: #6a847b;
+        font-size: 0.75rem;
+    }
+
+    .ops-chip {
+        border-radius: 999px;
+        border: 1px solid rgba(16, 185, 129, 0.28);
+        background: rgba(236, 253, 245, 0.85);
+        color: #0f766e;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.22rem 0.5rem;
+    }
+
+    .ops-priority-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .ops-priority-item {
+        border: 1px solid rgba(16, 185, 129, 0.15);
+        border-radius: 0.72rem;
+        background: rgba(255, 255, 255, 0.88);
+        padding: 0.52rem 0.58rem;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 0.48rem;
+        align-items: center;
+    }
+
+    .ops-priority-item strong {
+        font-size: 0.82rem;
+        color: #163a32;
+    }
+
+    .ops-priority-meta {
+        font-size: 0.73rem;
+        color: #5f7f74;
+    }
+
+    .ops-severity {
+        width: 0.56rem;
+        height: 0.56rem;
+        border-radius: 999px;
+    }
+
+    .ops-severity-critical {
+        background: #dc2626;
+    }
+
+    .ops-severity-high {
+        background: #ea580c;
+    }
+
+    .ops-severity-medium {
+        background: #d97706;
+    }
+
+    .ops-severity-low {
+        background: #16a34a;
+    }
+
+    .ops-badge {
+        border-radius: 999px;
+        padding: 0.2rem 0.5rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .ops-badge-critical {
+        color: #991b1b;
+        background: rgba(254, 226, 226, 0.9);
+    }
+
+    .ops-badge-high {
+        color: #9a3412;
+        background: rgba(255, 237, 213, 0.95);
+    }
+
+    .ops-badge-medium {
+        color: #92400e;
+        background: rgba(254, 243, 199, 0.95);
+    }
+
+    .ops-badge-ok {
+        color: #166534;
+        background: rgba(220, 252, 231, 0.95);
+    }
+
+    .ops-schedule-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.65rem;
+    }
+
+    .ops-calendar {
+        border: 1px solid rgba(16, 185, 129, 0.16);
+        border-radius: 0.75rem;
+        padding: 0.6rem;
+        background: rgba(236, 253, 245, 0.45);
+    }
+
+    .ops-calendar-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.42rem;
+        color: #0f766e;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .ops-calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 0.2rem;
+    }
+
+    .ops-day-label,
+    .ops-day-cell {
+        text-align: center;
+        font-size: 0.68rem;
+        border-radius: 0.4rem;
+        padding: 0.24rem 0;
+    }
+
+    .ops-day-label {
+        color: #5f7f74;
+        font-weight: 700;
+    }
+
+    .ops-day-cell {
+        color: #30574d;
+    }
+
+    .ops-day-cell.is-today {
+        background: rgba(16, 185, 129, 0.2);
+        color: #065f46;
+        font-weight: 700;
+    }
+
+    .ops-day-cell.has-event {
+        border: 1px solid rgba(16, 185, 129, 0.34);
+        background: rgba(236, 253, 245, 0.9);
+    }
+
+    .ops-schedule-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 0.35rem;
+    }
+
+    .ops-schedule-list li {
+        border: 1px solid rgba(16, 185, 129, 0.16);
+        border-radius: 0.62rem;
+        background: #ffffff;
+        padding: 0.45rem 0.52rem;
+    }
+
+    .ops-schedule-list strong {
+        display: block;
+        color: #15372f;
+        font-size: 0.8rem;
+    }
+
+    .ops-schedule-list span {
+        color: #5f7f74;
+        font-size: 0.72rem;
+    }
+
+    .ops-analytics-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.9rem;
+    }
+
+    .ops-analytics-card {
+        padding: 0.8rem;
+    }
+
+    .ops-range-tabs {
+        display: inline-flex;
+        gap: 0.22rem;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        border-radius: 999px;
+        padding: 0.12rem;
+        background: rgba(236, 253, 245, 0.55);
+    }
+
+    .ops-range-tab {
+        border: 0;
+        background: transparent;
+        border-radius: 999px;
+        color: #4f7468;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.3rem 0.55rem;
+        cursor: pointer;
+    }
+
+    .ops-range-tab[aria-pressed="true"] {
+        background: rgba(16, 185, 129, 0.18);
+        color: #0f766e;
+    }
+
+    .ops-chart-wrap {
+        height: 250px;
+    }
+
+    .ops-bottom-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.9rem;
+    }
+
+    .ops-panel-body {
+        padding: 0.8rem;
+    }
+
+    .ops-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .ops-table th,
+    .ops-table td {
+        text-align: left;
+        padding: 0.44rem 0.18rem;
+        border-bottom: 1px solid rgba(16, 185, 129, 0.12);
+        font-size: 0.75rem;
+        color: #2a5046;
+    }
+
+    .ops-table th {
+        color: #5f7f74;
+        font-size: 0.69rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .ops-feed,
+    .ops-queue {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 0.36rem;
+    }
+
+    .ops-feed li,
+    .ops-queue li {
+        border: 1px solid rgba(16, 185, 129, 0.14);
+        border-radius: 0.66rem;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 0.5rem 0.56rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .ops-feed p,
+    .ops-queue p {
+        margin: 0;
+        font-size: 0.78rem;
+        color: #173d34;
+        font-weight: 600;
+    }
+
+    .ops-feed small,
+    .ops-queue small {
+        color: #6a847b;
+        font-size: 0.7rem;
+    }
+
+    .ops-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.45rem;
+        padding: 0.8rem;
+    }
+
+    .ops-action-btn {
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        border-radius: 0.72rem;
+        background: #ffffff;
+        color: #145046;
+        font-size: 0.77rem;
+        font-weight: 700;
+        min-height: 2.2rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.34rem;
+        cursor: pointer;
+    }
+
+    .ops-action-btn:hover {
+        background: rgba(236, 253, 245, 0.8);
+    }
+
+    .ops-action-btn i {
+        width: 0.82rem;
+        height: 0.82rem;
+    }
+
+    .ops-toast {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 60;
+        border-radius: 0.7rem;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        background: rgba(5, 150, 105, 0.95);
+        color: #ffffff;
+        font-size: 0.8rem;
+        padding: 0.58rem 0.72rem;
+        opacity: 0;
+        transform: translateY(8px);
+        transition: opacity 170ms ease, transform 170ms ease;
+        pointer-events: none;
+    }
+
+    .ops-toast[data-show="true"] {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    @media (min-width: 768px) {
+        .ops-kpi-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .ops-schedule-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .ops-actions-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1200px) {
+        .ops-grid-main {
+            grid-template-columns: 2fr 1.2fr;
+        }
+
+        .ops-analytics-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .ops-bottom-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ops-dashboard" id="ops-dashboard">
+    <section class="ops-kpi-grid" role="region" aria-label="Key indicators">
+        <article class="ops-card ops-kpi">
+            <div class="ops-kpi-head">
+                <p class="ops-kpi-label">Active Volunteers</p>
+                <span class="ops-kpi-icon"><i data-lucide="user-check"></i></span>
+            </div>
+            <p class="ops-kpi-value">214</p>
+            <p class="ops-kpi-trend">+9 this week</p>
+        </article>
+        <article class="ops-card ops-kpi">
+            <div class="ops-kpi-head">
+                <p class="ops-kpi-label">Active Beneficiaries</p>
+                <span class="ops-kpi-icon"><i data-lucide="heart-handshake"></i></span>
+            </div>
+            <p class="ops-kpi-value">386</p>
+            <p class="ops-kpi-trend">+17 in intake cycle</p>
+        </article>
+        <article class="ops-card ops-kpi">
+            <div class="ops-kpi-head">
+                <p class="ops-kpi-label">Donations This Month</p>
+                <span class="ops-kpi-icon"><i data-lucide="hand-coins"></i></span>
+            </div>
+            <p class="ops-kpi-value">PHP 248,400</p>
+            <p class="ops-kpi-trend">+12.4% vs last month</p>
+        </article>
+        <article class="ops-card ops-kpi">
+            <div class="ops-kpi-head">
+                <p class="ops-kpi-label">Low Stock Items</p>
+                <span class="ops-kpi-icon"><i data-lucide="package-search"></i></span>
+            </div>
+            <p class="ops-kpi-value">12</p>
+            <p class="ops-kpi-trend">4 critical replenishments</p>
+        </article>
+        <article class="ops-card ops-kpi">
+            <div class="ops-kpi-head">
+                <p class="ops-kpi-label">Upcoming Activities</p>
+                <span class="ops-kpi-icon"><i data-lucide="calendar-check-2"></i></span>
+            </div>
+            <p class="ops-kpi-value">8</p>
+            <p class="ops-kpi-trend">3 happening this weekend</p>
+        </article>
+        <article class="ops-card ops-kpi">
+            <div class="ops-kpi-head">
+                <p class="ops-kpi-label">Pending Approvals</p>
+                <span class="ops-kpi-icon"><i data-lucide="shield-alert"></i></span>
+            </div>
+            <p class="ops-kpi-value">26</p>
+            <p class="ops-kpi-trend">Requires review today</p>
+        </article>
+    </section>
+
+    <section class="ops-grid-main" aria-label="Priority and schedule panels">
+        <article class="ops-card" style="padding: 0.8rem;" aria-labelledby="ops-priority-title">
+            <div class="ops-card-head">
+                <div>
+                    <h2 id="ops-priority-title" class="ops-card-title">Today's Priorities</h2>
+                    <p class="ops-card-sub">Urgent tasks requiring admin action</p>
+                </div>
+                <span class="ops-chip">6 urgent</span>
+            </div>
+            <ul class="ops-priority-list">
+                <li class="ops-priority-item"><span class="ops-severity ops-severity-critical"></span><div><strong>Volunteer approvals pending</strong><p class="ops-priority-meta">7 profiles awaiting verification</p></div><span class="ops-badge ops-badge-critical">Critical</span></li>
+                <li class="ops-priority-item"><span class="ops-severity ops-severity-high"></span><div><strong>Activity approvals</strong><p class="ops-priority-meta">3 community events pending sign-off</p></div><span class="ops-badge ops-badge-high">High</span></li>
+                <li class="ops-priority-item"><span class="ops-severity ops-severity-high"></span><div><strong>Low stock alerts</strong><p class="ops-priority-meta">Hygiene kits and rice packs below threshold</p></div><span class="ops-badge ops-badge-high">High</span></li>
+                <li class="ops-priority-item"><span class="ops-severity ops-severity-medium"></span><div><strong>Donation verification</strong><p class="ops-priority-meta">11 transfers need receipt matching</p></div><span class="ops-badge ops-badge-medium">Medium</span></li>
+                <li class="ops-priority-item"><span class="ops-severity ops-severity-medium"></span><div><strong>Beneficiary requests</strong><p class="ops-priority-meta">9 assistance requests pending screening</p></div><span class="ops-badge ops-badge-medium">Medium</span></li>
+                <li class="ops-priority-item"><span class="ops-severity ops-severity-low"></span><div><strong>Reports due</strong><p class="ops-priority-meta">Weekly outreach KPI summary due 4:00 PM</p></div><span class="ops-badge ops-badge-ok">Due today</span></li>
+            </ul>
+        </article>
+
+        <article class="ops-card" style="padding: 0.8rem;" aria-labelledby="ops-schedule-title">
+            <div class="ops-card-head">
+                <div>
+                    <h2 id="ops-schedule-title" class="ops-card-title">Upcoming Schedule</h2>
+                    <p class="ops-card-sub">This week's activity and review slots</p>
+                </div>
+                <span class="ops-chip">5 events</span>
+            </div>
+            <div class="ops-schedule-grid">
+                <div class="ops-calendar">
+                    <div class="ops-calendar-head">
+                        <span id="ops-calendar-month">Month</span>
+                        <span>2026</span>
+                    </div>
+                    <div class="ops-calendar-grid" id="ops-calendar-grid" aria-label="Mini calendar"></div>
+                </div>
+                <ul class="ops-schedule-list">
+                    <li><strong>Barangay Relief Packing</strong><span>09:00 AM - Warehouse A</span></li>
+                    <li><strong>Donor Verification Checkpoint</strong><span>11:30 AM - Finance Desk</span></li>
+                    <li><strong>Volunteer Orientation</strong><span>02:00 PM - Community Hall</span></li>
+                    <li><strong>Beneficiary Case Review</strong><span>03:30 PM - Program Office</span></li>
+                    <li><strong>Moderation Sweep</strong><span>05:00 PM - Community Portal</span></li>
+                </ul>
+            </div>
+        </article>
+    </section>
+
+    <section class="ops-analytics-grid" aria-label="Analytics trends">
+        <article class="ops-card ops-analytics-card" aria-labelledby="ops-donation-chart-title">
+            <div class="ops-card-head">
+                <div>
+                    <h2 id="ops-donation-chart-title" class="ops-card-title">Donations Trend</h2>
+                    <p class="ops-card-sub">Amount trend by reporting range</p>
+                </div>
+                <div class="ops-range-tabs" role="group" aria-label="Donations trend range">
+                    <button type="button" class="ops-range-tab" data-chart="donations" data-range="weekly" aria-pressed="true">Weekly</button>
+                    <button type="button" class="ops-range-tab" data-chart="donations" data-range="monthly" aria-pressed="false">Monthly</button>
+                </div>
+            </div>
+            <div class="ops-chart-wrap"><canvas id="ops-donations-chart" role="img" aria-label="Donations trend chart"></canvas></div>
+        </article>
+
+        <article class="ops-card ops-analytics-card" aria-labelledby="ops-vol-chart-title">
+            <div class="ops-card-head">
+                <div>
+                    <h2 id="ops-vol-chart-title" class="ops-card-title">Volunteer Participation Trend</h2>
+                    <p class="ops-card-sub">Participation count progression</p>
+                </div>
+                <div class="ops-range-tabs" role="group" aria-label="Volunteer trend range">
+                    <button type="button" class="ops-range-tab" data-chart="volunteers" data-range="weekly" aria-pressed="true">Weekly</button>
+                    <button type="button" class="ops-range-tab" data-chart="volunteers" data-range="monthly" aria-pressed="false">Monthly</button>
+                </div>
+            </div>
+            <div class="ops-chart-wrap"><canvas id="ops-volunteers-chart" role="img" aria-label="Volunteer participation trend chart"></canvas></div>
+        </article>
+    </section>
+
+    <section class="ops-bottom-grid" aria-label="Operational panels">
+        <article class="ops-card ops-panel-body" aria-labelledby="ops-inventory-status-title">
+            <div class="ops-card-head">
+                <h3 id="ops-inventory-status-title" class="ops-card-title">Inventory Status</h3>
+                <a href="{% url 'inventory' %}" class="ops-chip">Open</a>
+            </div>
+            <table class="ops-table">
+                <thead><tr><th>Item</th><th>Status</th><th>Stock</th></tr></thead>
+                <tbody>
+                    <tr><td>Hygiene Kits</td><td><span class="ops-badge ops-badge-critical">Critical</span></td><td>18</td></tr>
+                    <tr><td>Rice Packs</td><td><span class="ops-badge ops-badge-high">Low</span></td><td>42</td></tr>
+                    <tr><td>First-Aid Supplies</td><td><span class="ops-badge ops-badge-medium">Monitor</span></td><td>67</td></tr>
+                    <tr><td>Blankets</td><td><span class="ops-badge ops-badge-ok">Healthy</span></td><td>126</td></tr>
+                </tbody>
+            </table>
+        </article>
+
+        <article class="ops-card ops-panel-body" aria-labelledby="ops-approval-title">
+            <div class="ops-card-head">
+                <h3 id="ops-approval-title" class="ops-card-title">Approval Queue</h3>
+                <span class="ops-chip">26 pending</span>
+            </div>
+            <ul class="ops-queue">
+                <li><div><p>Volunteer verification: Camila D.</p><small>Submitted 34m ago</small></div><span class="ops-badge ops-badge-critical">Review</span></li>
+                <li><div><p>Activity request: Mobile Clinic #17</p><small>Submitted 1h ago</small></div><span class="ops-badge ops-badge-high">Approve</span></li>
+                <li><div><p>Beneficiary aid request: Case BR-1902</p><small>Submitted 2h ago</small></div><span class="ops-badge ops-badge-medium">Screen</span></li>
+            </ul>
+        </article>
+
+        <article class="ops-card ops-panel-body" aria-labelledby="ops-feed-title">
+            <div class="ops-card-head">
+                <h3 id="ops-feed-title" class="ops-card-title">Recent Activity Feed</h3>
+                <span class="ops-chip">Live</span>
+            </div>
+            <ul class="ops-feed">
+                <li><div><p>Donation verified from Redwood Trust</p><small>8 minutes ago</small></div><span class="ops-badge ops-badge-ok">Done</span></li>
+                <li><div><p>Volunteer assigned to Saturday outreach</p><small>15 minutes ago</small></div><span class="ops-badge ops-badge-ok">Assigned</span></li>
+                <li><div><p>Inventory update from warehouse intake</p><small>26 minutes ago</small></div><span class="ops-badge ops-badge-medium">Updated</span></li>
+            </ul>
+        </article>
+
+        <article class="ops-card ops-panel-body" aria-labelledby="ops-mod-title">
+            <div class="ops-card-head">
+                <h3 id="ops-mod-title" class="ops-card-title">Community Moderation</h3>
+                <span class="ops-chip">5 flagged</span>
+            </div>
+            <ul class="ops-queue">
+                <li><div><p>Comment flagged: aid misuse claim</p><small>Awaiting context review</small></div><span class="ops-badge ops-badge-high">Investigate</span></li>
+                <li><div><p>Post pending: fundraiser announcement</p><small>Needs policy check</small></div><span class="ops-badge ops-badge-medium">Moderate</span></li>
+                <li><div><p>Feedback thread escalation</p><small>Requires admin response</small></div><span class="ops-badge ops-badge-critical">Escalated</span></li>
+            </ul>
+        </article>
+    </section>
+
+    <section class="ops-card" aria-labelledby="ops-quick-actions-title">
+        <div class="ops-card-head" style="padding: 0.8rem 0.8rem 0;">
+            <h3 id="ops-quick-actions-title" class="ops-card-title">Quick Actions</h3>
+            <span class="ops-chip">Direct shortcuts</span>
+        </div>
+        <div class="ops-actions-grid">
+            <button type="button" class="ops-action-btn" data-quick-action="Add Activity"><i data-lucide="calendar-plus"></i><span>Add Activity</span></button>
+            <button type="button" class="ops-action-btn" data-quick-action="Record Donation"><i data-lucide="badge-dollar-sign"></i><span>Record Donation</span></button>
+            <button type="button" class="ops-action-btn" data-quick-action="Add Beneficiary"><i data-lucide="user-plus"></i><span>Add Beneficiary</span></button>
+            <button type="button" class="ops-action-btn" data-quick-action="Assign Volunteer"><i data-lucide="user-check-2"></i><span>Assign Volunteer</span></button>
+            <button type="button" class="ops-action-btn" data-quick-action="Post Announcement"><i data-lucide="megaphone"></i><span>Post Announcement</span></button>
+            <button type="button" class="ops-action-btn" data-quick-action="Generate Report"><i data-lucide="file-chart-column"></i><span>Generate Report</span></button>
+        </div>
+    </section>
+</div>
+
+<div class="ops-toast" id="ops-toast" data-show="false" aria-live="polite"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    "use strict";
+
+    var chartState = {
+        donationsRange: "weekly",
+        volunteersRange: "weekly"
+    };
+
+    var series = window.dashboardChartSeries || {
+        donations: {
+            weekly: { labels: [], values: [] },
+            monthly: { labels: [], values: [] }
+        },
+        volunteers: {
+            weekly: { labels: [], values: [] },
+            monthly: { labels: [], values: [] }
+        }
+    };
+
+    var donationsChart = null;
+    var volunteersChart = null;
+
+    function buildChart(canvas, label, color, values, labels) {
+        return new Chart(canvas, {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: label,
+                    data: values,
+                    borderColor: color,
+                    backgroundColor: color === "#0f766e" ? "rgba(15, 118, 110, 0.14)" : "rgba(20, 184, 166, 0.12)",
+                    fill: true,
+                    pointRadius: 2,
+                    pointHoverRadius: 4,
+                    tension: 0.35
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 1400,
+                    easing: "easeInOutCubic"
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: "rgba(5, 46, 43, 0.92)",
+                        padding: 10
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: "#2f665b" },
+                        grid: { color: "rgba(15, 118, 110, 0.1)" }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: "#2f665b" },
+                        grid: { color: "rgba(15, 118, 110, 0.1)" }
+                    }
+                }
+            }
+        });
+    }
+
+    function setRangeButtonState(chartKey, range) {
+        document.querySelectorAll(".ops-range-tab[data-chart='" + chartKey + "']").forEach(function (btn) {
+            btn.setAttribute("aria-pressed", String(btn.getAttribute("data-range") === range));
+        });
+    }
+
+    function refreshDonations() {
+        var current = series.donations[chartState.donationsRange];
+        donationsChart.data.labels = current.labels;
+        donationsChart.data.datasets[0].data = current.values;
+        donationsChart.update();
+    }
+
+    function refreshVolunteers() {
+        var current = series.volunteers[chartState.volunteersRange];
+        volunteersChart.data.labels = current.labels;
+        volunteersChart.data.datasets[0].data = current.values;
+        volunteersChart.update();
+    }
+
+    function renderCalendar() {
+        var monthLabel = document.getElementById("ops-calendar-month");
+        var grid = document.getElementById("ops-calendar-grid");
+        if (!monthLabel || !grid) {
+            return;
+        }
+
+        var now = new Date();
+        var year = now.getFullYear();
+        var month = now.getMonth();
+        var today = now.getDate();
+        var first = new Date(year, month, 1);
+        var last = new Date(year, month + 1, 0);
+        var firstDay = first.getDay();
+        var totalDays = last.getDate();
+        var monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        var weekLabels = ["S", "M", "T", "W", "T", "F", "S"];
+        var eventDays = [3, 8, 12, 17, 24, 28];
+
+        monthLabel.textContent = monthNames[month];
+        grid.innerHTML = "";
+
+        weekLabels.forEach(function (label) {
+            var cell = document.createElement("div");
+            cell.className = "ops-day-label";
+            cell.textContent = label;
+            grid.appendChild(cell);
+        });
+
+        for (var i = 0; i < firstDay; i += 1) {
+            var blank = document.createElement("div");
+            blank.className = "ops-day-cell";
+            blank.textContent = "";
+            grid.appendChild(blank);
+        }
+
+        for (var day = 1; day <= totalDays; day += 1) {
+            var dateCell = document.createElement("div");
+            dateCell.className = "ops-day-cell";
+            if (day === today) {
+                dateCell.classList.add("is-today");
+            }
+            if (eventDays.indexOf(day) !== -1) {
+                dateCell.classList.add("has-event");
+            }
+            dateCell.textContent = String(day);
+            grid.appendChild(dateCell);
+        }
+    }
+
+    function bindProfileMenu() {
+        var trigger = document.getElementById("ops-profile-trigger");
+        var menu = document.getElementById("ops-profile-menu");
+        if (!trigger || !menu) {
+            return;
+        }
+
+        trigger.addEventListener("click", function () {
+            var open = menu.getAttribute("data-open") === "true";
+            menu.setAttribute("data-open", open ? "false" : "true");
+            trigger.setAttribute("aria-expanded", open ? "false" : "true");
+        });
+
+        document.addEventListener("click", function (event) {
+            if (!event.target.closest(".ops-profile")) {
+                menu.setAttribute("data-open", "false");
+                trigger.setAttribute("aria-expanded", "false");
+            }
+        });
+    }
+
+    function bindQuickActions() {
+        var toast = document.getElementById("ops-toast");
+        if (!toast) {
+            return;
+        }
+
+        document.querySelectorAll("[data-quick-action]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var action = btn.getAttribute("data-quick-action") || "Action";
+                toast.textContent = action + " opened";
+                toast.setAttribute("data-show", "true");
+                window.setTimeout(function () {
+                    toast.setAttribute("data-show", "false");
+                }, 1400);
+            });
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var donationsCanvas = document.getElementById("ops-donations-chart");
+        var volunteersCanvas = document.getElementById("ops-volunteers-chart");
+
+        if (donationsCanvas && volunteersCanvas && typeof Chart !== "undefined") {
+            donationsChart = buildChart(
+                donationsCanvas,
+                "Donations",
+                "#0f766e",
+                series.donations.weekly.values,
+                series.donations.weekly.labels
+            );
+
+            volunteersChart = buildChart(
+                volunteersCanvas,
+                "Volunteer Participation",
+                "#14b8a6",
+                series.volunteers.weekly.values,
+                series.volunteers.weekly.labels
+            );
+
+            document.querySelectorAll(".ops-range-tab").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    var chart = btn.getAttribute("data-chart");
+                    var range = btn.getAttribute("data-range") || "weekly";
+                    if (chart === "donations") {
+                        chartState.donationsRange = range;
+                        setRangeButtonState("donations", range);
+                        refreshDonations();
+                    } else if (chart === "volunteers") {
+                        chartState.volunteersRange = range;
+                        setRangeButtonState("volunteers", range);
+                        refreshVolunteers();
+                    }
+                });
+            });
+        }
+
+        renderCalendar();
+        bindProfileMenu();
+        bindQuickActions();
+
+        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
+            window.AdminPanelAnimations.animateAll(document);
+        }
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+
+        document.dispatchEvent(new Event("admin:panel-rendered"));
+    });
+})();
+</script>
+{% endblock %}
