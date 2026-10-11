@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, time
 from pathlib import Path
 from unittest.mock import patch
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
@@ -13,6 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from . import views
+from .avatar_utils import avatar_url_for_user, default_avatar_url
 from .context_processors import dashboard_profile_context
 from .models import (
     AdminSystemSettings,
@@ -29,8 +30,11 @@ from .models import (
     CommunityPostReport,
     Donation,
     InventoryItem,
+    ProductInquiry,
+    ProductReview,
     ResourceLibraryMaterial,
     RoleApplication,
+    StockMovement,
     SkillLearningMaterial,
     SkillLearningMaterialEngagement,
     SkillLearningTopic,
@@ -43,6 +47,111 @@ from .models import (
     VolunteerAttendanceRecord,
     VolunteerCertificate,
 )
+
+
+class ProductReviewTests(TestCase):
+    def setUp(self):
+        self.customer = User.objects.create_user(username="review-customer", password="password123")
+        self.order = ProductInquiry.objects.create(
+            user=self.customer,
+            full_name="Review Customer",
+            email="review-customer@example.com",
+            phone="09171234567",
+            payment_method=ProductInquiry.PAYMENT_CARD,
+            order_items=[{"name": "Homemade Candle", "variation": "Vanilla", "quantity": 1}],
+            order_total=50,
+            status=ProductInquiry.STATUS_COMPLETED,
+            admin_notification="",
+        )
+        self.client.force_login(self.customer)
+
+    def test_customer_can_submit_one_review_for_completed_order(self):
+        url = reverse("submit_product_review", kwargs={"order_id": self.order.pk})
+        response = self.client.post(url, {"rating": "4", "message": "Lovely scent"})
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["rating"], 4)
+        self.assertEqual(ProductReview.objects.get().message, "Lovely scent")
+
+        duplicate = self.client.post(url, {"rating": "5", "message": "Second attempt"})
+        self.assertEqual(duplicate.status_code, 409)
+        self.assertEqual(ProductReview.objects.count(), 1)
+
+    def test_admin_receives_grouped_product_ratings(self):
+        ProductReview.objects.create(
+            inquiry=self.order,
+            product_name="Homemade Candle",
+            variation="Vanilla",
+            rating=4,
+            message="Lovely scent",
+        )
+        admin = User.objects.create_superuser(username="review-admin", email="review-admin@example.com", password="password123")
+        self.client.force_login(admin)
+
+        response = self.client.get(reverse("payment"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["ratings_json"][0]["average"], 4.0)
+        self.assertEqual(response.context["ratings_json"][0]["count"], 1)
+        self.assertEqual(response.context["ratings_json"][0]["reviews"][0]["message"], "Lovely scent")
+
+
+class ProductInventoryStockTests(TestCase):
+    def setUp(self):
+        self.customer = User.objects.create_user(username="stock-customer", password="password123")
+        UserProfile.objects.create(user=self.customer, account_role=UserProfile.ROLE_REGULAR)
+        self.client.force_login(self.customer)
+        self.item = InventoryItem.objects.create(
+            name="Tote Bag",
+            category=InventoryItem.CATEGORY_STORE_PRODUCT,
+            stock=5,
+            low_stock_threshold=2,
+        )
+
+    def order_payload(self, quantity):
+        return {
+            "full_name": "Stock Customer",
+            "email": "stock-customer@example.com",
+            "phone": "09171234567",
+            "payment_method": ProductInquiry.PAYMENT_COD,
+            "order_items": json.dumps([{
+                "name": "Tote Bag",
+                "category": "Tote Bags",
+                "quantity": quantity,
+            }]),
+        }
+
+    def test_stock_endpoint_matches_inventory_dashboard_quantity(self):
+        response = self.client.get(reverse("product_stock"), {"name": "Tote Bag"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["stock"], 5)
+        self.assertEqual(response.json()["status"], "in_stock")
+
+        self.item.stock = 2
+        self.item.save(update_fields=["stock", "updated_at"])
+        low_response = self.client.get(reverse("product_stock"), {"name": "Tote Bag"})
+        self.assertEqual(low_response.json()["status"], "low_stock")
+
+        self.item.stock = 0
+        self.item.save(update_fields=["stock", "updated_at"])
+        out_response = self.client.get(reverse("product_stock"), {"name": "Tote Bag"})
+        self.assertEqual(out_response.json()["status"], "out_of_stock")
+
+    def test_order_reserves_stock_and_rejects_quantity_after_stock_changes(self):
+        response = self.client.post(reverse("submit_product_inquiry"), self.order_payload(3))
+
+        self.assertEqual(response.status_code, 201)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.stock, 2)
+        self.assertEqual(StockMovement.objects.get(item=self.item).quantity, 3)
+
+        rejected = self.client.post(reverse("submit_product_inquiry"), self.order_payload(3))
+
+        self.assertEqual(rejected.status_code, 409)
+        self.assertIn("Only 2 available", rejected.json()["error"])
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.stock, 2)
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
@@ -519,7 +628,7 @@ class AdminDashboardKpiMetricsTests(TestCase):
             amount=3500,
             payment_method=Donation.PAYMENT_GCASH,
             reference_number="DON-1001",
-            status=Donation.STATUS_VERIFIED,
+            status=Donation.STATUS_COMPLETED,
             receipt=receipt_one,
         )
         Donation.objects.create(
@@ -551,6 +660,76 @@ class AdminDashboardKpiMetricsTests(TestCase):
         self.assertEqual(response.context["donations_this_month_amount"], 5000)
         self.assertEqual(response.context["low_stock_items_count"], 1)
         self.assertEqual(response.context["low_stock_critical_count"], 1)
+
+    def test_product_inquiry_supports_in_delivery_status(self):
+        self.assertTrue(hasattr(ProductInquiry, "STATUS_IN_DELIVERY"))
+        self.assertIn((ProductInquiry.STATUS_IN_DELIVERY, "In Delivery"), ProductInquiry.STATUS_CHOICES)
+
+    def test_product_inquiry_supports_delivery_metadata(self):
+        self.assertTrue(hasattr(ProductInquiry, "in_delivery_at"))
+        self.assertTrue(hasattr(ProductInquiry, "delivery_window_start"))
+        self.assertTrue(hasattr(ProductInquiry, "delivery_window_end"))
+
+    def test_product_checkout_total_includes_vat_and_shipping(self):
+        total = views.calculate_checkout_total(100)
+        self.assertEqual(total, 162)
+
+    def test_user_can_request_return_for_completed_order(self):
+        buyer = User.objects.create_user(username="return-buyer", email="return-buyer@example.com", password="password123")
+        inquiry = ProductInquiry.objects.create(
+            user=buyer,
+            full_name="Return Buyer",
+            email="return-buyer@example.com",
+            phone="09123456789",
+            payment_method=ProductInquiry.PAYMENT_COD,
+            order_total=1500,
+            status=ProductInquiry.STATUS_COMPLETED,
+            order_items=[{"name": "Tote Bag", "quantity": 1, "unit_price": 1500}],
+        )
+        self.client.force_login(buyer)
+
+        response = self.client.post(
+            reverse("request_product_order_return", args=[inquiry.id]),
+            data={"reason": "Received a damaged item", "request_type": "refund"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        inquiry.refresh_from_db()
+        self.assertEqual(inquiry.status, ProductInquiry.STATUS_REFUND_REQUESTED)
+        self.assertEqual(inquiry.return_reason, "Received a damaged item")
+        self.assertIsNotNone(inquiry.return_requested_at)
+
+    def test_payment_mark_in_delivery_uses_delivery_window_only(self):
+        admin = User.objects.create_superuser(username="admin-delivery-window", email="admin-delivery-window@example.com", password="password123")
+        inquiry = ProductInquiry.objects.create(
+            user=admin,
+            full_name="Window Buyer",
+            email="buyer@example.com",
+            phone="09123456789",
+            payment_method=ProductInquiry.PAYMENT_COD,
+            order_total=1500,
+            status=ProductInquiry.STATUS_VERIFIED,
+            order_items=[{"name": "Rice Pack", "quantity": 1}],
+        )
+        self.client.force_login(admin)
+
+        payload = {
+            "expected_delivery_date": "2026-10-09",
+            "delivery_window_start": "2026-10-10",
+            "delivery_window_end": "2026-10-12",
+        }
+        response = self.client.post(
+            reverse("payment_mark_in_delivery", args=[inquiry.id]),
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        inquiry.refresh_from_db()
+        self.assertEqual(inquiry.status, ProductInquiry.STATUS_IN_DELIVERY)
+        self.assertIsNone(inquiry.expected_delivery_date)
+        self.assertEqual(inquiry.delivery_window_start.date().isoformat(), "2026-10-10")
+        self.assertEqual(inquiry.delivery_window_end.date().isoformat(), "2026-10-12")
 
     def test_admin_dashboard_recent_activity_feed_uses_real_records(self):
         admin = User.objects.create_superuser(username="admin-activity", email="admin-activity@example.com", password="password123")
@@ -706,7 +885,7 @@ class ReportsAnalyticsDataTests(TestCase):
             amount=700,
             payment_method=Donation.PAYMENT_EWALLET,
             reference_number="DON-3004",
-            status=Donation.STATUS_VERIFIED,
+            status=Donation.STATUS_COMPLETED,
         )
         Donation.objects.create(
             user=donor,
@@ -999,7 +1178,7 @@ class VolunteerAdminChatFlowTests(TestCase):
 
 
 class DonationReceiptFlowTests(TestCase):
-    def test_bulk_approval_generates_official_donation_receipt(self):
+    def test_bulk_completion_generates_official_donation_receipt(self):
         admin = User.objects.create_superuser(username="admin-donation-receipt", email="admin-donation-receipt@example.com", password="password123")
         self.client.force_login(admin)
 
@@ -1015,18 +1194,18 @@ class DonationReceiptFlowTests(TestCase):
 
         response = self.client.post(
             reverse("bulk_update_donations"),
-            data=json.dumps({"ids": [donation.id], "status": "verified"}),
+            data=json.dumps({"ids": [donation.id], "status": "completed"}),
             content_type="application/json",
         )
 
         self.assertEqual(response.status_code, 200)
         donation.refresh_from_db()
-        self.assertEqual(donation.status, Donation.STATUS_VERIFIED)
+        self.assertEqual(donation.status, Donation.STATUS_COMPLETED)
         self.assertTrue(donation.official_receipt_number)
         self.assertTrue(donation.official_receipt_file)
         self.assertIsNotNone(donation.official_receipt_generated_at)
 
-    def test_donation_receipt_download_route_works_for_verified_donation(self):
+    def test_donation_receipt_download_route_works_for_completed_donation(self):
         donor = User.objects.create_user(username="donor-receipt", email="donor@example.com", password="password123")
         donation = Donation.objects.create(
             user=donor,
@@ -1035,7 +1214,7 @@ class DonationReceiptFlowTests(TestCase):
             amount=2500,
             payment_method=Donation.PAYMENT_GCASH,
             reference_number="DON-RECEIPT-02",
-            status=Donation.STATUS_VERIFIED,
+            status=Donation.STATUS_COMPLETED,
             receipt=SimpleUploadedFile("receipt-02.png", b"png-bytes-2", content_type="image/png"),
         )
 
@@ -1123,6 +1302,7 @@ class CommunityPostAttachmentPersistenceTests(TestCase):
             reverse("apply_beneficiary"),
             data={
                 "full_name": "Ana Cruz",
+                "track": "happy_nanas",
                 "contact_details": "ana@example.com / 09171234567",
                 "reason_for_assistance": "Temporary financial support is needed.",
                 "supporting_information": "Household currently has no stable income.",
@@ -1163,6 +1343,7 @@ class CommunityPostAttachmentPersistenceTests(TestCase):
             reverse("apply_volunteer"),
             data={
                 "full_name": "Marco Dela Cruz",
+                "track": "community_volunteer",
                 "contact_details": "marco@example.com / 09170001111",
                 "skills": "Community outreach, logistics, first aid",
                 "availability": "Weekends and evenings",
@@ -1268,6 +1449,42 @@ class ActivityVolunteerAssignmentSyncTests(TestCase):
                 contact_details=f"{volunteer.username}@example.com",
             )
 
+    def test_activity_feedback_average_uses_all_three_scores_per_submission(self):
+        activity = Activity.objects.create(
+            title="Feedback Average Activity",
+            date="2026-10-15",
+            status=Activity.STATUS_COMPLETED,
+        )
+        beneficiary_apps = []
+        for username in ("feedback-average-one", "feedback-average-two"):
+            user = User.objects.create_user(username=username, password="password123")
+            beneficiary_apps.append(RoleApplication.objects.create(
+                user=user,
+                role=RoleApplication.ROLE_BENEFICIARY,
+                status=RoleApplication.STATUS_APPROVED,
+                full_name=username,
+                contact_details=f"{username}@example.com",
+            ))
+        BeneficiaryActivityFeedback.objects.create(
+            activity=activity,
+            beneficiary=beneficiary_apps[0],
+            user=beneficiary_apps[0].user,
+            rating=5,
+            comment="Q2: 3 | Q3: 4",
+        )
+        BeneficiaryActivityFeedback.objects.create(
+            activity=activity,
+            beneficiary=beneficiary_apps[1],
+            user=beneficiary_apps[1].user,
+            rating=3,
+            comment="Q2: 2 | Q3: 3",
+        )
+
+        counts, averages = views._build_activity_feedback_averages()
+
+        self.assertEqual(counts[activity.id], 2)
+        self.assertEqual(averages[activity.id], 3.3)
+
     def test_activity_creation_and_update_sync_volunteer_assignments(self):
         self.client.force_login(self.admin)
 
@@ -1336,6 +1553,52 @@ class ActivityVolunteerAssignmentSyncTests(TestCase):
         self.assertEqual(volunteer_api_after_edit.status_code, 200)
         self.assertEqual(len(volunteer_api_after_edit.json()["items"]), 0)
 
+    def test_activity_donor_share_is_optional_when_creating_and_editing(self):
+        self.client.force_login(self.admin)
+        form_data = {
+            "title": "Community Outreach Budget",
+            "date": "2026-10-15",
+            "location": "Maliksi II",
+            "category": "outreach",
+            "status": Activity.STATUS_ACTIVE,
+            "description": "Outreach with optional donor funding",
+            "funding_mode": "budget_share",
+            "total_budget": "100",
+            "donor_share_amount": "",
+        }
+
+        create_response = self.client.post(reverse("add_activity"), form_data)
+
+        self.assertEqual(create_response.status_code, 302)
+        activity = Activity.objects.get(title="Community Outreach Budget")
+        self.assertEqual(activity.total_budget, 100)
+        self.assertEqual(activity.donor_share_amount, 0)
+        self.assertFalse(activity.fund_allocations.filter(status="reserved").exists())
+
+        form_data.update({"activityId": str(activity.id), "title": "Community Outreach Budget Updated"})
+        edit_response = self.client.post(reverse("add_activity"), form_data)
+
+        self.assertEqual(edit_response.status_code, 302)
+        activity.refresh_from_db()
+        self.assertEqual(activity.title, "Community Outreach Budget Updated")
+        self.assertEqual(activity.donor_share_amount, 0)
+        self.assertFalse(activity.fund_allocations.filter(status="reserved").exists())
+
+        funded_data = {
+            **form_data,
+            "activityId": "",
+            "title": "Funded Community Outreach",
+            "total_budget": "250",
+            "donor_share_amount": "75",
+        }
+        with patch("webapp.views._get_available_completed_donation_funds", return_value=100):
+            funded_response = self.client.post(reverse("add_activity"), funded_data)
+
+        self.assertEqual(funded_response.status_code, 302)
+        funded_activity = Activity.objects.get(title="Funded Community Outreach")
+        self.assertEqual(funded_activity.total_budget, 250)
+        self.assertEqual(funded_activity.donor_share_amount, 75)
+
     def test_volunteer_calendar_includes_active_events_without_assignment(self):
         scheduled_activity = Activity.objects.create(
             title="Open Community Day",
@@ -1364,6 +1627,22 @@ class ActivityVolunteerAssignmentSyncTests(TestCase):
         self.assertEqual(len(items), 1)
         self.assertEqual(items[0]["title"], "Open Community Day")
         self.assertEqual(items[0]["date"], "2026-10-09")
+
+    def test_admin_volunteers_page_handles_pending_attendance_without_assignment(self):
+        self.client.force_login(self.admin)
+        VolunteerAttendanceRecord.objects.create(
+            volunteer=self.volunteer_one,
+            duty_date=timezone.now().date(),
+            status=VolunteerAttendanceRecord.STATUS_PENDING,
+            time_in=timezone.now() - timedelta(minutes=30),
+            time_out=timezone.now(),
+            duration_minutes=30,
+        )
+
+        response = self.client.get(reverse("volunteers"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("OJT duty day", response.content.decode("utf-8"))
 
     def test_activity_creation_and_update_sync_beneficiary_assignments(self):
         beneficiary = User.objects.create_user(username="beneficiary-one", password="password123")
@@ -2362,6 +2641,37 @@ class VolunteerAttendanceWorkflowTests(TestCase):
         self.assertEqual(reopen_map_after_edit[str(activity.id)], [self.volunteer_two.id])
 
 
+class AvatarDefaultTests(TestCase):
+    def test_missing_profile_uses_default_avatar_in_context_and_api_helper(self):
+        user = User.objects.create_user(username="avatar-default", password="password123")
+
+        UserProfile.objects.get_or_create(user=user)
+        self.assertEqual(avatar_url_for_user(user), default_avatar_url())
+
+        UserProfile.objects.filter(user=user).delete()
+
+        self.assertEqual(avatar_url_for_user(user), default_avatar_url())
+        self.assertEqual(views._avatar_url_for_user(user), default_avatar_url())
+
+        request = RequestFactory().get("/")
+        request.user = user
+        context = dashboard_profile_context(request)
+        self.assertEqual(context["user_avatar_url"], default_avatar_url())
+        self.assertEqual(context["default_avatar_url"], default_avatar_url())
+
+        post = CommunityPost.objects.create(user=user, content="Avatar fallback test")
+        payload = views._serialize_community_post(post)
+        self.assertEqual(payload["avatarImage"], default_avatar_url())
+
+    def test_anonymous_context_exposes_default_avatar_url(self):
+        request = RequestFactory().get("/")
+        request.user = AnonymousUser()
+
+        context = dashboard_profile_context(request)
+
+        self.assertEqual(context["default_avatar_url"], default_avatar_url())
+
+
 class DashboardProfileUpdateTests(TestCase):
     def setUp(self):
         self.volunteer = User.objects.create_user(
@@ -2624,6 +2934,7 @@ class UserDashboardOverviewUpcomingActivitiesTests(TestCase):
             location="Molino II",
             status=Activity.STATUS_COMPLETED,
         )
+        ActivityBeneficiaryAssignment.objects.create(activity=completed, beneficiary=self.beneficiary)
         self.client.force_login(self.beneficiary)
 
         response = self.client.get(reverse("user_dashboard_overview_api"))
@@ -2632,18 +2943,111 @@ class UserDashboardOverviewUpcomingActivitiesTests(TestCase):
         completed_items = response.json()["completed_activities"]
         self.assertEqual(completed_items[0]["id"], completed.id)
         self.assertEqual(completed_items[0]["feedback_target"], "activity")
+        self.assertTrue(completed_items[0]["can_submit_feedback"])
 
         feedback_response = self.client.post(
             reverse("submit_beneficiary_pickup_feedback"),
             {
                 "activity_id": completed.id,
                 "rating": 5,
-                "comment": "Helpful outreach session.",
+                "question_1": 5,
+                "question_2": 3,
+                "question_3": 4,
+                "comment": "",
             },
         )
 
         self.assertEqual(feedback_response.status_code, 200)
         self.assertTrue(BeneficiaryActivityFeedback.objects.filter(activity=completed, beneficiary=self.application).exists())
+        self.assertEqual(
+            BeneficiaryActivityFeedback.objects.get(activity=completed, beneficiary=self.application).comment,
+            "Q2: 3 | Q3: 4",
+        )
+
+    def test_admin_activity_feedback_payload_contains_question_summary(self):
+        activity = Activity.objects.create(
+            title="Community Outreach",
+            date="2026-09-25",
+            status=Activity.STATUS_COMPLETED,
+        )
+        BeneficiaryActivityFeedback.objects.create(
+            activity=activity,
+            beneficiary=self.application,
+            user=self.beneficiary,
+            rating=3,
+            comment="Q2: Mostly | Q3: Likely",
+        )
+
+        feedback = next(
+            item for item in views._build_assistance_feedbacks_payload()
+            if item["source"] == "Activity" and item["subject"] == activity.title
+        )
+
+        self.assertEqual(
+            feedback["questionRatings"],
+            [3, 4, 4],
+        )
+        self.assertEqual(feedback["averageRating"], 3.7)
+
+    def test_activity_feedback_requires_all_three_answers(self):
+        activity = Activity.objects.create(
+            title="Completed Outreach Session",
+            date="2026-09-25",
+            status=Activity.STATUS_COMPLETED,
+        )
+        ActivityBeneficiaryAssignment.objects.create(activity=activity, beneficiary=self.beneficiary)
+        self.client.force_login(self.beneficiary)
+
+        response = self.client.post(
+            reverse("submit_beneficiary_pickup_feedback"),
+            {"activity_id": activity.id, "rating": 5, "question_1": 5, "question_2": 4},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(BeneficiaryActivityFeedback.objects.filter(activity=activity).exists())
+
+    def test_feedback_is_unavailable_until_assigned_activity_is_completed(self):
+        activity = Activity.objects.create(
+            title="Scheduled Outreach Session",
+            date="2026-09-25",
+            location="Molino II",
+            status=Activity.STATUS_ACTIVE,
+        )
+        ActivityBeneficiaryAssignment.objects.create(activity=activity, beneficiary=self.beneficiary)
+        self.client.force_login(self.beneficiary)
+
+        overview_response = self.client.get(reverse("user_dashboard_overview_api"))
+        self.assertEqual(overview_response.status_code, 200)
+        self.assertEqual(overview_response.json()["completed_activities"], [])
+
+        feedback_response = self.client.post(
+            reverse("submit_beneficiary_pickup_feedback"),
+            {"activity_id": activity.id, "rating": 5, "question_1": 5, "question_2": 3, "question_3": 4},
+        )
+
+        self.assertEqual(feedback_response.status_code, 409)
+        self.assertFalse(BeneficiaryActivityFeedback.objects.filter(activity=activity).exists())
+
+    def test_unassigned_beneficiary_cannot_submit_feedback_for_completed_activity(self):
+        activity = Activity.objects.create(
+            title="Completed Outreach Session",
+            date="2026-09-25",
+            location="Molino II",
+            status=Activity.STATUS_COMPLETED,
+        )
+        self.client.force_login(self.beneficiary)
+
+        overview_response = self.client.get(reverse("user_dashboard_overview_api"))
+        self.assertEqual(overview_response.status_code, 200)
+        self.assertNotIn(activity.id, [item["id"] for item in overview_response.json()["completed_activities"]])
+
+        feedback_response = self.client.post(
+            reverse("submit_beneficiary_pickup_feedback"),
+            {"activity_id": activity.id, "rating": 5, "question_1": 5, "question_2": 3, "question_3": 4},
+        )
+
+        self.assertEqual(feedback_response.status_code, 403)
+        self.assertFalse(BeneficiaryActivityFeedback.objects.filter(activity=activity).exists())
 
     def test_dashboard_uses_live_beneficiary_data_not_stale_sample_content(self):
         self.client.force_login(self.beneficiary)
@@ -3029,6 +3433,7 @@ class RoleFlowTests(TestCase):
             reverse("apply_beneficiary"),
             data={
                 "full_name": "Ana Cruz",
+                "track": "happy_nanas",
                 "contact_details": "ana@example.com / 09171234567",
                 "reason_for_assistance": "Temporary financial support is needed.",
                 "supporting_information": "Household currently has no stable income.",
@@ -3048,6 +3453,7 @@ class RoleFlowTests(TestCase):
             reverse("apply_volunteer"),
             data={
                 "full_name": "Marco Dela Cruz",
+                "track": "intern",
                 "contact_details": "marco@example.com / 09170001111",
                 "skills": "Community outreach, logistics, first aid",
                 "availability": "Weekends and evenings",
@@ -3099,6 +3505,7 @@ class RoleFlowTests(TestCase):
             reverse("apply_beneficiary"),
             data={
                 "full_name": "Ana Cruz",
+                "track": "happy_kids",
                 "contact_details": "ana@example.com / 09171234567",
                 "reason_for_assistance": "Temporary financial support is needed.",
                 "supporting_information": "Household currently has no stable income.",
@@ -3139,6 +3546,7 @@ class RoleFlowTests(TestCase):
             reverse("apply_volunteer"),
             data={
                 "full_name": "Marco Dela Cruz",
+                "track": "community_volunteer",
                 "contact_details": "marco@example.com / 09170001111",
                 "skills": "Community outreach, logistics, first aid",
                 "availability": "Weekends and evenings",
@@ -3210,3 +3618,87 @@ class RoleFlowTests(TestCase):
         self.assertEqual(len(second_payload["comments"]), 2)
         self.assertFalse(second_payload["hasMore"])
         self.assertIsNone(second_payload["nextOffset"])
+
+
+class RegularUsersBulkActionTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username="regular-users-admin",
+            email="regular-users-admin@example.com",
+            password="SecureAdminPass!2026",
+        )
+        self.client.force_login(self.admin)
+
+    def create_regular_user(self, username):
+        user = User.objects.create_user(
+            username=username,
+            email=f"{username}@example.com",
+            password="SecureUserPass!2026",
+        )
+        UserProfile.objects.create(user=user, account_role=UserProfile.ROLE_REGULAR)
+        return user
+
+    def test_users_directory_renders_multi_select_controls(self):
+        user = self.create_regular_user("directory-user")
+
+        response = self.client.get(reverse("regular_users"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="regular-users-select-all"')
+        self.assertContains(response, "data-user-select")
+        self.assertContains(response, 'id="regular-users-delete-selected"')
+        self.assertContains(response, user.username)
+
+    def test_admin_can_bulk_delete_regular_users(self):
+        users = [
+            self.create_regular_user("bulk-user-one"),
+            self.create_regular_user("bulk-user-two"),
+        ]
+
+        response = self.client.post(
+            reverse("delete_regular_user"),
+            {"user_ids": [str(user.id) for user in users]},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["deleted_count"], 2)
+        self.assertFalse(User.objects.filter(id__in=[user.id for user in users]).exists())
+
+    def test_bulk_delete_rejects_non_regular_account_without_partial_deletion(self):
+        regular_user = self.create_regular_user("bulk-regular-user")
+        beneficiary = User.objects.create_user(
+            username="bulk-beneficiary",
+            email="bulk-beneficiary@example.com",
+            password="SecureUserPass!2026",
+        )
+        UserProfile.objects.create(user=beneficiary, account_role=UserProfile.ROLE_BENEFICIARY)
+
+        response = self.client.post(
+            reverse("delete_regular_user"),
+            {"user_ids": [str(regular_user.id), str(beneficiary.id)]},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertTrue(User.objects.filter(id=regular_user.id).exists())
+        self.assertTrue(User.objects.filter(id=beneficiary.id).exists())
+
+    def test_bulk_delete_rejects_empty_or_invalid_ids(self):
+        for user_ids in ([], ["not-an-id"]):
+            with self.subTest(user_ids=user_ids):
+                response = self.client.post(
+                    reverse("delete_regular_user"),
+                    {"user_ids": user_ids},
+                )
+                self.assertEqual(response.status_code, 400)
+
+    def test_non_admin_cannot_bulk_delete_users(self):
+        self.client.force_login(self.create_regular_user("non-admin-user"))
+        target = self.create_regular_user("protected-user")
+
+        response = self.client.post(
+            reverse("delete_regular_user"),
+            {"user_ids": [str(target.id)]},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(User.objects.filter(id=target.id).exists())

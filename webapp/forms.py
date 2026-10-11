@@ -14,6 +14,17 @@ SKILL_LEARNING_FILTER_CHOICES = (
 
 
 class SignUpForm(forms.ModelForm):
+    program = forms.ChoiceField(
+        label="Program",
+        choices=(
+            ("happy_nanas", "Happy Nanay's"),
+            ("happy_kids", "Happy Kid's"),
+            ("intern", "Intern"),
+            ("community_volunteer", "Community Volunteer"),
+        ),
+        required=False,
+    )
+
     password1 = forms.CharField(
         label="Password",
         strip=False,
@@ -97,9 +108,18 @@ class SignInForm(forms.Form):
 
 
 class BeneficiaryApplicationForm(forms.ModelForm):
+    track = forms.ChoiceField(
+        label="Program",
+        choices=(
+            ("happy_nanas", "Happy Nanay's"),
+            ("happy_kids", "Happy Kid's"),
+        ),
+        required=True,
+    )
+
     class Meta:
         model = RoleApplication
-        fields = ["full_name", "contact_details", "reason_for_assistance", "supporting_information"]
+        fields = ["full_name", "track", "contact_details", "reason_for_assistance", "supporting_information"]
         labels = {
             "full_name": "Full Name",
             "contact_details": "Contact Details",
@@ -123,9 +143,18 @@ class BeneficiaryApplicationForm(forms.ModelForm):
 
 
 class VolunteerApplicationForm(forms.ModelForm):
+    track = forms.ChoiceField(
+        label="Program",
+        choices=(
+            ("intern", "Intern"),
+            ("community_volunteer", "Community Volunteer"),
+        ),
+        required=True,
+    )
+
     class Meta:
         model = RoleApplication
-        fields = ["full_name", "contact_details", "skills", "availability", "areas_of_interest"]
+        fields = ["full_name", "track", "contact_details", "skills", "availability", "areas_of_interest"]
         labels = {
             "full_name": "Full Name",
             "contact_details": "Contact Details",

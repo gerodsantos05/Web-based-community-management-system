@@ -451,6 +451,7 @@
         var routeMap = {
             dashboard: "{% url 'admin_dashboard' %}",
             resourceLibrary: "{% url 'admin_resource_library' %}",
+            regularUsers: "{% url 'regular_users' %}",
             volunteers: "{% url 'volunteers' %}",
             beneficiaries: "{% url 'beneficiaries' %}",
             activities: "{% url 'activities' %}",
@@ -498,6 +499,7 @@
                         label: "People",
                         icon: "users",
                         children: [
+                            { key: "regularUsers", label: "Users" },
                             { key: "volunteers", label: "Volunteers" },
                             { key: "beneficiaries", label: "Beneficiaries" }
                         ]
@@ -540,6 +542,9 @@
             }
             if (key === "volunteers") {
                 return current === "volunteers";
+            }
+            if (key === "regularUsers") {
+                return current === "regular_users";
             }
             if (key === "beneficiaries") {
                 return current === "beneficiaries";

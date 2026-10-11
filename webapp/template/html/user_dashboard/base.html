@@ -5,6 +5,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}HappYness{% endblock %}</title>
+    <script src="{% static 'js/avatar-fallback.js' %}"></script>
+    <link rel="icon" type="image/jpeg" href="{% static 'media/Happyness Project.jpg' %}?v=20261006" />
 
     <script>
         (function initDashboardThemeBoot() {
@@ -1114,7 +1116,7 @@
         }
     </style>
 </head>
-<body class="bg-brand-50 text-ink-900 antialiased overflow-x-hidden">
+<body class="bg-brand-50 text-ink-900 antialiased overflow-x-hidden" data-default-avatar-url="{{ default_avatar_url }}">
     <script>
         (function syncBodyThemeClass() {
             var isDark = false;
@@ -1181,7 +1183,7 @@
                     <button id="global-chat-back" class="global-chat-back" type="button" aria-label="Back to inbox" hidden><i data-lucide="arrow-left" aria-hidden="true"></i></button>
                     <h3 id="global-chat-title">Inbox</h3>
                     <div id="global-chat-header-person" class="global-chat-header-person" hidden>
-                        <span id="global-chat-header-avatar" class="global-chat-header-avatar"><span id="global-chat-header-avatar-initials">A</span><img id="global-chat-header-avatar-image" alt="" hidden></span>
+                        <span id="global-chat-header-avatar" class="global-chat-header-avatar"><span id="global-chat-header-avatar-initials">A</span><img id="global-chat-header-avatar-image" alt="" data-avatar-image="true" hidden></span>
                         <span id="global-chat-header-name"></span>
                     </div>
                 </div>
@@ -1847,6 +1849,7 @@
             var headerNameEl = document.getElementById('global-chat-header-name');
             var headerAvatarInitialsEl = document.getElementById('global-chat-header-avatar-initials');
             var headerAvatarImageEl = document.getElementById('global-chat-header-avatar-image');
+            var defaultAvatarUrl = document.body.getAttribute('data-default-avatar-url') || '';
             var panelCloseTimer = null;
             var chatEligible = {% if dashboard_scope == "volunteer" or user.is_superuser %}true{% else %}false{% endif %};
             var chatIsVolunteerPage = {% if dashboard_scope == "volunteer" %}true{% else %}false{% endif %};
@@ -1876,6 +1879,7 @@
 
             function setHeaderIdentity(name, avatarUrl, initials, showBack) {
                 var hasIdentity = Boolean(name);
+                var resolvedAvatarUrl = avatarUrl || (hasIdentity ? defaultAvatarUrl : '');
                 if (chatTitleEl) {
                     chatTitleEl.hidden = hasIdentity;
                     chatTitleEl.textContent = hasIdentity ? '' : 'Inbox';
@@ -1884,11 +1888,11 @@
                 if (headerNameEl) headerNameEl.textContent = name || '';
                 if (headerAvatarInitialsEl) {
                     headerAvatarInitialsEl.textContent = initials || 'A';
-                    headerAvatarInitialsEl.hidden = Boolean(avatarUrl);
+                    headerAvatarInitialsEl.hidden = Boolean(resolvedAvatarUrl);
                 }
                 if (headerAvatarImageEl) {
-                    headerAvatarImageEl.hidden = !avatarUrl;
-                    if (avatarUrl) headerAvatarImageEl.src = avatarUrl;
+                    headerAvatarImageEl.hidden = !resolvedAvatarUrl;
+                    if (resolvedAvatarUrl) headerAvatarImageEl.src = resolvedAvatarUrl;
                     else headerAvatarImageEl.removeAttribute('src');
                 }
                 if (backBtn) backBtn.hidden = !showBack;
@@ -2154,7 +2158,7 @@
                     button.className = 'global-chat-thread-item' + (Number(thread.user_id) === Number(threadState.activeThreadId) ? ' is-active' : '');
                     button.innerHTML = `
                         <span class="global-chat-thread-summary">
-                            <span class="global-chat-thread-avatar">${thread.avatar_url ? '<img src="' + escapeHtml(thread.avatar_url) + '" alt="">' : escapeHtml(thread.initials || 'U')}</span>
+                            ${'<span class="global-chat-thread-avatar"><img src="' + escapeHtml(thread.avatar_url || defaultAvatarUrl) + '" alt="" data-avatar-image="true"></span>'}
                             <span class="global-chat-thread-meta">
                                 <span class="global-chat-thread-name">${thread.name || 'Volunteer'}</span>
                                 <span class="global-chat-thread-preview">${thread.preview || 'No messages yet'}</span>

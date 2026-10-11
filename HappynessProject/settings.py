@@ -159,47 +159,46 @@ DONATION_CONFIG = {
     'bank_account_number': 'TODO-BANK-ACCOUNT-NUMBER',
     'bank_account_name': 'TODO-BANK-ACCOUNT-NAME',
     'verification_time': '1 to 2 days',
-    'impact_examples': [
-        {'amount': 100, 'text': 'support a child-focused learning activity'},
-        {'amount': 300, 'text': 'help provide learning materials for a child'},
-        {'amount': 500, 'text': 'support a family livelihood activity'},
-        {'amount': 1000, 'text': 'help fund a community partnership activity'},
+    'item_dropoff_address': 'SAMPLE ADDRESS - replace before launch.',
+    'item_dropoff_hours': 'SAMPLE HOURS - replace before launch.',
+    'item_accepted_examples': [
+        'Sample: non-perishable food, clean clothing, school supplies, unopened medical supplies, and working appliances.',
+    ],
+    'item_not_accepted_examples': [
+        'Sample: expired food or medicine, damaged or unsafe goods, and opened personal-care items.',
     ],
     'programs': [
         {
             'name': 'Happy Kids',
             'type': "Children's Development",
             'logo': 'media/Happy kids.png',
-            'share': 40,
             'color': '#5c8d68',
             'who': 'Children building confidence through learning and care.',
             'items': [
-                {'name': 'School supply set', 'amount': 300, 'icon': 'book-open'},
-                {'name': 'Learning activity', 'amount': 100, 'icon': 'pencil'},
+                {'name': 'School supply set', 'icon': 'book-open'},
+                {'name': 'Learning activity', 'icon': 'pencil'},
             ],
         },
         {
             'name': 'Happy Nanays',
             'type': 'Livelihood Training',
             'logo': 'media/Happy nanays.png',
-            'share': 35,
             'color': '#d28757',
             'who': 'Mothers growing practical livelihood opportunities.',
             'items': [
-                {'name': 'Livelihood starter materials', 'amount': 500, 'icon': 'briefcase-business'},
-                {'name': 'Skills session', 'amount': 300, 'icon': 'graduation-cap'},
+                {'name': 'Livelihood starter materials', 'icon': 'briefcase-business'},
+                {'name': 'Skills session', 'icon': 'graduation-cap'},
             ],
         },
         {
             'name': 'Happy Hearts',
             'type': 'Partnerships',
             'logo': 'media/Happy hearts.png',
-            'share': 25,
             'color': '#6885a0',
             'who': 'Partner communities and families receiving practical support.',
             'items': [
-                {'name': 'Community activity', 'amount': 1000, 'icon': 'heart-handshake'},
-                {'name': 'Care package', 'amount': 500, 'icon': 'package-heart'},
+                {'name': 'Community activity', 'icon': 'heart-handshake'},
+                {'name': 'Care package', 'icon': 'package-heart'},
             ],
         },
     ],
@@ -207,43 +206,43 @@ DONATION_CONFIG = {
 
 DONATION_RECEIPT_MAX_SIZE_BYTES = 5 * 1024 * 1024
 DONATION_RECEIPT_MIME_TYPES = {'application/pdf', 'image/jpeg', 'image/png', 'image/webp'}
+ITEM_PLEDGE_PHOTO_MAX_SIZE_BYTES = 5 * 1024 * 1024
+# Set this to the organization's shared inbox before enabling pledge email notifications.
+DONATION_PLEDGE_NOTIFICATION_EMAIL = ''
 
-# Sample fallback content is used until the organization's approved figures are supplied.
+# Fallback program descriptions are used when no program configuration is provided.
 DONATION_FALLBACK_PROGRAMS = [
     {
         'name': 'Happy Kids',
         'type': "Children's Development",
         'logo': 'media/Happy kids.png',
-        'share': 40,
         'color': '#5c8d68',
         'who': 'Children building confidence through learning and care.',
         'items': [
-            {'name': 'School supply set', 'amount': 300, 'icon': 'book-open'},
-            {'name': 'Learning activity', 'amount': 100, 'icon': 'pencil'},
+            {'name': 'School supply set', 'icon': 'book-open'},
+            {'name': 'Learning activity', 'icon': 'pencil'},
         ],
     },
     {
         'name': 'Happy Nanays',
         'type': 'Livelihood Training',
         'logo': 'media/Happy nanays.png',
-        'share': 35,
         'color': '#d28757',
         'who': 'Mothers growing practical livelihood opportunities.',
         'items': [
-            {'name': 'Livelihood starter materials', 'amount': 500, 'icon': 'briefcase-business'},
-            {'name': 'Skills session', 'amount': 300, 'icon': 'graduation-cap'},
+            {'name': 'Livelihood starter materials', 'icon': 'briefcase-business'},
+            {'name': 'Skills session', 'icon': 'graduation-cap'},
         ],
     },
     {
         'name': 'Happy Hearts',
         'type': 'Partnerships',
         'logo': 'media/Happy hearts.png',
-        'share': 25,
         'color': '#6885a0',
         'who': 'Partner communities and families receiving practical support.',
         'items': [
-            {'name': 'Community activity', 'amount': 1000, 'icon': 'heart-handshake'},
-            {'name': 'Care package', 'amount': 500, 'icon': 'package-heart'},
+            {'name': 'Community activity', 'icon': 'heart-handshake'},
+            {'name': 'Care package', 'icon': 'package-heart'},
         ],
     },
 ]

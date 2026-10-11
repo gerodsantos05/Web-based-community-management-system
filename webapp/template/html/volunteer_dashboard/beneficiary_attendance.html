@@ -144,7 +144,7 @@
             var row = document.createElement("div"); row.className="ba-row";
             var person = document.createElement("div"); person.className="ba-person";
             var avatar = document.createElement("span"); avatar.className="ba-avatar";
-            if(item.avatar_url){ var image=document.createElement("img"); image.src=item.avatar_url; image.alt=""; image.onerror=function(){ avatar.textContent=initials(item.name); }; avatar.appendChild(image); } else avatar.textContent=initials(item.name);
+            var image=document.createElement("img"); image.src=item.avatar_url || document.body.getAttribute("data-default-avatar-url"); image.alt=""; image.setAttribute("data-avatar-image", "true"); avatar.appendChild(image);
             var copy=document.createElement("div"); copy.className="ba-person-copy";
             var name=document.createElement("span"); name.className="ba-name"; name.textContent=item.name || "Beneficiary";
             var status=document.createElement("span"); status.className="ba-status " + (item.status === "pending" && item.confirmed_at ? "submitted" : String(item.status || "pending")); status.textContent=statusText(item);

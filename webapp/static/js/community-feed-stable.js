@@ -7,6 +7,7 @@
     }
     root.dataset.communityStableBound = "true";
 
+    var defaultAvatarUrl = String(root.getAttribute("data-default-avatar-url") || document.body.getAttribute("data-default-avatar-url") || "");
     var feedHost = document.getElementById("community-feed");
     var widgetSide = root.querySelector(".ch-side");
     var widgetIndicators = document.getElementById("community-widget-indicators");
@@ -57,7 +58,7 @@
         isAdmin: String(root.getAttribute("data-current-user-is-admin") || "false") === "true",
         name: String(root.getAttribute("data-current-user-name") || "You"),
         initials: String(root.getAttribute("data-current-user-initials") || "YO"),
-        avatarUrl: String(root.getAttribute("data-current-user-avatar-url") || "")
+        avatarUrl: String(root.getAttribute("data-current-user-avatar-url") || defaultAvatarUrl)
     };
     var postsEndpoint = String(root.getAttribute("data-posts-endpoint") || "");
     var createPostEndpoint = String(root.getAttribute("data-create-post-endpoint") || "");
@@ -174,6 +175,14 @@
         return safe.replace(/[&<>"']/g, function (character) {
             return map[character] || character;
         });
+    }
+
+    function deleteContentPreview(value) {
+        var preview = String(value || "").replace(/\s+/g, " ").trim();
+        if (!preview) {
+            return "(No text content)";
+        }
+        return preview.length > 140 ? preview.slice(0, 137) + "..." : preview;
     }
 
     function getCookie(name) {
@@ -336,7 +345,7 @@
             return;
         }
 
-        var avatarUrl = String(currentUser.avatarUrl || "").trim();
+        var avatarUrl = String(currentUser.avatarUrl || defaultAvatarUrl).trim();
         if (avatarUrl) {
             chatAvatarImage.src = avatarUrl;
             chatAvatarImage.removeAttribute("hidden");
@@ -758,13 +767,8 @@
     }
 
     function renderCommentAvatar(commentLike) {
-        var avatarUrl = String(commentLike && commentLike.avatarImage ? commentLike.avatarImage : "").trim();
-        var initials = String(commentLike && commentLike.avatar ? commentLike.avatar : initialsForName(commentLike && commentLike.author)).trim() || "U";
-        if (avatarUrl) {
-            return '<span class="ch-comment-avatar" aria-hidden="true"><img src="' + escapeHtml(avatarUrl) + '" alt=""></span>';
-        }
-
-        return '<span class="ch-comment-avatar" aria-hidden="true">' + escapeHtml(initials) + '</span>';
+        var avatarUrl = String(commentLike && commentLike.avatarImage ? commentLike.avatarImage : defaultAvatarUrl).trim() || defaultAvatarUrl;
+        return '<span class="ch-comment-avatar" aria-hidden="true"><img src="' + escapeHtml(avatarUrl) + '" alt="" data-avatar-image="true"></span>';
     }
 
     function commentCountFor(post) {
@@ -1297,19 +1301,21 @@
 
         if (item.isConfirmingDelete) {
             return [
-                '<div class="ch-comment-delete-confirm" role="group" aria-label="Confirm comment deletion">',
-                '<span>Delete this comment?</span>',
+                '<div class="ch-comment-delete-confirm" role="dialog" aria-modal="true" aria-label="Confirm comment deletion">',
+                '<strong>Delete Comment?</strong>',
+                '<span>Your comment <em class="ch-comment-delete-preview">"' + escapeHtml(deleteContentPreview(item.text)) + '"</em> will be permanently deleted and cannot be recovered.</span>',
+                '<div class="ch-comment-delete-actions">',
                 '<button type="button" data-comment-delete-cancel="' + commentId + '">Cancel</button>',
                 '<button type="button" class="is-danger" data-comment-delete-confirm="' + commentId + '">Delete</button>',
+                '</div>',
                 '</div>'
             ].join("");
         }
 
         return [
-            '<div class="ch-comment-manage-actions">',
-            '<button type="button" data-comment-edit-open="' + commentId + '" aria-label="Edit ' + escapeHtml(itemLabel) + '">Edit</button>',
-            '<button type="button" class="is-danger" data-comment-delete-open="' + commentId + '" aria-label="Delete ' + escapeHtml(itemLabel) + '">Delete</button>',
-            '</div>'
+            '<button type="button" class="ch-comment-action is-danger focus-ring" data-comment-delete-open="' + commentId + '" aria-label="Delete ' + escapeHtml(itemLabel) + '">',
+            '<i data-lucide="trash-2" class="ch-icon" aria-hidden="true"></i>',
+            '</button>'
         ].join("");
     }
 
@@ -1348,8 +1354,8 @@
                     '<button type="button" class="ch-comment-action' + (replyTargetId === String(reply.id) ? ' is-active' : '') + ' focus-ring" data-comment-reply-toggle="' + escapeHtml(reply.id) + '" aria-label="Reply to this reply">',
                     '<i data-lucide="corner-up-left" class="ch-icon" aria-hidden="true"></i>',
                     '</button>',
-                    '</div>',
                     renderCommentManagementControls(reply, "reply"),
+                    '</div>',
                     '</div>',
                     '</div>',
                     '</article>'
@@ -1375,8 +1381,8 @@
                 '<button type="button" class="ch-comment-action' + (replyTargetId === String(comment.id) ? ' is-active' : '') + ' focus-ring" data-comment-reply-toggle="' + escapeHtml(comment.id) + '" aria-label="Reply to comment">',
                 '<i data-lucide="corner-up-left" class="ch-icon" aria-hidden="true"></i>',
                 '</button>',
-                '</div>',
                 renderCommentManagementControls(comment, "comment"),
+                '</div>',
                 repliesMarkup ? '<div class="ch-reply-list">' + repliesMarkup + '</div>' : '',
                 '</div>',
                 '</div>',
@@ -1409,12 +1415,8 @@
     }
 
     function renderPostAvatar(post) {
-        var avatarUrl = String(post && post.avatarImage ? post.avatarImage : "").trim();
-        if (avatarUrl) {
-            return '<span class="ch-post-avatar" aria-hidden="true"><img src="' + escapeHtml(avatarUrl) + '" alt=""></span>';
-        }
-
-        return '<span class="ch-post-avatar" aria-hidden="true">' + escapeHtml(post.avatar) + '</span>';
+        var avatarUrl = String(post && post.avatarImage ? post.avatarImage : defaultAvatarUrl).trim() || defaultAvatarUrl;
+        return '<span class="ch-post-avatar" aria-hidden="true"><img src="' + escapeHtml(avatarUrl) + '" alt="" data-avatar-image="true"></span>';
     }
 
     function renderPostAttachments(post) {
@@ -2431,7 +2433,7 @@
                 if (deleteConfirmEvent.defaultPrevented) {
                     return;
                 }
-                if (!window.confirm("Delete this post? This can't be undone.")) {
+                if (!window.confirm("Delete this post?\n\n\"" + deleteContentPreview(menuActionPost.content) + "\"\n\nThis can't be undone.")) {
                     return;
                 }
 

@@ -5302,21 +5302,74 @@ function initBeneficiaryDistributionPage() {
     var feedbackActivityMenu = page.querySelector("#beneficiary-feedback-activity-menu");
     var feedbackActivityValue = page.querySelector("#beneficiary-feedback-activity-value");
     var feedbackActivityInput = page.querySelector("#beneficiary-feedback-activity-value-input");
-    var feedbackStars = page.querySelector("#beneficiary-feedback-stars");
-    var feedbackComment = page.querySelector("#beneficiary-feedback-comment");
-    var feedbackRatingValue = page.querySelector("#beneficiary-feedback-rating-value");
+    var feedbackStarGroup = page.querySelector("#beneficiary-feedback-star-group");
     var feedbackRatingError = page.querySelector("#beneficiary-feedback-rating-error");
-    var feedbackSubmitConfirmation = page.querySelector("#beneficiary-feedback-submit-confirmation");
     var feedbackSubmittedState = page.querySelector("#beneficiary-feedback-submitted-state");
+    var feedbackSubmitRow = page.querySelector("#beneficiary-feedback-submit-row");
+    var feedbackQuestionPanel = page.querySelector("#beneficiary-feedback-question-panel");
+    var feedbackQuestionText = page.querySelector("#beneficiary-feedback-question-text");
+    var feedbackQuestionStep = page.querySelector("#beneficiary-feedback-question-step");
+    var feedbackQuestionProgress = page.querySelector("#beneficiary-feedback-question-progress");
+    var feedbackOptionRow = page.querySelector("#beneficiary-feedback-option-row");
+    var feedbackBackButton = page.querySelector("#beneficiary-feedback-back");
+    var feedbackSubmitButton = page.querySelector("#beneficiary-feedback-submit");
     var feedbackErrorModal = page.querySelector("#beneficiary-feedback-error-modal");
     var feedbackErrorMessage = page.querySelector("#beneficiary-feedback-error-message");
     var categoryGrid = page.querySelector("#beneficiary-category-grid");
     var selectedCategory = "all";
     var allUpcoming = [];
     var allHistory = [];
-    var selectedFeedbackRating = 0;
+    var currentFeedbackQuestion = 0;
+    var feedbackAnswers = [null, null, null];
+    var feedbackTransitioning = false;
+    var feedbackTransitionTimer = null;
     var confirmedUpcoming = {};
     var feedbackActivities = [];
+    var feedbackQuestions = [
+        {
+            prompt: "How helpful was this outreach activity for you?",
+            choices: ["Not helpful", "Slightly helpful", "Somewhat helpful", "Helpful", "Very helpful"],
+        },
+        {
+            prompt: "Did this activity meet your needs?",
+            choices: ["Not at all", "A little", "Partly", "Mostly", "Completely"],
+        },
+        {
+            prompt: "How likely are you to join a similar activity again?",
+            choices: ["Very unlikely", "Unlikely", "Unsure", "Likely", "Very likely"],
+        },
+    ];
+
+    function renderFeedbackQuestion() {
+        if (!feedbackQuestionText || !feedbackOptionRow) return;
+        var question = feedbackQuestions[currentFeedbackQuestion];
+        feedbackQuestionText.textContent = question.prompt;
+        feedbackQuestionStep.textContent = (currentFeedbackQuestion + 1) + " of " + feedbackQuestions.length;
+        feedbackQuestionProgress.setAttribute("aria-valuenow", String(currentFeedbackQuestion + 1));
+        feedbackQuestionProgress.firstElementChild.style.width = ((currentFeedbackQuestion + 1) / feedbackQuestions.length * 100) + "%";
+        feedbackOptionRow.setAttribute("aria-label", question.prompt);
+        feedbackOptionRow.innerHTML = question.choices.map(function (label, index) {
+            var score = index + 1;
+            var selected = feedbackAnswers[currentFeedbackQuestion] === score;
+            return '<button type="button" class="beneficiary-feedback-option' + (selected ? ' is-selected' : '') + '" data-rating-option="' + score + '" data-rating-label="' + escapeHtml(label) + '" aria-pressed="' + String(selected) + '"><span class="beneficiary-rating-number">' + score + '</span><span>' + escapeHtml(label) + '</span></button>';
+        }).join("");
+        feedbackBackButton.hidden = currentFeedbackQuestion === 0;
+        feedbackSubmitButton.textContent = currentFeedbackQuestion === feedbackQuestions.length - 1 ? "Submit feedback" : "Next";
+        feedbackSubmitButton.disabled = feedbackAnswers[currentFeedbackQuestion] === null || feedbackTransitioning;
+    }
+
+    function moveFeedbackQuestion(nextIndex) {
+        if (feedbackTransitioning || nextIndex < 0 || nextIndex >= feedbackQuestions.length) return;
+        feedbackTransitioning = true;
+        feedbackQuestionPanel.classList.add("is-transitioning");
+        feedbackTransitionTimer = window.setTimeout(function () {
+            currentFeedbackQuestion = nextIndex;
+            feedbackTransitioning = false;
+            feedbackTransitionTimer = null;
+            renderFeedbackQuestion();
+            feedbackQuestionPanel.classList.remove("is-transitioning");
+        }, 160);
+    }
 
     function closeFeedbackErrorModal() {
         if (feedbackErrorModal) feedbackErrorModal.hidden = true;
@@ -5390,11 +5443,6 @@ function initBeneficiaryDistributionPage() {
             var value = item.feedback_target === "activity" ? "activity:" + id : id;
             return '<li class="beneficiary-feedback-dropdown-option" id="beneficiary-feedback-option-' + index + '" role="option" tabindex="-1" aria-selected="false" data-feedback-option="' + escapeHtml(value) + '" data-feedback-option-index="' + index + '">' + escapeHtml(label) + '</li>';
         }).join("");
-        if (feedbackStars) {
-            feedbackStars.innerHTML = [1, 2, 3, 4, 5].map(function (value) {
-                return '<button type="button" class="beneficiary-star" data-shared-rating="' + value + '" aria-label="' + value + ' star">&#9733;</button>';
-            }).join("");
-        }
         setFeedbackActivity(items[0], 0);
     }
 
@@ -5407,13 +5455,19 @@ function initBeneficiaryDistributionPage() {
         feedbackActivityInput.value = value;
         var hasFeedback = Boolean(item.hasFeedback || item.feedback);
         if (feedbackSubmittedState) feedbackSubmittedState.hidden = !hasFeedback;
-        if (feedbackForm) feedbackForm.classList.toggle("is-feedback-submitted", hasFeedback);
-        if (feedbackComment) feedbackComment.value = hasFeedback && item.feedback ? (item.feedback.comment || "") : "";
-        selectedFeedbackRating = hasFeedback && item.feedback ? Number(item.feedback.rating || 0) : 0;
-        if (feedbackRatingValue) feedbackRatingValue.textContent = selectedFeedbackRating ? selectedFeedbackRating + (selectedFeedbackRating === 1 ? " star" : " stars") : "No rating selected";
-        if (feedbackStars) feedbackStars.querySelectorAll("[data-shared-rating]").forEach(function (star) { star.classList.toggle("is-selected", Number(star.getAttribute("data-shared-rating")) <= selectedFeedbackRating); });
-        var submitButton = feedbackForm ? feedbackForm.querySelector("button[type='submit']") : null;
-        if (submitButton) submitButton.hidden = hasFeedback;
+        if (feedbackSubmittedState) feedbackSubmittedState.querySelector("p").textContent = "Your feedback for this activity has been submitted.";
+        if (feedbackStarGroup) feedbackStarGroup.hidden = hasFeedback;
+        if (feedbackSubmitRow) feedbackSubmitRow.hidden = hasFeedback;
+        if (feedbackTransitionTimer) {
+            window.clearTimeout(feedbackTransitionTimer);
+            feedbackTransitionTimer = null;
+            feedbackQuestionPanel.classList.remove("is-transitioning");
+        }
+        currentFeedbackQuestion = 0;
+        feedbackAnswers = [null, null, null];
+        feedbackTransitioning = false;
+        renderFeedbackQuestion();
+        if (feedbackRatingError) feedbackRatingError.hidden = true;
         Array.prototype.slice.call(feedbackActivityMenu.querySelectorAll("[data-feedback-option]"))
             .forEach(function (option) { option.setAttribute("aria-selected", String(Number(option.getAttribute("data-feedback-option-index")) === index)); });
     }
@@ -5450,11 +5504,13 @@ function initBeneficiaryDistributionPage() {
         upcomingList.innerHTML = items.map(function (item) {
             var activityId = String(item.id || item.title || "upcoming-activity");
             var attendanceStatus = String(item.beneficiary_attendance_status || "unsubmitted");
-            var statusLabel = item.beneficiary_attendance_status_label || "Awaiting volunteer confirmation";
+            var statusLabel = item.beneficiary_attendance_status_label || "Confirm attendance";
             var isConfirmed = attendanceStatus === "confirmed";
-            var isAwaitingApproval = attendanceStatus === "pending";
+            var isAwaitingApproval = attendanceStatus === "pending" && String(item.beneficiary_attendance_status_label || "").toLowerCase() === "awaiting approval";
+            var isUnsubmitted = attendanceStatus === "unsubmitted" || !attendanceStatus;
             var statusClass = isConfirmed ? "is-confirmed" : isAwaitingApproval ? "is-awaiting" : "is-pending";
-            return '<article class="beneficiary-upcoming-row"><div class="beneficiary-row-main"><div class="beneficiary-upcoming-content"><p class="beneficiary-record-title">' + escapeHtml(item.title || "Scheduled distribution") + '</p><p class="beneficiary-record-meta"><span>' + escapeHtml(item.date_label || item.datetime || "") + '</span><span aria-hidden="true"> · </span><span>' + escapeHtml(item.location || "Location to be confirmed") + '</span></p></div><div class="beneficiary-upcoming-status"><span class="beneficiary-attendance-button ' + statusClass + '">' + escapeHtml(isConfirmed ? "Attendance Confirmed" : isAwaitingApproval ? "Awaiting Approval" : statusLabel) + '</span></div></div></article>';
+            var visibleStatus = isConfirmed ? "Attendance Confirmed" : isAwaitingApproval ? "Awaiting Approval" : isUnsubmitted ? "Confirm attendance" : statusLabel;
+            return '<article class="beneficiary-upcoming-row"><div class="beneficiary-row-main"><div class="beneficiary-upcoming-content"><p class="beneficiary-record-title">' + escapeHtml(item.title || "Scheduled distribution") + '</p><p class="beneficiary-record-meta"><span>' + escapeHtml(item.date_label || item.datetime || "") + '</span><span aria-hidden="true"> · </span><span>' + escapeHtml(item.location || "Location to be confirmed") + '</span></p></div><div class="beneficiary-upcoming-status"><span class="beneficiary-attendance-button ' + statusClass + '">' + escapeHtml(visibleStatus) + '</span></div></div></article>';
         }).join("");
     }
 
@@ -5491,7 +5547,7 @@ function initBeneficiaryDistributionPage() {
         var modalClose = event.target.closest("[data-category-modal-close]");
         var feedbackErrorClose = event.target.closest("[data-feedback-error-close]");
         var feedbackOption = event.target.closest("[data-feedback-option]");
-        var sharedStar = event.target.closest("[data-shared-rating]");
+        var ratingOption = event.target.closest("[data-rating-option]");
         var confirm = event.target.closest("[data-upcoming-attendance]");
         if (modalClose) { closeCategoryModal(); return; }
         if (feedbackErrorClose) { closeFeedbackErrorModal(); return; }
@@ -5501,10 +5557,14 @@ function initBeneficiaryDistributionPage() {
             toggleFeedbackDropdown(false);
             feedbackActivityTrigger.focus();
         }
-        if (sharedStar) {
-            selectedFeedbackRating = Number(sharedStar.getAttribute("data-shared-rating"));
-            page.querySelectorAll("[data-shared-rating]").forEach(function (item) { item.classList.toggle("is-selected", Number(item.getAttribute("data-shared-rating")) <= selectedFeedbackRating); });
-            if (feedbackRatingValue) feedbackRatingValue.textContent = selectedFeedbackRating + (selectedFeedbackRating === 1 ? " star" : " stars");
+        if (ratingOption) {
+            feedbackAnswers[currentFeedbackQuestion] = Number(ratingOption.getAttribute("data-rating-option")) || null;
+            feedbackStarGroup.querySelectorAll("[data-rating-option]").forEach(function (button) {
+                var isSelected = Number(button.getAttribute("data-rating-option")) === feedbackAnswers[currentFeedbackQuestion];
+                button.classList.toggle("is-selected", isSelected);
+                button.setAttribute("aria-pressed", String(isSelected));
+            });
+            feedbackSubmitButton.disabled = false;
             if (feedbackRatingError) feedbackRatingError.hidden = true;
         }
         if (confirm) return;
@@ -5514,6 +5574,11 @@ function initBeneficiaryDistributionPage() {
         feedbackActivityTrigger.addEventListener("click", function () { toggleFeedbackDropdown(); });
         feedbackActivityTrigger.addEventListener("keydown", function (event) {
             if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleFeedbackDropdown(true); }
+        });
+    }
+    if (feedbackBackButton) {
+        feedbackBackButton.addEventListener("click", function () {
+            moveFeedbackQuestion(currentFeedbackQuestion - 1);
         });
     }
     if (feedbackActivityMenu) {
@@ -5539,17 +5604,6 @@ function initBeneficiaryDistributionPage() {
         if (event.key === "Escape" && feedbackActivityMenu && !feedbackActivityMenu.hidden) { toggleFeedbackDropdown(false); feedbackActivityTrigger.focus(); }
     });
 
-    if (feedbackStars) {
-        feedbackStars.addEventListener("mouseover", function (event) {
-            var star = event.target.closest("[data-shared-rating]");
-            if (!star) return;
-            var preview = Number(star.getAttribute("data-shared-rating"));
-            feedbackStars.querySelectorAll("[data-shared-rating]").forEach(function (item) { item.classList.toggle("is-preview", Number(item.getAttribute("data-shared-rating")) <= preview); });
-        });
-        feedbackStars.addEventListener("mouseleave", function () {
-            feedbackStars.querySelectorAll("[data-shared-rating]").forEach(function (item) { item.classList.remove("is-preview"); });
-        });
-    }
     window.addEventListener("beneficiary-attendance-confirmed", function (event) {
         var activityId = event.detail && event.detail.activityId;
         if (!activityId) return;
@@ -5565,20 +5619,32 @@ function initBeneficiaryDistributionPage() {
     if (feedbackForm) {
         feedbackForm.addEventListener("submit", function (event) {
             event.preventDefault();
-            if (!selectedFeedbackRating) {
+            if (feedbackAnswers[currentFeedbackQuestion] === null) {
                 if (feedbackRatingError) feedbackRatingError.hidden = false;
                 return;
             }
+            if (currentFeedbackQuestion < feedbackQuestions.length - 1) {
+                moveFeedbackQuestion(currentFeedbackQuestion + 1);
+                return;
+            }
+            if (feedbackAnswers.some(function (answer) { return answer === null; })) return;
             if (!feedbackActivityInput || !feedbackActivityInput.value) return;
             var selectedFeedbackItem = feedbackActivities.find(function (item) {
                 var itemId = item.assistance_record_id || item.id;
                 return (item.feedback_target === "activity" ? "activity:" + itemId : String(itemId)) === feedbackActivityInput.value;
             });
             if (selectedFeedbackItem && (selectedFeedbackItem.hasFeedback || selectedFeedbackItem.feedback)) return;
-            var submitButton = feedbackForm.querySelector("button[type='submit']");
-            var comment = feedbackComment.value.trim();
             var feedbackTarget = feedbackActivityInput.value || "";
-            var body = new URLSearchParams({rating: String(selectedFeedbackRating), comment: comment});
+            var question2Label = feedbackQuestions[1].choices[feedbackAnswers[1] - 1];
+            var question3Label = feedbackQuestions[2].choices[feedbackAnswers[2] - 1];
+            var comment = "Q2: " + question2Label + " | Q3: " + question3Label;
+            var body = new URLSearchParams({
+                rating: String(feedbackAnswers[0]),
+                comment: comment,
+                question_1: String(feedbackAnswers[0]),
+                question_2: String(feedbackAnswers[1]),
+                question_3: String(feedbackAnswers[2]),
+            });
             if (feedbackTarget.indexOf("activity:") === 0) {
                 body.set("activity_id", feedbackTarget.slice("activity:".length));
             } else {
@@ -5591,9 +5657,8 @@ function initBeneficiaryDistributionPage() {
                         var itemId = item.assistance_record_id || item.id;
                         return (item.feedback_target === "activity" ? "activity:" + itemId : String(itemId)) === feedbackActivityInput.value;
                     });
-                    if (selected) { selected.hasFeedback = true; selected.feedback = payload.feedback || {rating: selectedFeedbackRating, comment: comment}; }
+                    if (selected) { selected.hasFeedback = true; selected.feedback = payload.feedback || {rating: feedbackAnswers[0], comment: comment}; }
                     setFeedbackActivity(selected, feedbackActivities.indexOf(selected));
-                    if (feedbackSubmitConfirmation) { feedbackSubmitConfirmation.textContent = "Feedback submitted"; feedbackSubmitConfirmation.hidden = false; }
                 })
                 .catch(function (error) { openFeedbackErrorModal(error.message); });
         });
@@ -5604,7 +5669,9 @@ function initBeneficiaryDistributionPage() {
         .then(function (payload) {
             var upcoming = (payload.next_pickup && payload.next_pickup.upcoming_items) || [];
             var history = payload.distribution_history || [];
-            var completedActivities = payload.completed_activities || [];
+            var completedActivities = (payload.completed_activities || []).filter(function (activity) {
+                return activity.can_submit_feedback === true;
+            });
             if (pickupStat) pickupStat.textContent = String(history.length);
             if (nextStat) nextStat.textContent = payload.next_pickup && payload.next_pickup.date_label ? payload.next_pickup.date_label : "-";
             if (nextStatMeta) nextStatMeta.textContent = payload.next_pickup && payload.next_pickup.location ? payload.next_pickup.location : "No pickup scheduled";
@@ -5857,26 +5924,31 @@ if (document.readyState === "loading") {
                         <input id="beneficiary-feedback-activity-value-input" type="hidden" value="">
                     </div>
 
-                    <div class="beneficiary-feedback-field beneficiary-feedback-rating-field">
-                        <label>Rating</label>
-                        <div id="beneficiary-feedback-stars" class="beneficiary-stars" role="radiogroup" aria-label="Rating"></div>
-                        <p id="beneficiary-feedback-rating-value" class="beneficiary-feedback-rating-value" aria-live="polite">No rating selected</p>
-                        <p id="beneficiary-feedback-rating-error" class="beneficiary-feedback-error" role="alert" hidden>Please select a rating before submitting.</p>
-                    </div>
-
-                    <div class="beneficiary-feedback-field beneficiary-feedback-comment-field">
-                        <label for="beneficiary-feedback-comment">Comments <span>Optional</span></label>
-                        <textarea id="beneficiary-feedback-comment" rows="3" placeholder="Share a short comment (optional)"></textarea>
+                    <div id="beneficiary-feedback-star-group" class="beneficiary-feedback-survey">
+                        <div class="beneficiary-feedback-step-head">
+                            <span id="beneficiary-feedback-question-step" aria-live="polite">1 of 3</span>
+                            <div id="beneficiary-feedback-question-progress" class="beneficiary-feedback-progress" role="progressbar" aria-label="Feedback progress" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1"><span></span></div>
+                        </div>
+                        <div id="beneficiary-feedback-question-panel" class="beneficiary-feedback-question-panel">
+                            <label id="beneficiary-feedback-question-text">How helpful was this outreach activity for you?</label>
+                            <div id="beneficiary-feedback-option-row" class="beneficiary-feedback-option-row" role="group" aria-label="How helpful was this outreach activity for you?"></div>
+                        </div>
+                        <p id="beneficiary-feedback-rating-error" class="beneficiary-feedback-error" role="alert" hidden>Please select an answer to continue.</p>
                     </div>
                   </div>
-                  <div class="beneficiary-feedback-submit-row">
-                      <button type="submit" class="beneficiary-feedback-submit">Submit feedback</button>
-                      <span id="beneficiary-feedback-submitted-state" class="beneficiary-feedback-submitted-state" aria-live="polite" hidden>Feedback submitted for this event</span>
-                      <span id="beneficiary-feedback-submit-confirmation" class="beneficiary-feedback-submit-confirmation" aria-live="polite" hidden>Feedback submitted</span>
+                  <div id="beneficiary-feedback-submitted-state" class="beneficiary-feedback-submitted-state" aria-live="polite" hidden>
+                      <span class="beneficiary-feedback-submitted-icon" aria-hidden="true">&#10003;</span>
+                      <div>
+                          <strong>Feedback received</strong>
+                          <p>Your feedback for this activity has been submitted.</p>
+                      </div>
+                  </div>
+                  <div id="beneficiary-feedback-submit-row" class="beneficiary-feedback-submit-row">
+                      <button id="beneficiary-feedback-back" type="button" class="beneficiary-feedback-back" hidden>Back</button>
+                      <button id="beneficiary-feedback-submit" type="submit" class="beneficiary-feedback-submit" disabled>Next</button>
                   </div>
                 </form>
             </div>
-            <div id="beneficiary-feedback-confirmation" class="beneficiary-feedback-confirmation beneficiary-feedback-confirmation-strip" hidden>Thanks for your feedback ✓</div>
         </article>
 
         <div id="beneficiary-category-modal" class="beneficiary-category-modal" role="dialog" aria-modal="true" aria-labelledby="beneficiary-category-modal-title" hidden>
@@ -6168,34 +6240,142 @@ if (document.readyState === "loading") {
     #dashboard-shell .beneficiary-feedback-dropdown-option:focus-visible,
     #dashboard-shell .beneficiary-feedback-dropdown-option[aria-selected="true"] { background: #f1f4f2; color: #111827; }
 
-    #dashboard-shell .beneficiary-feedback-comment-field textarea {
-        width: 100%;
+    #dashboard-shell .beneficiary-feedback-survey {
+        display: grid;
+        gap: .8rem;
+    }
+
+    #dashboard-shell .beneficiary-feedback-survey[hidden] {
+        display: none !important;
+    }
+
+    #dashboard-shell .beneficiary-feedback-step-head {
+        display: flex;
+        align-items: center;
+        gap: .8rem;
+        margin-bottom: 1rem;
+        color: #64748b;
+        font-size: .76rem !important;
+        font-weight: 700;
+    }
+
+    #dashboard-shell .beneficiary-feedback-progress {
+        flex: 1;
+        height: 5px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #e8efeb;
+    }
+
+    #dashboard-shell .beneficiary-feedback-progress span {
         display: block;
-        box-sizing: border-box;
-        min-height: 96px;
-        resize: vertical;
-        padding: .75rem .85rem;
-        border: 1px solid var(--bd-border);
-        border-radius: 9px;
+        height: 100%;
+        border-radius: inherit;
+        background: #0d7c6d;
+        transition: width 200ms ease;
+    }
+
+    #dashboard-shell .beneficiary-feedback-question-panel {
+        transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    #dashboard-shell .beneficiary-feedback-question-panel.is-transitioning {
+        opacity: 0;
+        transform: translateX(10px);
+    }
+
+    #dashboard-shell .beneficiary-feedback-question-panel label {
+        display: block;
+        color: #0f172a;
+        font-size: 1rem !important;
+        line-height: 1.45;
+        font-weight: 700;
+    }
+
+    #dashboard-shell .beneficiary-feedback-option-row {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: .5rem;
+        margin-top: .55rem;
+    }
+
+    #dashboard-shell .beneficiary-feedback-option {
+        grid-column: span 2;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        min-height: 56px;
+        border: 1px solid #d4d9dd;
+        border-radius: 8px;
         background: #fff;
-        color: #111827;
-        font-size: .8rem !important;
+        color: #334155;
+        padding: .42rem .7rem;
+        font-size: .7rem !important;
+        line-height: 1.35;
+        font-weight: 400;
+        text-align: left;
+        cursor: pointer;
+        transition: all 150ms ease;
+    }
+
+    #dashboard-shell .beneficiary-feedback-option:nth-child(4) {
+        grid-column: 2 / span 2;
+    }
+
+    #dashboard-shell .beneficiary-feedback-option:nth-child(5) {
+        grid-column: 4 / span 2;
+    }
+
+    #dashboard-shell .beneficiary-rating-number {
+        display: inline-flex;
+        flex: 0 0 1.5rem;
+        width: 1.5rem;
+        height: 1.5rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: #eef3f1;
+        color: #36554c;
+        font-size: .75rem;
+        font-weight: 700;
+    }
+
+    #dashboard-shell .beneficiary-feedback-option:hover,
+    #dashboard-shell .beneficiary-feedback-option:focus-visible {
+        border-color: #0c7c6a;
+        background: #f1faf7;
+        color: #0f5f52;
         outline: none;
     }
 
-    #dashboard-shell .beneficiary-feedback-comment-field textarea:focus { border-color: #374151; box-shadow: 0 0 0 2px rgba(55, 65, 81, .12); }
+    #dashboard-shell .beneficiary-feedback-option.is-selected {
+        border-color: #0c7c6a;
+        background: #0d7c6d;
+        color: #fff;
+    }
 
-    #dashboard-shell .beneficiary-feedback-submit-row { display: flex; align-items: center; justify-content: flex-end; gap: .8rem; margin-top: 0; padding-top: .7rem; border-top: 1px solid rgba(0, 0, 0, .08); }
+    #dashboard-shell .beneficiary-feedback-option.is-selected .beneficiary-rating-number {
+        background: rgba(255, 255, 255, .2);
+        color: #fff;
+    }
+
+    #dashboard-shell .beneficiary-feedback-submit-row { display: flex; align-items: center; justify-content: space-between; gap: .8rem; margin-top: 1rem; padding-top: .7rem; border-top: 1px solid rgba(0, 0, 0, .08); }
+    #dashboard-shell .beneficiary-feedback-submit-row[hidden] { display: none !important; }
     #dashboard-shell .beneficiary-feedback-submit-row .beneficiary-feedback-submit { min-width: 150px; padding: .7rem 1rem; background: var(--bd-accent); box-shadow: none; }
-    #dashboard-shell .beneficiary-feedback-submit-confirmation { color: #4b5563; font-size: .76rem !important; }
-    #dashboard-shell .beneficiary-feedback-submitted-state { color: var(--bd-accent); font-size: .8rem !important; font-weight: 700; }
+    #dashboard-shell .beneficiary-feedback-submit:disabled { cursor: not-allowed; opacity: .55; }
+    #dashboard-shell .beneficiary-feedback-back { min-width: 90px; padding: .7rem 1rem; border: 1px solid #d4d9dd; border-radius: 8px; background: #fff; color: #334155; font-size: .8rem !important; font-weight: 600; cursor: pointer; }
+    #dashboard-shell .beneficiary-feedback-back[hidden] { display: none !important; }
+    #dashboard-shell .beneficiary-feedback-submitted-state { display: flex; align-items: flex-start; gap: .8rem; margin-top: .75rem; padding: 1rem; border: 1px solid #cfe4d7; border-radius: 9px; background: var(--bd-accent-soft); color: #145b48; }
+    #dashboard-shell .beneficiary-feedback-submitted-state[hidden] { display: none; }
+    #dashboard-shell .beneficiary-feedback-submitted-state strong { display: block; font-size: .9rem !important; font-weight: 700; }
+    #dashboard-shell .beneficiary-feedback-submitted-state p { margin: .2rem 0 0; color: #42675d; font-size: .78rem !important; }
+    #dashboard-shell .beneficiary-feedback-submitted-icon { display: inline-flex; flex: 0 0 1.55rem; width: 1.55rem; height: 1.55rem; align-items: center; justify-content: center; border-radius: 50%; background: #d8efe2; color: #176b52; font-size: .92rem; font-weight: 700; }
     #dashboard-shell .beneficiary-feedback-error { margin: .45rem 0 0; color: #b42318; font-size: .74rem !important; }
     #dashboard-shell .beneficiary-feedback-empty { padding: 1.6rem 1rem; border: 1px dashed var(--bd-border); border-radius: 10px; background: #f8fbf9; text-align: center; }
     #dashboard-shell .beneficiary-feedback-empty strong,
     #dashboard-shell .beneficiary-feedback-empty span { display: block; }
     #dashboard-shell .beneficiary-feedback-empty strong { color: #111827; font-size: .88rem !important; }
     #dashboard-shell .beneficiary-feedback-empty span { margin-top: .3rem; color: var(--bd-muted); font-size: .78rem !important; }
-    #dashboard-shell .beneficiary-feedback-confirmation-strip { margin-top: .15rem; padding: 1rem 1.1rem; border: 1px solid #cfe4d7; border-radius: 9px; background: var(--bd-accent-soft); color: var(--bd-accent); font-size: .82rem !important; font-weight: 700; }
 
     #dashboard-shell .beneficiary-distribution-stats {
         display: grid;
@@ -6779,9 +6959,22 @@ if (document.readyState === "loading") {
         var title = String(activity && activity.title ? activity.title : "Upcoming activity");
         var description = String(activity && activity.description ? activity.description : "");
         var rows = buildActivityMetaRows(activity);
-        var isConfirmed = stateName === "confirmed" || activity.beneficiary_attendance_status === "confirmed";
-        var buttonLabel = isConfirmed ? "Confirmed ✓" : activity.beneficiary_attendance_status === "pending" && activity.beneficiary_attendance_status_label === "Awaiting approval" ? "Awaiting Approval" : "Awaiting volunteer confirmation";
-        var buttonClass = isConfirmed ? "udc-action-btn is-confirmed" : "udc-action-btn is-pending";
+        var attendanceStatus = activity && activity.beneficiary_attendance_status ? activity.beneficiary_attendance_status : "unsubmitted";
+        var isConfirmed = stateName === "confirmed" || attendanceStatus === "confirmed";
+        var isUnsubmitted = !attendanceStatus || attendanceStatus === "unsubmitted";
+        var buttonLabel = isConfirmed ? "Confirmed ✓" : attendanceStatus === "pending" && activity && activity.beneficiary_attendance_status_label === "Awaiting approval" ? "Awaiting Approval" : isUnsubmitted ? "Confirm attendance" : "Awaiting volunteer confirmation";
+        var buttonClass = isConfirmed ? "udc-action-btn is-confirmed" : isUnsubmitted ? "udc-action-btn" : "udc-action-btn is-pending";
+
+        if (isUnsubmitted) {
+            container.innerHTML = ''
+                + (activity && activity.image_url ? '<img class="udc-pickup-image" src="' + escapeHtml(activity.image_url) + '" alt="">' : '')
+                + '<p class="udc-pickup-title">' + escapeHtml(title) + '</p>'
+                + (description ? '<p class="udc-pickup-description">' + escapeHtml(description) + '</p>' : '')
+                + (rows.length ? '<div class="udc-pickup-fact-list">' + rows.join("") + '</div>' : '')
+                + '<button id="udc-confirm-pickup" type="button" class="focus-ring ' + buttonClass + '" data-activity-id="' + escapeHtml(String(activity && activity.id ? activity.id : "")) + '">' + escapeHtml(buttonLabel) + '</button>';
+            bindConfirmButton();
+            return;
+        }
 
         container.innerHTML = ''
             + (activity && activity.image_url ? '<img class="udc-pickup-image" src="' + escapeHtml(activity.image_url) + '" alt="">' : '')
@@ -6841,7 +7034,7 @@ if (document.readyState === "loading") {
         pickupMore.innerHTML = '<p class="udc-pickup-more-header">Also coming up</p>' + upcomingItems.map(function (item) {
             var title = String(item && item.title ? item.title : "Upcoming activity");
             var itemId = String(item && item.id ? item.id : "");
-            var status = item && item.beneficiary_attendance_status === "confirmed" ? "Confirmed" : item && item.beneficiary_attendance_status === "pending" && item.beneficiary_attendance_confirmed_at ? "Awaiting approval" : "Awaiting volunteer confirmation";
+            var status = item && item.beneficiary_attendance_status === "confirmed" ? "Confirmed" : item && item.beneficiary_attendance_status === "pending" && item.beneficiary_attendance_confirmed_at ? "Awaiting approval" : item && (item.beneficiary_attendance_status === "unsubmitted" || !item.beneficiary_attendance_status) ? "Confirm attendance" : "Awaiting volunteer confirmation";
             var metaParts = [];
             var dateText = item && item.date_label ? item.date_label : "";
             var timeText = item && item.time_label ? item.time_label : "";
@@ -7036,7 +7229,7 @@ if (document.readyState === "loading") {
             volunteer_count: pickup.volunteer_count || 0,
             status: pickup.status || "Confirmed",
             beneficiary_attendance_status: pickup.beneficiary_attendance_status || "unsubmitted",
-            beneficiary_attendance_status_label: pickup.beneficiary_attendance_status_label || "Awaiting volunteer confirmation"
+            beneficiary_attendance_status_label: pickup.beneficiary_attendance_status_label || "Confirm attendance"
         };
 
         if (!mainActivity.id || pickup.state === "none") {
@@ -7101,7 +7294,12 @@ if (document.readyState === "loading") {
         currentConfirmButton.addEventListener("click", function () {
             var activityId = currentConfirmButton.getAttribute("data-activity-id");
             if (activityId) confirmSharedAttendance(activityId);
-            setPickupState("confirmed");
+            currentConfirmButton.disabled = true;
+            currentConfirmButton.textContent = "Awaiting volunteer confirmation";
+            currentConfirmButton.classList.remove("udc-action-btn");
+            currentConfirmButton.classList.add("is-pending");
+            currentConfirmButton.classList.add("udc-action-btn");
+            setPickupState("pending");
         });
     }
 

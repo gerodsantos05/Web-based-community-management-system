@@ -1,0 +1,1821 @@
+{% extends "base.html" %}
+
+{% block title %}People - Users | HappYness{% endblock %}
+
+{% block extra_head %}
+<style>
+    .regular-users-page {
+        display: grid;
+        gap: 1rem;
+        width: 100%;
+        min-width: 0;
+        padding: 0.25rem;
+        color: #173a31;
+    }
+
+    .regular-users-summary {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.75rem;
+    }
+
+    .regular-users-kpi {
+        min-height: 108px;
+        padding: 0.8rem 0.9rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .regular-users-kpi-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .regular-users-kpi-label {
+        margin: 0;
+        color: #618176;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+    }
+
+    .regular-users-kpi-icon {
+        display: grid;
+        width: 2rem;
+        height: 2rem;
+        place-items: center;
+        border-radius: 999px;
+        background: rgba(16, 185, 129, 0.14);
+        color: #0f766e;
+    }
+
+    .regular-users-kpi-icon svg {
+        width: 1.1rem;
+        height: 1.1rem;
+    }
+
+    .regular-users-kpi-value {
+        margin: 0.3rem 0 0;
+        color: #16372e;
+        font-size: 1.8rem;
+        font-weight: 800;
+        line-height: 1.05;
+    }
+
+    .regular-users-kpi-meta {
+        margin: 0.35rem 0 0;
+        color: #4f766b;
+        font-size: 0.78rem;
+    }
+
+    .regular-users-card {
+        overflow: hidden;
+        border: 1px solid rgba(15, 118, 110, 0.16);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 10px 24px rgba(8, 83, 76, 0.1);
+    }
+
+    .regular-users-card-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid #deefe8;
+    }
+
+    .regular-users-directory-title h2 {
+        margin: 0;
+        color: #14352d;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .regular-users-count {
+        margin: 0.2rem 0 0;
+        color: #56766c;
+        font-size: 0.8rem;
+    }
+
+    .regular-users-controls {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.55rem;
+        flex: 1 1 620px;
+        min-width: 0;
+    }
+
+    .regular-users-search-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: min(100%, 300px);
+        flex: 1 1 200px;
+        min-width: 0;
+    }
+
+    .regular-users-search-icon {
+        position: absolute;
+        left: 0.65rem;
+        width: 1rem;
+        height: 1rem;
+        color: #5e7d73;
+        pointer-events: none;
+    }
+
+    .regular-users-search,
+    .regular-users-status-filter,
+    .regular-users-action {
+        min-height: 2.55rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        background: #fff;
+        color: #173a31;
+        font-size: 0.8rem;
+    }
+
+    .regular-users-search {
+        width: 100%;
+        padding: 0.5rem 0.75rem 0.5rem 2.2rem;
+    }
+
+    .regular-users-search::placeholder {
+        color: #9db5ac;
+    }
+
+    .regular-users-status-filter {
+        width: min(100%, 160px);
+        min-width: 120px;
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+    }
+
+    .regular-users-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        flex: 0 0 auto;
+        padding: 0.5rem 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 160ms ease, border-color 160ms ease;
+    }
+
+    .regular-users-action:hover {
+        border-color: #b8dfd1;
+        background: #f5fcf9;
+    }
+
+    .regular-users-action svg {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .regular-users-card-heading h2 {
+        margin: 0;
+        color: #14352d;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .regular-users-count {
+        color: #56766c;
+        font-size: 0.8rem;
+    }
+
+    .regular-users-table-wrap {
+        overflow-x: auto;
+    }
+
+    .regular-users-table {
+        width: 100%;
+        min-width: 820px;
+        border-collapse: collapse;
+    }
+
+    .regular-users-table th,
+    .regular-users-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e7f2ed;
+        text-align: left;
+        font-size: 0.82rem;
+    }
+
+    .regular-user-select-cell {
+        width: 1%;
+        text-align: center !important;
+        white-space: nowrap;
+    }
+
+    .regular-user-select-checkbox {
+        width: 1rem;
+        height: 1rem;
+        accent-color: #0f766e;
+        cursor: pointer;
+    }
+
+    .regular-users-table tbody tr.is-selected {
+        background: #effaf6;
+    }
+
+    .regular-users-bulk-bar {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin: 0.85rem 0.95rem 0;
+        padding: 0.7rem 0.8rem;
+        border: 1px solid #d7ebe4;
+        border-radius: 12px;
+        background: #f8fcfa;
+    }
+
+    .regular-users-bulk-bar[data-show="true"] {
+        display: flex;
+    }
+
+    .regular-users-bulk-copy {
+        color: #173a31;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .regular-users-bulk-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+    }
+
+    .regular-users-bulk-actions button {
+        min-height: 2.25rem;
+        padding: 0.42rem 0.68rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 9px;
+        background: #fff;
+        color: #1b4f43;
+        font-size: 0.76rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .regular-users-bulk-actions button:hover {
+        background: #f5fcf9;
+        border-color: #b8dfd1;
+    }
+
+    .regular-users-bulk-actions button.is-danger {
+        border-color: rgba(180, 35, 24, 0.24);
+        background: #b42318;
+        color: #fff;
+    }
+
+    .regular-users-bulk-actions button.is-danger:hover {
+        border-color: #9f1f15;
+        background: #9f1f15;
+    }
+
+    .regular-users-table th {
+        background: rgba(236, 253, 245, 0.86);
+        color: #2f6659;
+        font-weight: 700;
+    }
+
+    .regular-users-table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .regular-users-table tbody tr:hover {
+        background: rgba(236, 253, 245, 0.42);
+    }
+
+    .regular-users-table th:nth-child(5),
+    .regular-users-table td:nth-child(5),
+    .regular-users-table th:nth-child(6),
+    .regular-users-table td:nth-child(6) {
+        display: none;
+    }
+
+    .regular-users-table.users-show-all th:nth-child(5),
+    .regular-users-table.users-show-all td:nth-child(5),
+    .regular-users-table.users-show-all th:nth-child(6),
+    .regular-users-table.users-show-all td:nth-child(6) {
+        display: table-cell;
+    }
+
+    .regular-users-actions-cell {
+        width: 1%;
+        text-align: right !important;
+        white-space: nowrap;
+    }
+
+    .regular-user-actions-trigger {
+        display: inline-grid;
+        width: 2.1rem;
+        height: 2.1rem;
+        place-items: center;
+        padding: 0;
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        background: #fff;
+        color: #1b4f43;
+        cursor: pointer;
+        transition: background-color 160ms ease, border-color 160ms ease, box-shadow 180ms ease, transform 120ms ease;
+    }
+
+    .regular-user-actions-trigger:hover {
+        background: #f5fcf9;
+        border-color: #b8dfd1;
+    }
+
+    .regular-user-actions-trigger:active {
+        transform: scale(0.94);
+    }
+
+    .regular-user-actions-trigger.is-active,
+    .regular-user-actions-trigger[aria-expanded="true"] {
+        background: rgba(16, 185, 129, 0.16);
+        border-color: rgba(15, 118, 110, 0.45);
+        color: #0f5f4c;
+        box-shadow: 0 8px 16px rgba(15, 118, 110, 0.16);
+    }
+
+    .regular-user-actions-trigger:focus-visible,
+    .regular-user-actions-menu button:focus-visible {
+        outline: 2px solid #0f766e;
+        outline-offset: 2px;
+    }
+
+    .regular-user-actions-dots {
+        width: 0.24rem;
+        height: 0.24rem;
+        border-radius: 999px;
+        background: currentColor;
+        box-shadow: -0.36rem 0 0 currentColor, 0.36rem 0 0 currentColor;
+    }
+
+    .regular-user-actions-menu[hidden] {
+        display: none;
+    }
+
+    .regular-user-actions-menu {
+        position: fixed;
+        z-index: 120;
+        display: grid;
+        min-width: 14rem;
+        gap: 0.14rem;
+        padding: 0.34rem;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 18px 34px rgba(8, 83, 76, 0.18);
+        transform-origin: top center;
+        animation: regular-user-menu-reveal 180ms ease;
+    }
+
+    @keyframes regular-user-menu-reveal {
+        from {
+            opacity: 0;
+            transform: translateY(8px) scale(0.97);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .regular-user-actions-menu button {
+        display: block;
+        width: 100%;
+        padding: 0.8rem 0.75rem;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: #173a31;
+        font-size: 0.9rem;
+        font-weight: 650;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .regular-user-actions-menu button:hover {
+        background: #f0faf6;
+    }
+
+    .regular-user-actions-menu button.is-danger {
+        color: #c62828;
+    }
+
+    .regular-user-actions-menu button.is-danger:hover {
+        background: #fff4f3;
+    }
+
+    .regular-user-name {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        color: #173a31;
+        font-weight: 650;
+    }
+
+    .regular-user-avatar {
+        display: grid;
+        width: 2.5rem;
+        height: 2.5rem;
+        flex: 0 0 2.5rem;
+        place-items: center;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(16, 185, 129, 0.18);
+        color: #0f766e;
+        font-size: 0.85rem;
+        font-weight: 750;
+        text-transform: uppercase;
+    }
+
+    .regular-user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .regular-user-status {
+        display: inline-flex;
+        padding: 0.22rem 0.55rem;
+        border-radius: 999px;
+        background: #dcfce7;
+        color: #166534;
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+
+    .regular-user-status.is-inactive {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .regular-users-empty {
+        padding: 2rem 1rem !important;
+        color: #56766c;
+        text-align: center !important;
+    }
+
+    .regular-user-modal-backdrop[hidden],
+    .regular-user-modal[hidden] {
+        display: none;
+    }
+
+    .regular-user-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: rgba(15, 35, 30, 0.48);
+    }
+
+    .regular-user-modal {
+        position: fixed;
+        inset: 50% auto auto 50%;
+        z-index: 101;
+        display: flex;
+        flex-direction: column;
+        width: min(92vw, 560px);
+        max-height: min(88vh, 720px);
+        overflow: hidden;
+        transform: translate(-50%, -50%);
+        border: 1px solid #d4e9e1;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 24px 60px rgba(8, 83, 76, 0.22);
+    }
+
+    .regular-user-modal-header,
+    .regular-user-modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 1rem 1.15rem;
+    }
+
+    .regular-user-modal-header {
+        flex: 0 0 auto;
+        border-bottom: 1px solid #e7f2ed;
+    }
+
+    #regular-user-modal-title,
+    #regular-user-profile-title {
+        margin: 0;
+        color: #14352D !important;
+        font-size: 1.35rem;
+        font-weight: 800;
+    }
+
+    .regular-user-modal-eyebrow {
+        margin: 0 0 0.2rem;
+        color: #14352D;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .regular-user-modal-close {
+        display: grid;
+        width: 2.25rem;
+        height: 2.25rem;
+        flex: 0 0 2.25rem;
+        place-items: center;
+        border: 1px solid #d4e9e1;
+        border-radius: 50%;
+        background: #fff;
+        color: #48665d;
+        font-size: 1.25rem;
+        cursor: pointer;
+    }
+
+    .regular-user-form {
+        display: grid;
+        flex: 1 1 auto;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.85rem;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 1.15rem;
+    }
+
+    .regular-user-form-group {
+        display: grid;
+        gap: 0.35rem;
+    }
+
+    .regular-user-form label,
+    .regular-user-form-section-title {
+        color: #2f6659;
+        font-size: 0.78rem;
+        font-weight: 650;
+    }
+
+    .regular-user-form .required {
+        color: #d92d20;
+    }
+
+    .regular-user-form label {
+        display: block;
+    }
+
+    .regular-user-form-section-title {
+        margin-top: 0.15rem;
+        color: #173a31;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .regular-user-form input {
+        width: 100%;
+        min-height: 2.55rem;
+        box-sizing: border-box;
+        padding: 0.55rem 0.7rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        color: #173a31;
+        font-size: 0.85rem;
+    }
+
+    .regular-user-status-field {
+        margin-top: 0.2rem;
+    }
+
+    .regular-user-status-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+    }
+
+    .regular-user-status-option {
+        min-height: 2.2rem;
+        padding: 0.45rem 1rem;
+        border: 1px solid #9bc7ba;
+        border-radius: 999px;
+        background: #fff;
+        color: #1d5d56;
+        font-size: 0.87rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .regular-user-status-option.is-selected {
+        border-color: #0f766e;
+        background: #0f766e;
+        color: #fff;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+    }
+
+    .regular-user-modal-message {
+        display: none;
+        margin: 0 1.15rem;
+        padding: 0.65rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.82rem;
+    }
+
+    .regular-user-modal-message[data-state="error"],
+    .regular-user-modal-message[data-state="success"] {
+        flex: 0 0 auto;
+        display: block;
+    }
+
+    .regular-user-modal-message[data-state="error"] {
+        background: #fef2f2;
+        color: #b42318;
+    }
+
+    .regular-user-modal-message[data-state="success"] {
+        background: #ecfdf5;
+        color: #166534;
+    }
+
+    .regular-user-modal-footer {
+        flex: 0 0 auto;
+        justify-content: flex-end;
+        border-top: 1px solid #e7f2ed;
+        background: #fff;
+        box-shadow: 0 -8px 18px rgba(8, 83, 76, 0.04);
+    }
+
+    .regular-user-modal-footer button {
+        min-height: 2.5rem;
+        padding: 0.5rem 0.9rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        background: #fff;
+        color: #173a31;
+        font-size: 0.82rem;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    .regular-user-modal-footer button[type="submit"] {
+        border-color: #0f766e;
+        background: #0f766e;
+        color: #fff;
+    }
+
+    .regular-user-modal-footer button:disabled {
+        opacity: 0.65;
+        cursor: wait;
+    }
+
+    .regular-user-profile-backdrop[hidden],
+    .regular-user-profile-modal[hidden] {
+        display: none;
+    }
+
+    .regular-user-profile-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: rgba(15, 35, 30, 0.48);
+    }
+
+    .regular-user-profile-modal {
+        position: fixed;
+        inset: 50% auto auto 50%;
+        z-index: 101;
+        width: min(92vw, 520px);
+        max-height: min(88vh, 680px);
+        overflow-y: auto;
+        transform: translate(-50%, -50%);
+        border: 1px solid #d4e9e1;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 24px 60px rgba(8, 83, 76, 0.22);
+    }
+
+    .regular-user-profile-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.8rem;
+        padding: 1.15rem;
+    }
+
+    .regular-user-profile-field {
+        display: grid;
+        gap: 0.35rem;
+        min-width: 0;
+        padding: 0.8rem;
+        border: 1px solid #e2f1eb;
+        border-radius: 10px;
+        background: #fbfefd;
+    }
+
+    .regular-user-profile-label {
+        color: #618176;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .regular-user-profile-value {
+        overflow-wrap: anywhere;
+        color: #173a31;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .regular-user-profile-identity {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin: 1rem 1.15rem 0;
+        padding: 0.85rem;
+        border-radius: 12px;
+        background: #effaf6;
+    }
+
+    .regular-user-profile-avatar {
+        display: grid;
+        width: 3rem;
+        height: 3rem;
+        flex: 0 0 3rem;
+        place-items: center;
+        border-radius: 50%;
+        background: #c9f0e4;
+        color: #0f766e;
+        font-size: 1.1rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .regular-user-profile-identity-copy {
+        display: grid;
+        gap: 0.15rem;
+        min-width: 0;
+    }
+
+    .regular-user-profile-identity-copy strong {
+        overflow: hidden;
+        color: #14352d;
+        font-size: 1rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .regular-user-profile-identity-copy span {
+        color: #56766c;
+        font-size: 0.82rem;
+    }
+
+    .regular-user-profile-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+    }
+
+    .regular-user-profile-edit,
+    .regular-user-profile-close {
+        display: grid;
+        width: 2.4rem;
+        height: 2.4rem;
+        flex: 0 0 2.4rem;
+        place-items: center;
+        border: 1px solid #d4e9e1;
+        border-radius: 50%;
+        background: #fff;
+        color: #0f766e;
+        cursor: pointer;
+    }
+
+    .regular-user-profile-edit:hover,
+    .regular-user-profile-close:hover {
+        background: #f0faf6;
+        border-color: #b8dfd1;
+    }
+
+    .regular-user-profile-edit svg {
+        width: 1.1rem;
+        height: 1.1rem;
+    }
+
+    .regular-user-profile-field input,
+    .regular-user-profile-field select {
+        width: 100%;
+        min-height: 2.4rem;
+        box-sizing: border-box;
+        padding: 0.5rem 0.6rem;
+        border: 1px solid #c8e3d9;
+        border-radius: 7px;
+        background: #fff;
+        color: #173a31;
+        font: inherit;
+        font-size: 0.85rem;
+    }
+
+    .regular-user-profile-field [data-profile-edit-control][hidden],
+    .regular-user-profile-field [data-profile-field][hidden] {
+        display: none;
+    }
+
+    .regular-user-profile-message {
+        display: none;
+        margin: 0 1.15rem 0.9rem;
+        padding: 0.65rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.82rem;
+    }
+
+    .regular-user-profile-message[data-state="error"],
+    .regular-user-profile-message[data-state="success"] {
+        display: block;
+    }
+
+    .regular-user-profile-message[data-state="error"] {
+        background: #fef2f2;
+        color: #b42318;
+    }
+
+    .regular-user-profile-message[data-state="success"] {
+        background: #ecfdf5;
+        color: #166534;
+    }
+
+    .regular-user-profile-footer {
+        display: none;
+        justify-content: flex-end;
+        gap: 0.65rem;
+        padding: 0.85rem 1.15rem;
+        border-top: 1px solid #e7f2ed;
+    }
+
+    .regular-user-profile-modal.is-editing .regular-user-profile-footer {
+        display: flex;
+    }
+
+    .regular-user-profile-footer button {
+        min-height: 2.4rem;
+        padding: 0.5rem 0.9rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        background: #fff;
+        color: #173a31;
+        font-size: 0.82rem;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    .regular-user-profile-footer button[type="submit"] {
+        border-color: #0f766e;
+        background: #0f766e;
+        color: #fff;
+    }
+
+    .regular-user-profile-footer button:disabled {
+        opacity: 0.65;
+        cursor: wait;
+    }
+
+    .regular-user-confirm-backdrop[hidden],
+    .regular-user-confirm-modal[hidden] {
+        display: none;
+    }
+
+    .regular-user-confirm-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 130;
+        background: rgba(15, 35, 30, 0.48);
+    }
+
+    .regular-user-confirm-modal {
+        position: fixed;
+        inset: 50% auto auto 50%;
+        z-index: 131;
+        width: min(92vw, 720px);
+        max-height: min(88vh, 680px);
+        overflow-y: auto;
+        transform: translate(-50%, -50%);
+        border: 1px solid #d4e9e1;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 24px 60px rgba(8, 83, 76, 0.22);
+    }
+
+    .regular-user-confirm-title {
+        margin: 0;
+        color: #14352d;
+        font-size: 1.35rem;
+        font-weight: 800;
+    }
+
+    .regular-user-confirm-message {
+        margin: 1.15rem;
+        padding: 1rem;
+        border: 1px solid #e2f1eb;
+        border-radius: 10px;
+        color: #56766c;
+        font-size: 0.95rem;
+        font-weight: 600;
+        line-height: 1.55;
+    }
+
+    .regular-user-confirm-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.65rem;
+        padding: 0.85rem 1.15rem;
+        border-top: 1px solid #e7f2ed;
+    }
+
+    .regular-user-confirm-footer button {
+        min-height: 2.5rem;
+        padding: 0.5rem 0.9rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        background: #fff;
+        color: #173a31;
+        font-size: 0.85rem;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    .regular-user-confirm-footer #regular-user-confirm-submit {
+        border-color: #b42318;
+        background: #b42318;
+        color: #fff;
+    }
+
+    .regular-user-confirm-footer #regular-user-confirm-submit:hover {
+        border-color: #9f1f15;
+        background: #9f1f15;
+    }
+
+    .regular-user-confirm-footer button:disabled {
+        opacity: 0.65;
+        cursor: wait;
+    }
+
+    @media (max-width: 520px) {
+        .regular-user-profile-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    @media (max-width: 760px) {
+        .regular-user-modal {
+            inset: 100px auto 12px 50%;
+            width: min(92vw, 560px);
+            max-height: none;
+            transform: translateX(-50%);
+        }
+
+        .regular-user-profile-modal {
+            inset: 100px auto 12px 50%;
+            width: min(92vw, 520px);
+            max-height: none;
+            transform: translateX(-50%);
+        }
+
+        .regular-user-confirm-modal {
+            inset: 100px auto auto 50%;
+            max-height: calc(100vh - 112px);
+            transform: translateX(-50%);
+        }
+    }
+
+    @media (min-width: 640px) {
+        .regular-users-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1100px) {
+        .regular-users-summary {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 760px) {
+        .regular-users-controls {
+            flex: 1 1 100%;
+            flex-wrap: wrap;
+        }
+
+        .regular-users-search-wrap {
+            flex: 1 1 100%;
+            width: 100%;
+        }
+
+        .regular-users-status-filter,
+        .regular-users-action {
+            flex: 1 1 calc(50% - 0.55rem);
+        }
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="regular-users-page">
+    <section class="regular-users-summary" aria-label="User summary">
+        <article class="regular-users-card regular-users-kpi">
+            <div class="regular-users-kpi-head">
+                <p class="regular-users-kpi-label">Total Users</p>
+                <span class="regular-users-kpi-icon" aria-hidden="true"><i data-lucide="users"></i></span>
+            </div>
+            <p class="regular-users-kpi-value">{{ regular_user_counts.total }}</p>
+            <p class="regular-users-kpi-meta">Registered regular users</p>
+        </article>
+        <article class="regular-users-card regular-users-kpi">
+            <div class="regular-users-kpi-head">
+                <p class="regular-users-kpi-label">Active Users</p>
+                <span class="regular-users-kpi-icon" aria-hidden="true"><i data-lucide="user-check"></i></span>
+            </div>
+            <p class="regular-users-kpi-value">{{ regular_user_counts.active }}</p>
+            <p class="regular-users-kpi-meta">Accounts that can sign in</p>
+        </article>
+        <article class="regular-users-card regular-users-kpi">
+            <div class="regular-users-kpi-head">
+                <p class="regular-users-kpi-label">Inactive Users</p>
+                <span class="regular-users-kpi-icon" aria-hidden="true"><i data-lucide="user-round-x"></i></span>
+            </div>
+            <p class="regular-users-kpi-value">{{ regular_user_counts.inactive }}</p>
+            <p class="regular-users-kpi-meta">Accounts unable to sign in</p>
+        </article>
+        <article class="regular-users-card regular-users-kpi">
+            <div class="regular-users-kpi-head">
+                <p class="regular-users-kpi-label">Joined This Week</p>
+                <span class="regular-users-kpi-icon" aria-hidden="true"><i data-lucide="user-round-plus"></i></span>
+            </div>
+            <p class="regular-users-kpi-value">{{ regular_user_counts.joined_this_week }}</p>
+            <p class="regular-users-kpi-meta">Joined in the last 7 days</p>
+        </article>
+    </section>
+
+    <section class="regular-users-card" aria-labelledby="regular-users-directory-title">
+        <div class="regular-users-card-heading">
+            <div class="regular-users-directory-title">
+                <h2 id="regular-users-directory-title">User Directory</h2>
+                <p id="regular-users-count" class="regular-users-count" aria-live="polite">{{ regular_users_count }} users shown</p>
+            </div>
+            <div class="regular-users-controls">
+                <label class="regular-users-search-wrap">
+                    <svg class="regular-users-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                    <input id="regular-users-search" class="regular-users-search" type="search" placeholder="Search by name, username, email..." aria-label="Search users by name, username, email, or phone">
+                </label>
+                <select id="regular-users-status" class="regular-users-status-filter" aria-label="Filter users by status">
+                    <option value="">All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+                <button type="button" id="regular-user-add-open" class="regular-users-action" aria-label="Add a regular user">
+                    <i data-lucide="user-plus" aria-hidden="true"></i><span>Add User</span>
+                </button>
+                <button type="button" id="regular-users-toggle-columns" class="regular-users-action" aria-label="Show more user details" aria-expanded="false">Show More</button>
+            </div>
+        </div>
+        <div id="regular-users-bulk-bar" class="regular-users-bulk-bar" data-show="false" aria-live="polite">
+            <strong class="regular-users-bulk-copy"><span id="regular-users-selected-count">0</span> users selected</strong>
+            <div class="regular-users-bulk-actions">
+                <button type="button" id="regular-users-clear-selection">Clear selection</button>
+                <button type="button" id="regular-users-delete-selected" class="is-danger">Remove Selected</button>
+            </div>
+        </div>
+        <div class="regular-users-table-wrap">
+            <table id="regular-users-table" class="regular-users-table">
+                <thead>
+                    <tr>
+                        <th scope="col" class="regular-user-select-cell"><input type="checkbox" id="regular-users-select-all" class="regular-user-select-checkbox" aria-label="Select all visible users"></th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Username</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Phone</th>
+                        <th scope="col">Joined</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="regular-users-actions-cell">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for account in regular_users %}
+                    <tr data-user-row data-user-id="{{ account.id }}" data-user-name="{{ account.get_full_name|default:account.username }}" data-user-username="{{ account.username }}" data-user-email="{{ account.email|default:'Not provided' }}" data-user-phone="{{ account.userprofile.phone|default:'Not provided' }}" data-user-joined="{{ account.date_joined|date:'M j, Y' }}" data-status="{% if account.is_active %}active{% else %}inactive{% endif %}" data-search="{{ account.get_full_name|default:account.username }} {{ account.username }} {{ account.email }} {{ account.userprofile.phone }}">
+                        <td class="regular-user-select-cell"><input type="checkbox" class="regular-user-select-checkbox" data-user-select aria-label="Select {{ account.get_full_name|default:account.username }}"></td>
+                        <td>
+                            <div class="regular-user-name">
+                                <span class="regular-user-avatar" aria-hidden="true">
+                                    {% if account.userprofile.avatar %}
+                                    <img src="{{ account.userprofile.avatar.url }}" alt="">
+                                    {% else %}
+                                    {{ account.first_name|default:account.username|slice:":1" }}
+                                    {% endif %}
+                                </span>
+                                {{ account.get_full_name|default:account.username }}
+                            </div>
+                        </td>
+                        <td>{{ account.username }}</td>
+                        <td>{{ account.email|default:"Not provided" }}</td>
+                        <td>{{ account.userprofile.phone|default:"Not provided" }}</td>
+                        <td>{{ account.date_joined|date:"M j, Y" }}</td>
+                        <td>
+                            {% if account.is_active %}
+                            <span class="regular-user-status">Active</span>
+                            {% else %}
+                            <span class="regular-user-status is-inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="regular-users-actions-cell">
+                            <button type="button" class="regular-user-actions-trigger" data-user-actions-trigger aria-label="Actions for {{ account.get_full_name|default:account.username }}" aria-haspopup="menu" aria-expanded="false"><span class="regular-user-actions-dots" aria-hidden="true"></span></button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td class="regular-users-empty" colspan="8">No regular user accounts have registered yet.</td>
+                    </tr>
+                    {% endfor %}
+                    <tr id="regular-users-no-results" hidden>
+                        <td class="regular-users-empty" colspan="8">No users match your search or status filter.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<div id="regular-user-actions-menu" class="regular-user-actions-menu" role="menu" aria-label="User actions" hidden>
+    <button type="button" role="menuitem" data-user-action="profile">Profile</button>
+    <button type="button" role="menuitem" class="is-danger" data-user-action="delete">Remove User</button>
+</div>
+
+<div id="regular-user-profile-backdrop" class="regular-user-profile-backdrop" hidden></div>
+<section id="regular-user-profile-modal" class="regular-user-profile-modal" role="dialog" aria-modal="true" aria-labelledby="regular-user-profile-title" hidden>
+    <header class="regular-user-modal-header">
+        <div>
+            <p class="regular-user-modal-eyebrow">Users</p>
+            <h2 id="regular-user-profile-title">User profile</h2>
+        </div>
+        <div class="regular-user-profile-header-actions">
+            <button type="button" id="regular-user-profile-edit" class="regular-user-profile-edit" aria-label="Edit user profile" title="Edit profile">
+                <i data-lucide="pencil" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="regular-user-profile-close" data-user-profile-close aria-label="Close profile">×</button>
+        </div>
+    </header>
+    <div class="regular-user-profile-identity">
+        <span class="regular-user-profile-avatar" data-profile-avatar aria-hidden="true"></span>
+        <div class="regular-user-profile-identity-copy">
+            <strong data-profile-identity-name></strong>
+            <span data-profile-identity-username></span>
+        </div>
+    </div>
+    <form id="regular-user-profile-form" action="{% url 'update_regular_user_profile' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="user_id">
+        <div class="regular-user-profile-grid">
+            <label class="regular-user-profile-field">
+                <span class="regular-user-profile-label">Full name</span>
+                <span class="regular-user-profile-value" data-profile-field="name"></span>
+                <input name="full_name" type="text" maxlength="150" required data-profile-edit-control hidden>
+            </label>
+            <label class="regular-user-profile-field">
+                <span class="regular-user-profile-label">Username</span>
+                <span class="regular-user-profile-value" data-profile-field="username"></span>
+                <input name="username" type="text" maxlength="150" required data-profile-edit-control hidden>
+            </label>
+            <label class="regular-user-profile-field">
+                <span class="regular-user-profile-label">Email</span>
+                <span class="regular-user-profile-value" data-profile-field="email"></span>
+                <input name="email" type="email" maxlength="254" data-profile-edit-control hidden>
+            </label>
+            <label class="regular-user-profile-field">
+                <span class="regular-user-profile-label">Phone</span>
+                <span class="regular-user-profile-value" data-profile-field="phone"></span>
+                <input name="phone" type="tel" maxlength="50" data-profile-edit-control hidden>
+            </label>
+            <div class="regular-user-profile-field">
+                <span class="regular-user-profile-label">Joined</span>
+                <span class="regular-user-profile-value" data-profile-field="joined" data-profile-readonly></span>
+            </div>
+            <label class="regular-user-profile-field">
+                <span class="regular-user-profile-label">Status</span>
+                <span class="regular-user-profile-value" data-profile-field="status"></span>
+                <select name="status" data-profile-edit-control hidden>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </label>
+        </div>
+    </form>
+    <p id="regular-user-profile-message" class="regular-user-profile-message" role="status" aria-live="polite"></p>
+    <footer class="regular-user-profile-footer">
+        <button type="button" data-profile-edit-cancel>Cancel</button>
+        <button type="submit" form="regular-user-profile-form">Save Changes</button>
+    </footer>
+</section>
+
+<div id="regular-user-confirm-backdrop" class="regular-user-confirm-backdrop" hidden></div>
+<section id="regular-user-confirm-modal" class="regular-user-confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="regular-user-confirm-title" aria-describedby="regular-user-confirm-message" hidden>
+    <header class="regular-user-modal-header">
+        <h2 id="regular-user-confirm-title" class="regular-user-confirm-title">Remove User</h2>
+        <button type="button" class="regular-user-modal-close" data-user-confirm-cancel aria-label="Close confirmation">×</button>
+    </header>
+    <div class="regular-user-confirm-message">
+        <strong>Confirmation</strong>
+        <div id="regular-user-confirm-message">This will permanently delete the account and may also delete data associated with it. This action cannot be undone.</div>
+    </div>
+    <p id="regular-user-confirm-error" class="regular-user-profile-message" role="alert" aria-live="assertive"></p>
+    <footer class="regular-user-confirm-footer">
+        <button type="button" data-user-confirm-cancel>Cancel</button>
+        <button type="button" id="regular-user-confirm-submit">Remove User</button>
+    </footer>
+</section>
+
+<div id="regular-user-modal-backdrop" class="regular-user-modal-backdrop" hidden></div>
+<section id="regular-user-modal" class="regular-user-modal" role="dialog" aria-modal="true" aria-labelledby="regular-user-modal-title" hidden>
+    <header class="regular-user-modal-header">
+        <div>
+            <p class="regular-user-modal-eyebrow">Users</p>
+            <h2 id="regular-user-modal-title">Add new user</h2>
+        </div>
+        <button type="button" class="regular-user-modal-close" data-user-modal-close aria-label="Close dialog">×</button>
+    </header>
+    <form id="regular-user-create-form" method="post" action="{% url 'create_regular_user' %}" class="regular-user-form">
+        {% csrf_token %}
+
+        <div class="regular-user-form-group">
+            <label for="regular-user-full_name">Full name <span class="required">*</span></label>
+            <input id="regular-user-full_name" name="full_name" type="text" autocomplete="name" maxlength="150" required>
+        </div>
+
+        <div class="regular-user-form-group">
+            <label for="regular-user-phone">Phone <span>(optional)</span></label>
+            <input id="regular-user-phone" name="phone" type="tel" autocomplete="tel" maxlength="50">
+        </div>
+
+        <div class="regular-user-form-group regular-user-status-field">
+            <label>Status <span class="required">*</span></label>
+            <div class="regular-user-status-options" role="radiogroup" aria-label="Regular user status">
+                <button type="button" class="regular-user-status-option is-selected" data-user-status="active" aria-pressed="true">Active</button>
+                <button type="button" class="regular-user-status-option" data-user-status="inactive" aria-pressed="false">Inactive</button>
+                <button type="button" class="regular-user-status-option" data-user-status="pending" aria-pressed="false">Pending</button>
+            </div>
+            <input type="hidden" name="status" value="active">
+        </div>
+
+        <div class="regular-user-form-section-title">Account credentials</div>
+
+        <div class="regular-user-form-group">
+            <label for="regular-user-username">Username <span class="required">*</span></label>
+            <input id="regular-user-username" name="username" type="text" autocomplete="username" maxlength="150" required>
+        </div>
+
+        <div class="regular-user-form-group">
+            <label for="regular-user-email">Email <span class="required">*</span></label>
+            <input id="regular-user-email" name="email" type="email" autocomplete="email" maxlength="254" required>
+        </div>
+
+        <div class="regular-user-form-group">
+            <label for="regular-user-password">Password <span class="required">*</span></label>
+            <input id="regular-user-password" name="password" type="password" autocomplete="new-password" required>
+        </div>
+
+        <div class="regular-user-form-group">
+            <label for="regular-user-confirm_password">Confirm password <span class="required">*</span></label>
+            <input id="regular-user-confirm_password" name="confirm_password" type="password" autocomplete="new-password" required>
+        </div>
+    </form>
+    <p id="regular-user-modal-message" class="regular-user-modal-message" role="status" aria-live="polite"></p>
+    <footer class="regular-user-modal-footer">
+        <button type="button" data-user-modal-close>Cancel</button>
+        <button type="submit" form="regular-user-create-form">Create User</button>
+    </footer>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    "use strict";
+
+    var searchInput = document.getElementById("regular-users-search");
+    var statusFilter = document.getElementById("regular-users-status");
+    var countLabel = document.getElementById("regular-users-count");
+    var selectAllCheckbox = document.getElementById("regular-users-select-all");
+    var bulkBar = document.getElementById("regular-users-bulk-bar");
+    var selectedCountLabel = document.getElementById("regular-users-selected-count");
+    var clearSelectionButton = document.getElementById("regular-users-clear-selection");
+    var deleteSelectedButton = document.getElementById("regular-users-delete-selected");
+    var userRows = Array.prototype.slice.call(document.querySelectorAll("[data-user-row]"));
+    var selectedUserIds = new Set();
+    var noResultsRow = document.getElementById("regular-users-no-results");
+    var toggleColumns = document.getElementById("regular-users-toggle-columns");
+    var table = document.getElementById("regular-users-table");
+    var modal = document.getElementById("regular-user-modal");
+    var backdrop = document.getElementById("regular-user-modal-backdrop");
+    var addButton = document.getElementById("regular-user-add-open");
+    var form = document.getElementById("regular-user-create-form");
+    var message = document.getElementById("regular-user-modal-message");
+    var submitButton = document.querySelector('.regular-user-modal-footer button[type="submit"]');
+    var statusInput = form ? form.querySelector('input[name="status"]') : null;
+    var statusButtons = Array.prototype.slice.call(document.querySelectorAll(".regular-user-status-option"));
+    var createUrl = form ? form.action : "";
+    var actionsMenu = document.getElementById("regular-user-actions-menu");
+    var activeActionsTrigger = null;
+    var activeActionRow = null;
+    var deleteUserUrl = "{% url 'delete_regular_user' %}";
+    var profileModal = document.getElementById("regular-user-profile-modal");
+    var profileBackdrop = document.getElementById("regular-user-profile-backdrop");
+    var activeProfileTrigger = null;
+    var profileForm = document.getElementById("regular-user-profile-form");
+    var profileEditButton = document.getElementById("regular-user-profile-edit");
+    var profileMessage = document.getElementById("regular-user-profile-message");
+    var profileSubmitButton = document.querySelector('.regular-user-profile-footer button[type="submit"]');
+    var profileUpdateUrl = profileForm ? profileForm.action : "";
+    var confirmModal = document.getElementById("regular-user-confirm-modal");
+    var confirmBackdrop = document.getElementById("regular-user-confirm-backdrop");
+    var confirmTitle = document.getElementById("regular-user-confirm-title");
+    var confirmMessage = document.getElementById("regular-user-confirm-message");
+    var confirmError = document.getElementById("regular-user-confirm-error");
+    var confirmButton = document.getElementById("regular-user-confirm-submit");
+    var pendingRemovalRows = [];
+    var pendingRemovalTrigger = null;
+
+    function setProfileMessage(text, state) {
+        profileMessage.textContent = text || "";
+        if (state) {
+            profileMessage.dataset.state = state;
+        } else {
+            delete profileMessage.dataset.state;
+        }
+    }
+
+    function setProfileEditing(isEditing) {
+        profileModal.classList.toggle("is-editing", isEditing);
+        profileModal.querySelectorAll("[data-profile-edit-control]").forEach(function (control) {
+            control.hidden = !isEditing;
+        });
+        profileModal.querySelectorAll("[data-profile-field]:not([data-profile-readonly])").forEach(function (value) {
+            value.hidden = isEditing;
+        });
+        profileEditButton.hidden = isEditing;
+    }
+
+    function closeActionsMenu() {
+        actionsMenu.hidden = true;
+        if (activeActionsTrigger) {
+            activeActionsTrigger.setAttribute("aria-expanded", "false");
+            activeActionsTrigger.classList.remove("is-active");
+        }
+        activeActionsTrigger = null;
+        activeActionRow = null;
+    }
+
+    function openActionsMenu(trigger, row) {
+        closeActionsMenu();
+        activeActionsTrigger = trigger;
+        activeActionRow = row;
+        trigger.setAttribute("aria-expanded", "true");
+        trigger.classList.add("is-active");
+        actionsMenu.hidden = false;
+
+        var triggerRect = trigger.getBoundingClientRect();
+        var menuMargin = 8;
+        var edgePadding = 10;
+        var menuWidth = actionsMenu.offsetWidth || 224;
+        var menuHeight = actionsMenu.offsetHeight || 220;
+        var left = triggerRect.left + (triggerRect.width / 2) - (menuWidth / 2);
+        var maxLeft = window.innerWidth - menuWidth - edgePadding;
+        left = Math.max(edgePadding, Math.min(left, Math.max(edgePadding, maxLeft)));
+
+        var top = triggerRect.bottom + menuMargin;
+        var maxTop = window.innerHeight - menuHeight - edgePadding;
+        if (top > maxTop) {
+            top = Math.max(edgePadding, triggerRect.top - menuHeight - menuMargin);
+        }
+
+        actionsMenu.style.top = top + "px";
+        actionsMenu.style.left = left + "px";
+    }
+
+    function openUserProfile(row, trigger) {
+        var values = {
+            name: row.dataset.userName,
+            username: row.dataset.userUsername,
+            email: row.dataset.userEmail,
+            phone: row.dataset.userPhone,
+            joined: row.dataset.userJoined,
+            status: row.dataset.status === "active" ? "Active" : "Inactive"
+        };
+        Object.keys(values).forEach(function (key) {
+            profileModal.querySelector('[data-profile-field="' + key + '"]').textContent = values[key] || "Not provided";
+        });
+        profileForm.elements.user_id.value = row.dataset.userId;
+        profileForm.elements.full_name.value = row.dataset.userName || "";
+        profileForm.elements.username.value = row.dataset.userUsername || "";
+        profileForm.elements.email.value = row.dataset.userEmail === "Not provided" ? "" : row.dataset.userEmail;
+        profileForm.elements.phone.value = row.dataset.userPhone === "Not provided" ? "" : row.dataset.userPhone;
+        profileForm.elements.status.value = row.dataset.status;
+        profileModal.querySelector("[data-profile-avatar]").textContent = (row.dataset.userName || row.dataset.userUsername || "?").trim().charAt(0);
+        profileModal.querySelector("[data-profile-identity-name]").textContent = row.dataset.userName || row.dataset.userUsername;
+        profileModal.querySelector("[data-profile-identity-username]").textContent = "@" + row.dataset.userUsername;
+
+        activeProfileTrigger = trigger;
+        setProfileEditing(false);
+        setProfileMessage("", "");
+        profileModal.hidden = false;
+        profileBackdrop.hidden = false;
+        document.body.style.overflow = "hidden";
+        profileModal.querySelector("[data-user-profile-close]").focus();
+    }
+
+    function closeUserProfile() {
+        profileModal.hidden = true;
+        profileBackdrop.hidden = true;
+        document.body.style.overflow = "";
+        setProfileEditing(false);
+        setProfileMessage("", "");
+        if (activeProfileTrigger) {
+            activeProfileTrigger.focus();
+        }
+        activeProfileTrigger = null;
+    }
+
+    function submitUserProfile(event) {
+        event.preventDefault();
+        setProfileMessage("", "");
+        profileSubmitButton.disabled = true;
+
+        fetch(profileUpdateUrl, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": profileForm.querySelector("[name=csrfmiddlewaretoken]").value
+            },
+            body: new FormData(profileForm)
+        })
+        .then(function (response) {
+            return response.json().then(function (result) {
+                if (!response.ok) {
+                    throw new Error(result.error || "Unable to update this user profile.");
+                }
+                return result;
+            });
+        })
+        .then(function (result) {
+            setProfileMessage(result.message, "success");
+            window.setTimeout(function () {
+                window.location.reload();
+            }, 700);
+        })
+        .catch(function (error) {
+            setProfileMessage(error.message || "Unable to update this user profile. Please try again.", "error");
+            profileSubmitButton.disabled = false;
+        });
+    }
+
+    function closeRemovalConfirm() {
+        confirmModal.hidden = true;
+        confirmBackdrop.hidden = true;
+        document.body.style.overflow = "";
+        confirmError.textContent = "";
+        delete confirmError.dataset.state;
+        confirmTitle.textContent = "Remove User";
+        pendingRemovalRows = [];
+        if (pendingRemovalTrigger) {
+            pendingRemovalTrigger.focus();
+        }
+        pendingRemovalTrigger = null;
+    }
+
+    function openRemovalConfirm(rows, trigger) {
+        var displayNames = rows.map(function (row) {
+            return row.dataset.userName || row.dataset.userUsername;
+        });
+        pendingRemovalRows = rows;
+        pendingRemovalTrigger = trigger;
+        confirmTitle.textContent = rows.length === 1 ? "Remove User" : "Remove Users";
+        confirmButton.textContent = rows.length === 1 ? "Remove User" : "Remove Users";
+        confirmMessage.textContent = displayNames.length === 1
+            ? "Permanently delete " + displayNames[0] + "'s account? This may also delete data associated with it. This action cannot be undone."
+            : "Permanently delete " + displayNames.length + " selected user accounts? This may also delete data associated with them. This action cannot be undone.";
+        confirmError.textContent = "";
+        delete confirmError.dataset.state;
+        confirmModal.hidden = false;
+        confirmBackdrop.hidden = false;
+        document.body.style.overflow = "hidden";
+        confirmModal.querySelector("[data-user-confirm-cancel]").focus();
+    }
+
+    function removeUser() {
+        if (!pendingRemovalRows.length) {
+            return;
+        }
+        var data = new FormData();
+        pendingRemovalRows.forEach(function (row) {
+            data.append("user_ids", row.dataset.userId);
+        });
+        confirmButton.disabled = true;
+        confirmButton.textContent = "Deleting...";
+        fetch(deleteUserUrl, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": form.querySelector("[name=csrfmiddlewaretoken]").value
+            },
+            body: data
+        })
+        .then(function (response) {
+            return response.json().then(function (result) {
+                if (!response.ok) {
+                    throw new Error(result.error || "Unable to delete the selected user account(s).");
+                }
+                return result;
+            });
+        })
+        .then(function () {
+            window.location.reload();
+        })
+        .catch(function (error) {
+            confirmError.textContent = error.message || "Unable to delete this user. Please try again.";
+            confirmError.dataset.state = "error";
+        })
+        .then(function () {
+            confirmButton.disabled = false;
+            confirmButton.textContent = pendingRemovalRows.length > 1 ? "Remove Users" : "Remove User";
+        });
+    }
+
+    function setStatusSelection(status) {
+        if (!statusInput) {
+            return;
+        }
+
+        statusInput.value = status;
+        statusButtons.forEach(function (button) {
+            var isSelected = button.dataset.userStatus === status;
+            button.classList.toggle("is-selected", isSelected);
+            button.setAttribute("aria-pressed", isSelected ? "true" : "false");
+        });
+    }
+
+    function updateUserRows() {
+        var query = searchInput.value.trim().toLocaleLowerCase();
+        var status = statusFilter.value;
+        var shown = 0;
+
+        userRows.forEach(function (row) {
+            var matchesQuery = row.dataset.search.toLocaleLowerCase().indexOf(query) !== -1;
+            var matchesStatus = !status || row.dataset.status === status;
+            var isVisible = matchesQuery && matchesStatus;
+            row.hidden = !isVisible;
+            if (isVisible) {
+                shown += 1;
+            }
+        });
+
+        countLabel.textContent = shown + " user" + (shown === 1 ? "" : "s") + " shown";
+        noResultsRow.hidden = userRows.length > 0 && shown === 0;
+    }
+
+    function syncSelection() {
+        var visibleRows = userRows.filter(function (row) {
+            return !row.hidden;
+        });
+        var selectedVisibleCount = 0;
+        userRows.forEach(function (row) {
+            var checkbox = row.querySelector("[data-user-select]");
+            var selected = selectedUserIds.has(row.dataset.userId);
+            checkbox.checked = selected;
+            row.classList.toggle("is-selected", selected);
+            if (!row.hidden && selected) {
+                selectedVisibleCount += 1;
+            }
+        });
+
+        var selectedCount = selectedUserIds.size;
+        selectedCountLabel.textContent = String(selectedCount);
+        bulkBar.dataset.show = selectedCount > 0 ? "true" : "false";
+        selectAllCheckbox.checked = visibleRows.length > 0 && selectedVisibleCount === visibleRows.length;
+        selectAllCheckbox.indeterminate = selectedVisibleCount > 0 && selectedVisibleCount < visibleRows.length;
+    }
+
+    function clearSelection() {
+        selectedUserIds.clear();
+        syncSelection();
+    }
+
+    function setModalMessage(text, state) {
+        message.textContent = text || "";
+        if (state) {
+            message.dataset.state = state;
+        } else {
+            delete message.dataset.state;
+        }
+    }
+
+    function closeModal() {
+        modal.hidden = true;
+        backdrop.hidden = true;
+        document.body.style.overflow = "";
+        setModalMessage("", "");
+        form.reset();
+        addButton.focus();
+    }
+
+    function openModal() {
+        modal.hidden = false;
+        backdrop.hidden = false;
+        document.body.style.overflow = "hidden";
+        setModalMessage("", "");
+        form.querySelector('input[name="full_name"]').focus();
+    }
+
+    if (searchInput && statusFilter && countLabel) {
+        searchInput.addEventListener("input", function () {
+            updateUserRows();
+            clearSelection();
+        });
+        statusFilter.addEventListener("change", function () {
+            updateUserRows();
+            clearSelection();
+        });
+    }
+
+    selectAllCheckbox.addEventListener("change", function () {
+        userRows.forEach(function (row) {
+            if (row.hidden) {
+                return;
+            }
+            var userId = row.dataset.userId;
+            if (selectAllCheckbox.checked) {
+                selectedUserIds.add(userId);
+            } else {
+                selectedUserIds.delete(userId);
+            }
+        });
+        syncSelection();
+    });
+
+    table.addEventListener("change", function (event) {
+        var checkbox = event.target.closest("[data-user-select]");
+        if (!checkbox) {
+            return;
+        }
+        var row = checkbox.closest("[data-user-row]");
+        if (checkbox.checked) {
+            selectedUserIds.add(row.dataset.userId);
+        } else {
+            selectedUserIds.delete(row.dataset.userId);
+        }
+        syncSelection();
+    });
+
+    clearSelectionButton.addEventListener("click", clearSelection);
+    deleteSelectedButton.addEventListener("click", function () {
+        var selectedRows = userRows.filter(function (row) {
+            return selectedUserIds.has(row.dataset.userId);
+        });
+        if (selectedRows.length) {
+            openRemovalConfirm(selectedRows, deleteSelectedButton);
+        }
+    });
+    syncSelection();
+    syncSelection();
+
+    if (toggleColumns && table) {
+        toggleColumns.addEventListener("click", function () {
+            var expanded = table.classList.toggle("users-show-all");
+            toggleColumns.textContent = expanded ? "Show Less" : "Show More";
+            toggleColumns.setAttribute("aria-expanded", expanded ? "true" : "false");
+            toggleColumns.setAttribute("aria-label", expanded ? "Show fewer user details" : "Show more user details");
+        });
+    }
+
+    if (statusButtons.length && statusInput) {
+        statusButtons.forEach(function (button) {
+            button.addEventListener("click", function () {
+                setStatusSelection(button.dataset.userStatus);
+            });
+        });
+    }
+
+    document.addEventListener("click", function (event) {
+        var actionItem = event.target.closest("[data-user-action]");
+        if (actionItem && activeActionRow) {
+            var row = activeActionRow;
+            var trigger = activeActionsTrigger;
+            closeActionsMenu();
+            if (actionItem.dataset.userAction === "profile") {
+                openUserProfile(row, trigger);
+            } else if (actionItem.dataset.userAction === "delete") {
+                openRemovalConfirm([row], trigger);
+            }
+            return;
+        }
+
+        var actionsTrigger = event.target.closest("[data-user-actions-trigger]");
+        if (actionsTrigger) {
+            var actionsRow = actionsTrigger.closest("[data-user-row]");
+            if (activeActionsTrigger === actionsTrigger) {
+                closeActionsMenu();
+            } else {
+                openActionsMenu(actionsTrigger, actionsRow);
+            }
+            return;
+        }
+
+        if (!event.target.closest("#regular-user-actions-menu")) {
+            closeActionsMenu();
+        }
+    });
+
+    document.querySelectorAll("[data-user-profile-close]").forEach(function (button) {
+        button.addEventListener("click", closeUserProfile);
+    });
+    profileEditButton.addEventListener("click", function () {
+        setProfileMessage("", "");
+        setProfileEditing(true);
+        profileForm.elements.full_name.focus();
+    });
+    document.querySelector("[data-profile-edit-cancel]").addEventListener("click", function () {
+        if (activeProfileTrigger) {
+            var row = activeProfileTrigger.closest("[data-user-row]");
+            profileForm.elements.full_name.value = row.dataset.userName || "";
+            profileForm.elements.username.value = row.dataset.userUsername || "";
+            profileForm.elements.email.value = row.dataset.userEmail === "Not provided" ? "" : row.dataset.userEmail;
+            profileForm.elements.phone.value = row.dataset.userPhone === "Not provided" ? "" : row.dataset.userPhone;
+            profileForm.elements.status.value = row.dataset.status;
+        }
+        setProfileMessage("", "");
+        setProfileEditing(false);
+    });
+    profileForm.addEventListener("submit", submitUserProfile);
+    profileBackdrop.addEventListener("click", closeUserProfile);
+    document.querySelectorAll("[data-user-confirm-cancel]").forEach(function (button) {
+        button.addEventListener("click", closeRemovalConfirm);
+    });
+    confirmBackdrop.addEventListener("click", closeRemovalConfirm);
+    confirmButton.addEventListener("click", removeUser);
+    window.addEventListener("resize", closeActionsMenu);
+    window.addEventListener("scroll", closeActionsMenu, true);
+
+    if (addButton && modal && backdrop && form && message && submitButton) {
+        addButton.addEventListener("click", openModal);
+        document.querySelectorAll("[data-user-modal-close]").forEach(function (button) {
+            button.addEventListener("click", closeModal);
+        });
+        backdrop.addEventListener("click", closeModal);
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                if (!confirmModal.hidden) {
+                    closeRemovalConfirm();
+                } else if (!profileModal.hidden) {
+                    closeUserProfile();
+                } else if (!modal.hidden) {
+                    closeModal();
+                } else {
+                    closeActionsMenu();
+                }
+            }
+        });
+
+        form.addEventListener("submit", function (event) {
+            event.preventDefault();
+            setModalMessage("", "");
+            submitButton.disabled = true;
+
+            fetch(createUrl, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": form.querySelector("[name=csrfmiddlewaretoken]").value
+                },
+                body: new FormData(form)
+            })
+            .then(function (response) {
+                return response.json().then(function (data) {
+                    if (!response.ok) {
+                        throw new Error(data.error || "Unable to create the user account.");
+                    }
+                    return data;
+                });
+            })
+            .then(function (data) {
+                setModalMessage(data.message, "success");
+                window.setTimeout(function () {
+                    window.location.reload();
+                }, 800);
+            })
+            .catch(function (error) {
+                setModalMessage(error.message || "Unable to create the user account. Please try again.", "error");
+                submitButton.disabled = false;
+            });
+        });
+    }
+})();
+</script>
+{% endblock %}

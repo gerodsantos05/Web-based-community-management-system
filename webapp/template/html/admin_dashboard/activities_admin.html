@@ -413,6 +413,30 @@
         overflow: hidden;
     }
 
+    .act-feedback-meta {
+        margin-top: 0.35rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .act-feedback-average {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 3.2rem;
+        border-radius: 6px;
+        padding: 0.36rem 0.48rem;
+        font-size: 0.84rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .act-feedback-average.is-good { background: #e8f5ed; color: #17613b; }
+    .act-feedback-average.is-okay { background: #fff4cf; color: #805b00; }
+    .act-feedback-average.is-bad { background: #fde8e7; color: #a12a25; }
+    .act-feedback-average.is-empty { background: #f5f8f7; color: #72827c; }
+
     .act-action-cell {
         vertical-align: middle !important;
         text-align: right !important;
@@ -524,7 +548,7 @@
 
     .act-volunteer-field {
         display: grid;
-        gap: 0.5rem;
+        gap: 0.35rem;
     }
 
     .act-volunteer-header {
@@ -534,10 +558,41 @@
         gap: 0.75rem;
     }
 
+    .act-volunteer-header label {
+        font-size: 0.76rem;
+        font-weight: 700;
+        color: #1a4f43;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin: 0;
+    }
+
     .act-volunteer-count {
         font-size: 0.73rem;
         font-weight: 700;
         color: #1d9e75;
+    }
+
+    .act-funding-summary {
+        display: grid;
+        gap: 0.5rem;
+        margin-top: 0.15rem;
+    }
+
+    .act-summary-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        font-size: 0.92rem;
+        color: #183d35;
+        font-weight: 600;
+    }
+
+    .act-summary-row strong {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #183d35;
     }
 
     .act-volunteer-search {
@@ -964,6 +1019,11 @@
                                 <div class="act-title-cell">
                                     <strong>{{ activity.title }}</strong>
                                     <small>{{ activity.description|default:"No description"|truncatechars:70 }}</small>
+                                    <div class="act-feedback-meta">
+                                        <span class="act-feedback-average {{ activity.feedback_average_class }}" title="Average of completed feedback responses" aria-label="Average feedback score: {{ activity.feedback_average_display }} out of 5">
+                                            {{ activity.feedback_average_display }}
+                                        </span>
+                                    </div>
                                 </div>
                             </td>
                             <td>{{ activity.date|date:"M j, Y" }}</td>
@@ -987,6 +1047,8 @@
                                     data-image-url="{% if activity.image %}{{ activity.image.url }}{% endif %}"
                                     data-description="{{ activity.description|escapejs }}"
                                     data-status="{{ activity.status }}"
+                                    data-total-budget="{{ activity.total_budget|default:0 }}"
+                                    data-donor-share-amount="{{ activity.donor_share_amount|default:0 }}"
                                     aria-label="Edit {{ activity.title }}">
                                     <i data-lucide="edit-3"></i>
                                 </button>
@@ -1147,6 +1209,27 @@
                 <option value="cancelled">Cancelled</option>
                 <option value="completed">Completed</option>
             </select>
+        </div>
+        <input type="hidden" id="activityFundingMode" name="funding_mode" value="budget_share">
+        <div class="act-field act-funding-block" id="activityFundingCustomBlock" hidden>
+            <label for="activityDonorShareAmount">Donation amount to hold</label>
+            <input id="activityDonorShareAmount" name="donor_share_amount" class="act-input" type="number" min="0" step="1" placeholder="Enter donation amount" value="0">
+        </div>
+        <div class="act-field act-funding-block" id="activityFundingBudgetBlock">
+            <label for="activityTotalBudget">Activity budget</label>
+            <input id="activityTotalBudget" name="total_budget" class="act-input" type="number" min="1" step="1" placeholder="Total budget" value="0">
+            <label for="activityBudgetDonorShare">Donor share</label>
+            <input id="activityBudgetDonorShare" name="donor_share_amount" class="act-input" type="number" min="0" step="1" placeholder="Donor share" value="0">
+        </div>
+        <div class="act-funding-summary">
+            <div class="act-summary-row">
+                <span>Available from completed donations</span>
+                <strong id="activityAvailableFundsDisplay">₱0</strong>
+            </div>
+            <div class="act-summary-row">
+                <span>Combined budget total</span>
+                <strong id="activityTotalBudgetSummary">₱0</strong>
+            </div>
         </div>
         <div class="act-volunteer-field">
             <div class="act-volunteer-header">
@@ -1437,7 +1520,7 @@
         updateActivityBeneficiaryCount();
     }
 
-    function editActivity(id, title, date, time, endTime, location, description, status, category, imageUrl) {
+    function editActivity(id, title, date, time, endTime, location, description, status, category, imageUrl, totalBudget, donorShareAmount) {
         var titleEl = document.getElementById('activityModalTitle');
         if (titleEl) {
             titleEl.textContent = 'Edit activity';
@@ -1455,7 +1538,9 @@
             activityEndTime: endTime || '',
             activityLocation: location || '',
             activityDescription: description || '',
-            activityStatus: status || ''
+            activityStatus: status || '',
+            activityTotalBudget: totalBudget || '0',
+            activityBudgetDonorShare: donorShareAmount || '0'
         };
 
         Object.keys(fields).forEach(function (fieldId) {
@@ -1464,6 +1549,7 @@
                 fieldEl.value = fields[fieldId];
             }
         });
+        syncActivityFundingState();
         setActivityCategory(category || '');
         setActivityImagePreview(imageUrl || '');
 
@@ -1527,6 +1613,53 @@
     var activityForm = document.getElementById("activityForm");
     var selectedDay = null;
     var allUpcoming = readJsonBlock('upcoming-activities-json', []);
+    var availableDonationFunds = Number({{ available_completed_donation_funds|default:0 }});
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(Number(value || 0));
+    }
+
+    function syncActivityFundingState() {
+        var fundingMode = document.getElementById('activityFundingMode');
+        var customBlock = document.getElementById('activityFundingCustomBlock');
+        var budgetBlock = document.getElementById('activityFundingBudgetBlock');
+        var amountDisplay = document.getElementById('activityAvailableFundsDisplay');
+        var budgetSummaryDisplay = document.getElementById('activityTotalBudgetSummary');
+        var customInput = document.getElementById('activityDonorShareAmount');
+        var budgetInput = document.getElementById('activityTotalBudget');
+        var budgetShareInput = document.getElementById('activityBudgetDonorShare');
+        var totalBudget = Number(budgetInput ? budgetInput.value || 0 : 0);
+        var donorShare = Number(budgetShareInput ? budgetShareInput.value || 0 : 0);
+        var combinedBudget = totalBudget + donorShare;
+
+        if (amountDisplay) {
+            amountDisplay.textContent = formatCurrency(availableDonationFunds);
+        }
+        if (budgetSummaryDisplay) {
+            budgetSummaryDisplay.textContent = formatCurrency(combinedBudget);
+        }
+
+        if (fundingMode) {
+            fundingMode.value = 'budget_share';
+        }
+        if (customBlock) customBlock.hidden = true;
+        if (budgetBlock) budgetBlock.hidden = false;
+        if (customInput) {
+            customInput.disabled = true;
+            customInput.setCustomValidity('');
+        }
+        if (budgetInput) budgetInput.disabled = false;
+        if (budgetShareInput) {
+            budgetShareInput.disabled = false;
+            if (donorShare > availableDonationFunds) {
+                budgetShareInput.setCustomValidity('Amount exceeds available completed donation funds.');
+            } else if (totalBudget > 0 && donorShare > totalBudget) {
+                budgetShareInput.setCustomValidity('Donor share cannot exceed the total activity budget.');
+            } else {
+                budgetShareInput.setCustomValidity('');
+            }
+        }
+    }
 
     function formatMonthLabel(year, month) {
         return new Date(year, month - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -1659,7 +1792,9 @@
                     button.getAttribute('data-description') || '',
                     button.getAttribute('data-status') || '',
                     button.getAttribute('data-category') || '',
-                    button.getAttribute('data-image-url') || ''
+                    button.getAttribute('data-image-url') || '',
+                    button.getAttribute('data-total-budget') || '0',
+                    button.getAttribute('data-donor-share-amount') || '0'
                 );
             });
         });
@@ -1781,6 +1916,24 @@
         volunteerSearchInput.addEventListener('input', renderActivityVolunteerList);
     }
 
+    var activityFundingMode = document.getElementById('activityFundingMode');
+    var activityDonorShareAmount = document.getElementById('activityDonorShareAmount');
+    var activityTotalBudget = document.getElementById('activityTotalBudget');
+    var activityBudgetDonorShare = document.getElementById('activityBudgetDonorShare');
+    if (activityFundingMode) {
+        activityFundingMode.value = 'budget_share';
+    }
+    if (activityDonorShareAmount) {
+        activityDonorShareAmount.addEventListener('input', syncActivityFundingState);
+    }
+    if (activityTotalBudget) {
+        activityTotalBudget.addEventListener('input', syncActivityFundingState);
+    }
+    if (activityBudgetDonorShare) {
+        activityBudgetDonorShare.addEventListener('input', syncActivityFundingState);
+    }
+    syncActivityFundingState();
+
     var beneficiarySearchInput = document.getElementById('activityBeneficiarySearch');
     if (beneficiarySearchInput) {
         beneficiarySearchInput.addEventListener('input', renderActivityBeneficiaryList);
@@ -1862,6 +2015,41 @@
                 hiddenInput.value = String(beneficiaryId);
                 activityForm.appendChild(hiddenInput);
             });
+
+            var customAmountInput = document.getElementById('activityDonorShareAmount');
+            var totalBudgetInput = document.getElementById('activityTotalBudget');
+            var budgetShareInput = document.getElementById('activityBudgetDonorShare');
+            var mode = 'budget_share';
+            var fundedAmount = 0;
+            if (budgetShareInput) {
+                fundedAmount = Number(budgetShareInput.value || 0);
+            }
+            if (fundedAmount > 0 && fundedAmount > availableDonationFunds) {
+                event.preventDefault();
+                if (budgetShareInput) {
+                    budgetShareInput.focus();
+                    budgetShareInput.setCustomValidity('Amount exceeds available completed donation funds.');
+                }
+                return false;
+            }
+            if (totalBudgetInput && budgetShareInput) {
+                var totalBudget = Number(totalBudgetInput.value || 0);
+                if (totalBudget <= 0) {
+                    event.preventDefault();
+                    totalBudgetInput.focus();
+                    totalBudgetInput.setCustomValidity('Set a total activity budget.');
+                    return false;
+                }
+                if (Number(budgetShareInput.value || 0) > totalBudget) {
+                    event.preventDefault();
+                    budgetShareInput.focus();
+                    budgetShareInput.setCustomValidity('Donor share cannot exceed the total activity budget.');
+                    return false;
+                }
+                totalBudgetInput.setCustomValidity('');
+            }
+            if (customAmountInput) customAmountInput.setCustomValidity('');
+            if (budgetShareInput) budgetShareInput.setCustomValidity('');
 
             if (activityForm.reportValidity && !activityForm.reportValidity()) {
                 event.preventDefault();

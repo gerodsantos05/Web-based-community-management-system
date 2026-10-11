@@ -296,6 +296,52 @@
         min-width: 1140px;
     }
 
+    .don-pledge-table {
+        min-width: 1480px;
+    }
+
+    .don-pledge-table .don-pledge-name {
+        min-width: 12rem;
+        color: #173a31;
+        font-weight: 700;
+    }
+
+    .don-pledge-table .don-pledge-email {
+        min-width: 14rem;
+    }
+
+    .don-pledge-table .don-pledge-phone,
+    .don-pledge-table .don-pledge-quantity,
+    .don-pledge-table .don-pledge-condition,
+    .don-pledge-table .don-pledge-status,
+    .don-pledge-table .don-pledge-actions {
+        white-space: nowrap;
+    }
+
+    .don-status-pledged {
+        color: #8a4b10;
+        background: #ffedd5;
+        border-color: #fed7aa;
+    }
+
+    .don-status-approved {
+        color: #1d4ed8;
+        background: #eff6ff;
+        border-color: #bfdbfe;
+    }
+
+    .don-status-scheduled {
+        color: #6d28d9;
+        background: #f3e8ff;
+        border-color: #e9d5ff;
+    }
+
+    .don-status-received {
+        color: #14532d;
+        background: #dcfce7;
+        border-color: #bbf7d0;
+    }
+
     .don-table th,
     .don-table td {
         padding: 0.62rem 0.75rem;
@@ -910,6 +956,25 @@
     }
 
     .don-receipt-missing {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.2rem;
+        height: 2.2rem;
+        overflow: hidden;
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        background: #ffffff;
+    }
+
+    .don-receipt-missing img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .don-receipt-missing-label {
         font-size: 0.72rem;
         color: #6b7a73;
     }
@@ -959,11 +1024,11 @@
 
         <article class="don-card don-kpi">
             <div class="don-kpi-head">
-                <p class="don-kpi-label">Average Donation</p>
+                <p class="don-kpi-label">Available Donation Funds</p>
                 <span class="don-kpi-icon" aria-hidden="true"><i data-lucide="wallet"></i></span>
             </div>
-            <p id="don-kpi-average" class="don-kpi-value" data-kpi-value="true" data-no-animate="true">₱{{ average_donation|floatformat:0 }}</p>
-            <p class="don-kpi-meta">Average per transaction</p>
+            <p id="don-kpi-available" class="don-kpi-value" data-kpi-value="true" data-no-animate="true">₱{{ available_donation_funds_remaining|floatformat:0 }}</p>
+            <p class="don-kpi-meta">Remaining donor pool</p>
         </article>
     </section>
 
@@ -985,7 +1050,6 @@
         <div class="don-bulk-bar">
             <div class="don-bulk-count" id="don-selected-count">0 selected</div>
             <div class="flex flex-wrap gap-2">
-                <button id="don-bulk-approve" type="button" class="don-chip-btn">Bulk Approve</button>
                 <button id="don-bulk-complete" type="button" class="don-chip-btn">Bulk Complete</button>
                 <button id="don-bulk-clear" type="button" class="don-chip-btn">Clear Selection</button>
             </div>
@@ -1010,6 +1074,77 @@
             </table>
         </div>
     </section>
+
+    <section class="don-card" aria-labelledby="item-pledges-title">
+        <header class="don-head don-table-head">
+            <div>
+                <h2 id="item-pledges-title" class="don-title">Item / In-kind Pledges</h2>
+                <p class="don-sub">Pledges are separate from cash donations and are not counted as received items.</p>
+            </div>
+        </header>
+        {% if not item_pledge_notifications_configured %}
+            <p class="don-sub" role="status">Team email alerts are not enabled yet. Add the organization's inbox to DONATION_PLEDGE_NOTIFICATION_EMAIL in the project settings.</p>
+        {% endif %}
+        <div class="don-table-wrap">
+            <table class="don-table don-pledge-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Reference</th>
+                        <th scope="col">Item name</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Condition</th>
+                        <th scope="col">Donor name</th>
+                        <th scope="col">Phone</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Delivery</th>
+                        <th scope="col">Submitted</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pledge in item_pledges %}
+                        <tr>
+                            <td><span class="don-badge">{{ pledge.reference_number }}</span></td>
+                            <td class="don-pledge-name">{{ pledge.item_name }}</td>
+                            <td>{{ pledge.get_category_display }}</td>
+                            <td class="don-pledge-quantity">{{ pledge.quantity }}</td>
+                            <td class="don-pledge-condition">{{ pledge.get_condition_display }}</td>
+                            <td>{% if pledge.is_anonymous %}Anonymous{% elif pledge.donor_name %}{{ pledge.donor_name }}{% else %}Name not provided{% endif %}</td>
+                            <td class="don-pledge-phone">{{ pledge.donor_phone }}</td>
+                            <td class="don-pledge-email">{{ pledge.donor_email }}</td>
+                            <td>
+                                {{ pledge.get_delivery_method_display }}
+                                {% if pledge.delivery_method == "pickup" %}
+                                    <div>{{ pledge.delivery_address }}</div>
+                                    <div>{{ pledge.preferred_date }} · {{ pledge.preferred_time }}</div>
+                                {% elif pledge.delivery_method == "courier" %}
+                                    <div>{{ pledge.courier_name }} · {{ pledge.tracking_number }}</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ pledge.created_at|date:"Y-m-d H:i" }}</td>
+                            <td class="don-pledge-status"><span class="don-badge don-status-{{ pledge.status }}">{{ pledge.get_status_display }}</span></td>
+                            <td class="don-pledge-actions">
+                                <div class="don-action-menu-wrap">
+                                    <button type="button" class="don-row-action-btn" data-open-pledge-actions="{{ pledge.id }}" data-pledge-status="{{ pledge.status }}" data-pledge-status-url="{% url 'update_item_pledge_status' pledge.id %}" data-pledge-photo="{% if pledge.photo %}{{ pledge.photo.url }}{% endif %}" aria-haspopup="menu" aria-expanded="false" aria-label="Open actions for {{ pledge.reference_number }}" title="Actions">
+                                        <span class="don-ellipsis" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="12">No item pledges yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <div id="pledge-actions-menu" class="don-action-menu" role="menu" aria-label="Item pledge actions" data-open="false"></div>
+    <form id="pledge-status-update-form" method="post" hidden>
+        {% csrf_token %}
+        <input id="pledge-status-update-value" type="hidden" name="status">
+    </form>
 
     <section class="grid grid-cols-1 gap-4 xl:grid-cols-12" aria-label="Donation charts and quick insights">
         <article class="don-card p-4 xl:col-span-7" aria-labelledby="don-over-time-title">
@@ -1112,9 +1247,10 @@
 
     var donationsDataEl = document.getElementById('donations-data');
     const DONATIONS = donationsDataEl ? JSON.parse(donationsDataEl.textContent) : [];
+    const DEFAULT_RECEIPT_IMAGE = "{% static 'media/default-donation-receipt.svg' %}";
 
     function isConfirmedDonation(item) {
-        return ["verified", "completed"].indexOf(String(item && item.status || "").toLowerCase()) !== -1;
+        return String(item && item.status || "").toLowerCase() === "completed";
     }
 
     function normalizeDonationDate(value) {
@@ -1312,7 +1448,6 @@
     }
 
     function statusClass(status) {
-        if (status === "verified") return "don-badge don-status-completed";
         if (status === "completed") return "don-badge don-status-completed";
         if (status === "pending") return "don-badge don-status-pending";
         if (status === "rejected") return "don-badge don-status-failed";
@@ -1361,13 +1496,13 @@
         var rows = getFiltered();
         var total = rows.reduce(function (sum, item) { return sum + item.amount; }, 0);
         var pendingCount = rows.filter(function (item) { return item.status === "pending"; }).length;
-        var completed = rows.filter(function (item) { return ["verified", "completed"].includes(item.status); }).reduce(function (sum, item) { return sum + item.amount; }, 0);
-        var average = rows.length ? Math.round(total / rows.length) : 0;
+        var completed = rows.filter(function (item) { return item.status === "completed"; }).reduce(function (sum, item) { return sum + item.amount; }, 0);
+        var availableFundsRemaining = Number({{ available_donation_funds_remaining|default:0 }});
 
         document.getElementById("don-kpi-total").textContent = currency(total);
         document.getElementById("don-kpi-pending").textContent = pendingCount;
         document.getElementById("don-kpi-completed").textContent = currency(completed);
-        document.getElementById("don-kpi-average").textContent = currency(average);
+        document.getElementById("don-kpi-available").textContent = currency(availableFundsRemaining);
     }
 
     function renderTable() {
@@ -1376,8 +1511,8 @@
             var checked = state.selected.has(item.ref) ? "checked" : "";
             var receiptUrl = item.official_receipt_url || item.receipt_url || "";
             var receiptMarkup = receiptUrl
-                ? "<button type=\"button\" class=\"don-receipt-thumb\" data-open-receipt=\"" + esc(receiptUrl) + "\" data-receipt-ref=\"" + esc(item.ref) + "\" data-receipt-amount=\"" + esc(currency(item.amount)) + "\" data-receipt-method=\"" + esc(item.methodLabel || item.method) + "\" data-receipt-date=\"" + esc(formatFriendlyDate(item.date)) + "\" aria-label=\"Preview donation receipt for " + esc(item.ref) + "\"><img src=\"" + esc(receiptUrl) + "\" alt=\"Receipt for " + esc(item.ref) + "\" /></button>"
-                : "<span class=\"don-receipt-missing\">—</span>";
+                ? "<button type=\"button\" class=\"don-receipt-thumb\" data-open-receipt=\"" + esc(receiptUrl) + "\" data-receipt-ref=\"" + esc(item.ref) + "\" data-receipt-amount=\"" + esc(currency(item.amount)) + "\" data-receipt-method=\"" + esc(item.methodLabel || item.method) + "\" data-receipt-date=\"" + esc(formatFriendlyDate(item.date)) + "\" aria-label=\"Preview donation receipt for " + esc(item.ref) + "\"><img data-receipt-image src=\"" + esc(receiptUrl) + "\" alt=\"Receipt for " + esc(item.ref) + "\" /></button>"
+                : "<span class=\"don-receipt-missing\" title=\"No receipt uploaded\"><img src=\"" + DEFAULT_RECEIPT_IMAGE + "\" alt=\"No receipt uploaded\" /></span>";
             return "<tr>"
                 + "<td><input type=\"checkbox\" class=\"don-row-check\" data-ref=\"" + esc(item.ref) + "\" aria-label=\"Select donation " + esc(item.ref) + "\" " + checked + " /></td>"
                 + "<td>" + esc(formatFriendlyDate(item.date)) + "</td>"
@@ -1398,6 +1533,16 @@
         if (window.lucide && typeof window.lucide.createIcons === "function") {
             window.lucide.createIcons();
         }
+        tableBody.querySelectorAll("[data-receipt-image]").forEach(function (receiptImage) {
+            receiptImage.addEventListener("error", function () {
+                if (receiptImage.dataset.fallbackApplied) {
+                    return;
+                }
+                receiptImage.dataset.fallbackApplied = "true";
+                receiptImage.src = DEFAULT_RECEIPT_IMAGE;
+                receiptImage.alt = "Receipt image unavailable";
+            });
+        });
     }
 
     function renderCharts() {
@@ -1559,17 +1704,14 @@
         var items = [
             { key: "details", label: "View Details" }
         ];
-        if (donation && donation.receipt) {
-            items.push({ key: "receipt", label: "View Receipt" });
+        var canChangeStatus = donation && String(donation.status || "").toLowerCase() === "pending";
+        if (canChangeStatus) {
+            items = items.concat([
+                { key: "complete", label: "Mark as Completed" },
+                { key: "failed", label: "Mark as Failed" },
+                { key: "refund", label: "Cancel" }
+            ]);
         }
-        items = items.concat([
-            { key: "impact", label: "Send Impact Update" },
-            { key: "certificate", label: "Generate Donor Certificate" },
-            { key: "approve", label: "Approve" },
-            { key: "complete", label: "Mark as Completed" },
-            { key: "failed", label: "Mark as Failed" },
-            { key: "refund", label: "Cancel/Refund" }
-        ]);
 
         actionsMenu.innerHTML = items.map(function (item) {
             return "<button type=\"button\" class=\"don-menu-item\" data-row-action=\"" + item.key + "\" data-donation-ref=\"" + ref + "\" role=\"menuitem\">" + item.label + "</button>";
@@ -1588,68 +1730,14 @@
         positionActionsMenu(trigger);
     }
 
-    function generateDonationCertificate(donation) {
-        if (!donation) return;
-        var name = String(donation.donor || donation.donor_name || "Supporter").trim() || "Supporter";
-        var reason = "In recognition of their generous and compassionate support to the HappYness Project and the families we serve. Their donation helps enable meals, outreach, care, and hope for our community.";
-
-        if (typeof html2canvas === "undefined" || !window.jspdf && !window.jsPDF) {
-            showToast("Certificate library is still loading. Please try again.");
-            return;
-        }
-
-        var holder = document.createElement("div");
-        holder.style.position = "fixed";
-        holder.style.left = "-9999px";
-        holder.style.top = "-9999px";
-        holder.style.width = "960px";
-        holder.style.height = "680px";
-        holder.style.pointerEvents = "none";
-        holder.innerHTML = [''
-            + '<div style="position:relative;width:960px;height:680px;background:#fffdf7;display:flex;align-items:center;justify-content:center;border-radius:16px;overflow:hidden;box-sizing:border-box;">'
-            + '<img src="{% static "media/certificate of appreciation.jpg" %}" alt="Certificate background" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" />'
-            + '<div style="position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);width:72%;text-align:center;">'
-            + '<div style="font-family:"Alex Brush", cursive;font-size:46px;color:#163a31;letter-spacing:0.04em;line-height:1.1;">' + esc(name) + '</div>'
-            + '<div style="font-family:"Cormorant Garamond", serif;font-size:18px;color:#1e3d35;line-height:1.5;margin-top:18px;white-space:normal;">' + esc(reason) + '</div>'
-            + '</div>'
-            + '</div>'].join("");
-        document.body.appendChild(holder);
-
-        var pdfCtor = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
-        html2canvas(holder, {
-            backgroundColor: "#fffdf7",
-            useCORS: true,
-            allowTaint: true,
-            scale: 2,
-            logging: false
-        }).then(function (canvas) {
-            var doc = new pdfCtor({ orientation: "landscape", unit: "mm", format: "a4" });
-            var pageWidth = doc.internal.pageSize.getWidth();
-            var pageHeight = doc.internal.pageSize.getHeight();
-            var margin = 4;
-            var aspect = canvas.width / canvas.height;
-            var imgWidth = pageWidth - (margin * 2);
-            var imgHeight = imgWidth / aspect;
-            if (imgHeight > pageHeight - (margin * 2)) {
-                imgHeight = pageHeight - (margin * 2);
-                imgWidth = imgHeight * aspect;
-            }
-            var x = (pageWidth - imgWidth) / 2;
-            var y = (pageHeight - imgHeight) / 2;
-            doc.addImage(canvas.toDataURL("image/png"), "PNG", x, y, imgWidth, imgHeight);
-            doc.save("Donor_Certificate_" + name.replace(/\s+/g, "_") + ".pdf");
-            showToast("Donor certificate downloaded");
-            holder.remove();
-        }).catch(function () {
-            showToast("Unable to generate donor certificate right now.");
-            holder.remove();
-        });
-    }
-
     function refresh() {
         renderTable();
         renderSummary();
-        renderCharts();
+        try {
+            renderCharts();
+        } catch (error) {
+            console.warn("Donation charts could not refresh; table data was updated.", error);
+        }
     }
 
     function exportCSV() {
@@ -1714,65 +1802,13 @@
 
                 var key = action.getAttribute("data-row-action");
                 if (key === "details") renderDetail(donation);
-                if (key === "receipt") openReceiptViewer(donation.receipt_url || donation.receipt);
-                if (key === "impact") {
-                    var impactText = window.prompt("Share an impact update for " + (donation.donor || donation.donor_name || "this donor") + ":", donation.impact_update || "");
-                    if (impactText === null) return;
-                    var trimmedImpact = String(impactText || "").trim();
-                    if (!trimmedImpact) {
-                        showToast("Impact update cannot be empty.");
-                        return;
-                    }
-                    fetch('/donations/bulk-update/', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': getCookie('csrftoken')
-                        },
-                        body: JSON.stringify({ ids: [donation.id], impact_update: trimmedImpact })
-                    }).then(function (response) {
-                        return response.json().then(function (payload) {
-                            if (!response.ok) {
-                                throw new Error(payload.error || 'Unable to send impact update.');
-                            }
-                            return payload;
-                        });
-                    }).then(function () {
-                        donation.impact_update = trimmedImpact;
-                        showToast("Impact update sent");
-                        refresh();
-                    }).catch(function (error) {
-                        showToast(error.message || "Unable to send impact update.");
-                    });
-                }
-                if (key === "certificate") generateDonationCertificate(donation);
-                if (key === "approve") {
-                    donation.status = "verified";
-                    donation.statusLabel = "Verified";
-                    fetch('/donations/bulk-update/', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': getCookie('csrftoken')
-                        },
-                        body: JSON.stringify({ ids: [donation.id], status: 'verified' })
-                    }).then(function (response) {
-                        return response.json().then(function (payload) {
-                            if (!response.ok) {
-                                throw new Error(payload.error || 'Unable to update donation status.');
-                            }
-                            return payload;
-                        });
-                    }).then(function () {
-                        showToast("Donation approved");
-                        refresh();
-                    }).catch(function (error) {
-                        showToast(error.message || "Unable to update donation status.");
-                    });
-                }
                 if (key === "complete") {
+                    var previousStatus = donation.status;
+                    var previousStatusLabel = donation.statusLabel;
                     donation.status = "completed";
                     donation.statusLabel = "Completed";
+                    renderTable();
+                    renderSummary();
                     fetch('/donations/bulk-update/', {
                         method: 'POST',
                         headers: {
@@ -1789,14 +1825,21 @@
                         });
                     }).then(function () {
                         showToast("Marked as completed");
-                        refresh();
                     }).catch(function (error) {
+                        donation.status = previousStatus;
+                        donation.statusLabel = previousStatusLabel;
+                        renderTable();
+                        renderSummary();
                         showToast(error.message || "Unable to update donation status.");
                     });
                 }
                 if (key === "failed") {
+                    var failedPreviousStatus = donation.status;
+                    var failedPreviousStatusLabel = donation.statusLabel;
                     donation.status = "rejected";
                     donation.statusLabel = "Rejected";
+                    renderTable();
+                    renderSummary();
                     fetch('/donations/bulk-update/', {
                         method: 'POST',
                         headers: {
@@ -1813,14 +1856,21 @@
                         });
                     }).then(function () {
                         showToast("Marked as failed");
-                        refresh();
                     }).catch(function (error) {
+                        donation.status = failedPreviousStatus;
+                        donation.statusLabel = failedPreviousStatusLabel;
+                        renderTable();
+                        renderSummary();
                         showToast(error.message || "Unable to update donation status.");
                     });
                 }
                 if (key === "refund") {
+                    var cancelledPreviousStatus = donation.status;
+                    var cancelledPreviousStatusLabel = donation.statusLabel;
                     donation.status = "cancelled";
                     donation.statusLabel = "Cancelled";
+                    renderTable();
+                    renderSummary();
                     fetch('/donations/bulk-update/', {
                         method: 'POST',
                         headers: {
@@ -1836,9 +1886,12 @@
                             return payload;
                         });
                     }).then(function () {
-                        showToast("Cancelled/refunded");
-                        refresh();
+                        showToast("Donation cancelled");
                     }).catch(function (error) {
+                        donation.status = cancelledPreviousStatus;
+                        donation.statusLabel = cancelledPreviousStatusLabel;
+                        renderTable();
+                        renderSummary();
                         showToast(error.message || "Unable to update donation status.");
                     });
                 }
@@ -1853,42 +1906,6 @@
             state.selected.clear();
             renderTable();
             showToast("Selection cleared");
-        });
-
-        document.getElementById("don-bulk-approve").addEventListener("click", function () {
-            var selectedIds = [];
-            DONATIONS.forEach(function (item) {
-                if (state.selected.has(item.ref)) {
-                    item.status = "verified";
-                    item.statusLabel = "Verified";
-                    selectedIds.push(item.id);
-                }
-            });
-            if (!selectedIds.length) {
-                showToast("Select donations first");
-                return;
-            }
-
-            fetch('/donations/bulk-update/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({ ids: selectedIds, status: 'verified' })
-            }).then(function (response) {
-                return response.json().then(function (payload) {
-                    if (!response.ok) {
-                        throw new Error(payload.error || 'Unable to update donation statuses.');
-                    }
-                    return payload;
-                });
-            }).then(function () {
-                showToast(selectedIds.length + " donations approved");
-                refresh();
-            }).catch(function (error) {
-                showToast(error.message || "Unable to update donation statuses.");
-            });
         });
 
         document.getElementById("don-bulk-complete").addEventListener("click", function () {
@@ -2047,6 +2064,111 @@
     } else {
         init();
     }
+})();
+</script>
+<script>
+(function () {
+    var menu = document.getElementById("pledge-actions-menu");
+    var statusForm = document.getElementById("pledge-status-update-form");
+    var statusInput = document.getElementById("pledge-status-update-value");
+    if (!menu || !statusForm || !statusInput) return;
+
+    var openTrigger = null;
+    var statusOptions = [
+        ["pledged", "Mark as Pending"],
+        ["approved", "Mark as Approved"],
+        ["scheduled", "Mark as Scheduled"],
+        ["received", "Mark as Received"]
+    ];
+
+    function closeMenu() {
+        menu.setAttribute("data-open", "false");
+        if (openTrigger) {
+            openTrigger.setAttribute("aria-expanded", "false");
+            openTrigger.classList.remove("is-active");
+        }
+        openTrigger = null;
+    }
+
+    function positionMenu(trigger) {
+        var rect = trigger.getBoundingClientRect();
+        var width = menu.offsetWidth || 240;
+        var height = menu.offsetHeight || 220;
+        var edge = 10;
+        var left = Math.max(edge, Math.min(rect.left + rect.width / 2 - width / 2, window.innerWidth - width - edge));
+        var top = rect.bottom + 8;
+        if (top + height > window.innerHeight - edge) top = Math.max(edge, rect.top - height - 8);
+        menu.style.left = left + "px";
+        menu.style.top = top + "px";
+    }
+
+    function openMenu(trigger) {
+        var currentStatus = trigger.dataset.pledgeStatus;
+        menu.replaceChildren();
+        statusOptions.forEach(function (option) {
+            if (option[0] === currentStatus) return;
+            var button = document.createElement("button");
+            button.type = "button";
+            button.className = "don-menu-item";
+            button.setAttribute("role", "menuitem");
+            button.dataset.pledgeStatus = option[0];
+            button.textContent = option[1];
+            menu.appendChild(button);
+        });
+
+        if (trigger.dataset.pledgePhoto) {
+            var photoLink = document.createElement("a");
+            photoLink.className = "don-menu-item";
+            photoLink.href = trigger.dataset.pledgePhoto;
+            photoLink.target = "_blank";
+            photoLink.rel = "noopener";
+            photoLink.setAttribute("role", "menuitem");
+            photoLink.textContent = "View item photo";
+            menu.appendChild(photoLink);
+        }
+
+        openTrigger = trigger;
+        trigger.setAttribute("aria-expanded", "true");
+        trigger.classList.add("is-active");
+        menu.setAttribute("data-open", "true");
+        positionMenu(trigger);
+    }
+
+    document.addEventListener("click", function (event) {
+        var trigger = event.target.closest("[data-open-pledge-actions]");
+        if (trigger) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (openTrigger === trigger && menu.getAttribute("data-open") === "true") {
+                closeMenu();
+            } else {
+                closeMenu();
+                openMenu(trigger);
+            }
+            return;
+        }
+
+        var statusButton = event.target.closest("[data-pledge-status]");
+        if (statusButton) {
+            statusInput.value = statusButton.dataset.pledgeStatus;
+            statusForm.action = openTrigger.dataset.pledgeStatusUrl;
+            statusForm.submit();
+            return;
+        }
+
+        if (!event.target.closest("#pledge-actions-menu")) closeMenu();
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && menu.getAttribute("data-open") === "true") {
+            var trigger = openTrigger;
+            closeMenu();
+            if (trigger) trigger.focus();
+        }
+    });
+
+    window.addEventListener("resize", closeMenu);
+    window.addEventListener("scroll", closeMenu, true);
 })();
 </script>
 {% endblock %}

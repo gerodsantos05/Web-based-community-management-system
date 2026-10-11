@@ -161,6 +161,82 @@
         border-bottom-color: #deefe8;
     }
 
+    .pay-directory-tabs {
+        display: flex;
+        gap: 1.1rem;
+        padding: 0 1rem;
+        border-bottom: 1px solid #e2f1eb;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .pay-directory-tabs::-webkit-scrollbar { display: none; }
+
+    .pay-directory-tab {
+        position: relative;
+        border: 0;
+        padding: 0.7rem 0.1rem 0.62rem;
+        background: transparent;
+        color: #71847e;
+        font-size: 0.78rem;
+        font-weight: 700;
+        cursor: pointer;
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .pay-directory-tab::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        bottom: -1px;
+        left: 0;
+        height: 2px;
+        background: transparent;
+    }
+
+    .pay-directory-tab[aria-selected="true"] { color: var(--pay-accent); }
+    .pay-directory-tab[aria-selected="true"]::after { background: var(--pay-accent); }
+    .pay-panel[hidden] { display: none; }
+
+    .pay-filter-bar[data-ratings-view="true"] > :not(.pay-search-wrapper) { display: none; }
+
+    .pay-rating-product {
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: inherit;
+        text-align: left;
+        font: inherit;
+        cursor: pointer;
+    }
+
+    .pay-rating-product:hover .pay-product-name { color: var(--pay-accent); text-decoration: underline; }
+
+    .pay-rating-stars {
+        color: #d89c16;
+        white-space: nowrap;
+    }
+
+    .pay-rating-stars strong { color: var(--pay-ink); margin-left: 0.25rem; }
+
+    .pay-review-message {
+        margin: 0.4rem 0 0;
+        color: var(--pay-sub);
+        white-space: pre-wrap;
+    }
+
+    .pay-ratings-empty {
+        margin: 0;
+        padding: 1.5rem;
+        color: var(--pay-sub);
+        text-align: center;
+    }
+
     .pay-filter-bar {
         display: flex;
         align-items: center;
@@ -387,10 +463,15 @@
         white-space: nowrap;
     }
 
-    .pay-status-completed { color: #14532d; background: #dcfce7; border-color: #bbf7d0; }
-    .pay-status-pending { color: #8a4b10; background: #ffedd5; border-color: #fed7aa; }
-    .pay-status-failed { color: #9a3412; background: #fee2e2; border-color: #fecaca; }
-    .pay-status-refunded { color: #475569; background: #e2e8f0; border-color: #cbd5e1; }
+    .pay-status-pending { color: #991b1b; background: #fee2e2; border-color: #fca5a5; }
+    .pay-status-verified { color: #1e40af; background: #dbeafe; border-color: #60a5fa; }
+    .pay-status-in-delivery { color: #92400e; background: #fef3c7; border-color: #fbbf24; }
+    .pay-status-completed { color: #166534; background: #dcfce7; border-color: #4ade80; }
+    .pay-status-failed { color: #7f1d1d; background: #fecaca; border-color: #f87171; }
+    .pay-status-refunded,
+    .pay-status-refund-requested,
+    .pay-status-return-requested { color: #F4AB6A !important; background: #fff2e8 !important; border-color: #F4AB6A !important; }
+    .pay-status-cancelled { color: #374151; background: #f3f4f6; border-color: #9ca3af; }
 
     .pay-method {
         display: inline-flex;
@@ -596,6 +677,57 @@
         max-height: none;
         overflow: visible;
         border-radius: 12px;
+    }
+
+    #pay-delivery-modal {
+        width: min(92vw, 480px);
+        max-height: none;
+        overflow: visible;
+        border-radius: 12px;
+    }
+
+    #pay-delivery-modal .pay-head {
+        position: relative;
+        padding: 0.7rem 3.6rem 0.7rem 0.85rem;
+    }
+
+    .pay-delivery-form {
+        padding: 0.8rem 0.85rem 0.85rem;
+    }
+
+    .pay-field-grid {
+        display: grid;
+        gap: 0.7rem;
+    }
+
+    .pay-field {
+        display: grid;
+        gap: 0.35rem;
+        font-size: 0.75rem;
+        color: #355d52;
+        font-weight: 600;
+    }
+
+    .pay-field input {
+        width: 100%;
+        padding: 0.55rem 0.7rem;
+        border-radius: 8px;
+        border: 1px solid #d4e9e1;
+        background: #fff;
+        color: #173a31;
+        font-size: 0.8rem;
+    }
+
+    .pay-primary-btn {
+        border-color: rgba(15, 118, 110, 0.24);
+        background: #0f766e;
+        color: #fff;
+    }
+
+    .pay-primary-btn:hover {
+        border-color: #0d6d66;
+        background: #0d6d66;
+        color: #fff;
     }
 
     #pay-delete-modal .pay-head {
@@ -858,7 +990,12 @@
                 <button type="button" id="pay-show-more" class="pay-show-more-btn" aria-expanded="false">Show More</button>
             </div>
         </header>
-        <div class="pay-table-wrap">
+        <div class="pay-directory-tabs" role="tablist" aria-label="Payment views">
+            <button type="button" id="pay-transactions-tab" class="pay-directory-tab" role="tab" aria-selected="true" aria-controls="pay-transactions-panel">Transactions</button>
+            <button type="button" id="pay-ratings-tab" class="pay-directory-tab" role="tab" aria-selected="false" aria-controls="pay-ratings-panel">Ratings</button>
+        </div>
+        <div id="pay-transactions-panel" class="pay-panel" role="tabpanel" aria-labelledby="pay-transactions-tab">
+          <div class="pay-table-wrap">
             <table class="pay-table" aria-describedby="pay-table-count">
                 <thead>
                     <tr>
@@ -878,6 +1015,18 @@
                 </thead>
                 <tbody id="pay-table-body"></tbody>
             </table>
+          </div>
+        </div>
+        <div id="pay-ratings-panel" class="pay-panel" role="tabpanel" aria-labelledby="pay-ratings-tab" hidden>
+            <div class="pay-table-wrap pay-ratings-table-wrap">
+                <table class="pay-table" aria-describedby="pay-table-count">
+                    <thead>
+                        <tr><th>Product</th><th>Average rating</th><th>Total ratings</th></tr>
+                    </thead>
+                    <tbody id="pay-ratings-body"></tbody>
+                </table>
+                <p id="pay-ratings-empty" class="pay-ratings-empty" hidden>No customer ratings yet.</p>
+            </div>
         </div>
     </section>
 
@@ -907,6 +1056,31 @@
     <div id="pay-detail-content" class="pay-detail-grid"></div>
 </div>
 
+<div id="pay-delivery-modal" class="pay-modal" role="dialog" aria-modal="true" aria-labelledby="pay-delivery-title" data-open="false">
+    <header class="pay-head">
+        <div>
+            <h3 id="pay-delivery-title" class="pay-title">Set In Delivery</h3>
+        </div>
+        <button type="button" class="pay-delete-close-btn" data-close-delivery="true" aria-label="Close delivery modal" title="Close">×</button>
+    </header>
+    <form id="pay-delivery-form" class="pay-delivery-form">
+        <div class="pay-field-grid">
+            <label class="pay-field">
+                <span>Delivery window start</span>
+                <input type="date" id="pay-delivery-start" name="delivery_window_start" />
+            </label>
+            <label class="pay-field">
+                <span>Delivery window end</span>
+                <input type="date" id="pay-delivery-end" name="delivery_window_end" />
+            </label>
+        </div>
+        <div class="pay-confirm-actions">
+            <button type="button" id="pay-delivery-cancel" class="pay-form-btn">Cancel</button>
+            <button type="submit" class="pay-form-btn pay-primary-btn">Save</button>
+        </div>
+    </form>
+</div>
+
 <div id="pay-delete-modal" class="pay-modal" role="dialog" aria-modal="true" aria-labelledby="pay-delete-title" data-open="false">
     <header class="pay-head">
         <div>
@@ -931,12 +1105,15 @@
 
 {% block extra_scripts %}
 {{ payments_json|json_script:"payments-data" }}
+{{ ratings_json|json_script:"ratings-data" }}
 <script>
 (function () {
     "use strict";
 
     var dataEl = document.getElementById('payments-data');
     var PAYMENTS = dataEl ? JSON.parse(dataEl.textContent) : [];
+    var ratingsDataEl = document.getElementById('ratings-data');
+    var RATINGS = ratingsDataEl ? JSON.parse(ratingsDataEl.textContent) : [];
 
     var CSRF_TOKEN = '{{ csrf_token }}';
     var state = {
@@ -944,6 +1121,7 @@
     };
 
     var tableBody = document.getElementById("pay-table-body");
+    var ratingsBody = document.getElementById("pay-ratings-body");
     var tableCount = document.getElementById("pay-table-count");
     var tableSearch = document.getElementById("pay-table-search");
     var tableStatusFilter = document.getElementById("pay-table-status-filter");
@@ -952,7 +1130,13 @@
     var showMoreButton = document.getElementById("pay-show-more");
     var menu = document.getElementById("pay-actions-menu");
     var tableWrap = document.querySelector(".pay-table-wrap");
+    var transactionsPanel = document.getElementById("pay-transactions-panel");
+    var ratingsPanel = document.getElementById("pay-ratings-panel");
+    var paymentFilterBar = document.querySelector(".pay-filter-bar");
+    var transactionsTab = document.getElementById("pay-transactions-tab");
+    var ratingsTab = document.getElementById("pay-ratings-tab");
     var detailModal = document.getElementById("pay-detail-modal");
+    var detailTitle = document.getElementById("pay-detail-title");
     var detailSub = document.getElementById("pay-detail-sub");
     var detailContent = document.getElementById("pay-detail-content");
     var backdrop = document.getElementById("pay-modal-backdrop");
@@ -1022,6 +1206,16 @@
             + "</div>";
     }
 
+    function ratingProductCell(product) {
+        var imageUrl = PRODUCT_IMAGES[String(product.productName || "").trim().toLowerCase()];
+        var imageMarkup = imageUrl
+            ? "<img class=\"pay-product-thumb\" src=\"" + esc(imageUrl) + "\" alt=\"\" onerror=\"this.hidden=true; this.nextElementSibling.hidden=false;\">"
+            : "";
+        var placeholderMarkup = "<span class=\"pay-product-placeholder\"" + (imageUrl ? " hidden" : "") + "><i data-lucide=\"image\" aria-hidden=\"true\"></i></span>";
+        return "<button type=\"button\" class=\"pay-rating-product\" data-rating-product=\"" + esc(product.productName) + "\"><span class=\"pay-product-cell\">"
+            + imageMarkup + placeholderMarkup + "<span class=\"pay-product-name\">" + esc(product.productName) + "</span></span></button>";
+    }
+
     function productSummary(payment) {
         var items = orderItemsFor(payment);
         if (!items.length) return "Product unavailable";
@@ -1061,10 +1255,61 @@
     }
 
     function statusClass(status) {
-        if (status === "Completed" || status === "Verified") return "pay-badge pay-status-completed";
-        if (status === "Pending") return "pay-badge pay-status-pending";
-        if (status === "Refunded") return "pay-badge pay-status-refunded";
+        var normalized = String(status || "").replace(/_/g, " ");
+        if (normalized === "Verified") return "pay-badge pay-status-verified";
+        if (normalized === "Completed") return "pay-badge pay-status-completed";
+        if (normalized === "Pending") return "pay-badge pay-status-pending";
+        if (normalized === "In Delivery") return "pay-badge pay-status-in-delivery";
+        if (normalized === "Refunded" || normalized === "Refund Requested" || normalized === "Return Requested") return "pay-badge pay-status-refunded";
+        if (normalized === "Cancelled") return "pay-badge pay-status-cancelled";
         return "pay-badge pay-status-failed";
+    }
+
+    function formatDateDisplay(value) {
+        if (!value) return "";
+        var raw = String(value).trim();
+        if (!raw) return "";
+        var d = new Date(raw.includes("T") ? raw : raw + "T00:00:00");
+        if (Number.isNaN(d.getTime())) return raw;
+        return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function formatDateTimeDisplay(value) {
+        if (!value) return "";
+        var raw = String(value).trim();
+        if (!raw) return "";
+        var d = new Date(raw.includes("T") ? raw : raw + "T00:00:00");
+        if (Number.isNaN(d.getTime())) return raw;
+        return d.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric"
+        });
+    }
+
+    function formatDisplayDate(value) {
+        return formatDateDisplay(value);
+    }
+
+    function formatDisplayDateTime(value) {
+        return formatDateTimeDisplay(value);
+    }
+
+    function deliverySummaryText(payment) {
+        if (!payment || payment.status !== "In Delivery") return "";
+        var details = [];
+        if (payment.delivery_window_start || payment.delivery_window_end) {
+            var start = payment.delivery_window_start ? formatDisplayDate(payment.delivery_window_start) : "";
+            var end = payment.delivery_window_end ? formatDisplayDate(payment.delivery_window_end) : "";
+            if (start && end) details.push("Delivery window: " + start + "–" + end);
+            else if (start) details.push("Delivery window: " + start);
+            else if (end) details.push("Delivery window: " + end);
+        }
+        return details.join(" | ");
+    }
+
+    function deliveryStatusText(payment) {
+        return payment && payment.status === "In Delivery" ? "In Delivery" : (payment ? String(payment.status) : "");
     }
 
     function updateRowBadge(ref, newStatus) {
@@ -1080,9 +1325,9 @@
 
     function updateSummaryCards() {
         // Exact status strings produced by inq.status.title() in payments_json:
-        // "Pending", "Verified", "Completed", "Failed", "Refunded", "Cancelled"
+        // "Pending", "Verified", "Completed", "Failed", "Refunded", "Refund Requested", "Return Requested", "Cancelled"
         var confirmedStatuses = { "Verified": true, "Completed": true };
-        var riskStatuses      = { "Failed": true, "Refunded": true, "Cancelled": true };
+        var riskStatuses      = { "Failed": true, "Refunded": true, "Refund Requested": true, "Return Requested": true, "Cancelled": true };
 
         var completed = PAYMENTS.filter(function (p) { return confirmedStatuses[p.status]; });
         var pending   = PAYMENTS.filter(function (p) { return p.status === "Pending"; });
@@ -1135,14 +1380,14 @@
                 + "<td class=\"font-semibold\">" + peso(p.amount) + "</td>"
                 + "<td class=\"font-semibold\">" + money(p.amount) + "</td>"
                 + "<td><span class=\"pay-method\">" + esc(methodLabel(p.method)) + "</span></td>"
-                + "<td><span class=\"" + statusClass(p.status) + "\">" + esc(p.status) + "</span></td>"
+                + "<td><span class=\"" + statusClass(p.status) + "\" title=\"" + esc(deliverySummaryText(p)) + "\" data-delivery-ref=\"" + esc(p.reference) + "\">" + esc(deliveryStatusText(p)) + "</span></td>"
                 + "<td>" + esc(p.paymentDate) + "</td>"
                 + "<td>" + esc(p.reference) + "</td>"
                 + "<td><button type=\"button\" class=\"pay-row-action-btn\" data-open-actions=\"" + esc(p.reference) + "\" aria-expanded=\"false\" aria-label=\"Open payment actions\" title=\"Actions\"><span class=\"pay-ellipsis\" aria-hidden=\"true\"></span></button></td>"
                 + "</tr>";
         }).join("");
 
-        tableCount.textContent = filteredRows.length + " payments shown";
+        if (!ratingsPanel || ratingsPanel.hidden) tableCount.textContent = filteredRows.length + " payments shown";
         showMoreButton.hidden = filteredRows.length <= TABLE_ROW_LIMIT;
         showMoreButton.textContent = showAllRows ? "Show Less" : "Show More";
         showMoreButton.setAttribute("aria-expanded", showAllRows ? "true" : "false");
@@ -1152,6 +1397,54 @@
         if (window.lucide && typeof window.lucide.createIcons === "function") {
             window.lucide.createIcons();
         }
+    }
+
+    function renderRatings() {
+        var searchTerm = (tableSearch.value || "").trim().toLowerCase();
+        var products = RATINGS.filter(function (product) {
+            return !searchTerm || String(product.productName || "").toLowerCase().indexOf(searchTerm) >= 0;
+        });
+        ratingsBody.innerHTML = products.map(function (product) {
+            var average = Number(product.average || 0);
+            var stars = "★".repeat(Math.round(average)) + "☆".repeat(5 - Math.round(average));
+            return "<tr><td>" + ratingProductCell(product) + "</td>"
+                + "<td><span class=\"pay-rating-stars\" aria-label=\"" + average.toFixed(1) + " out of 5 stars\">" + stars + "<strong>" + average.toFixed(1) + "</strong></span></td>"
+                + "<td>" + Number(product.count || 0) + "</td></tr>";
+        }).join("");
+        document.getElementById("pay-ratings-empty").hidden = products.length > 0;
+        if (ratingsPanel && !ratingsPanel.hidden) {
+            tableCount.textContent = products.length + " products rated";
+        }
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    }
+
+    function setPaymentTab(view) {
+        var showRatings = view === "ratings";
+        transactionsTab.setAttribute("aria-selected", String(!showRatings));
+        ratingsTab.setAttribute("aria-selected", String(showRatings));
+        transactionsPanel.hidden = showRatings;
+        ratingsPanel.hidden = !showRatings;
+        paymentFilterBar.dataset.ratingsView = String(showRatings);
+        if (showRatings) renderRatings();
+        else renderTable();
+    }
+
+    function openRatingDetails(product) {
+        var average = Number(product.average || 0).toFixed(1);
+        detailTitle.textContent = product.productName + " ratings";
+        detailSub.textContent = average + " average · " + product.count + (Number(product.count) === 1 ? " rating" : " ratings");
+        detailContent.innerHTML = (product.reviews || []).map(function (review) {
+            var rating = Math.max(1, Math.min(5, Number(review.rating) || 0));
+            var stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+            var variation = review.variation ? "<li>Option: " + esc(review.variation) + "</li>" : "";
+            return "<section class=\"pay-block\"><h4><span class=\"pay-rating-stars\" aria-label=\"" + rating + " out of 5 stars\">" + stars + "</span> · " + esc(review.customer || "Customer") + "</h4>"
+                + "<ul><li>Order: " + esc(review.orderId) + "</li><li>Date: " + esc(review.date) + "</li>" + variation + "</ul>"
+                + "<p class=\"pay-review-message\">" + esc(review.message || "No message provided.") + "</p></section>";
+        }).join("");
+        backdrop.setAttribute("data-open", "true");
+        detailModal.setAttribute("data-open", "true");
     }
 
     function populateTableFilters() {
@@ -1256,18 +1549,44 @@
 
     function openMenu(reference, trigger) {
         var p = PAYMENTS.find(function (x) { return x.reference === reference; });
-        var items = [["detail", "View Payment Details"]];
-        if (p && p.screenshot) {
-            items.push(["view-screenshot", "View Receipt"]);
-        }
-        items = items.concat([
-            ["verify", "Verify Payment"],
-            ["paid", "Mark as Paid"],
-            ["failed", "Mark as Failed"],
-            ["refund", "Refund Payment"],
-            ["receipt", "Download Receipt"],
-            ["delete", "Delete"]
-        ]);
+        var actionsByStatus = {
+            "Pending": [
+                ["paid", "Mark as Paid"],
+                ["failed", "Mark as Failed"],
+                ["detail", "View Payment Details"],
+                ["delete", "Delete"]
+            ],
+            "Paid": [
+                ["in-delivery", "Mark as In Delivery"],
+                ["refund", "Refund Payment"],
+                ["receipt", "Download Receipt"],
+                ["detail", "View Payment Details"]
+            ],
+            "Verified": [
+                ["in-delivery", "Mark as In Delivery"],
+                ["refund", "Refund Payment"],
+                ["receipt", "Download Receipt"],
+                ["detail", "View Payment Details"]
+            ],
+            "In Delivery": [
+                ["receipt", "Download Receipt"],
+                ["detail", "View Payment Details"]
+            ],
+            "Completed": [
+                ["receipt", "Download Receipt"],
+                ["refund", "Refund Payment"],
+                ["detail", "View Payment Details"]
+            ],
+            "Failed": [
+                ["detail", "View Payment Details"],
+                ["delete", "Delete"]
+            ],
+            "Refunded": [
+                ["detail", "View Payment Details"],
+                ["receipt", "Download Receipt"]
+            ]
+        };
+        var items = actionsByStatus[p ? p.status : ""] || [["detail", "View Payment Details"]];
         menu.innerHTML = items.map(function (item) {
             var itemClass = item[0] === "delete" ? " pay-menu-item-danger" : "";
             return "<button type=\"button\" class=\"pay-menu-item" + itemClass + "\" data-action=\"" + item[0] + "\" data-ref=\"" + esc(reference) + "\">" + item[1] + "</button>";
@@ -1322,10 +1641,26 @@
     }
 
     function openDetail(payment) {
+        detailTitle.textContent = "Payment Details";
         detailSub.textContent = payment.orderId + " • " + payment.reference + " • " + payment.status;
         var receiptHtml = payment.screenshot
             ? "<button type=\"button\" class=\"pay-receipt-btn\" data-lightbox-src=\"" + esc(payment.screenshot) + "\">View Receipt</button>"
             : "<p class=\"pay-receipt-none\">No receipt uploaded</p>";
+        var deliveryMeta = [];
+        if (payment.delivery_window_start || payment.delivery_window_end) {
+            var startText = payment.delivery_window_start ? formatDateDisplay(payment.delivery_window_start) : "";
+            var endText = payment.delivery_window_end ? formatDateDisplay(payment.delivery_window_end) : "";
+            if (startText && endText) {
+                deliveryMeta.push("Delivery window: " + esc(startText + " to " + endText));
+            } else if (startText) {
+                deliveryMeta.push("Delivery window: " + esc(startText));
+            } else if (endText) {
+                deliveryMeta.push("Delivery window: " + esc(endText));
+            }
+        }
+        var deliveryItems = deliveryMeta.length
+            ? deliveryMeta.map(function (item) { return "<li>" + item + "</li>"; }).join("")
+            : "";
         detailContent.innerHTML = ""
             + "<section class=\"pay-block\"><h4>Customer</h4><ul><li>Name: " + esc(payment.customer) + "</li><li>Email: " + esc(payment.email) + "</li></ul></section>"
             + "<section class=\"pay-block\"><h4>Payment Snapshot</h4><ul><li>Amount: " + money(payment.amount) + "</li><li>Method: " + esc(payment.method) + "</li><li>Date: " + esc(payment.paymentDate) + "</li></ul>" + receiptHtml + "</section>"
@@ -1334,6 +1669,7 @@
             + "<li>City: " + esc(payment.delivery_city || "—") + ", " + esc(payment.delivery_province || "—") + "</li>"
             + "<li>ZIP: " + esc(payment.delivery_zip || "—") + "</li>"
             + "<li>Country: " + esc(payment.delivery_country || "Philippines") + "</li>"
+            + deliveryItems
             + "</ul></section>"
             + "<section class=\"pay-block\"><h4>Reference</h4><ul><li>Order ID: " + esc(payment.orderId) + "</li><li>Reference: " + esc(payment.reference) + "</li><li>Status: " + esc(payment.status) + "</li></ul></section>"
             + "<section class=\"pay-block\"><h4>Logs</h4><ul>" + payment.logs.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul></section>";
@@ -1357,8 +1693,41 @@
         lightboxImg.src = "";
     }
 
+    var deliveryModal = document.getElementById("pay-delivery-modal");
+    var deliveryForm = document.getElementById("pay-delivery-form");
+    var deliveryStartInput = document.getElementById("pay-delivery-start");
+    var deliveryEndInput = document.getElementById("pay-delivery-end");
     var deleteConfirmModal = document.getElementById("pay-delete-modal");
     var pendingDeletePayment = null;
+    var pendingInDeliveryPayment = null;
+
+    function formatDateTimeLocal(value) {
+        if (!value) return "";
+        var raw = String(value).trim();
+        if (!raw) return "";
+        if (raw.includes("T")) {
+            return raw.replace("Z", "").slice(0, 10);
+        }
+        return raw.slice(0, 10);
+    }
+
+    function openDeliveryModal(payment) {
+        pendingInDeliveryPayment = payment;
+        closeMenu();
+        deliveryForm.reset();
+        deliveryStartInput.value = formatDateTimeLocal(payment.delivery_window_start || "");
+        deliveryEndInput.value = formatDateTimeLocal(payment.delivery_window_end || "");
+        backdrop.setAttribute("data-open", "true");
+        deliveryModal.setAttribute("data-open", "true");
+    }
+
+    function closeDeliveryModal() {
+        pendingInDeliveryPayment = null;
+        deliveryModal.setAttribute("data-open", "false");
+        if (detailModal.getAttribute("data-open") !== "true" && deleteConfirmModal.getAttribute("data-open") !== "true") {
+            backdrop.setAttribute("data-open", "false");
+        }
+    }
 
     function openDeleteConfirm(payment) {
         pendingDeletePayment = payment;
@@ -1370,7 +1739,7 @@
     function closeDeleteConfirm() {
         pendingDeletePayment = null;
         deleteConfirmModal.setAttribute("data-open", "false");
-        if (detailModal.getAttribute("data-open") !== "true") {
+        if (detailModal.getAttribute("data-open") !== "true" && deliveryModal.getAttribute("data-open") !== "true") {
             backdrop.setAttribute("data-open", "false");
         }
     }
@@ -1417,25 +1786,8 @@
             return;
         }
 
-        if (action === "verify") {
-            fetch('/payment/' + payment.id + '/verify/', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': CSRF_TOKEN },
-            }).then(function (res) {
-                return res.json().then(function (data) { return { ok: res.ok, data: data }; });
-            }).then(function (result) {
-                if (result.ok) {
-                    payment.status = result.data.status || 'Verified';
-                    updateRowBadge(ref, payment.status);
-                    updateSummaryCards();
-                    renderCharts();
-                    toast('Payment verified');
-                } else {
-                    toast(result.data.error || 'Verification failed');
-                }
-            }).catch(function () {
-                toast('Verification failed');
-            });
+        if (action === "in-delivery") {
+            openDeliveryModal(payment);
             return;
         }
 
@@ -1524,6 +1876,7 @@
 
     function renderAll() {
         renderTable();
+        renderRatings();
         renderCharts();
         closeMenu();
         if (window.lucide && typeof window.lucide.createIcons === "function") {
@@ -1532,9 +1885,13 @@
     }
 
     function bind() {
+        transactionsTab.addEventListener("click", function () { setPaymentTab("transactions"); });
+        ratingsTab.addEventListener("click", function () { setPaymentTab("ratings"); });
+
         tableSearch.addEventListener("input", function () {
             showAllRows = false;
             renderTable();
+            renderRatings();
         });
 
         tableStatusFilter.addEventListener("change", function () {
@@ -1558,6 +1915,15 @@
         });
 
         tableBody.addEventListener("click", function (e) {
+            var deliveryBadge = e.target.closest("[data-delivery-ref]");
+            if (deliveryBadge) {
+                var payment = PAYMENTS.find(function (p) { return p.reference === deliveryBadge.getAttribute("data-delivery-ref"); });
+                if (payment) {
+                    openDetail(payment);
+                }
+                return;
+            }
+
             var trigger = e.target.closest("[data-open-actions]");
             if (!trigger) return;
             e.preventDefault();
@@ -1569,6 +1935,13 @@
             }
             closeMenu();
             openMenu(ref, trigger);
+        });
+
+        ratingsBody.addEventListener("click", function (e) {
+            var productButton = e.target.closest("[data-rating-product]");
+            if (!productButton) return;
+            var product = RATINGS.find(function (item) { return item.productName === productButton.dataset.ratingProduct; });
+            if (product) openRatingDetails(product);
         });
 
         document.addEventListener("click", function (e) {
@@ -1591,13 +1964,60 @@
         backdrop.addEventListener("click", function () {
             closeDetail();
             closeDeleteConfirm();
+            closeDeliveryModal();
         });
         document.querySelectorAll("[data-close-detail]").forEach(function (b) { b.addEventListener("click", closeDetail); });
+        document.getElementById("pay-delivery-cancel").addEventListener("click", closeDeliveryModal);
+        document.querySelectorAll("[data-close-delivery]").forEach(function (button) {
+            button.addEventListener("click", closeDeliveryModal);
+        });
         document.getElementById("pay-delete-cancel").addEventListener("click", closeDeleteConfirm);
         document.querySelectorAll("[data-close-delete]").forEach(function (button) {
             button.addEventListener("click", closeDeleteConfirm);
         });
         document.getElementById("pay-delete-confirm").addEventListener("click", deletePayment);
+
+        deliveryForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+            if (!pendingInDeliveryPayment) return;
+
+            var payload = {
+                delivery_window_start: deliveryStartInput.value || null,
+                delivery_window_end: deliveryEndInput.value || null,
+            };
+
+            fetch('/payment/' + pendingInDeliveryPayment.id + '/mark-in-delivery/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': CSRF_TOKEN,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            }).then(function (res) {
+                return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+            }).then(function (result) {
+                if (!result.ok) {
+                    toast(result.data.error || 'Action failed');
+                    return;
+                }
+
+                var payment = PAYMENTS.find(function (p) { return p.id === pendingInDeliveryPayment.id; });
+                if (payment) {
+                    payment.status = result.data.status || 'In Delivery';
+                    payment.in_delivery_at = result.data.in_delivery_at || payment.in_delivery_at || null;
+                    payment.delivery_window_start = result.data.delivery_window_start || payment.delivery_window_start || null;
+                    payment.delivery_window_end = result.data.delivery_window_end || payment.delivery_window_end || null;
+                }
+
+                updateRowBadge(pendingInDeliveryPayment.reference, payment ? payment.status : 'In Delivery');
+                updateSummaryCards();
+                renderCharts();
+                closeDeliveryModal();
+                toast('Order marked as in delivery');
+            }).catch(function () {
+                toast('Action failed');
+            });
+        });
 
         detailContent.addEventListener("click", function (e) {
             var btn = e.target.closest("[data-lightbox-src]");

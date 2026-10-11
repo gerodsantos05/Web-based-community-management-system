@@ -38,7 +38,6 @@ const signInFirstModalTitle = "Sign in First!";
 const signInFirstModalDescription = "You must sign in first before applying..";
 const productSignInModalDescription = "You must sign in first before viewing product details.";
 let signInModalSource = "default";
-
 function setSignInModalContent(source) {
     if (!signInModalTitle || !signInModalDescription) {
         return;
@@ -423,11 +422,23 @@ function initProductDetails() {
     const category = document.getElementById("productDetailCategory");
     const title = document.getElementById("productDetailTitle");
     const description = document.getElementById("productDetailDescription");
+    const stockStatus = document.getElementById("productDetailStock");
+    const stockDot = document.getElementById("productDetailStockDot");
+    const stockText = document.getElementById("productDetailStockText");
+    const stockMessage = document.getElementById("productDetailStockMessage");
+    const outOfStockTag = document.getElementById("productDetailOutOfStock");
     const variations = document.getElementById("productDetailVariations");
     const variationLabel = document.getElementById("productDetailVariationLabel");
     const variationOptions = document.getElementById("productDetailVariationOptions");
     const quantityValue = document.getElementById("productDetailQuantity");
     const total = document.getElementById("productDetailTotal");
+    const reviewsSummary = document.getElementById("productReviewsSummary");
+    const reviewsSummaryStars = document.getElementById("productReviewsSummaryStars");
+    const reviewsAverage = document.getElementById("productReviewsAverage");
+    const reviewsCount = document.getElementById("productReviewsCount");
+    const reviewsEmpty = document.getElementById("productReviewsEmpty");
+    const reviewsList = document.getElementById("productReviewsList");
+    const reviewsMore = document.getElementById("productReviewsMore");
     const decreaseButton = document.getElementById("productDetailDecrease");
     const increaseButton = document.getElementById("productDetailIncrease");
     const stepOne = document.getElementById("productDetailStepOne");
@@ -464,14 +475,21 @@ function initProductDetails() {
     const paymentPanels = document.querySelectorAll("[data-payment-panel]");
     const codTotal = document.getElementById("productCodTotal");
     const gcashReference = document.getElementById("productGcashReference");
-    const cardNumber = document.getElementById("productCardNumber");
-    const cardExpiry = document.getElementById("productCardExpiry");
-    const cardCvv = document.getElementById("productCardCvv");
-    const cardholderName = document.getElementById("productCardholderName");
+    const gcashReceipt = document.getElementById("productGcashReceipt");
+    const bankTransferReceipt = document.getElementById("productBankTransferReceipt");
     const orderItems = document.getElementById("productOrderItems");
     const orderTotal = document.getElementById("productOrderTotal");
     const orderMessage = document.getElementById("productOrderMessage");
     const orderTotalDisplay = document.getElementById("productOrderTotalDisplay");
+    const breakdownSubtotal = document.getElementById("productOrderBreakdownSubtotal");
+    const breakdownVat = document.getElementById("productOrderBreakdownVat");
+    const breakdownShipping = document.getElementById("productOrderBreakdownShipping");
+    const breakdownTotal = document.getElementById("productOrderBreakdownTotal");
+    const gcashQrButton = document.getElementById("productGcashQrButton");
+    const qrPreviewOverlay = document.getElementById("productPreviewOverlay");
+    const qrPreviewImg = document.getElementById("productPreviewImg");
+    const qrPreviewName = document.getElementById("productPreviewName");
+    const qrPreviewCat = document.getElementById("productPreviewCat");
     const submitError = document.getElementById("productDetailSubmitError");
     const submitButtonDefaultText = submitButton ? submitButton.textContent.trim() : "Place order";
     const successView = document.getElementById("productDetailSuccess");
@@ -479,7 +497,7 @@ function initProductDetails() {
     const successSummary = document.getElementById("productDetailSuccessSummary");
     const successClose = document.getElementById("productDetailSuccessClose");
 
-    if (!modal || !closeButton || !cards.length || !image || !category || !title || !description || !variations || !variationLabel || !variationOptions || !quantityValue || !total || !decreaseButton || !increaseButton || !stepOne || !stepTwo || !continueButton || !backButton || !orderForm || !orderPhone || !orderAddress || !orderCity || !orderFullName || !orderEmailField || !orderPayment || !orderItems || !orderTotal || !orderTotalDisplay || !orderMessage || !confirmedCard || !editButton || !paymentSection || !submitButton || !editModal || !editCloseButton || !editName || !editEmail || !editPhone || !editCity || !editStreet || !saveEditButton || !editError || !successView || !successAnimation || !successSummary || !successClose) {
+    if (!modal || !closeButton || !cards.length || !image || !category || !title || !description || !stockStatus || !stockDot || !stockText || !stockMessage || !outOfStockTag || !variations || !variationLabel || !variationOptions || !quantityValue || !total || !reviewsSummary || !reviewsSummaryStars || !reviewsAverage || !reviewsCount || !reviewsEmpty || !reviewsList || !reviewsMore || !decreaseButton || !increaseButton || !stepOne || !stepTwo || !continueButton || !backButton || !orderForm || !orderPhone || !orderAddress || !orderCity || !orderFullName || !orderEmailField || !orderPayment || !orderItems || !orderTotal || !orderTotalDisplay || !orderMessage || !confirmedCard || !editButton || !paymentSection || !submitButton || !editModal || !editCloseButton || !editName || !editEmail || !editPhone || !editCity || !editStreet || !saveEditButton || !editError || !successView || !successAnimation || !successSummary || !successClose) {
         return;
     }
 
@@ -487,6 +505,13 @@ function initProductDetails() {
     let quantity = 1;
     let selectedCard = null;
     let selectedVariation = "";
+    let stockTotal = 0;
+    let stockThreshold = 0;
+    let stockRequestId = 0;
+    let stockRefreshTimer = null;
+    let reviewRequestId = 0;
+    let productReviews = [];
+    let showAllProductReviews = false;
 
     function openSignInForProduct(card) {
         if (!signInModal || typeof window.openSignInModal !== "function") {
@@ -512,17 +537,326 @@ function initProductDetails() {
         return "₱" + amount.toLocaleString("en-PH", { maximumFractionDigits: 0 });
     }
 
+    function renderProductReviews(data) {
+        const average = Number(data.average || 0);
+        const count = Number(data.count || 0);
+        const roundedAverage = Math.max(0, Math.min(5, Math.round(average)));
+        reviewsSummaryStars.textContent = "★".repeat(roundedAverage) + "☆".repeat(5 - roundedAverage);
+        reviewsAverage.textContent = average.toFixed(1);
+        reviewsCount.textContent = count + (count === 1 ? " review" : " reviews");
+        reviewsSummary.setAttribute("aria-label", count ? `Average rating ${average.toFixed(1)} out of 5 from ${count} reviews` : "No reviews yet");
+        productReviews = Array.isArray(data.reviews) ? data.reviews : [];
+        reviewsEmpty.hidden = productReviews.length > 0;
+        reviewsEmpty.textContent = productReviews.length ? "" : "No reviews yet.";
+        reviewsList.replaceChildren();
+
+        productReviews.slice(0, showAllProductReviews ? productReviews.length : 3).forEach(function (review) {
+            const article = document.createElement("article");
+            article.className = "product-review-item";
+            const heading = document.createElement("div");
+            heading.className = "product-review-heading";
+            const author = document.createElement("div");
+            author.className = "product-review-author";
+            const avatar = document.createElement("img");
+            avatar.className = "product-review-avatar";
+            avatar.src = review.avatar || document.body.dataset.defaultAvatarUrl || "";
+            avatar.alt = "";
+            avatar.setAttribute("aria-hidden", "true");
+            const customer = document.createElement("strong");
+            customer.textContent = review.customer || "Customer";
+            const rating = Math.max(1, Math.min(5, Number(review.rating) || 0));
+            const stars = document.createElement("span");
+            stars.className = "product-review-stars";
+            stars.textContent = "★".repeat(rating) + "☆".repeat(5 - rating);
+            stars.setAttribute("aria-label", rating + " out of 5 stars");
+            author.append(avatar, customer);
+            heading.append(author, stars);
+            article.appendChild(heading);
+
+            if (review.message) {
+                const comment = document.createElement("p");
+                comment.className = "product-review-comment";
+                comment.textContent = review.message;
+                article.appendChild(comment);
+            }
+
+            const date = document.createElement("time");
+            date.className = "product-review-date";
+            date.textContent = review.date || "";
+            article.appendChild(date);
+            reviewsList.appendChild(article);
+        });
+
+        reviewsMore.hidden = productReviews.length <= 3;
+        reviewsMore.textContent = showAllProductReviews ? "See less" : "See more";
+    }
+
+    function loadProductReviews(productName) {
+        const requestId = ++reviewRequestId;
+        showAllProductReviews = false;
+        productReviews = [];
+        reviewsList.replaceChildren();
+        reviewsEmpty.textContent = "Loading reviews...";
+        reviewsEmpty.hidden = false;
+        reviewsMore.hidden = true;
+
+        fetch("/products/reviews/?" + new URLSearchParams({ product: productName }).toString())
+            .then(function (response) {
+                if (!response.ok) throw new Error("Reviews are temporarily unavailable.");
+                return response.json();
+            })
+            .then(function (data) {
+                if (requestId === reviewRequestId) renderProductReviews(data);
+            })
+            .catch(function () {
+                if (requestId !== reviewRequestId) return;
+                reviewsSummaryStars.textContent = "☆☆☆☆☆";
+                reviewsAverage.textContent = "0.0";
+                reviewsCount.textContent = "0 reviews";
+                reviewsSummary.setAttribute("aria-label", "Reviews are temporarily unavailable");
+                reviewsEmpty.textContent = "Reviews are temporarily unavailable.";
+                reviewsEmpty.hidden = false;
+            });
+    }
+
+    function getCheckoutTotals(subtotal) {
+        const productSubtotal = Number(subtotal || 0);
+        const shippingFee = 50;
+        const vat = Math.round(productSubtotal * 0.12);
+        const grandTotal = productSubtotal + vat + shippingFee;
+        return {
+            subtotal: productSubtotal,
+            vat: vat,
+            shipping: shippingFee,
+            total: grandTotal,
+        };
+    }
+
     function updateTotal() {
+        const subtotal = unitPrice * quantity;
+        const totals = getCheckoutTotals(subtotal);
         quantityValue.textContent = String(quantity);
-        total.textContent = formatCurrency(unitPrice * quantity);
-        orderTotalDisplay.textContent = formatCurrency(unitPrice * quantity);
-        orderTotal.value = String(unitPrice * quantity);
+        total.textContent = formatCurrency(subtotal);
+        orderTotalDisplay.textContent = formatCurrency(totals.total);
+        orderTotal.value = String(totals.total);
         if (codTotal) {
-            codTotal.textContent = formatCurrency(unitPrice * quantity);
+            codTotal.textContent = formatCurrency(totals.total);
         }
+        if (breakdownSubtotal) breakdownSubtotal.textContent = formatCurrency(totals.subtotal);
+        if (breakdownVat) breakdownVat.textContent = formatCurrency(totals.vat);
+        if (breakdownShipping) breakdownShipping.textContent = formatCurrency(totals.shipping);
+        if (breakdownTotal) breakdownTotal.textContent = formatCurrency(totals.total);
         quantityValue.classList.remove("quantity-pulse");
         void quantityValue.offsetWidth;
         quantityValue.classList.add("quantity-pulse");
+    }
+
+    function setStockMessage(message, unavailable) {
+        stockMessage.textContent = message || "";
+        stockMessage.hidden = !message;
+        stockMessage.classList.toggle("is-unavailable", Boolean(unavailable));
+    }
+
+    function updateStockUi() {
+        const isOutOfStock = stockTotal <= 0;
+        if (isOutOfStock) {
+            quantity = 0;
+        } else {
+            quantity = Math.max(1, Math.min(quantity || 1, stockTotal));
+        }
+
+        const remainingAfterSelection = Math.max(0, stockTotal - Math.max(0, quantity));
+        stockStatus.classList.toggle("is-low", !isOutOfStock && remainingAfterSelection <= stockThreshold);
+        stockStatus.classList.toggle("is-out", isOutOfStock);
+        stockText.textContent = isOutOfStock
+            ? "Out of stock"
+            : `${remainingAfterSelection} available`;
+        if (isOutOfStock) {
+            setStockMessage("This item is currently unavailable.", true);
+        }
+        outOfStockTag.hidden = !isOutOfStock;
+        decreaseButton.disabled = isOutOfStock || quantity <= 1;
+        increaseButton.disabled = isOutOfStock || quantity >= stockTotal;
+        continueButton.disabled = isOutOfStock;
+        continueButton.textContent = isOutOfStock ? "Out of stock" : "Continue";
+        updateTotal();
+    }
+
+    async function refreshProductStock() {
+        if (!selectedCard) {
+            return null;
+        }
+
+        const requestId = ++stockRequestId;
+        const productName = selectedCard.dataset.stockName || title.textContent.trim();
+        try {
+            const response = await fetch("/products/stock/?" + new URLSearchParams({ name: productName }).toString(), {
+                cache: "no-store",
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || "This item is currently unavailable.");
+            }
+            if (requestId !== stockRequestId) {
+                return data;
+            }
+            stockTotal = Math.max(0, Number.parseInt(data.stock, 10) || 0);
+            stockThreshold = Math.max(0, Number.parseInt(data.low_stock_threshold, 10) || 0);
+            updateStockUi();
+            if (stockTotal > 0 && quantity >= stockTotal) {
+                setStockMessage(`Only ${stockTotal} available.`);
+            }
+            return data;
+        } catch (error) {
+            if (requestId !== stockRequestId) {
+                return null;
+            }
+            stockTotal = 0;
+            updateStockUi();
+            setStockMessage(error.message || "Availability could not be checked.", true);
+            return null;
+        }
+    }
+
+    function startStockRefresh() {
+        window.clearInterval(stockRefreshTimer);
+        stockRefreshTimer = window.setInterval(function () {
+            refreshProductStock();
+        }, 5000);
+    }
+
+    function buildGcashQrPreviewDataUri() {
+        return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent([
+            '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640" fill="none">',
+            '<rect width="640" height="640" rx="52" fill="#ffffff"/>',
+            '<rect x="56" y="56" width="528" height="528" rx="30" fill="#f8fafc" stroke="#d1d5db" stroke-width="8"/>',
+            '<rect x="110" y="110" width="136" height="136" rx="20" fill="#111827"/>',
+            '<rect x="394" y="110" width="136" height="136" rx="20" fill="#111827"/>',
+            '<rect x="110" y="394" width="136" height="136" rx="20" fill="#111827"/>',
+            '<rect x="290" y="110" width="36" height="36" fill="#111827"/>',
+            '<rect x="290" y="170" width="36" height="36" fill="#111827"/>',
+            '<rect x="332" y="170" width="36" height="36" fill="#111827"/>',
+            '<rect x="290" y="230" width="36" height="36" fill="#111827"/>',
+            '<rect x="332" y="230" width="36" height="36" fill="#111827"/>',
+            '<rect x="290" y="290" width="36" height="36" fill="#111827"/>',
+            '<rect x="332" y="290" width="36" height="36" fill="#111827"/>',
+            '<rect x="374" y="290" width="36" height="36" fill="#111827"/>',
+            '<rect x="416" y="290" width="36" height="36" fill="#111827"/>',
+            '<rect x="290" y="332" width="36" height="36" fill="#111827"/>',
+            '<rect x="332" y="332" width="36" height="36" fill="#111827"/>',
+            '<rect x="374" y="332" width="36" height="36" fill="#111827"/>',
+            '<rect x="416" y="332" width="36" height="36" fill="#111827"/>',
+            '<rect x="290" y="374" width="36" height="36" fill="#111827"/>',
+            '<rect x="332" y="374" width="36" height="36" fill="#111827"/>',
+            '<rect x="374" y="374" width="36" height="36" fill="#111827"/>',
+            '<rect x="416" y="374" width="36" height="36" fill="#111827"/>',
+            '<text x="320" y="582" fill="#64748b" font-family="Arial, sans-serif" font-size="28" font-weight="700" text-anchor="middle">GCash QR</text>',
+            '</svg>'
+        ].join(""));
+    }
+
+    function openGcashQrPreview() {
+        if (!qrPreviewOverlay || !qrPreviewImg || !qrPreviewName || !qrPreviewCat) {
+            const fallbackOverlay = document.getElementById("productPreviewOverlay") || document.createElement("div");
+            fallbackOverlay.id = "productPreviewOverlay";
+            fallbackOverlay.style.display = "flex";
+            fallbackOverlay.style.position = "fixed";
+            fallbackOverlay.style.inset = "0";
+            fallbackOverlay.style.background = "rgba(0,0,0,.7)";
+            fallbackOverlay.style.zIndex = "9999";
+            fallbackOverlay.style.alignItems = "center";
+            fallbackOverlay.style.justifyContent = "center";
+            fallbackOverlay.style.padding = "20px";
+            fallbackOverlay.style.cursor = "pointer";
+
+            let fallbackCard = fallbackOverlay.querySelector("div") || document.createElement("div");
+            fallbackCard.style.background = "#fff";
+            fallbackCard.style.borderRadius = "12px";
+            fallbackCard.style.padding = "16px";
+            fallbackCard.style.maxWidth = "280px";
+            fallbackCard.style.width = "100%";
+            fallbackCard.style.textAlign = "center";
+            fallbackCard.style.position = "relative";
+            fallbackCard.style.cursor = "default";
+
+            const closeButtonElement = fallbackCard.querySelector("button") || document.createElement("button");
+            closeButtonElement.type = "button";
+            closeButtonElement.textContent = "×";
+            closeButtonElement.style.position = "absolute";
+            closeButtonElement.style.top = "10px";
+            closeButtonElement.style.right = "10px";
+            closeButtonElement.style.width = "28px";
+            closeButtonElement.style.height = "28px";
+            closeButtonElement.style.borderRadius = "50%";
+            closeButtonElement.style.border = "none";
+            closeButtonElement.style.background = "#f5f5f5";
+            closeButtonElement.style.cursor = "pointer";
+            closeButtonElement.style.fontSize = "14px";
+            closeButtonElement.style.color = "#666";
+            closeButtonElement.addEventListener("click", function () {
+                fallbackOverlay.style.display = "none";
+            });
+            fallbackOverlay.addEventListener("click", function (event) {
+                if (event.target === fallbackOverlay) {
+                    fallbackOverlay.style.display = "none";
+                }
+            });
+
+            const img = fallbackCard.querySelector("img") || document.createElement("img");
+            img.id = "productPreviewImg";
+            img.src = buildGcashQrPreviewDataUri();
+            img.alt = "HappYness Project GCash QR code";
+            img.style.width = "100%";
+            img.style.borderRadius = "8px";
+            img.style.marginBottom = "10px";
+            img.style.display = "block";
+
+            const name = fallbackCard.querySelector("#productPreviewName") || document.createElement("div");
+            name.id = "productPreviewName";
+            name.textContent = "HappYness Project";
+            name.style.fontSize = "14px";
+            name.style.fontWeight = "600";
+            name.style.color = "#111";
+            name.style.marginBottom = "2px";
+
+            const cat = fallbackCard.querySelector("#productPreviewCat") || document.createElement("div");
+            cat.id = "productPreviewCat";
+            cat.textContent = "GCash";
+            cat.style.fontSize = "12px";
+            cat.style.color = "#2d8c5e";
+
+            if (!fallbackCard.contains(closeButtonElement)) {
+                fallbackCard.appendChild(closeButtonElement);
+            }
+            if (!fallbackCard.contains(img)) {
+                fallbackCard.appendChild(img);
+            }
+            if (!fallbackCard.contains(name)) {
+                fallbackCard.appendChild(name);
+            }
+            if (!fallbackCard.contains(cat)) {
+                fallbackCard.appendChild(cat);
+            }
+            if (!fallbackOverlay.contains(fallbackCard)) {
+                fallbackOverlay.appendChild(fallbackCard);
+            }
+            if (!fallbackOverlay.parentNode) {
+                document.body.appendChild(fallbackOverlay);
+            }
+
+            window.__productGcashPreviewOverlay = fallbackOverlay;
+            window.__productGcashPreviewImg = img;
+            window.__productGcashPreviewName = name;
+            window.__productGcashPreviewCat = cat;
+
+            return;
+        }
+
+        qrPreviewImg.src = buildGcashQrPreviewDataUri();
+        qrPreviewImg.alt = "HappYness Project GCash QR code";
+        qrPreviewName.textContent = "HappYness Project";
+        qrPreviewCat.textContent = "GCash";
+        qrPreviewOverlay.style.display = "flex";
     }
 
     function updatePaymentPanel() {
@@ -545,7 +879,12 @@ function initProductDetails() {
         void activeStep.offsetWidth;
         activeStep.classList.add(isStepTwo ? "step-forward" : "step-back");
         if (isStepTwo) {
-            orderTotalDisplay.textContent = formatCurrency(unitPrice * quantity);
+            const totals = getCheckoutTotals(unitPrice * quantity);
+            orderTotalDisplay.textContent = formatCurrency(totals.total);
+            if (breakdownSubtotal) breakdownSubtotal.textContent = formatCurrency(totals.subtotal);
+            if (breakdownVat) breakdownVat.textContent = formatCurrency(totals.vat);
+            if (breakdownShipping) breakdownShipping.textContent = formatCurrency(totals.shipping);
+            if (breakdownTotal) breakdownTotal.textContent = formatCurrency(totals.total);
         }
     }
 
@@ -580,6 +919,10 @@ function initProductDetails() {
         if (modal.classList.contains("is-closing")) {
             return;
         }
+        reviewRequestId += 1;
+        stockRequestId += 1;
+        window.clearInterval(stockRefreshTimer);
+        stockRefreshTimer = null;
         modal.classList.remove("is-opening");
         modal.classList.add("is-closing");
         window.setTimeout(function () {
@@ -600,20 +943,8 @@ function initProductDetails() {
         modal.classList.remove("is-opening");
         void modal.offsetWidth;
         modal.classList.add("is-opening");
-        successSummary.textContent = `${title.textContent.trim()} · ${quantity} unit${quantity === 1 ? "" : "s"} · ${formatCurrency(unitPrice * quantity)}`;
-        if (receiptOrder && typeof window.openOrderReceipt === "function") {
-            const printReceiptButton = document.getElementById("productOrderPrintReceipt");
-            if (printReceiptButton) {
-                printReceiptButton.onclick = function () {
-                    window.openOrderReceipt(receiptOrder);
-                    window.requestAnimationFrame(function () {
-                        if (typeof window.downloadOrderReceipt === "function") {
-                            window.downloadOrderReceipt(receiptOrder.order_number);
-                        }
-                    });
-                };
-            }
-        }
+        const totals = getCheckoutTotals(unitPrice * quantity);
+        successSummary.textContent = `${title.textContent.trim()} · ${quantity} unit${quantity === 1 ? "" : "s"} · ${formatCurrency(totals.total)}`;
         if (window.lottie && typeof window.lottie.loadAnimation === "function") {
             successAnimation.replaceChildren();
             const animation = window.lottie.loadAnimation({
@@ -677,9 +1008,20 @@ function initProductDetails() {
         category.textContent = cardCategory.textContent.trim();
         title.textContent = cardTitle.textContent.trim();
         description.textContent = cardDescription.trim();
+        loadProductReviews(cardTitle.textContent.trim());
         unitPrice = Number.parseFloat(cardPrice.textContent.replace(/[^0-9.]/g, "")) || 0;
         quantity = 1;
         selectedCard = card;
+        stockTotal = 0;
+        stockThreshold = 0;
+        stockText.textContent = "Checking availability...";
+        stockStatus.classList.remove("is-low", "is-out");
+        outOfStockTag.hidden = true;
+        setStockMessage("");
+        decreaseButton.disabled = true;
+        increaseButton.disabled = true;
+        continueButton.disabled = true;
+        continueButton.textContent = "Checking availability";
         renderVariations(card);
         resetStepTwo();
         setStep(1);
@@ -691,6 +1033,8 @@ function initProductDetails() {
         modal.setAttribute("aria-hidden", "false");
         document.body.classList.add("modal-open");
         closeButton.focus();
+        refreshProductStock();
+        startStockRefresh();
     }
 
     cards.forEach(function (card) {
@@ -715,17 +1059,44 @@ function initProductDetails() {
         });
     });
 
+    reviewsMore.addEventListener("click", function () {
+        showAllProductReviews = !showAllProductReviews;
+        renderProductReviews({
+            average: Number(reviewsAverage.textContent) || 0,
+            count: Number.parseInt(reviewsCount.textContent, 10) || productReviews.length,
+            reviews: productReviews,
+        });
+    });
+
     decreaseButton.addEventListener("click", function () {
         quantity = Math.max(1, quantity - 1);
+        setStockMessage("");
         updateTotal();
+        updateStockUi();
     });
 
     increaseButton.addEventListener("click", function () {
+        if (quantity >= stockTotal) {
+            setStockMessage(`Only ${stockTotal} available.`);
+            return;
+        }
         quantity += 1;
+        setStockMessage("");
         updateTotal();
+        updateStockUi();
     });
 
-    continueButton.addEventListener("click", function () {
+    continueButton.addEventListener("click", async function () {
+        if (continueButton.disabled) {
+            return;
+        }
+        const requestedQuantity = quantity;
+        const stock = await refreshProductStock();
+        if (!stock || stockTotal < requestedQuantity) {
+            setStockMessage(stockTotal ? `Only ${stockTotal} available.` : "This item is currently unavailable.", true);
+            updateStockUi();
+            return;
+        }
         setStep(2);
         updateBuyerSummary();
     });
@@ -744,6 +1115,16 @@ function initProductDetails() {
             submitButton.disabled = !orderPayment.value;
         });
     });
+
+    if (gcashQrButton) {
+        gcashQrButton.addEventListener("click", openGcashQrPreview);
+        gcashQrButton.addEventListener("keydown", function (event) {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openGcashQrPreview();
+            }
+        });
+    }
 
     function openEditModal() {
         editPhone.value = savedDetails.phone;
@@ -828,9 +1209,9 @@ function initProductDetails() {
         event.preventDefault();
         const hasDetails = Boolean(savedDetails.name && savedDetails.email && savedDetails.phone && savedDetails.city && savedDetails.street);
         const activePaymentFieldsValid = orderPayment.value === "gcash"
-            ? Boolean(gcashReference.value.trim())
-            : orderPayment.value === "card"
-                ? Boolean(cardNumber.value.trim() && cardExpiry.value.trim() && cardCvv.value.trim() && cardholderName.value.trim())
+            ? Boolean(gcashReference.value.trim() && gcashReceipt && gcashReceipt.files && gcashReceipt.files.length)
+            : orderPayment.value === "bank_transfer"
+                ? Boolean(bankTransferReceipt && bankTransferReceipt.files && bankTransferReceipt.files.length)
                 : true;
         if (!hasDetails || !orderPayment.value || !selectedCard || !activePaymentFieldsValid) {
             submitError.classList.remove("validation-shake");
@@ -840,7 +1221,16 @@ function initProductDetails() {
             return;
         }
 
+        const requestedQuantity = quantity;
+        const currentStock = await refreshProductStock();
+        if (!currentStock || stockTotal < requestedQuantity) {
+            setStep(1);
+            setStockMessage(stockTotal ? `Only ${stockTotal} available.` : "This item is currently unavailable.", true);
+            return;
+        }
+
         const selectedCategory = selectedCard.querySelector(".product-category-badge").textContent.trim();
+        const checkoutTotals = getCheckoutTotals(unitPrice * quantity);
         orderItems.value = JSON.stringify([{
             name: title.textContent.trim(),
             category: selectedCategory,
@@ -849,10 +1239,10 @@ function initProductDetails() {
             unit_price: unitPrice,
         }]);
         const paymentDetails = orderPayment.value === "gcash"
-            ? `GCash reference number: ${gcashReference.value.trim()}`
-            : orderPayment.value === "card"
-                ? `Card number: ${cardNumber.value.trim()}\nExpiry: ${cardExpiry.value.trim()}\nCVV: ${cardCvv.value.trim()}\nCardholder name: ${cardholderName.value.trim()}`
-                : `COD amount due: ${formatCurrency(unitPrice * quantity)}`;
+            ? `GCash reference number: ${gcashReference.value.trim()}\nProof of payment uploaded.`
+            : orderPayment.value === "bank_transfer"
+                ? `Bank transfer account: HappYness Project\nAccount number: 0917 000 0000\nProof of payment uploaded.`
+                : `COD amount due: ${formatCurrency(checkoutTotals.total)}`;
         orderMessage.value = `Payment details (${orderPayment.value}):\n${paymentDetails}`;
         orderPhone.value = savedDetails.phone;
         orderAddress.value = savedDetails.street;
@@ -919,13 +1309,9 @@ function initOrderTracker() {
     const cancelOverlay = document.getElementById("orderCancelModal");
     const cancelKeep = document.getElementById("orderCancelKeep");
     const cancelConfirm = document.getElementById("orderCancelConfirm");
-    const bulkBar = document.getElementById("orderTrackerBulkBar");
-    const selectedCount = document.getElementById("orderTrackerSelectedCount");
-    const bulkCancel = document.getElementById("orderTrackerBulkCancel");
-    const clearSelection = document.getElementById("orderTrackerClear");
     const cancelMessage = document.getElementById("orderCancelMessage");
 
-    if (!button || !overlay || !closeButton || !selectButton || !deleteButton || !searchInput || !badge || !list || !cancelOverlay || !cancelKeep || !cancelConfirm || !bulkBar || !selectedCount || !bulkCancel || !clearSelection || !cancelMessage) {
+    if (!button || !overlay || !closeButton || !selectButton || !deleteButton || !searchInput || !badge || !list || !cancelOverlay || !cancelKeep || !cancelConfirm || !cancelMessage) {
         return;
     }
 
@@ -936,6 +1322,7 @@ function initOrderTracker() {
     let pendingCancelIds = [];
     let selectMode = false;
     let currentOrders = [];
+    let currentStatusFilter = "pending";
 
     function escapeHtml(value) {
         return String(value ?? "")
@@ -946,7 +1333,77 @@ function initOrderTracker() {
             .replace(/'/g, "&#39;");
     }
 
+    function getOrdersFromCardList() {
+        return Array.from(document.querySelectorAll(".order-tracker-card")).map(function (card) {
+            const badge = card.querySelector(".order-tracker-status");
+            const classNames = badge ? badge.className.split(/\s+/) : [];
+            const match = classNames.find(function (className) { return className.startsWith("status-"); });
+            const status = match ? match.replace(/^status-/, "") : "pending";
+            return { status: status === "in_delivery" ? "in_delivery" : status };
+        });
+    }
+
+    function updateTabCounts(orders) {
+        const tabButtons = Array.from(document.querySelectorAll(".order-tracker-tab"));
+        const sourceOrders = orders && orders.length ? orders : getOrdersFromCardList();
+
+        const counts = {
+            all: sourceOrders.length,
+            in_delivery: sourceOrders.filter(function (order) { return order.status === "in_delivery"; }).length,
+            verified: sourceOrders.filter(function (order) { return order.status === "verified"; }).length,
+            pending: sourceOrders.filter(function (order) { return order.status === "pending"; }).length,
+            completed: sourceOrders.filter(function (order) { return order.status === "completed"; }).length,
+            cancelled: sourceOrders.filter(function (order) { return order.status === "cancelled" || order.status === "failed"; }).length,
+            returns: sourceOrders.filter(function (order) {
+                return ["return_requested", "returned", "refunded", "refund_requested"].includes(order.status);
+            }).length,
+            reviews: sourceOrders.filter(function (order) { return order.status === "completed"; }).length,
+        };
+
+        tabButtons.forEach(function (button) {
+            const tabKey = button.dataset.orderTab;
+            const countNode = button.querySelector(".order-tracker-tab-count");
+            if (!countNode) return;
+            countNode.textContent = String(counts[tabKey] || 0);
+        });
+    }
+
+    function formatDeliveryWindow(order) {
+        if (!order || order.status !== "in_delivery") {
+            return "";
+        }
+
+        const values = [order.delivery_window_start, order.delivery_window_end].filter(Boolean);
+        if (!values.length) {
+            return "";
+        }
+
+        function formatDate(value) {
+            if (!value) return "";
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+            return date.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric"
+            });
+        }
+
+        const start = formatDate(order.delivery_window_start);
+        const end = formatDate(order.delivery_window_end);
+
+        if (start && end) return `Expected delivery: ${start} – ${end}`;
+        if (start) return `Expected delivery: ${start}`;
+        if (end) return `Expected delivery: ${end}`;
+        return "";
+    }
+
     function renderOrders(orders, activeCount) {
+        list.classList.add("is-updating");
+        window.setTimeout(function () {
+            list.classList.remove("is-updating");
+        }, 140);
+
         currentOrders = orders;
         const eligibleIds = new Set(orders.filter(function (order) { return order.status === "pending" || order.status === "verified"; }).map(function (order) { return order.id; }));
         selectedOrderIds = new Set([...selectedOrderIds].filter(function (id) { return eligibleIds.has(id); }));
@@ -955,23 +1412,87 @@ function initOrderTracker() {
         badge.textContent = String(activeCount);
         badge.hidden = activeCount === 0;
         button.hidden = orders.length === 0;
+        updateTabCounts(orders);
+
+        const filteredOrders = currentStatusFilter === "all"
+            ? orders
+            : orders.filter(function (order) {
+                if (currentStatusFilter === "cancelled") {
+                    return order.status === "cancelled" || order.status === "failed";
+                }
+                if (currentStatusFilter === "returns") {
+                    return ["return_requested", "returned", "refunded", "refund_requested"].includes(order.status);
+                }
+                if (currentStatusFilter === "reviews") {
+                    return order.status === "completed";
+                }
+                return order.status === currentStatusFilter;
+            });
+
+        const isSingleItem = filteredOrders.length === 1;
+        list.classList.toggle("is-single-item", isSingleItem);
+
+        if (isSingleItem) {
+            list.style.display = "flex";
+            list.style.flexDirection = "column";
+            list.style.justifyContent = "flex-start";
+            list.style.alignItems = "stretch";
+        } else {
+            list.style.display = "";
+            list.style.flexDirection = "";
+            list.style.justifyContent = "";
+            list.style.alignItems = "";
+        }
+
         if (!orders.length) {
             list.innerHTML = '<p class="order-tracker-empty">You haven\'t placed any orders yet.</p>';
-            updateBulkBar();
+            updateSelectionState();
             return;
         }
-        list.innerHTML = orders.map(function (order) {
+
+        if (!filteredOrders.length) {
+            list.innerHTML = '<p class="order-tracker-empty">No orders in this status yet.</p>';
+            updateSelectionState();
+            return;
+        }
+
+        list.innerHTML = filteredOrders.map(function (order) {
             const variation = order.variation ? `<span>${escapeHtml(order.variation)}</span>` : "";
             const unitLabel = Number(order.quantity) === 1 ? "unit" : "units";
             const cancel = order.status === "pending" || order.status === "verified"
                 ? `<button class="order-tracker-cancel" type="button" data-cancel-order-id="${escapeHtml(order.id)}">Cancel</button>`
                 : "";
+            const returnAction = order.status === "completed"
+                ? `<button class="order-tracker-return" type="button" data-return-order-id="${escapeHtml(order.id)}">Request return</button>`
+                : "";
             const checkbox = order.status === "pending" || order.status === "verified"
                 ? `<input class="order-tracker-checkbox" type="checkbox" data-order-id="${escapeHtml(order.id)}" aria-label="Select ${escapeHtml(order.name)} for cancellation"${selectedOrderIds.has(order.id) ? " checked" : ""}>`
                 : '<span class="order-tracker-checkbox-spacer" aria-hidden="true"></span>';
-            const receipt = `<button class="order-tracker-receipt" type="button" data-receipt-order-id="${escapeHtml(order.id)}" aria-label="Print receipt for ${escapeHtml(order.name)}"><i data-lucide="receipt-text"></i><span>Receipt</span></button>`;
-            const actionMarkup = `<div class="order-tracker-card-actions"><span class="order-tracker-status status-${escapeHtml(order.status)}">${escapeHtml(order.status_label)}</span>${receipt}${cancel}</div>`;
-            return `<article class="order-tracker-card" data-order-card-id="${escapeHtml(order.id)}">
+            const receipt = order.status === "completed"
+                ? `<button class="order-tracker-receipt" type="button" data-receipt-order-id="${escapeHtml(order.id)}" aria-label="Print receipt for ${escapeHtml(order.name)}"><i data-lucide="receipt-text"></i><span>Receipt</span></button>`
+                : "";
+            const statusClass = order.status === "in_delivery" ? "status-in_delivery" : `status-${escapeHtml(order.status)}`;
+            const deliveryWindow = formatDeliveryWindow(order);
+            const deliveryMarkup = deliveryWindow ? `<span class="order-tracker-delivery-window">${escapeHtml(deliveryWindow)}</span>` : "";
+            const reviewAction = order.status === "completed"
+                ? `<div class="order-tracker-review-inline" data-review-order-id="${escapeHtml(order.id)}">
+                    <div class="order-tracker-review-stars" role="radiogroup" aria-label="Rate ${escapeHtml(order.name)}" data-rating="${Number(order.review_rating) || 0}" data-reviewed="${order.reviewed ? "true" : "false"}">
+                        ${[1, 2, 3, 4, 5].map(function (rating) { return `<button type="button" class="order-tracker-review-star${Number(order.review_rating) >= rating ? " is-active" : ""}" data-value="${rating}" aria-label="${rating} star${rating === 1 ? "" : "s"}" aria-pressed="${Number(order.review_rating) === rating}"${order.reviewed ? " disabled" : ""}>★</button>`; }).join("")}
+                    </div>
+                    <textarea class="order-tracker-review-comment" rows="2" maxlength="2000" placeholder="Optional message"${order.reviewed ? " hidden" : ""}></textarea>
+                    <button type="button" class="order-tracker-review-send"${order.reviewed ? " hidden" : " disabled"}>Send</button>
+                    <p class="order-tracker-review-thanks" role="status"${order.reviewed ? "" : " hidden"}>Thank you for your review</p>
+                    <p class="order-tracker-review-error" role="alert" hidden></p>
+                </div>`
+                : "";
+            const showReviewTabActions = currentStatusFilter !== "reviews";
+            const actionMarkup = showReviewTabActions
+                ? `<div class="order-tracker-card-actions"><span class="order-tracker-status ${statusClass}">${escapeHtml(order.status_label)}</span>${receipt}${returnAction}${cancel}</div>`
+                : "";
+            const reviewColumnMarkup = order.status === "completed"
+                ? `<div class="order-tracker-review-column">${reviewAction}</div>`
+                : "";
+            return `<article class="order-tracker-card order-tracker-card--review" data-order-card-id="${escapeHtml(order.id)}">
                 ${checkbox}
                 <img src="${escapeHtml(order.image)}" alt="${escapeHtml(order.name)}">
                 <div class="order-tracker-card-body">
@@ -979,20 +1500,19 @@ function initOrderTracker() {
                     ${variation}
                     <span>${escapeHtml(order.quantity)} ${unitLabel} · ₱${escapeHtml(order.total)}</span>
                     <time>${escapeHtml(order.date)}</time>
+                    ${deliveryMarkup}
                 </div>
-                ${actionMarkup}
+                ${reviewColumnMarkup || actionMarkup}
             </article>`;
         }).join("");
         if (window.lucide && typeof window.lucide.createIcons === "function") {
             window.lucide.createIcons();
         }
-        updateBulkBar();
+        updateSelectionState();
         applySearch();
     }
 
-    function updateBulkBar() {
-        selectedCount.textContent = String(selectedOrderIds.size);
-        bulkBar.hidden = selectedOrderIds.size === 0;
+    function updateSelectionState() {
         deleteButton.hidden = selectedOrderIds.size === 0;
     }
 
@@ -1044,7 +1564,17 @@ function initOrderTracker() {
             selectedOrderIds.clear();
             list.querySelectorAll(".order-tracker-checkbox").forEach(function (checkbox) { checkbox.checked = false; });
         }
-        updateBulkBar();
+        updateSelectionState();
+    }
+
+    function setStatusFilter(tabKey) {
+        currentStatusFilter = tabKey;
+        document.querySelectorAll(".order-tracker-tab").forEach(function (button) {
+            const isActive = button.dataset.orderTab === tabKey;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-selected", String(isActive));
+        });
+        renderOrders(currentOrders, previousActiveCount);
     }
 
     function animateNewOrderBadge() {
@@ -1084,6 +1614,7 @@ function initOrderTracker() {
         button.classList.remove("is-pressed");
         void button.offsetWidth;
         button.classList.add("is-pressed");
+        setStatusFilter("pending");
         overlay.hidden = false;
         overlay.classList.remove("is-closing");
         void overlay.offsetWidth;
@@ -1115,11 +1646,76 @@ function initOrderTracker() {
         if (selectedOrderIds.size) openCancelPrompt([...selectedOrderIds], null);
     });
     searchInput.addEventListener("input", applySearch);
+    document.querySelectorAll(".order-tracker-tab").forEach(function (button) {
+        button.addEventListener("click", function () {
+            setStatusFilter(button.dataset.orderTab || "all");
+        });
+    });
     list.addEventListener("change", function (event) {
         if (!event.target.classList.contains("order-tracker-checkbox")) return;
         if (event.target.checked) selectedOrderIds.add(event.target.dataset.orderId);
         else selectedOrderIds.delete(event.target.dataset.orderId);
-        updateBulkBar();
+        updateSelectionState();
+    });
+    list.addEventListener("click", function (event) {
+        const starButton = event.target.closest(".order-tracker-review-star");
+        if (starButton) {
+            const reviewGroup = starButton.closest(".order-tracker-review-stars");
+            if (!reviewGroup || reviewGroup.dataset.reviewed === "true") return;
+            const value = Number(starButton.dataset.value || 0);
+            reviewGroup.dataset.rating = String(value);
+            reviewGroup.querySelectorAll(".order-tracker-review-star").forEach(function (button) {
+                const rating = Number(button.dataset.value || 0);
+                button.classList.toggle("is-active", rating <= value);
+                button.setAttribute("aria-pressed", String(rating === value));
+            });
+            const sendButton = reviewGroup.closest(".order-tracker-review-inline").querySelector(".order-tracker-review-send");
+            if (sendButton) sendButton.disabled = false;
+            return;
+        }
+
+        const sendButton = event.target.closest(".order-tracker-review-send");
+        if (!sendButton || sendButton.disabled) return;
+        const reviewForm = sendButton.closest(".order-tracker-review-inline");
+        const reviewGroup = reviewForm.querySelector(".order-tracker-review-stars");
+        const rating = Number(reviewGroup?.dataset.rating || 0);
+        if (!rating) return;
+        const orderId = reviewForm.dataset.reviewOrderId;
+        const message = reviewForm.querySelector(".order-tracker-review-comment").value.trim();
+        const errorMessage = reviewForm.querySelector(".order-tracker-review-error");
+        const csrfField = document.querySelector("[name=csrfmiddlewaretoken]");
+        const csrfCookie = document.cookie.split(";").map(function (part) { return part.trim(); }).find(function (part) { return part.startsWith("csrftoken="); });
+        const csrfToken = csrfField?.value || (csrfCookie ? decodeURIComponent(csrfCookie.split("=").slice(1).join("=")) : "");
+        sendButton.disabled = true;
+        errorMessage.hidden = true;
+        fetch("/products/orders/" + encodeURIComponent(orderId) + "/review/", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken,
+                "X-Requested-With": "XMLHttpRequest",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            },
+            body: new URLSearchParams({ rating: String(rating), message: message }).toString(),
+        })
+            .then(parseJsonResponse)
+            .then(function (data) {
+                reviewGroup.dataset.reviewed = "true";
+                reviewGroup.querySelectorAll(".order-tracker-review-star").forEach(function (button) { button.disabled = true; });
+                reviewForm.querySelector(".order-tracker-review-comment").hidden = true;
+                sendButton.hidden = true;
+                reviewForm.querySelector(".order-tracker-review-thanks").hidden = false;
+                const order = currentOrders.find(function (item) { return item.id === orderId; });
+                if (order) {
+                    order.reviewed = true;
+                    order.review_rating = data.rating;
+                    order.review_message = data.message;
+                }
+            })
+            .catch(function (error) {
+                errorMessage.textContent = error.message || "Unable to send your review. Please try again.";
+                errorMessage.hidden = false;
+                sendButton.disabled = false;
+            });
     });
     overlay.addEventListener("click", function (event) {
         if (event.target.classList.contains("order-tracker-checkbox")) {
@@ -1128,6 +1724,30 @@ function initOrderTracker() {
         const cancelButton = event.target.closest("[data-cancel-order-id]");
         if (cancelButton) {
             openCancelPrompt([cancelButton.dataset.cancelOrderId], cancelButton.closest(".order-tracker-card"));
+            return;
+        }
+        const returnButton = event.target.closest("[data-return-order-id]");
+        if (returnButton) {
+            const orderId = returnButton.dataset.returnOrderId;
+            const csrfField = document.querySelector("[name=csrfmiddlewaretoken]");
+            const csrfCookie = document.cookie.split(";").map(function (part) { return part.trim(); }).find(function (part) { return part.startsWith("csrftoken="); });
+            const csrfToken = csrfField?.value || (csrfCookie ? decodeURIComponent(csrfCookie.split("=").slice(1).join("=")) : "");
+            fetch("/products/orders/" + orderId + "/return/", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken,
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                },
+                body: "request_type=refund&reason=Customer+requested+refund"
+            })
+                .then(parseJsonResponse)
+                .then(function () {
+                    refreshOrders();
+                })
+                .catch(function (error) {
+                    window.alert(error.message || "Unable to submit a return request.");
+                });
             return;
         }
         const receiptButton = event.target.closest("[data-receipt-order-id]");
@@ -1141,18 +1761,6 @@ function initOrderTracker() {
         if (event.target === overlay) {
             closeTracker();
         }
-    });
-    bulkCancel.addEventListener("click", function () {
-        if (!selectedOrderIds.size) return;
-        pendingCancelIds = [...selectedOrderIds];
-        pendingCancelId = null;
-        pendingCancelCard = null;
-        openCancelPrompt([...selectedOrderIds], null);
-    });
-    clearSelection.addEventListener("click", function () {
-        selectedOrderIds.clear();
-        list.querySelectorAll(".order-tracker-checkbox").forEach(function (checkbox) { checkbox.checked = false; });
-        updateBulkBar();
     });
     cancelKeep.addEventListener("click", function () {
         cancelOverlay.hidden = true;
@@ -1207,6 +1815,7 @@ function initOrderTracker() {
         }
     });
 
+    updateTabCounts(getOrdersFromCardList());
     window.setInterval(refreshOrders, 15000);
     refreshOrders();
 }

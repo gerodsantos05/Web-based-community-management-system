@@ -810,6 +810,42 @@
         min-width: 5.2rem;
     }
 
+    .ben-feedback-score {
+        min-width: 3.2rem;
+        color: #173a31;
+        font-size: 0.86rem;
+        font-weight: 400;
+        text-align: center;
+    }
+
+    .ben-feedback-average {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.36rem 0.48rem;
+        border-radius: 6px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .ben-feedback-average-score {
+        font-size: 0.84rem;
+    }
+
+    .ben-feedback-average.is-good {
+        background: #e8f5ed;
+        color: #17613b;
+    }
+
+    .ben-feedback-average.is-okay {
+        background: #fff4cf;
+        color: #805b00;
+    }
+
+    .ben-feedback-average.is-bad {
+        background: #fde8e7;
+        color: #a12a25;
+    }
+
     .ben-table-action-group {
         display: inline-flex;
         align-items: center;
@@ -1802,7 +1838,7 @@
         </div>
         <div id="ben-assistance-panel" class="ben-directory-panel" role="tabpanel" aria-labelledby="ben-assistance-tab" hidden>
             <div class="ben-table-wrap ben-feedback-list-wrap"><table class="ben-table ben-secondary-table" aria-label="Assistance feedbacks">
-                <thead><tr><th>Beneficiary</th><th>Source</th><th>Event or Assistance</th><th>Date</th><th>Rating</th><th>Comment</th><th>Action</th></tr></thead>
+                <thead><tr><th>Beneficiary</th><th>Source</th><th>Event or Assistance</th><th>Date</th><th>Helpfulness</th><th>Needs Met</th><th>Join Again</th><th>Average</th><th>Action</th></tr></thead>
                 <tbody id="ben-feedback-list" aria-live="polite"></tbody>
             </table></div>
         </div>
@@ -2721,14 +2757,26 @@
     function renderAssistanceFeedbacks() {
         if (!feedbackList) return;
         if (!ASSISTANCE_FEEDBACKS.length) {
-            feedbackList.innerHTML = "<tr><td colspan=\"7\" class=\"ben-table-empty\">No beneficiary feedbacks have been submitted.</td></tr>";
+            feedbackList.innerHTML = "<tr><td colspan=\"9\" class=\"ben-table-empty\">No beneficiary feedbacks have been submitted.</td></tr>";
             return;
         }
         feedbackList.innerHTML = ASSISTANCE_FEEDBACKS.map(function (item) {
             var reviewButton = item.assistanceId
                 ? "<button type=\"button\" class=\"ben-row-action-btn ben-feedback-view-btn\" data-feedback-open=\"true\" data-assistance-id=\"" + esc(item.assistanceId) + "\" aria-label=\"Review feedback from " + esc(item.beneficiaryName) + "\" title=\"Review feedback\"><i data-lucide=\"eye\"></i></button>"
                 : "<button type=\"button\" class=\"ben-row-action-btn ben-feedback-view-btn\" data-feedback-activity-id=\"" + esc(item.id) + "\" aria-label=\"Review feedback from " + esc(item.beneficiaryName) + "\" title=\"Review feedback\"><i data-lucide=\"eye\"></i></button>";
-            return "<tr><td>" + esc(item.beneficiaryName || "Unknown") + "</td><td>" + esc(item.source || "Assistance") + "</td><td>" + esc(item.subject || "-") + "</td><td>" + formatDate(item.date) + "</td><td>" + esc(item.ratingLabel || "-") + "</td><td>" + esc(item.comment || "No comment") + "</td><td>" + reviewButton + "</td></tr>";
+            var ratings = Array.isArray(item.questionRatings) ? item.questionRatings : [item.rating || null, null, null];
+            var questionCells = ratings.slice(0, 3).map(function (rating) {
+                return "<td class=\"ben-feedback-score\">" + (rating === null || rating === undefined ? "-" : esc(rating)) + "</td>";
+            }).join("");
+            var averageRating = item.averageRating === null || item.averageRating === undefined ? null : Number(item.averageRating);
+            var averageCell = "<td class=\"ben-feedback-score\">-</td>";
+            if (averageRating !== null && Number.isFinite(averageRating)) {
+                var averageStatus = averageRating >= 4 ? "Good" : averageRating >= 3 ? "Okay" : "Bad";
+                var averageClass = averageRating >= 4 ? "is-good" : averageRating >= 3 ? "is-okay" : "is-bad";
+                var average = averageRating.toFixed(1);
+                averageCell = "<td class=\"ben-feedback-score\"><span class=\"ben-feedback-average " + averageClass + "\" aria-label=\"" + averageStatus + " review, " + average + " out of 5\"><span class=\"ben-feedback-average-score\">" + average + "</span></span></td>";
+            }
+            return "<tr><td>" + esc(item.beneficiaryName || "Unknown") + "</td><td>" + esc(item.source || "Assistance") + "</td><td>" + esc(item.subject || "-") + "</td><td>" + formatDate(item.date) + "</td>" + questionCells + averageCell + "<td>" + reviewButton + "</td></tr>";
         }).join("");
         if (window.lucide && typeof window.lucide.createIcons === "function") window.lucide.createIcons();
     }

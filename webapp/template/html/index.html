@@ -5,10 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HappYness Project</title>
+    <link rel="icon" type="image/jpeg" href="{% static 'media/Happyness Project.jpg' %}?v=20261006">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/index.css' %}?v=20260820t">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}?v=20261008-order-modal-motion">
 </head>
 <body {% if open_modal %}class="modal-open"{% endif %}>
     {% include 'partials/_public_navbar.html' with nav_active='home' %}
@@ -153,6 +154,13 @@
                             <label class="sr-only" for="b_full_name">Full name</label>
                             <input id="b_full_name" class="{% if request.user.is_authenticated %}modal-prefilled-field{% endif %}" type="text" name="full_name" placeholder="Full name" value="{% if request.user.is_authenticated %}{{ user_display_name|default:'' }}{% endif %}" required autocomplete="name">
 
+                            <label for="b_track">Program</label>
+                            <select id="b_track" name="track" required>
+                                <option value="" disabled selected>Select a program</option>
+                                <option value="happy_nanas">Happy Nanay's</option>
+                                <option value="happy_kids">Happy Kid's</option>
+                            </select>
+
                             <label class="sr-only" for="b_email">Email</label>
                             <input id="b_email" class="{% if request.user.is_authenticated %}modal-prefilled-field{% endif %}" type="email" name="email" placeholder="email@example.com" value="{% if request.user.is_authenticated %}{{ request.user.email|default:'' }}{% endif %}" {% if request.user.is_authenticated %}readonly aria-readonly="true"{% endif %} required autocomplete="email">
 
@@ -269,6 +277,13 @@
                             {% csrf_token %}
                             <label class="sr-only" for="v_full_name">Full name</label>
                             <input id="v_full_name" class="{% if request.user.is_authenticated %}modal-prefilled-field{% endif %}" type="text" name="full_name" placeholder="Full name" value="{% if request.user.is_authenticated %}{{ user_display_name|default:'' }}{% endif %}" required autocomplete="name">
+
+                            <label class="sr-only" for="v_track">Program</label>
+                            <select id="v_track" name="track" required>
+                                <option value="" disabled selected>Select a program</option>
+                                <option value="intern">Intern</option>
+                                <option value="community_volunteer">Community Volunteer</option>
+                            </select>
 
                             <label class="sr-only" for="v_availability">Availability</label>
                             <select id="v_availability" name="availability" required>
@@ -576,7 +591,7 @@
             function openModal(id){ var modal = document.querySelector(id); if(!modal) return; cacheOriginalModalContent(modal); modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); document.body.classList.add('modal-open'); }
             function closeModal(modal){ if(!modal) return; restoreModalContent(modal); modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); document.body.classList.remove('modal-open'); }
 
-            document.querySelectorAll('[data-open], [data-target]').forEach(function(btn){ btn.addEventListener('click', function(e){ e.preventDefault(); var target = this.dataset.open || this.dataset.target || (this.closest('[data-target]') && this.closest('[data-target]').dataset.target); if(!target) return; if(!isAuthenticated && authPromptTargets[target] && typeof window.openSignInModal === 'function'){ window.openSignInModal('application'); return; } openModal(target); }); });
+            document.querySelectorAll('[data-open], [data-target]').forEach(function(btn){ btn.addEventListener('click', function(e){ e.preventDefault(); var target = this.dataset.open || this.dataset.target || (this.closest('[data-target]') && this.closest('[data-target]').dataset.target); if(!target) return; if(!isAuthenticated && authPromptTargets[target] && typeof window.openSignInModal === 'function'){ window.pendingApplicationProgram = target === '#beneficiaryModal' ? 'beneficiary' : 'volunteer'; window.openSignInModal('application'); return; } openModal(target); }); });
 
             document.querySelectorAll('.modal-overlay .modal-close').forEach(function(btn){ btn.addEventListener('click', function(e){ e.preventDefault(); closeModal(this.closest('.modal-overlay')); }); });
 
@@ -662,7 +677,7 @@
 
     <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="{% static 'js/index.js' %}?v=20260820t"></script>
+    <script src="{% static 'js/index.js' %}?v=20261008-order-tabs"></script>
     <script>
     (function(){
         if (typeof lottie === 'undefined') return;

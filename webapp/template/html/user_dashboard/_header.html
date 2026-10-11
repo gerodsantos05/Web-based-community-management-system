@@ -83,7 +83,7 @@
             <button id="header-profile" data-toggle="profile" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="dropdown-profile" class="focus-ring inline-flex h-10 w-10 items-center justify-center rounded-full border border-brand-100 bg-white p-0 text-sm text-ink-700 hover:bg-brand-50 sm:h-auto sm:w-auto sm:gap-2 sm:px-2.5 sm:py-1.5" aria-label="Profile">
                 <span class="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-xs font-semibold text-white" id="header-profile-avatar-wrap">
                     {% if user_avatar_url %}
-                    <img id="header-profile-avatar-image" src="{{ user_avatar_url }}" alt="{{ display_name|default:'User' }} profile photo" class="h-full w-full object-cover">
+                    <img id="header-profile-avatar-image" src="{{ user_avatar_url|default:default_avatar_url }}" data-avatar-image="true" alt="{{ display_name|default:'User' }} profile photo" class="h-full w-full object-cover">
                     {% endif %}
                     <span id="header-profile-avatar-initials" {% if user_avatar_url %}hidden{% endif %}>{{ user_initials|default:display_name|slice:":1"|upper }}</span>
                 </span>
@@ -95,7 +95,7 @@
                 <header class="user-dropdown__header">
                     <div class="user-avatar inline-flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-semibold text-white" aria-hidden="true">
                         {% if user_avatar_url %}
-                        <img id="dropdown-profile-avatar-image" src="{{ user_avatar_url }}" alt="{{ display_name|default:'User' }} profile photo" class="h-full w-full object-cover">
+                        <img id="dropdown-profile-avatar-image" src="{{ user_avatar_url|default:default_avatar_url }}" data-avatar-image="true" alt="{{ display_name|default:'User' }} profile photo" class="h-full w-full object-cover">
                         {% endif %}
                         <span id="dropdown-profile-avatar-initials" {% if user_avatar_url %}hidden{% endif %}>{{ user_initials|default:display_name|slice:":1"|upper }}</span>
                     </div>

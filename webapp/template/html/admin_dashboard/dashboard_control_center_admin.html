@@ -434,7 +434,7 @@
 
     .ops-dot-critical { background: #dc2626; }
     .ops-dot-high { background: #ea580c; }
-    .ops-dot-medium { background: #d97706; }
+    .ops-dot-medium { background: #2563eb; }
     .ops-dot-low { background: #16a34a; }
 
     .ops-row strong {
@@ -458,10 +458,11 @@
         white-space: nowrap;
     }
 
-    .ops-badge-critical { color: #8c1d1d; background: #fee2e2; }
-    .ops-badge-high { color: #9a3412; background: #ffedd5; }
-    .ops-badge-medium { color: #92400e; background: #fef3c7; }
+    .ops-badge-critical { color: #b42318; background: #fee4e2; }
+    .ops-badge-high { color: #b54708; background: #fff1e8; }
+    .ops-badge-medium { color: #175cd3; background: #eff8ff; }
     .ops-badge-low { color: #166534; background: #dcfce7; }
+    .ops-badge-pending { color: #c2410c; background: #ffedd5; }
 
     .ops-calendar {
         border-radius: 16px;
@@ -911,12 +912,12 @@
                 {% if pending_role_applications %}
                     {% for application in pending_role_applications %}
                         <li class="ops-row">
-                            <span class="ops-dot {% if application.role == 'beneficiary' %}ops-dot-medium{% else %}ops-dot-high{% endif %}"></span>
+                            <span class="ops-dot ops-dot-high"></span>
                             <div>
                                 <strong>{{ application.name }}</strong>
                                 <small>{{ application.role|capfirst }} application · Submitted {{ application.submittedAt }}</small>
                             </div>
-                            <span class="ops-badge {% if application.role == 'beneficiary' %}ops-badge-medium{% else %}ops-badge-high{% endif %}">Pending</span>
+                            <span class="ops-badge ops-badge-pending">Pending</span>
                         </li>
                     {% endfor %}
                 {% else %}

@@ -1138,7 +1138,7 @@
             overflow: hidden;
         }
 
-        .sysset-2fa-modal {
+        .sysset-2fa-modal:not([hidden]) {
             position: fixed;
             inset: 0;
             z-index: 1200;
@@ -1260,7 +1260,7 @@
                     <div class="sysset-personal-avatar-wrap">
                         <div id="sysset-photo-upload" class="sysset-avatar-upload-control" data-has-file="false">
                             <div id="sysset-avatar-preview" class="sysset-avatar-preview sysset-avatar-preview-personal" data-has-image="{% if user_avatar_url %}true{% else %}false{% endif %}" aria-hidden="true">
-                                <img id="sysset-avatar-image" {% if user_avatar_url %}src="{{ user_avatar_url }}" alt="{{ user_display_name|default:'User' }} profile photo"{% else %}alt=""{% endif %}>
+                                <img id="sysset-avatar-image" src="{{ user_avatar_url|default:default_avatar_url }}" data-avatar-image="true" alt="{{ user_display_name|default:'User' }} profile photo">
                                 <span id="sysset-avatar-initials" class="sysset-avatar-initials">{{ user_initials|default:'U' }}</span>
                             </div>
                             <input id="profile_photo" name="profile_photo" class="sysset-file-input" type="file" accept="image/*">
@@ -1632,6 +1632,7 @@
     var avatarPreview = form.querySelector("#sysset-avatar-preview");
     var avatarImage = form.querySelector("#sysset-avatar-image");
     var avatarInitials = form.querySelector("#sysset-avatar-initials");
+    var defaultAvatarUrl = document.body.getAttribute("data-default-avatar-url") || "";
     var firstNameInput = form.querySelector("#first_name");
     var lastNameInput = form.querySelector("#last_name");
     var dayButtons = Array.from(form.querySelectorAll(".sysset-day-btn"));
@@ -2203,7 +2204,7 @@
         var userProfile = profileData && profileData.profile ? profileData.profile : {};
         var displayName = String(userData.display_name || "User");
         var initials = String(userData.initials || "U");
-        var avatarUrl = String(userProfile.avatar_url || "");
+        var avatarUrl = String(userProfile.avatar_url || defaultAvatarUrl);
 
         var displayNameNode = document.getElementById("header-profile-display-name");
         if (displayNameNode) {
@@ -2329,9 +2330,9 @@
             return;
         }
 
-        avatarPreview.setAttribute("data-has-image", "false");
-        avatarImage.removeAttribute("src");
-        avatarImage.alt = "";
+        avatarPreview.setAttribute("data-has-image", "true");
+        avatarImage.src = defaultAvatarUrl;
+        avatarImage.alt = "Default profile avatar";
         avatarInitials.textContent = initialsFromName();
     }
 

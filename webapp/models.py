@@ -513,6 +513,16 @@ class RoleApplication(models.Model):
 	role = models.CharField(max_length=20, choices=ROLE_CHOICES)
 	status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
 	full_name = models.CharField(max_length=150)
+	track = models.CharField(
+		max_length=30,
+		choices=(
+			("happy_nanas", "Happy Nanay's"),
+			("happy_kids", "Happy Kid's"),
+			("intern", "Intern"),
+			("community_volunteer", "Community Volunteer"),
+		),
+		blank=True,
+	)
 	contact_details = models.TextField()
 	reason_for_assistance = models.TextField(blank=True)
 	supporting_information = models.TextField(blank=True)
@@ -662,6 +672,13 @@ class Activity(models.Model):
 	image = models.ImageField(upload_to=activity_cover_upload_to, blank=True, null=True)
 	volunteer_count = models.PositiveIntegerField(default=0)
 	status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+	funding_mode = models.CharField(max_length=30, choices=(
+		("none", "No donation hold"),
+		("custom_amount", "Custom donation amount"),
+		("budget_share", "Set activity budget + donor share"),
+	), default="none")
+	total_budget = models.PositiveIntegerField(default=0)
+	donor_share_amount = models.PositiveIntegerField(default=0)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 
@@ -682,6 +699,37 @@ class Activity(models.Model):
 		if self.start_time:
 			return self.start_time.strftime('%I:%M %p').lstrip('0')
 		return "TBA"
+
+	@property
+	def funds_held_total(self):
+		return self.fund_allocations.filter(status=ActivityFundAllocation.STATUS_RESERVED).aggregate(total=models.Sum("amount"))["total"] or 0
+
+
+class ActivityFundAllocation(models.Model):
+	STATUS_RESERVED = "reserved"
+	STATUS_SPENT = "spent"
+	STATUS_RELEASED = "released"
+	STATUS_CHOICES = (
+		(STATUS_RESERVED, "Reserved"),
+		(STATUS_SPENT, "Spent"),
+		(STATUS_RELEASED, "Released"),
+	)
+
+	activity = models.ForeignKey("Activity", on_delete=models.CASCADE, related_name="fund_allocations")
+	amount = models.PositiveIntegerField(default=0)
+	status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_RESERVED)
+	notes = models.TextField(blank=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+	updated_at = models.DateTimeField(auto_now=True)
+
+	class Meta:
+		ordering = ["-created_at", "-id"]
+		indexes = [
+			models.Index(fields=["activity", "status", "-created_at"]),
+		]
+
+	def __str__(self):
+		return f"activity-fund-allocation:{self.activity_id}:{self.amount}:{self.status}"
 
 
 class ActivityBeneficiaryAssignment(models.Model):
@@ -1014,6 +1062,12 @@ def donation_official_receipt_upload_to(instance, filename):
 	return f"donation_receipts/user_{instance.user_id or 'anonymous'}/{random_name}"
 
 
+def item_pledge_photo_upload_to(instance, filename):
+	extension = os.path.splitext(filename)[1].lower()
+	random_name = f"{uuid.uuid4().hex}{extension}"
+	return f"item_pledges/user_{instance.user_id or 'anonymous'}/{random_name}"
+
+
 class ProductInquiry(models.Model):
 	PAYMENT_GCASH = "gcash"
 	PAYMENT_BANK_TRANSFER = "bank_transfer"
@@ -1028,14 +1082,22 @@ class ProductInquiry(models.Model):
 
 	STATUS_PENDING = "pending"
 	STATUS_VERIFIED = "verified"
+	STATUS_IN_DELIVERY = "in_delivery"
 	STATUS_COMPLETED = "completed"
+	STATUS_RETURN_REQUESTED = "return_requested"
+	STATUS_REFUND_REQUESTED = "refund_requested"
+	STATUS_RETURNED = "returned"
 	STATUS_FAILED = "failed"
 	STATUS_REFUNDED = "refunded"
 	STATUS_CANCELLED = "cancelled"
 	STATUS_CHOICES = (
 		(STATUS_PENDING, "Pending"),
 		(STATUS_VERIFIED, "Verified"),
+		(STATUS_IN_DELIVERY, "In Delivery"),
 		(STATUS_COMPLETED, "Completed"),
+		(STATUS_RETURN_REQUESTED, "Return Requested"),
+		(STATUS_REFUND_REQUESTED, "Refund Requested"),
+		(STATUS_RETURNED, "Returned"),
 		(STATUS_FAILED, "Failed"),
 		(STATUS_REFUNDED, "Refunded"),
 		(STATUS_CANCELLED, "Cancelled"),
@@ -1052,12 +1114,19 @@ class ProductInquiry(models.Model):
 	order_items = models.JSONField(default=list)
 	order_total = models.PositiveIntegerField(default=0)
 	status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+	in_delivery_at = models.DateTimeField(null=True, blank=True)
+	expected_delivery_date = models.DateField(null=True, blank=True)
+	delivery_window_start = models.DateTimeField(null=True, blank=True)
+	delivery_window_end = models.DateTimeField(null=True, blank=True)
 	delivery_street = models.CharField(max_length=255, blank=True)
 	delivery_city = models.CharField(max_length=150, blank=True)
 	delivery_province = models.CharField(max_length=150, blank=True)
 	delivery_zip = models.CharField(max_length=20, blank=True)
 	delivery_country = models.CharField(max_length=100, default='Philippines')
 	admin_notification = models.TextField()
+	return_reason = models.TextField(blank=True, default="")
+	return_requested_at = models.DateTimeField(null=True, blank=True)
+	refund_processed_at = models.DateTimeField(null=True, blank=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 
@@ -1079,6 +1148,27 @@ class ProductInquiry(models.Model):
 		return f"product-inquiry:{self.full_name}:{self.payment_method}:{self.id}"
 
 
+class ProductReview(models.Model):
+	inquiry = models.ForeignKey(ProductInquiry, on_delete=models.CASCADE, related_name="product_reviews")
+	product_name = models.CharField(max_length=150)
+	variation = models.CharField(max_length=255, blank=True)
+	rating = models.PositiveSmallIntegerField()
+	message = models.TextField(blank=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		constraints = [
+			models.UniqueConstraint(
+				fields=["inquiry", "product_name", "variation"],
+				name="unique_product_review_per_order_item",
+			),
+		]
+		indexes = [models.Index(fields=["product_name", "-created_at"], name="webapp_prod_product_4b66de_idx")]
+
+	def __str__(self):
+		return f"product-review:{self.product_name}:{self.rating}"
+
+
 class Donation(models.Model):
 	PAYMENT_GCASH = "gcash"
 	PAYMENT_BANK_TRANSFER = "bank_transfer"
@@ -1094,13 +1184,11 @@ class Donation(models.Model):
 	)
 
 	STATUS_PENDING = "pending"
-	STATUS_VERIFIED = "verified"
 	STATUS_COMPLETED = "completed"
 	STATUS_REJECTED = "rejected"
 	STATUS_CANCELLED = "cancelled"
 	STATUS_CHOICES = (
 		(STATUS_PENDING, "Pending"),
-		(STATUS_VERIFIED, "Verified"),
 		(STATUS_COMPLETED, "Completed"),
 		(STATUS_REJECTED, "Rejected"),
 		(STATUS_CANCELLED, "Cancelled"),
@@ -1108,6 +1196,7 @@ class Donation(models.Model):
 
 	user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, related_name="donations")
 	reference_number = models.CharField(max_length=32, unique=True)
+	tracking_token = models.CharField(max_length=64, blank=True, db_index=True)
 	donor_name = models.CharField(max_length=150, blank=True)
 	donor_email = models.EmailField(blank=True, null=True)
 	donor_message = models.TextField(blank=True)
@@ -1156,6 +1245,103 @@ class Donation(models.Model):
 
 	def __str__(self):
 		return f"donation:{self.reference_number}:{self.amount}:{self.status}"
+
+
+class ItemPledge(models.Model):
+	CATEGORY_FOOD = "food"
+	CATEGORY_CLOTHING = "clothing"
+	CATEGORY_SCHOOL_SUPPLIES = "school_supplies"
+	CATEGORY_MEDICAL = "medical"
+	CATEGORY_APPLIANCES = "appliances"
+	CATEGORY_OTHER = "other"
+	CATEGORY_CHOICES = (
+		(CATEGORY_FOOD, "Food"),
+		(CATEGORY_CLOTHING, "Clothing"),
+		(CATEGORY_SCHOOL_SUPPLIES, "School supplies"),
+		(CATEGORY_MEDICAL, "Medical"),
+		(CATEGORY_APPLIANCES, "Appliances"),
+		(CATEGORY_OTHER, "Other"),
+	)
+
+	CONDITION_NEW = "new"
+	CONDITION_USED = "used"
+	CONDITION_CHOICES = (
+		(CONDITION_NEW, "New"),
+		(CONDITION_USED, "Used"),
+	)
+
+	DELIVERY_DROP_OFF = "drop_off"
+	DELIVERY_PICKUP = "pickup"
+	DELIVERY_COURIER = "courier"
+	DELIVERY_CHOICES = (
+		(DELIVERY_DROP_OFF, "Drop off"),
+		(DELIVERY_PICKUP, "Pick up"),
+		(DELIVERY_COURIER, "Send by courier"),
+	)
+
+	STATUS_PLEDGED = "pledged"
+	STATUS_APPROVED = "approved"
+	STATUS_SCHEDULED = "scheduled"
+	STATUS_RECEIVED = "received"
+	STATUS_CHOICES = (
+		(STATUS_PLEDGED, "Pending"),
+		(STATUS_APPROVED, "Approved"),
+		(STATUS_SCHEDULED, "Scheduled"),
+		(STATUS_RECEIVED, "Received"),
+	)
+
+	user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, related_name="item_pledges")
+	reference_number = models.CharField(max_length=32, unique=True)
+	tracking_token = models.CharField(max_length=64, blank=True, db_index=True)
+	item_name = models.CharField(max_length=150)
+	category = models.CharField(max_length=32, choices=CATEGORY_CHOICES)
+	quantity = models.PositiveIntegerField()
+	condition = models.CharField(max_length=10, choices=CONDITION_CHOICES)
+	description = models.TextField(max_length=1000, blank=True)
+	photo = models.FileField(upload_to=item_pledge_photo_upload_to, blank=True, null=True)
+	delivery_method = models.CharField(max_length=20, choices=DELIVERY_CHOICES)
+	delivery_address = models.CharField(max_length=500, blank=True)
+	preferred_date = models.DateField(blank=True, null=True)
+	preferred_time = models.TimeField(blank=True, null=True)
+	courier_name = models.CharField(max_length=150, blank=True)
+	tracking_number = models.CharField(max_length=150, blank=True)
+	donor_name = models.CharField(max_length=150, blank=True)
+	donor_phone = models.CharField(max_length=32)
+	donor_email = models.EmailField()
+	is_anonymous = models.BooleanField(default=False)
+	status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PLEDGED)
+	created_at = models.DateTimeField(auto_now_add=True)
+	updated_at = models.DateTimeField(auto_now=True)
+
+	class Meta:
+		ordering = ["-created_at", "-id"]
+		indexes = [
+			models.Index(fields=["status", "-created_at"]),
+			models.Index(fields=["-created_at"]),
+		]
+
+	def clean(self):
+		if self.quantity <= 0:
+			raise ValidationError("Quantity must be greater than zero.")
+		if self.delivery_method == self.DELIVERY_PICKUP and not (
+			self.delivery_address and self.preferred_date and self.preferred_time
+		):
+			raise ValidationError("Pickup requires an address, preferred date, and preferred time.")
+		if self.delivery_method == self.DELIVERY_COURIER and not (
+			self.courier_name and self.tracking_number
+		):
+			raise ValidationError("Courier delivery requires the courier name and tracking number.")
+		if self.photo and getattr(self.photo, "size", 0) > 5 * 1024 * 1024:
+			raise ValidationError("The item photo must be 5 MB or smaller.")
+
+	def save(self, *args, **kwargs):
+		if not self.reference_number:
+			self.reference_number = f"IP-{uuid.uuid4().hex[:10].upper()}"
+		self.full_clean()
+		super().save(*args, **kwargs)
+
+	def __str__(self):
+		return f"item-pledge:{self.reference_number}:{self.item_name}:{self.status}"
 
 
 class CommunityNotification(models.Model):

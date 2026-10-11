@@ -23,11 +23,7 @@
             {% if request.user.is_authenticated %}
             <div class="profile-menu">
                 <button class="profile-btn" id="profileMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" title="Account">
-                    {% if request.user.userprofile and request.user.userprofile.avatar %}
-                        <img src="{{ request.user.userprofile.avatar.url }}" alt="{{ request.user.get_full_name|default:request.user.username }}" class="avatar-sm" />
-                    {% else %}
-                        <span class="avatar-fallback">{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}</span>
-                    {% endif %}
+                    <img src="{{ user_avatar_url|default:default_avatar_url }}" data-avatar-image="true" alt="{{ request.user.get_full_name|default:request.user.username }}" class="avatar-sm" />
                     <span class="profile-name">{{ request.user.first_name|default:request.user.username }}</span>
                     <i data-lucide="chevron-down" class="profile-caret"></i>
                 </button>
@@ -603,12 +599,8 @@
                 <div style="display:flex; gap:12px; align-items:center;">
                     <div style="position:relative; width:64px; height:64px; flex:0 0 64px;">
                         <div style="width:64px; height:64px; border-radius:999px; overflow:hidden; background:linear-gradient(135deg,#fef3f2,#ecfdf5); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:22px; color:#0f5132; box-shadow:0 0 0 2px #fff inset;">
-                            {% if request.user.userprofile and request.user.userprofile.avatar %}
-                                <img id="profileAvatarPreview" src="{{ request.user.userprofile.avatar.url }}" alt="{{ request.user.get_full_name|default:request.user.username }}" style="width:100%; height:100%; object-fit:cover; display:block;" />
-                            {% else %}
-                                <span id="profileAvatarFallback">{% if request.user.first_name %}{{ request.user.first_name|slice:":1"|upper }}{% else %}{{ request.user.username|slice:":1"|upper }}{% endif %}</span>
-                                <img id="profileAvatarPreview" alt="{{ request.user.get_full_name|default:request.user.username }}" style="width:100%; height:100%; object-fit:cover; display:none;" />
-                            {% endif %}
+                            <img id="profileAvatarPreview" src="{{ user_avatar_url|default:default_avatar_url }}" data-avatar-image="true" alt="{{ request.user.get_full_name|default:request.user.username }}" style="width:100%; height:100%; object-fit:cover; display:block;" />
+                            <span id="profileAvatarFallback" style="display:none">{% if request.user.first_name %}{{ request.user.first_name|slice:":1"|upper }}{% else %}{{ request.user.username|slice:":1"|upper }}{% endif %}</span>
                         </div>
                         <label for="profileAvatarInput" aria-label="Change profile picture" title="Change profile picture" style="position:absolute; right:-2px; bottom:-2px; width:22px; height:22px; border-radius:999px; border:2px solid #fff; background:#0f766e; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 6px 14px rgba(15,118,110,0.22);">
                             <i data-lucide="camera" aria-hidden="true" style="width:12px; height:12px;"></i>

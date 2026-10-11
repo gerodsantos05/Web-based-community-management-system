@@ -8,6 +8,9 @@
     .act-form-grid { display: grid; gap: .95rem; }
     .act-field, .act-volunteer-field { display: grid; gap: .35rem; }
     .act-field label, .act-volunteer-header label { font-size: .76rem; font-weight: 700; color: #4d7265; text-transform: uppercase; letter-spacing: .06em; }
+    .act-fund-toggle { display: flex; align-items: center; gap: .6rem; color: #173a31; font-size: .9rem; font-weight: 600; }
+    .act-fund-toggle input { width: 1rem; height: 1rem; accent-color: #0f766e; }
+    .act-funds-note { display: block; color: #56766c; font-size: .75rem; }
     .act-input, .act-select, .act-textarea, .act-volunteer-search { width: 100%; border: 1px solid #d4e9e1; border-radius: 12px; padding: .8rem .95rem; font-size: .92rem; color: #173a31; background: #fff; box-sizing: border-box; }
     .act-textarea { min-height: 100px; resize: vertical; }
     .act-volunteer-header { display: flex; justify-content: space-between; gap: .75rem; }
@@ -78,6 +81,29 @@
     try { options = JSON.parse(document.getElementById('activity-volunteer-options').textContent || '[]'); } catch (error) { options = []; }
     var list = document.getElementById('activityVolunteerList');
     var search = document.getElementById('activityVolunteerSearch');
+    var useFundsHeld = document.getElementById('useFundsHeld');
+    var fundsHeldAmount = document.getElementById('activityFundsHeldAmount');
+    var availableFundsValue = Number({{ available_completed_donation_funds|default:0 }});
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(Number(value || 0));
+    }
+    function syncFundReservationState() {
+        var useFunds = !!(useFundsHeld && useFundsHeld.checked);
+        if (fundsHeldAmount) {
+            fundsHeldAmount.disabled = !useFunds;
+            if (!useFunds) {
+                fundsHeldAmount.value = '';
+                fundsHeldAmount.setCustomValidity('');
+                return;
+            }
+            var amount = Number(fundsHeldAmount.value || 0);
+            if (amount > availableFundsValue) {
+                fundsHeldAmount.setCustomValidity('Amount exceeds available completed donation funds.');
+            } else {
+                fundsHeldAmount.setCustomValidity('');
+            }
+        }
+    }
     function renderVolunteers() {
         var query = (search.value || '').toLowerCase();
         list.innerHTML = options.filter(function (item) { return !query || (item.name || '').toLowerCase().indexOf(query) !== -1; }).map(function (item) {
@@ -94,6 +120,13 @@
     document.querySelector('[data-close-form="true"]').addEventListener('click', close);
     backdrop.addEventListener('click', close);
     search.addEventListener('input', renderVolunteers);
+    if (useFundsHeld) {
+        useFundsHeld.addEventListener('change', syncFundReservationState);
+    }
+    if (fundsHeldAmount) {
+        fundsHeldAmount.addEventListener('input', syncFundReservationState);
+    }
+    document.getElementById('activityAvailableFundsDisplay').textContent = formatCurrency(availableFundsValue);
     function setCategory(value) {
         var hidden = document.getElementById('activityCategory');
         var customWrap = document.getElementById('activityCustomCategoryWrap');
@@ -110,8 +143,28 @@
     var imagePreviewImage = document.getElementById('activityImagePreviewImage');
     if (imageInput) imageInput.addEventListener('change', function () { var file = imageInput.files && imageInput.files[0]; if (file) { imagePreviewImage.src = URL.createObjectURL(file); imagePreview.hidden = false; } });
     document.getElementById('removeActivityImageButton').addEventListener('click', function () { imageInput.value = ''; imagePreviewImage.removeAttribute('src'); imagePreview.hidden = true; document.getElementById('removeActivityImage').value = '1'; });
-    form.addEventListener('submit', function (event) { if (document.getElementById('activityCategory').value === 'other' && !document.getElementById('activityCustomCategory').value.trim()) { event.preventDefault(); document.getElementById('activityCustomCategory').focus(); } });
+    form.addEventListener('submit', function (event) {
+        if (document.getElementById('activityCategory').value === 'other' && !document.getElementById('activityCustomCategory').value.trim()) {
+            event.preventDefault();
+            document.getElementById('activityCustomCategory').focus();
+            return;
+        }
+        if (useFundsHeld && useFundsHeld.checked && Number(fundsHeldAmount.value || 0) <= 0) {
+            event.preventDefault();
+            fundsHeldAmount.focus();
+            fundsHeldAmount.setCustomValidity('Enter an amount greater than zero.');
+            return;
+        }
+        if (useFundsHeld && useFundsHeld.checked && Number(fundsHeldAmount.value || 0) > availableFundsValue) {
+            event.preventDefault();
+            fundsHeldAmount.focus();
+            fundsHeldAmount.setCustomValidity('Amount exceeds available completed donation funds.');
+            return;
+        }
+        fundsHeldAmount.setCustomValidity('');
+    });
     setCategory('');
+    syncFundReservationState();
     renderVolunteers();
 })();
 </script>

@@ -966,11 +966,8 @@ function openBeneficiaryAttendanceModal(task){
             person.className = 'beneficiary-attendance-modal-person';
             const avatar = document.createElement('span');
             avatar.className = 'beneficiary-attendance-modal-avatar';
-            const initials = String(beneficiary.name || 'B').split(/\s+/).filter(Boolean).slice(0, 2).map(function(part){ return part.charAt(0).toUpperCase(); }).join('') || 'B';
-            if(beneficiary.avatar_url){
-                const avatarImage = document.createElement('img'); avatarImage.src = beneficiary.avatar_url; avatarImage.alt = '';
-                avatarImage.onerror = function(){ avatar.textContent = initials; }; avatar.appendChild(avatarImage);
-            } else { avatar.textContent = initials; }
+            const avatarImage = document.createElement('img'); avatarImage.src = beneficiary.avatar_url || document.body.getAttribute('data-default-avatar-url'); avatarImage.alt = '';
+            avatarImage.setAttribute('data-avatar-image', 'true'); avatar.appendChild(avatarImage);
             const meta = document.createElement('div'); meta.className = 'beneficiary-attendance-modal-meta';
             const name = document.createElement('span'); name.className = 'beneficiary-attendance-modal-name'; name.textContent = beneficiary.name || 'Beneficiary';
             const status = document.createElement('span'); status.className = 'beneficiary-attendance-modal-status';

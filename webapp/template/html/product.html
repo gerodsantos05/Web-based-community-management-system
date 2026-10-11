@@ -5,10 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Products | Happy Nanays Store</title>
+    <link rel="icon" type="image/jpeg" href="{% static 'media/Happyness Project.jpg' %}?v=20261006">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/index.css' %}?v=20260820t">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}?v=20261008-order-modal-motion">
 </head>
 <body>
     {% include 'partials/_public_navbar.html' with nav_active='products' %}
@@ -38,7 +39,7 @@
                 </div>
 
                 <div class="products-grid" id="productsGrid">
-                    <article class="product-card" data-category="doormats" data-variations="Size|Small|Medium|Large" data-description="Beautiful handwoven doormat perfect for your home entrance">
+                    <article class="product-card" data-category="doormats" data-stock-name="Handwoven Doormat" data-variations="Size|Small|Medium|Large" data-description="Beautiful handwoven doormat perfect for your home entrance">
                         <div class="product-media">
                             <img src="{% static 'media/hand woven doormat.jpg' %}" alt="Handwoven Doormat">
                         </div>
@@ -49,7 +50,7 @@
                         </div>
                     </article>
 
-                    <article class="product-card" data-category="doormats" data-variations="Color|Forest Green|Beige|Brown" data-description="Durable braided doormat with elegant design">
+                    <article class="product-card" data-category="doormats" data-stock-name="Braided Doormat" data-variations="Color|Forest Green|Beige|Brown" data-description="Durable braided doormat with elegant design">
                         <div class="product-media">
                             <img src="{% static 'media/braided doormat.jpg' %}" alt="Braided Doormat">
                         </div>
@@ -60,7 +61,7 @@
                         </div>
                     </article>
 
-                    <article class="product-card" data-category="pot-holder-rags" data-variations="Pattern|Floral|Tropical|Geometric" data-description="Durable and colorful pot holders made with love">
+                    <article class="product-card" data-category="pot-holder-rags" data-stock-name="Pot Holder Rag" data-variations="Pattern|Floral|Tropical|Geometric" data-description="Durable and colorful pot holders made with love">
                         <div class="product-media">
                             <img src="{% static 'media/pot holder rag.png' %}" alt="Pot Holder Rag">
                         </div>
@@ -71,7 +72,7 @@
                         </div>
                     </article>
 
-                    <article class="product-card" data-category="tote-bags" data-variations="Color|Natural|Black|Olive" data-description="Eco-friendly handmade tote bag for everyday use">
+                    <article class="product-card" data-category="tote-bags" data-stock-name="Tote Bag" data-variations="Color|Natural|Black|Olive" data-description="Eco-friendly handmade tote bag for everyday use">
                         <div class="product-media">
                             <img src="{% static 'media/tote bag.jpg' %}" alt="Tote Bag">
                         </div>
@@ -82,7 +83,7 @@
                         </div>
                     </article>
 
-                    <article class="product-card" data-category="tote-bags" data-variations="Color|White|Black|Cream" data-description="Special edition bag celebrating kindness and compassion">
+                    <article class="product-card" data-category="tote-bags" data-stock-name="Champion of Kindness Bag" data-variations="Color|White|Black|Cream" data-description="Special edition bag celebrating kindness and compassion">
                         <div class="product-media">
                             <img src="{% static 'media/champion of kindness bag.png' %}" alt="Champion of Kindness Bag">
                         </div>
@@ -93,7 +94,7 @@
                         </div>
                     </article>
 
-                    <article class="product-card" data-category="sweaters" data-variations="Size|Small|Medium|Large" data-description="Cozy hand-knitted sweater with unique patterns">
+                    <article class="product-card" data-category="sweaters" data-stock-name="Handknit Sweater" data-variations="Size|Small|Medium|Large" data-description="Cozy hand-knitted sweater with unique patterns">
                         <div class="product-media">
                             <img src="{% static 'media/handkit sweater.png' %}" alt="Handknit Sweater">
                         </div>
@@ -104,7 +105,7 @@
                         </div>
                     </article>
 
-                    <article class="product-card" data-category="t-shirts" data-variations="Size|Small|Medium|Large" data-description="Comfortable cotton T-shirt with the HappYness statement print">
+                    <article class="product-card" data-category="t-shirts" data-stock-name="HappYness T-shirt" data-variations="Size|Small|Medium|Large" data-description="Comfortable cotton T-shirt with the HappYness statement print">
                         <div class="product-media">
                             <img src="{% static 'media/Happyness T-shirt.png' %}" alt="HappYness T-shirt">
                         </div>
@@ -115,7 +116,7 @@
                         </div>
                     </article>
 
-                    <article class="product-card" data-category="homemade-candles" data-variations="Scent|Vanilla|Lavender|Citrus" data-description="Soothing scented candle made from natural wax">
+                    <article class="product-card" data-category="homemade-candles" data-stock-name="Homemade Candle" data-variations="Scent|Vanilla|Lavender|Citrus" data-description="Soothing scented candle made from natural wax">
                         <div class="product-media">
                             <img src="{% static 'media/Homemade Candle.jpg' %}" alt="Homemade Candle">
                         </div>
@@ -126,7 +127,7 @@
                         </div>
                     </article>
 
-                    <article class="product-card" data-category="perfume" data-variations="Scent|Fresh Citrus|Floral Bloom|Vanilla Musk" data-description="Handcrafted perfume with a delicate fragrance">
+                    <article class="product-card" data-category="perfume" data-stock-name="Handcrafted Perfume" data-variations="Scent|Fresh Citrus|Floral Bloom|Vanilla Musk" data-description="Handcrafted perfume with a delicate fragrance">
                         <div class="product-media">
                             <img src="{% static 'media/Handcrafted Perfume.jpg' %}" alt="Handcrafted Perfume">
                         </div>
@@ -590,6 +591,7 @@
         <section class="product-detail-modal" role="dialog" aria-modal="true" aria-labelledby="productDetailTitle">
             <div class="product-detail-image-panel">
                 <img id="productDetailImage" src="" alt="">
+                <span class="product-detail-out-of-stock" id="productDetailOutOfStock" hidden>Out of stock</span>
             </div>
             <div class="product-detail-panel">
                 <button class="product-detail-close" id="closeProductDetailModal" type="button" aria-label="Close product details">
@@ -603,6 +605,11 @@
                         <span class="product-detail-option-label" id="productDetailVariationLabel"></span>
                         <div class="product-detail-option-list" id="productDetailVariationOptions"></div>
                     </div>
+                    <p class="product-detail-stock" id="productDetailStock" aria-live="polite">
+                        <span class="product-detail-stock-dot" id="productDetailStockDot" aria-hidden="true"></span>
+                        <span id="productDetailStockText">Checking availability...</span>
+                    </p>
+                    <p class="product-detail-stock-message" id="productDetailStockMessage" aria-live="polite" hidden></p>
                     <div class="product-detail-quantity" aria-label="Product quantity">
                         <button type="button" id="productDetailDecrease" aria-label="Decrease quantity">-</button>
                         <span id="productDetailQuantity">1</span>
@@ -615,6 +622,19 @@
                         </div>
                         <button class="btn product-detail-action" id="productDetailContinue" type="button">Continue</button>
                     </div>
+                    <section class="product-reviews" aria-labelledby="productReviewsTitle">
+                        <div class="product-reviews-header">
+                            <h3 id="productReviewsTitle">Ratings and Reviews</h3>
+                            <div class="product-reviews-summary" id="productReviewsSummary" aria-label="No reviews yet">
+                                <span class="product-reviews-summary-stars" id="productReviewsSummaryStars" aria-hidden="true">☆☆☆☆☆</span>
+                                <strong id="productReviewsAverage">0.0</strong>
+                                <span id="productReviewsCount">0 reviews</span>
+                            </div>
+                        </div>
+                        <p class="product-reviews-empty" id="productReviewsEmpty">No reviews yet.</p>
+                        <div class="product-reviews-list" id="productReviewsList" aria-live="polite"></div>
+                        <button class="product-reviews-more" id="productReviewsMore" type="button" hidden>See more</button>
+                    </section>
                 </div>
 
                 <div class="product-detail-step product-detail-step-two" id="productDetailStepTwo" hidden>
@@ -641,45 +661,52 @@
                             <div class="product-detail-option-list" id="productOrderPaymentOptions">
                                 <button type="button" class="product-detail-option selected" data-payment-method="cod">COD</button>
                                 <button type="button" class="product-detail-option" data-payment-method="gcash">GCash</button>
-                                <button type="button" class="product-detail-option" data-payment-method="card">Card</button>
+                                <button type="button" class="product-detail-option" data-payment-method="bank_transfer">Bank Transfer</button>
                             </div>
                             <input type="hidden" id="productOrderPayment" name="payment_method" value="cod">
                             <div class="product-payment-info" id="productPaymentInfo" aria-live="polite">
-                                <div class="product-payment-panel" data-payment-panel="cod">
-                                    <p>Pay with exact cash when your order arrives. Please prepare <strong id="productCodTotal">₱0</strong>.</p>
-                                </div>
                                 <div class="product-payment-panel" data-payment-panel="gcash" hidden>
-                                    <div class="product-gcash-row">
-                                        <div class="product-gcash-qr" role="img" aria-label="QR code placeholder"><span>QR</span></div>
-                                        <div>
-                                            <strong>Scan to pay</strong>
-                                            <p>Or send manually to <strong>0917 000 0000</strong> · HappYness Project</p>
+                                    <div class="product-gcash-qr-card">
+                                        <button type="button" class="product-gcash-qr-button" id="productGcashQrButton" aria-label="Expand GCash QR code">
+                                            <div class="product-gcash-qr product-gcash-qr-large" role="img" aria-label="GCash QR code placeholder"><span>QR</span></div>
+                                        </button>
+                                        <div class="product-gcash-number-block">
+                                            <strong>HappYness Project</strong>
+                                            <span>GCash: 0917 000 0000</span>
                                         </div>
                                     </div>
                                     <label class="product-payment-field">
                                         <span>GCash reference number</span>
                                         <input id="productGcashReference" name="gcash_reference" type="text" autocomplete="off" placeholder="Enter reference number">
                                     </label>
-                                </div>
-                                <div class="product-payment-panel" data-payment-panel="card" hidden>
                                     <label class="product-payment-field">
-                                        <span>Card number</span>
-                                        <input id="productCardNumber" name="card_number" type="text" inputmode="numeric" autocomplete="cc-number" placeholder="Card number">
+                                        <span>Proof of payment</span>
+                                        <input id="productGcashReceipt" name="payment_screenshot" type="file" accept="image/jpeg,image/png" required>
                                     </label>
-                                    <div class="product-payment-fields-row">
+                                </div>
+                                <div class="product-payment-panel" data-payment-panel="bank_transfer" hidden>
+                                    <div class="product-bank-transfer-card">
+                                        <div class="product-bank-transfer-header">
+                                            <span class="product-bank-transfer-pill">Official account</span>
+                                        </div>
+                                        <div class="product-bank-detail-row">
+                                            <span>Account name</span>
+                                            <strong>HappYness Project</strong>
+                                        </div>
+                                        <div class="product-bank-detail-row">
+                                            <span>Account number</span>
+                                            <strong>0917 000 0000</strong>
+                                        </div>
+                                        <div class="product-bank-detail-row">
+                                            <span>Transfer note</span>
+                                            <strong>Please include your order reference.</strong>
+                                        </div>
+                                        <p class="product-bank-transfer-note">Send the payment to the project’s official account and upload the receipt for verification.</p>
                                         <label class="product-payment-field">
-                                            <span>Expiry</span>
-                                            <input id="productCardExpiry" name="card_expiry" type="text" autocomplete="cc-exp" placeholder="MM/YY">
-                                        </label>
-                                        <label class="product-payment-field">
-                                            <span>CVV</span>
-                                            <input id="productCardCvv" name="card_cvv" type="text" inputmode="numeric" autocomplete="cc-csc" placeholder="CVV">
+                                            <span>Proof of payment</span>
+                                            <input id="productBankTransferReceipt" name="payment_screenshot" type="file" accept="image/jpeg,image/png" required>
                                         </label>
                                     </div>
-                                    <label class="product-payment-field">
-                                        <span>Cardholder name</span>
-                                        <input id="productCardholderName" name="cardholder_name" type="text" autocomplete="cc-name" placeholder="Name on card">
-                                    </label>
                                 </div>
                             </div>
                         </fieldset>
@@ -694,6 +721,12 @@
                         <input type="hidden" name="country_code" value="+63">
                         <input type="hidden" name="delivery_province" value="Cavite">
                         <input type="hidden" name="delivery_country" value="Philippines">
+                        <div id="productOrderBreakdown" style="margin: 0 0 1rem; padding: .8rem .9rem; border: 1px solid #edf1ee; border-radius: .9rem; background: #f9faf8; color: #1e2a1e;">
+                            <div style="display:flex; justify-content:space-between; gap:.75rem; margin-bottom:.45rem; font-size:.9rem; color:#4b5a4e;"><span>Subtotal</span><strong id="productOrderBreakdownSubtotal" style="color:#1b1d1b;">₱0</strong></div>
+                            <div style="display:flex; justify-content:space-between; gap:.75rem; margin-bottom:.45rem; font-size:.9rem; color:#4b5a4e;"><span>VAT (12%)</span><strong id="productOrderBreakdownVat" style="color:#1b1d1b;">₱0</strong></div>
+                            <div style="display:flex; justify-content:space-between; gap:.75rem; margin-bottom:.6rem; font-size:.9rem; color:#4b5a4e;"><span>Shipping</span><strong id="productOrderBreakdownShipping" style="color:#1b1d1b;">₱0</strong></div>
+                            <div style="display:flex; justify-content:space-between; gap:.75rem; padding-top:.55rem; border-top:1px solid #e5ebe6; font-size:1rem; font-weight:700; color:#1b1d1b;"><span>Total</span><strong id="productOrderBreakdownTotal" style="color:#1b1d1b;">₱0</strong></div>
+                        </div>
                         <div class="product-detail-footer">
                             <div>
                                 <span class="product-detail-total-label">Total</span>
@@ -709,7 +742,6 @@
                     <h2>Order placed</h2>
                     <p>Your order has been received successfully. Thank you for supporting Happy Nanays.</p>
                     <div class="product-detail-success-summary" id="productDetailSuccessSummary"></div>
-                    <button class="btn product-detail-action product-detail-print-receipt" id="productOrderPrintReceipt" type="button"><i data-lucide="download"></i> Download Receipt</button>
                     <button class="btn product-detail-action product-detail-success-close" id="productDetailSuccessClose" type="button">Close</button>
                 </div>
             </div>
@@ -745,6 +777,6 @@
     <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="{% static 'js/index.js' %}?v=20260910receiptpdf"></script>
+    <script src="{% static 'js/index.js' %}?v=20261008-order-tabs"></script>
 </body>
 </html>

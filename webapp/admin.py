@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Donation, InventoryItem, ProductInquiry, RoleApplication, UserProfile
+from .models import Donation, InventoryItem, ItemPledge, ProductInquiry, RoleApplication, UserProfile
 
 
 @admin.register(UserProfile)
@@ -30,6 +30,14 @@ class DonationAdmin(admin.ModelAdmin):
 	list_display = ("reference_number", "donor_name", "amount", "payment_method", "status", "created_at")
 	list_filter = ("status", "payment_method", "created_at")
 	search_fields = ("reference_number", "donor_name", "donor_message", "campaign")
+	readonly_fields = ("created_at", "updated_at", "reference_number")
+
+
+@admin.register(ItemPledge)
+class ItemPledgeAdmin(admin.ModelAdmin):
+	list_display = ("reference_number", "item_name", "quantity", "delivery_method", "status", "created_at")
+	list_filter = ("status", "category", "delivery_method", "created_at")
+	search_fields = ("reference_number", "item_name", "donor_name", "donor_phone", "donor_email", "tracking_number")
 	readonly_fields = ("created_at", "updated_at", "reference_number")
 
 

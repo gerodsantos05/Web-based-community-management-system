@@ -331,9 +331,19 @@
             </div>
             <button class="order-tracker-close" id="orderTrackerClose" type="button" aria-label="Close your orders"><i data-lucide="x"></i></button>
         </header>
+        <div class="order-tracker-tabs" role="tablist" aria-label="Order statuses">
+            <button type="button" class="order-tracker-tab" data-order-tab="all" role="tab" aria-selected="false">All<span class="order-tracker-tab-count">0</span></button>
+            <button type="button" class="order-tracker-tab is-active" data-order-tab="pending" role="tab" aria-selected="true">Pending<span class="order-tracker-tab-count">0</span></button>
+            <button type="button" class="order-tracker-tab" data-order-tab="verified" role="tab" aria-selected="false">Confirmed<span class="order-tracker-tab-count">0</span></button>
+            <button type="button" class="order-tracker-tab" data-order-tab="in_delivery" role="tab" aria-selected="false">In Delivery<span class="order-tracker-tab-count">0</span></button>
+            <button type="button" class="order-tracker-tab" data-order-tab="completed" role="tab" aria-selected="false">Completed<span class="order-tracker-tab-count">0</span></button>
+            <button type="button" class="order-tracker-tab" data-order-tab="cancelled" role="tab" aria-selected="false">Cancelled<span class="order-tracker-tab-count">0</span></button>
+            <button type="button" class="order-tracker-tab" data-order-tab="returns" role="tab" aria-selected="false">Returns<span class="order-tracker-tab-count">0</span></button>
+            <button type="button" class="order-tracker-tab" data-order-tab="reviews" role="tab" aria-selected="false">Reviews<span class="order-tracker-tab-count">0</span></button>
+        </div>
         <div class="order-tracker-list" id="orderTrackerList">
             {% for order in product_tracker_orders %}
-            <article class="order-tracker-card" data-order-card-id="{{ order.id }}">
+            <article class="order-tracker-card {% if order.status == 'completed' %}order-tracker-card--review{% endif %}" data-order-card-id="{{ order.id }}">
                 {% if order.status == 'pending' or order.status == 'verified' %}<input class="order-tracker-checkbox" type="checkbox" data-order-id="{{ order.id }}" aria-label="Select {{ order.name }} for cancellation">{% else %}<span class="order-tracker-checkbox-spacer" aria-hidden="true"></span>{% endif %}
                 <img src="{{ order.image }}" alt="{{ order.name }}">
                 <div class="order-tracker-card-body">
@@ -341,28 +351,38 @@
                     {% if order.variation %}<span>{{ order.variation }}</span>{% endif %}
                     <span>{{ order.quantity }} unit{% if order.quantity != 1 %}s{% endif %} · ₱{{ order.total }}</span>
                     <time datetime="{{ order.date|date:'c' }}">{{ order.date|date:'M d, Y' }}</time>
+                    {% if order.status == 'in_delivery' and order.delivery_window_text %}
+                    <span class="order-tracker-delivery-window">{{ order.delivery_window_text }}</span>
+                    {% endif %}
                 </div>
-                {% if order.status == 'pending' or order.status == 'verified' %}
+                {% if order.status == 'completed' %}
+                <div class="order-tracker-review-column">
+                    <div class="order-tracker-review-inline" data-review-order-id="{{ order.id }}">
+                        <div class="order-tracker-review-stars" aria-label="Rate {{ order.name }}" role="radiogroup" data-rating="{{ order.review_rating|default:0 }}" data-reviewed="{{ order.reviewed|yesno:'true,false' }}">
+                            {% for rating in "12345" %}
+                            <button type="button" class="order-tracker-review-star{% if order.review_rating >= forloop.counter %} is-active{% endif %}" data-value="{{ forloop.counter }}" aria-label="{{ forloop.counter }} star{% if forloop.counter != 1 %}s{% endif %}" aria-pressed="{% if order.review_rating == forloop.counter %}true{% else %}false{% endif %}"{% if order.reviewed %} disabled{% endif %}>★</button>
+                            {% endfor %}
+                        </div>
+                        <textarea class="order-tracker-review-comment" rows="2" maxlength="2000" placeholder="Optional message"{% if order.reviewed %} hidden{% endif %}></textarea>
+                        <button type="button" class="order-tracker-review-send"{% if order.reviewed %} hidden{% else %} disabled{% endif %}>Send</button>
+                        <p class="order-tracker-review-thanks" role="status"{% if not order.reviewed %} hidden{% endif %}>Thank you for your review</p>
+                        <p class="order-tracker-review-error" role="alert" hidden></p>
+                    </div>
+                </div>
+                {% elif order.status == 'pending' or order.status == 'verified' %}
                 <div class="order-tracker-card-actions">
-                    <span class="order-tracker-status status-{{ order.status }}">{{ order.status_label }}</span>
+                    <span class="order-tracker-status status-{{ order.status }}" title="{{ order.status_tooltip|default:'' }}">{{ order.status_label }}</span>
                     <button class="order-tracker-cancel" type="button" data-cancel-order-id="{{ order.id }}">Cancel</button>
                 </div>
                 {% else %}
                 <div class="order-tracker-card-actions">
-                    <span class="order-tracker-status status-{{ order.status }}">{{ order.status_label }}</span>
+                    <span class="order-tracker-status status-{{ order.status }}" title="{{ order.status_tooltip|default:'' }}">{{ order.status_label }}</span>
                 </div>
                 {% endif %}
             </article>
             {% empty %}
             <p class="order-tracker-empty">You haven't placed any orders yet.</p>
             {% endfor %}
-        </div>
-        <div class="order-tracker-bulk-bar" id="orderTrackerBulkBar" hidden>
-            <span><strong id="orderTrackerSelectedCount">0</strong> selected</span>
-            <div>
-                <button type="button" class="order-tracker-clear" id="orderTrackerClear">Clear</button>
-                <button type="button" class="order-tracker-bulk-cancel" id="orderTrackerBulkCancel">Cancel selected</button>
-            </div>
         </div>
     </section>
 </div>

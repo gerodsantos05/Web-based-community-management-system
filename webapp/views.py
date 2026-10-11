@@ -3,6 +3,7 @@ import os
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
 from django.conf import settings as django_settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.files.base import ContentFile
@@ -17,11 +18,13 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from django.utils import timezone
 import secrets
-from django.db import connection, transaction
+from django.db import IntegrityError, connection, transaction
 from django.db.models import Count, Sum, Avg, F, OuterRef, Subquery, Q
 import uuid
 import calendar
+import logging
 import json
+import re
 import csv
 import io
 from pathlib import Path
@@ -37,6 +40,7 @@ from .forms import (
     SkillLearningTopicForm,
     VolunteerApplicationForm,
 )
+from .avatar_utils import avatar_url_for_user
 from .models import (
     AdminSystemSettings,
     AdminUserPreferences,
@@ -55,9 +59,12 @@ from .models import (
     BeneficiaryActivityFeedback,
     BeneficiaryActivityAttendance,
     Activity,
+    ActivityFundAllocation,
     Donation,
+    ItemPledge,
     InventoryItem,
     ProductInquiry,
+    ProductReview,
     RoleApplication,
     ResourceLibraryMaterial,
     StockMovement,
@@ -89,6 +96,7 @@ from .two_factor import (
 
 
 PROFILE_AVATAR_MAX_SIZE = 5 * 1024 * 1024
+logger = logging.getLogger(__name__)
 COMMUNITY_POST_PAGE_SIZE = 8
 COMMUNITY_COMMENT_PAGE_SIZE = 8
 ADMIN_SYSTEM_SETTINGS_DEFAULTS = {
@@ -807,8 +815,6 @@ def _serialize_donation(donation):
     history = [f"Submitted - {created_at.strftime('%b %d, %Y')}"]
     if donation.status == Donation.STATUS_PENDING:
         history.append("Pending verification")
-    elif donation.status == Donation.STATUS_VERIFIED:
-        history.append("Verified")
     elif donation.status == Donation.STATUS_COMPLETED:
         history.append("Completed")
     elif donation.status == Donation.STATUS_REJECTED:
@@ -863,7 +869,7 @@ def _serialize_volunteer_activity_assignment(assignment):
             payload = {
                 "id": int(beneficiary.id),
                 "name": beneficiary.get_full_name() or beneficiary.username,
-                "avatar_url": beneficiary.userprofile.avatar.url if getattr(getattr(beneficiary, "userprofile", None), "avatar", None) else "",
+                "avatar_url": avatar_url_for_user(beneficiary),
                 "status": beneficiary_records.get(beneficiary.id, {}).get("status", BeneficiaryActivityAttendance.STATUS_PENDING),
                 "status_label": beneficiary_records.get(beneficiary.id, {}).get("status_label", "Pending"),
                 "confirmed_at": beneficiary_records.get(beneficiary.id, {}).get("confirmed_at", ""),
@@ -1919,7 +1925,7 @@ def _get_chat_admin_conversation_threads(request):
             "last_message_time": timezone.localtime(last_message.created_at).isoformat() if last_message else None,
             "unread_count": unread_count,
             "has_conversation": bool(thread_messages),
-            "avatar_url": getattr(getattr(volunteer, "userprofile", None), "avatar", None).url if getattr(getattr(volunteer, "userprofile", None), "avatar", None) else "",
+            "avatar_url": avatar_url_for_user(volunteer),
         })
     threads.sort(key=lambda item: item["last_message_time"] or "", reverse=True)
     return threads
@@ -2424,7 +2430,7 @@ def _serialize_assistance_record(record, include_feedback=True):
             "comment": (feedback.comment or "").strip(),
             "submittedBy": _display_name_for_user(feedback.user) if feedback.user_id else "Beneficiary",
             "submittedAt": feedback.created_at.isoformat() if feedback.created_at else None,
-            "ratingLabel": "★" * int(feedback.rating or 0) + "☆" * max(0, 5 - int(feedback.rating or 0)),
+            "ratingLabel": f"{int(feedback.rating or 0)} / 5",
         }
 
     return {
@@ -2459,6 +2465,47 @@ def _build_assistance_tracking_payload():
     return [_serialize_assistance_record(record, include_feedback=feedback_table_exists) for record in records]
 
 
+def _activity_feedback_question_scores(rating, comment):
+    needs_met_score_by_label = {
+        "not at all": 1,
+        "a little": 2,
+        "partly": 3,
+        "somewhat": 3,
+        "not really": 1,
+        "mostly": 4,
+        "completely": 5,
+        "yes, completely": 5,
+    }
+    return_again_score_by_label = {
+        "very unlikely": 1,
+        "unlikely": 2,
+        "unsure": 3,
+        "likely": 4,
+        "very likely": 5,
+    }
+    scores = {"Q1": None, "Q2": None, "Q3": None}
+    try:
+        q1_score = int(rating)
+        if 1 <= q1_score <= 5:
+            scores["Q1"] = q1_score
+    except (TypeError, ValueError):
+        pass
+
+    for part in (comment or "").split("|"):
+        label, separator, answer = part.partition(":")
+        label = label.strip()
+        if not separator or label not in {"Q2", "Q3"}:
+            continue
+        try:
+            score = int(answer.strip())
+        except ValueError:
+            label_scores = needs_met_score_by_label if label == "Q2" else return_again_score_by_label
+            score = label_scores.get(answer.strip().lower())
+        if score is not None and 1 <= score <= 5:
+            scores[label] = score
+    return [scores["Q1"], scores["Q2"], scores["Q3"]]
+
+
 def _build_assistance_feedbacks_payload():
     feedbacks = []
     assistance_feedbacks = BeneficiaryAssistanceFeedback.objects.select_related(
@@ -2477,6 +2524,8 @@ def _build_assistance_feedbacks_payload():
             "submittedBy": _display_name_for_user(feedback.user),
             "submittedAt": feedback.created_at.isoformat() if feedback.created_at else None,
             "ratingLabel": "★" * int(feedback.rating or 0) + "☆" * max(0, 5 - int(feedback.rating or 0)),
+            "questionRatings": [int(feedback.rating or 0), None, None],
+            "averageRating": None,
             "assistanceId": int(record.id),
         })
 
@@ -2484,17 +2533,22 @@ def _build_assistance_feedbacks_payload():
         "activity", "beneficiary", "user"
     ).order_by("-created_at", "-id")
     for feedback in activity_feedbacks:
+        rating = int(feedback.rating or 0)
+        question_ratings = _activity_feedback_question_scores(rating, feedback.comment)
+        average_rating = round(sum(question_ratings) / 3, 1) if all(score is not None for score in question_ratings) else None
         feedbacks.append({
             "id": f"activity-{feedback.id}",
             "source": "Activity",
             "beneficiaryName": feedback.beneficiary.full_name,
             "subject": feedback.activity.title,
             "date": feedback.activity.date.strftime("%Y-%m-%d"),
-            "rating": int(feedback.rating or 0),
+            "rating": rating,
             "comment": (feedback.comment or "").strip(),
             "submittedBy": _display_name_for_user(feedback.user),
             "submittedAt": feedback.created_at.isoformat() if feedback.created_at else None,
-            "ratingLabel": "★" * int(feedback.rating or 0) + "☆" * max(0, 5 - int(feedback.rating or 0)),
+            "ratingLabel": f"{rating} / 5",
+            "questionRatings": question_ratings,
+            "averageRating": average_rating,
             "assistanceId": None,
         })
     return sorted(feedbacks, key=lambda item: item.get("submittedAt") or "", reverse=True)
@@ -2740,7 +2794,7 @@ def _serialize_profile_payload(user, profile):
             "emergency_contact_phone": profile.emergency_contact_phone or "",
             "volunteer_role": profile.volunteer_role or "",
             "assigned_chapter_area": profile.assigned_chapter_area or "",
-            "avatar_url": profile.avatar.url if profile.avatar else "",
+            "avatar_url": avatar_url_for_user(profile.user),
         },
     }
 
@@ -2810,10 +2864,7 @@ def _serialize_community_attachment(attachment):
 
 
 def _avatar_url_for_user(user):
-    try:
-        return user.userprofile.avatar.url if user.userprofile.avatar else ""
-    except UserProfile.DoesNotExist:
-        return ""
+    return avatar_url_for_user(user)
 
 
 def _serialize_community_comment_payload(comment, like_total=0, liked=False, viewer=None):
@@ -3386,6 +3437,13 @@ def about(request):
     })
 
 
+def _donation_tracker_token(request):
+    token = request.COOKIES.get("donation_tracker_id", "")
+    if token and re.fullmatch(r"[A-Za-z0-9_-]{43}", token):
+        return token, False
+    return secrets.token_urlsafe(32), True
+
+
 def donate(request):
     donation_config = getattr(django_settings, "DONATION_CONFIG", {})
     impact_examples = donation_config.get("impact_examples", [])
@@ -3412,12 +3470,23 @@ def donate(request):
                 normalized_total += percentage
             program["share"] = percentage
             program.setdefault("color", ("#5c8d68", "#d28757", "#6885a0")[index % 3])
-    return render(request, "donate.html", {
+    response = render(request, "donate.html", {
         "signin_form": SignInForm(),
         "signup_form": SignUpForm(),
         "donation_config": donation_config,
         "programs": programs,
     })
+    tracker_token, set_tracker_cookie = _donation_tracker_token(request)
+    if set_tracker_cookie:
+        response.set_cookie(
+            "donation_tracker_id",
+            tracker_token,
+            max_age=60 * 60 * 24 * 365,
+            httponly=True,
+            secure=request.is_secure(),
+            samesite="Lax",
+        )
+    return response
 
 
 @login_required(login_url="signin")
@@ -3533,6 +3602,29 @@ def products(request):
     })
 
 
+@require_GET
+def product_stock(request):
+    product_name = str(request.GET.get("name", "")).strip()
+    if not product_name:
+        return JsonResponse({"error": "Product name is required."}, status=400)
+
+    item = (
+        InventoryItem.objects
+        .filter(category=InventoryItem.CATEGORY_STORE_PRODUCT, name__iexact=product_name)
+        .order_by("id")
+        .first()
+    )
+    if item is None:
+        return JsonResponse({"error": "This product is currently unavailable."}, status=404)
+
+    return JsonResponse({
+        "name": item.name,
+        "stock": item.stock,
+        "low_stock_threshold": item.low_stock_threshold,
+        "status": item.status,
+    })
+
+
 @login_required
 @require_POST
 def save_product_buyer_details(request):
@@ -3554,10 +3646,14 @@ def product_order_tracker(request):
     status_labels = {
         ProductInquiry.STATUS_PENDING: "Pending",
         ProductInquiry.STATUS_VERIFIED: "Confirmed",
+        ProductInquiry.STATUS_IN_DELIVERY: "In Delivery",
         ProductInquiry.STATUS_COMPLETED: "Completed",
+        ProductInquiry.STATUS_RETURN_REQUESTED: "Return Requested",
+        ProductInquiry.STATUS_REFUND_REQUESTED: "Refund Requested",
+        ProductInquiry.STATUS_RETURNED: "Returned",
         ProductInquiry.STATUS_CANCELLED: "Cancelled",
         ProductInquiry.STATUS_FAILED: "Cancelled",
-        ProductInquiry.STATUS_REFUNDED: "Cancelled",
+        ProductInquiry.STATUS_REFUNDED: "Refunded",
     }
     image_map = {
         "Handwoven Doormat": "/static/media/hand woven doormat.jpg",
@@ -3572,9 +3668,11 @@ def product_order_tracker(request):
     }
     payment_labels = dict(ProductInquiry.PAYMENT_METHOD_CHOICES)
     orders = []
-    for order in ProductInquiry.objects.filter(user=request.user).order_by("-created_at", "-id"):
+    for order in ProductInquiry.objects.filter(user=request.user).prefetch_related("product_reviews").order_by("-created_at", "-id"):
         item = (order.order_items or [{}])[0]
         name = str(item.get("name", "Product")).strip()
+        variation = str(item.get("variation", "")).strip()
+        review = next((record for record in order.product_reviews.all() if record.product_name == name and record.variation == variation), None)
         receipt_items = []
         for receipt_item in order.order_items or []:
             quantity = int(receipt_item.get("quantity", 1) or 1)
@@ -3585,12 +3683,27 @@ def product_order_tracker(request):
                 "quantity": quantity,
                 "line_total": int(receipt_item.get("line_total", unit_price * quantity) or 0),
             })
+        delivery_window_text = ""
+        if order.status == ProductInquiry.STATUS_IN_DELIVERY:
+            if order.delivery_window_start and order.delivery_window_end:
+                start = timezone.localtime(order.delivery_window_start).strftime('%b %d, %Y')
+                end = timezone.localtime(order.delivery_window_end).strftime('%b %d, %Y')
+                delivery_window_text = f"Expected delivery: {start} – {end}"
+            elif order.delivery_window_start:
+                start = timezone.localtime(order.delivery_window_start).strftime('%b %d, %Y')
+                delivery_window_text = f"Expected delivery: {start}"
+            elif order.delivery_window_end:
+                end = timezone.localtime(order.delivery_window_end).strftime('%b %d, %Y')
+                delivery_window_text = f"Expected delivery: {end}"
         orders.append({
             "id": str(order.id),
             "order_number": f"ORD-{order.id:04d}",
             "name": name,
             "image": image_map.get(name, "/static/media/hand woven doormat.jpg"),
             "variation": str(item.get("variation", "")).strip(),
+            "reviewed": review is not None,
+            "review_rating": review.rating if review else None,
+            "review_message": review.message if review else "",
             "quantity": item.get("quantity", 1),
             "total": order.order_total,
             "date": order.created_at.strftime("%b %d, %Y"),
@@ -3600,11 +3713,79 @@ def product_order_tracker(request):
             "customer_name": order.full_name or "Guest",
             "status": order.status,
             "status_label": status_labels.get(order.status, "Pending"),
+            "delivery_window_start": order.delivery_window_start.isoformat() if order.delivery_window_start else "",
+            "delivery_window_end": order.delivery_window_end.isoformat() if order.delivery_window_end else "",
+            "delivery_window_text": delivery_window_text,
         })
     return JsonResponse({
         "orders": orders,
         "active_count": sum(order["status"] not in {"completed", "cancelled"} for order in orders),
     })
+
+
+@require_GET
+def product_reviews(request):
+    product_name = str(request.GET.get("product", "") or "").strip()
+    if not product_name:
+        return JsonResponse({"error": "A product name is required."}, status=400)
+
+    reviews = ProductReview.objects.filter(product_name=product_name).select_related("inquiry").order_by("-created_at", "-id")
+    summary = reviews.aggregate(average=Avg("rating"), count=Count("id"))
+    review_items = []
+    for review in reviews:
+        name_parts = review.inquiry.full_name.split()
+        customer_name = name_parts[0] if name_parts else "Customer"
+        if len(name_parts) > 1:
+            customer_name += f" {name_parts[-1][0].upper()}."
+        review_items.append({
+            "customer": customer_name,
+            "avatar": avatar_url_for_user(review.inquiry.user),
+            "rating": review.rating,
+            "message": review.message,
+            "date": timezone.localtime(review.created_at).strftime("%b %d, %Y"),
+        })
+
+    return JsonResponse({
+        "product": product_name,
+        "average": round(float(summary["average"] or 0), 1),
+        "count": summary["count"],
+        "reviews": review_items,
+    })
+
+
+@login_required
+@require_POST
+def submit_product_review(request, order_id):
+    order = get_object_or_404(ProductInquiry, id=order_id, user=request.user)
+    if order.status != ProductInquiry.STATUS_COMPLETED:
+        return JsonResponse({"error": "Only completed orders can be reviewed."}, status=400)
+
+    item = (order.order_items or [{}])[0]
+    product_name = str(item.get("name", "Product")).strip()
+    variation = str(item.get("variation", "")).strip()
+    try:
+        rating = int(request.POST.get("rating", ""))
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "Choose a star rating before sending."}, status=400)
+    if rating < 1 or rating > 5:
+        return JsonResponse({"error": "Choose a rating from 1 to 5 stars."}, status=400)
+
+    message = str(request.POST.get("message", "")).strip()
+    if len(message) > 2000:
+        return JsonResponse({"error": "Your message must be 2,000 characters or fewer."}, status=400)
+
+    try:
+        review = ProductReview.objects.create(
+            inquiry=order,
+            product_name=product_name,
+            variation=variation,
+            rating=rating,
+            message=message,
+        )
+    except IntegrityError:
+        return JsonResponse({"error": "This product has already been reviewed."}, status=409)
+
+    return JsonResponse({"ok": True, "reviewed": True, "rating": review.rating, "message": review.message}, status=201)
 
 
 @login_required
@@ -3615,6 +3796,44 @@ def cancel_product_order(request, order_id):
         return JsonResponse({"error": "This order can no longer be cancelled."}, status=400)
     order.delete()
     return JsonResponse({"deleted": True})
+
+
+@login_required
+@require_POST
+def request_product_order_return(request, order_id):
+    order = get_object_or_404(ProductInquiry, id=order_id, user=request.user)
+    if order.status not in {ProductInquiry.STATUS_COMPLETED, ProductInquiry.STATUS_RETURN_REQUESTED, ProductInquiry.STATUS_REFUND_REQUESTED}:
+        return JsonResponse({"error": "This order is not eligible for a return or refund request."}, status=400)
+
+    request_type = (request.POST.get("request_type") or "refund").strip().lower()
+    reason = (request.POST.get("reason") or "Customer requested a return/refund").strip()
+
+    if request_type == "return":
+        order.status = ProductInquiry.STATUS_RETURN_REQUESTED
+    else:
+        order.status = ProductInquiry.STATUS_REFUND_REQUESTED
+
+    order.return_reason = reason or "Customer requested a return/refund"
+    order.return_requested_at = timezone.now()
+    order.save(update_fields=["status", "return_reason", "return_requested_at", "updated_at"])
+
+    return JsonResponse({
+        "ok": True,
+        "status": order.status,
+        "status_label": dict(ProductInquiry.STATUS_CHOICES).get(order.status, order.status),
+        "reason": order.return_reason,
+    })
+
+
+PRODUCT_CHECKOUT_SHIPPING_FEE = 50
+PRODUCT_CHECKOUT_VAT_RATE = 0.12
+
+
+def calculate_checkout_total(subtotal):
+    subtotal = float(subtotal or 0)
+    vat = round(subtotal * PRODUCT_CHECKOUT_VAT_RATE)
+    total = subtotal + vat + PRODUCT_CHECKOUT_SHIPPING_FEE
+    return int(round(total))
 
 
 def _format_php(amount):
@@ -3793,6 +4012,9 @@ def submit_product_inquiry(request):
     if payment_method not in dict(ProductInquiry.PAYMENT_METHOD_CHOICES):
         return JsonResponse({"error": "Please choose a valid payment method."}, status=400)
 
+    if payment_method in {ProductInquiry.PAYMENT_GCASH, ProductInquiry.PAYMENT_BANK_TRANSFER} and not payment_screenshot:
+        return JsonResponse({"error": "A payment receipt is required for GCash and Bank Transfer orders."}, status=400)
+
     try:
         order_items_data = json.loads(order_items_raw or "[]")
     except json.JSONDecodeError:
@@ -3802,7 +4024,7 @@ def submit_product_inquiry(request):
         return JsonResponse({"error": "Please select at least one product."}, status=400)
 
     normalized_items = []
-    order_total = 0
+    subtotal = 0
 
     for item in order_items_data:
         if not isinstance(item, dict):
@@ -3819,7 +4041,7 @@ def submit_product_inquiry(request):
             return JsonResponse({"error": f"Unsupported product category: {category}."}, status=400)
 
         line_total = unit_price * quantity
-        order_total += line_total
+        subtotal += line_total
         normalized_items.append({
             "name": name,
             "category": category,
@@ -3828,6 +4050,8 @@ def submit_product_inquiry(request):
             "unit_price": unit_price,
             "line_total": line_total,
         })
+
+    order_total = calculate_checkout_total(subtotal)
 
     admin_notification = _build_product_inquiry_admin_notification(
         full_name,
@@ -3872,7 +4096,37 @@ def submit_product_inquiry(request):
         inquiry.payment_screenshot = payment_screenshot
 
     try:
-        inquiry.save()
+        with transaction.atomic():
+            for item in normalized_items:
+                inventory_item = (
+                    InventoryItem.objects
+                    .select_for_update()
+                    .filter(
+                        category=InventoryItem.CATEGORY_STORE_PRODUCT,
+                        name__iexact=item["name"],
+                    )
+                    .order_by("id")
+                    .first()
+                )
+                if inventory_item is None:
+                    return JsonResponse({
+                        "error": f'{item["name"]} is currently unavailable.'
+                    }, status=409)
+                if inventory_item.stock < item["quantity"]:
+                    return JsonResponse({
+                        "error": f'Only {inventory_item.stock} available for {item["name"]}.'
+                    }, status=409)
+
+                inventory_item.stock -= item["quantity"]
+                inventory_item.save(update_fields=["stock", "updated_at"])
+                StockMovement.objects.create(
+                    item=inventory_item,
+                    action=StockMovement.ACTION_DEDUCT,
+                    quantity=item["quantity"],
+                    reason="Product order",
+                )
+
+            inquiry.save()
     except ValidationError as exc:
         print(f"ValidationError saving ProductInquiry: {exc}")
         return JsonResponse({"error": "; ".join(exc.messages)}, status=400)
@@ -3883,6 +4137,7 @@ def submit_product_inquiry(request):
     response_status_labels = {
         ProductInquiry.STATUS_PENDING: "Pending",
         ProductInquiry.STATUS_VERIFIED: "Confirmed",
+        ProductInquiry.STATUS_IN_DELIVERY: "In Delivery",
         ProductInquiry.STATUS_COMPLETED: "Completed",
         ProductInquiry.STATUS_CANCELLED: "Cancelled",
         ProductInquiry.STATUS_FAILED: "Cancelled",
@@ -4573,6 +4828,8 @@ def _build_user_dashboard_overview_payload(user):
     completed_activities = list(
         Activity.objects
         .filter(status=Activity.STATUS_COMPLETED)
+        .filter(beneficiary_assignments__beneficiary=user)
+        .distinct()
         .order_by("-date", "-id")
     )
     completed_activity_ids = [activity.id for activity in completed_activities]
@@ -4589,6 +4846,7 @@ def _build_user_dashboard_overview_payload(user):
         completed_activity_items.append({
             "id": int(activity.id),
             "feedback_target": "activity",
+            "can_submit_feedback": True,
             "outreach_category": activity.category or "other",
             "item": activity.title,
             "date": activity.date.strftime("%b %d, %Y"),
@@ -4699,7 +4957,7 @@ def _build_user_dashboard_overview_payload(user):
             ),
             "beneficiary_attendance_status_label": (
                 _serialize_beneficiary_activity_attendance(beneficiary_attendance_by_activity[activity.id])["status_label"]
-                if activity.id in beneficiary_attendance_by_activity else "Awaiting volunteer confirmation"
+                if activity.id in beneficiary_attendance_by_activity else "Confirm attendance"
             ),
             "beneficiary_attendance_confirmed_at": (
                 beneficiary_attendance_by_activity[activity.id].confirmed_at.isoformat()
@@ -4734,7 +4992,7 @@ def _build_user_dashboard_overview_payload(user):
             ),
             "beneficiary_attendance_status_label": (
                 _serialize_beneficiary_activity_attendance(beneficiary_attendance_by_activity[first_activity.id])["status_label"]
-                if first_activity.id in beneficiary_attendance_by_activity else "Awaiting volunteer confirmation"
+                if first_activity.id in beneficiary_attendance_by_activity else "Confirm attendance"
             ),
             "beneficiary_attendance_confirmed_at": (
                 beneficiary_attendance_by_activity[first_activity.id].confirmed_at.isoformat()
@@ -4787,22 +5045,70 @@ def submit_beneficiary_pickup_feedback(request):
     raw_activity_id = str(request.POST.get("activity_id") or "").strip()
 
     raw_rating = str(request.POST.get("rating") or "").strip()
-    try:
-        rating = int(raw_rating)
-    except (TypeError, ValueError):
-        return JsonResponse({"error": "rating must be an integer from 1 to 5."}, status=400)
+    question_1 = str(request.POST.get("question_1") or "").strip()
+    question_2 = str(request.POST.get("question_2") or "").strip()
+    question_3 = str(request.POST.get("question_3") or "").strip()
+
+    if raw_rating:
+        try:
+            rating = int(raw_rating)
+        except (TypeError, ValueError):
+            return JsonResponse({"error": "rating must be an integer from 1 to 5."}, status=400)
+    elif question_1:
+        try:
+            rating = int(question_1)
+        except (TypeError, ValueError):
+            return JsonResponse({"error": "question_1 must be an integer from 1 to 5."}, status=400)
+    else:
+        return JsonResponse({"error": "Please choose a rating before submitting."}, status=400)
 
     if rating < 1 or rating > 5:
         return JsonResponse({"error": "rating must be between 1 and 5."}, status=400)
 
-    comment = str(request.POST.get("comment") or "").strip()
+    if raw_activity_id:
+        raw_answers = {
+            "question_1": question_1,
+            "question_2": question_2,
+            "question_3": question_3,
+        }
+        try:
+            survey_answers = {key: int(value) for key, value in raw_answers.items()}
+        except (TypeError, ValueError):
+            return JsonResponse({"error": "Please answer all 3 questions before submitting."}, status=400)
+        if any(answer < 1 or answer > 5 for answer in survey_answers.values()):
+            return JsonResponse({"error": "Each answer must be between 1 and 5."}, status=400)
+        rating = survey_answers["question_1"]
+        needs_met_labels = {1: "Not at all", 2: "A little", 3: "Partly", 4: "Mostly", 5: "Completely"}
+        return_again_labels = {1: "Very unlikely", 2: "Unlikely", 3: "Unsure", 4: "Likely", 5: "Very likely"}
+        comment = f"Q2: {survey_answers['question_2']} | Q3: {survey_answers['question_3']}"
+    else:
+        comment = str(request.POST.get("comment") or "").strip()
+        if not comment:
+            pieces = []
+            if question_2:
+                try:
+                    pieces.append(f"Q2: {int(question_2)}")
+                except ValueError:
+                    pieces.append(f"Q2: {question_2}")
+            if question_3:
+                try:
+                    pieces.append(f"Q3: {int(question_3)}")
+                except ValueError:
+                    pieces.append(f"Q3: {question_3}")
+            comment = " | ".join(pieces)
     if raw_activity_id:
         try:
             activity_id = int(raw_activity_id)
         except (TypeError, ValueError):
             return JsonResponse({"error": "activity_id must be a valid activity."}, status=400)
 
-        activity = get_object_or_404(Activity, id=activity_id, status=Activity.STATUS_COMPLETED)
+        activity = get_object_or_404(Activity, id=activity_id)
+        if activity.status != Activity.STATUS_COMPLETED:
+            return JsonResponse({"error": "Feedback can only be submitted after the activity is completed."}, status=409)
+
+        if not ActivityBeneficiaryAssignment.objects.filter(activity=activity, beneficiary=request.user).exists():
+            return JsonResponse({"error": "Feedback can only be submitted for activities assigned to you."}, status=403)
+
         beneficiary_application = (
             RoleApplication.objects
             .filter(user=request.user, role=RoleApplication.ROLE_BENEFICIARY, status=RoleApplication.STATUS_APPROVED)
@@ -7015,7 +7321,7 @@ def _build_dashboard_chart_data():
 
     donation_qs = Donation.objects.filter(
         created_at__date__gte=today - timedelta(days=56),
-        status__in=[Donation.STATUS_VERIFIED, Donation.STATUS_COMPLETED],
+        status=Donation.STATUS_COMPLETED,
     )
     for donation in donation_qs:
         donation_date = timezone.localtime(donation.created_at).date()
@@ -7071,7 +7377,7 @@ def admin_dashboard(request):
     donations_this_month = Donation.objects.filter(
         created_at__date__gte=month_start,
         created_at__date__lte=month_end,
-        status__in=[Donation.STATUS_VERIFIED, Donation.STATUS_COMPLETED],
+        status=Donation.STATUS_COMPLETED,
     )
     donations_this_month_amount = int(donations_this_month.aggregate(total=Sum("amount"))["total"] or 0)
 
@@ -7155,6 +7461,216 @@ def admin_dashboard_moderation_queue(request):
 
 
 @login_required(login_url="signin")
+def regular_users(request):
+    if not request.user.is_superuser:
+        return redirect("user_dashboard")
+
+    regular_users_queryset = (
+        User.objects
+        .filter(is_staff=False, is_superuser=False)
+        .filter(
+            Q(userprofile__account_role=UserProfile.ROLE_REGULAR)
+            | Q(userprofile__account_role__isnull=True)
+            | Q(userprofile__account_role="")
+        )
+        .select_related("userprofile")
+        .order_by("-date_joined", "username")
+    )
+    user_counts = regular_users_queryset.aggregate(
+        total=Count("id"),
+        active=Count("id", filter=Q(is_active=True)),
+        inactive=Count("id", filter=Q(is_active=False)),
+        joined_this_week=Count(
+            "id",
+            filter=Q(date_joined__gte=timezone.now() - timedelta(days=7)),
+        ),
+    )
+    return render(request, "admin_dashboard/regular_users_admin.html", {
+        "active_page": "regular_users",
+        "regular_users": regular_users_queryset,
+        "regular_users_count": user_counts["total"],
+        "regular_user_counts": user_counts,
+        "dashboard_scope": "admin",
+    })
+
+
+@login_required(login_url="signin")
+@require_POST
+def create_regular_user(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Only administrators can add users."}, status=403)
+
+    full_name = str(request.POST.get("full_name", "") or "").strip()
+    username = str(request.POST.get("username", "") or "").strip()
+    email = str(request.POST.get("email", "") or "").strip()
+    phone = str(request.POST.get("phone", "") or "").strip()
+    status = str(request.POST.get("status", "active") or "active").strip().lower()
+    password = str(request.POST.get("password", "") or "")
+    confirm_password = str(request.POST.get("confirm_password", "") or "")
+
+    if status not in {"active", "inactive", "pending"}:
+        return JsonResponse({"error": "Please select a valid user status."}, status=400)
+    if not full_name or not username or not email or not password or not confirm_password:
+        return JsonResponse({
+            "error": "Full name, username, email, password, and password confirmation are required."
+        }, status=400)
+    try:
+        validate_email(email)
+    except ValidationError:
+        return JsonResponse({"error": "Enter a valid email address."}, status=400)
+    if User.objects.filter(username__iexact=username).exists():
+        return JsonResponse({"error": "That username is already taken."}, status=400)
+    if User.objects.filter(email__iexact=email).exists():
+        return JsonResponse({"error": "An account with that email already exists."}, status=400)
+    if password != confirm_password:
+        return JsonResponse({"error": "The passwords do not match."}, status=400)
+
+    first_name, last_name = _split_full_name(full_name)
+    candidate_user = User(username=username, email=email, first_name=first_name, last_name=last_name)
+    try:
+        candidate_user.full_clean(exclude=["password", "last_login", "date_joined"])
+        validate_password(password, user=candidate_user)
+    except ValidationError as exc:
+        return JsonResponse({"error": " ".join(exc.messages)}, status=400)
+
+    with transaction.atomic():
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            is_active=(status == "active"),
+        )
+        profile = _get_or_create_user_profile(user)
+        profile.account_role = UserProfile.ROLE_REGULAR
+        profile.phone = phone
+        profile.save(update_fields=["account_role", "phone", "updated_at"])
+
+    return JsonResponse({
+        "message": f"User account for {full_name} was created successfully.",
+        "user": {
+            "id": user.id,
+            "full_name": full_name,
+            "username": user.username,
+            "email": user.email,
+            "phone": profile.phone,
+            "is_active": user.is_active,
+            "date_joined": timezone.localtime(user.date_joined).strftime("%Y-%m-%d"),
+        },
+    }, status=201)
+
+
+@login_required(login_url="signin")
+@require_POST
+def update_regular_user_profile(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Only administrators can edit user profiles."}, status=403)
+
+    user_id = _parse_non_negative_int(request.POST.get("user_id"), default=0)
+    if user_id <= 0:
+        return JsonResponse({"error": "A valid regular user account is required."}, status=400)
+    regular_user = get_object_or_404(
+        User.objects
+        .filter(is_staff=False, is_superuser=False)
+        .filter(
+            Q(userprofile__account_role=UserProfile.ROLE_REGULAR)
+            | Q(userprofile__account_role__isnull=True)
+            | Q(userprofile__account_role="")
+        ),
+        pk=user_id,
+    )
+
+    full_name = str(request.POST.get("full_name", "") or "").strip()
+    username = str(request.POST.get("username", "") or "").strip()
+    email = str(request.POST.get("email", "") or "").strip()
+    phone = str(request.POST.get("phone", "") or "").strip()
+    status = str(request.POST.get("status", "") or "").strip().lower()
+    if not full_name or not username:
+        return JsonResponse({"error": "Full name and username are required."}, status=400)
+    if status not in {"active", "inactive"}:
+        return JsonResponse({"error": "Please select a valid user status."}, status=400)
+    if email:
+        try:
+            validate_email(email)
+        except ValidationError:
+            return JsonResponse({"error": "Enter a valid email address."}, status=400)
+    if User.objects.filter(username__iexact=username).exclude(pk=regular_user.pk).exists():
+        return JsonResponse({"error": "That username is already taken."}, status=400)
+    if email and User.objects.filter(email__iexact=email).exclude(pk=regular_user.pk).exists():
+        return JsonResponse({"error": "An account with that email already exists."}, status=400)
+
+    first_name, last_name = _split_full_name(full_name)
+    regular_user.username = username
+    regular_user.email = email
+    regular_user.first_name = first_name
+    regular_user.last_name = last_name
+    regular_user.is_active = status == "active"
+    try:
+        regular_user.full_clean(exclude=["password", "last_login", "date_joined"])
+    except ValidationError as exc:
+        return JsonResponse({"error": " ".join(exc.messages)}, status=400)
+
+    with transaction.atomic():
+        regular_user.save(update_fields=["username", "email", "first_name", "last_name", "is_active"])
+        profile = _get_or_create_user_profile(regular_user)
+        profile.phone = phone
+        profile.save(update_fields=["phone", "updated_at"])
+
+    return JsonResponse({
+        "message": f"{_display_name_for_user(regular_user)}'s profile was updated.",
+        "user": {
+            "id": regular_user.id,
+            "full_name": _display_name_for_user(regular_user),
+            "username": regular_user.username,
+            "email": regular_user.email or "Not provided",
+            "phone": profile.phone or "Not provided",
+            "date_joined": timezone.localtime(regular_user.date_joined).strftime("%b %d, %Y").replace(" 0", " "),
+            "is_active": regular_user.is_active,
+        },
+    })
+
+
+@login_required(login_url="signin")
+@require_POST
+def delete_regular_user(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Only administrators can remove users."}, status=403)
+
+    raw_user_ids = request.POST.getlist("user_ids") or [request.POST.get("user_id", "")]
+    user_ids = []
+    for raw_user_id in raw_user_ids:
+        user_id = _parse_non_negative_int(raw_user_id, default=0)
+        if user_id <= 0:
+            return JsonResponse({"error": "Select one or more valid regular user accounts."}, status=400)
+        if user_id not in user_ids:
+            user_ids.append(user_id)
+    if not user_ids:
+        return JsonResponse({"error": "Select at least one regular user account."}, status=400)
+
+    regular_users_queryset = (
+        User.objects
+        .filter(is_staff=False, is_superuser=False)
+        .filter(
+            Q(userprofile__account_role=UserProfile.ROLE_REGULAR)
+            | Q(userprofile__account_role__isnull=True)
+            | Q(userprofile__account_role="")
+        )
+        .filter(pk__in=user_ids)
+    )
+    if regular_users_queryset.count() != len(user_ids):
+        return JsonResponse({"error": "One or more selected accounts are not regular users."}, status=400)
+
+    with transaction.atomic():
+        regular_users_queryset.delete()
+    return JsonResponse({
+        "message": f"{len(user_ids)} regular user account(s) permanently deleted.",
+        "deleted_count": len(user_ids),
+        "deleted": True,
+    })
+
+
+@login_required(login_url="signin")
 def users(request):
     if not request.user.is_superuser:
         return redirect("user_dashboard")
@@ -7198,8 +7714,12 @@ def volunteers(request):
             {
                 **_serialize_volunteer_attendance(attendance),
                 "volunteer_name": _display_name_for_user(attendance.volunteer),
-                "activity_name": attendance.assignment.activity_name,
-                "scheduled_date": attendance.assignment.scheduled_date.isoformat(),
+                "activity_name": getattr(attendance.assignment, "activity_name", None) or "OJT duty day",
+                "scheduled_date": (
+                    attendance.assignment.scheduled_date.isoformat()
+                    if attendance.assignment and attendance.assignment.scheduled_date
+                    else attendance.duty_date.isoformat() if attendance.duty_date else ""
+                ),
             }
             for attendance in VolunteerAttendanceRecord.objects
             .filter(status=VolunteerAttendanceRecord.STATUS_PENDING)
@@ -7695,12 +8215,50 @@ def review_role_application(request):
     return _review_role_application_response(application, action)
 
 
+def _get_available_completed_donation_funds(activity=None):
+    completed_total = Donation.objects.filter(status=Donation.STATUS_COMPLETED).aggregate(total=Sum("amount"))["total"] or 0
+    reserved_total = ActivityFundAllocation.objects.filter(status=ActivityFundAllocation.STATUS_RESERVED)
+    if activity is not None:
+        reserved_total = reserved_total.exclude(activity=activity)
+    reserved_total = reserved_total.aggregate(total=Sum("amount"))["total"] or 0
+    return max(completed_total - reserved_total, 0)
+
+
+def _build_activity_feedback_averages():
+    feedback_counts = {}
+    feedback_scores_by_activity = {}
+    for feedback in BeneficiaryActivityFeedback.objects.values("activity_id", "rating", "comment"):
+        activity_id = feedback["activity_id"]
+        feedback_counts[activity_id] = feedback_counts.get(activity_id, 0) + 1
+        question_scores = _activity_feedback_question_scores(feedback["rating"], feedback["comment"])
+        if all(score is not None for score in question_scores):
+            feedback_scores_by_activity.setdefault(activity_id, []).append(sum(question_scores) / 3)
+    feedback_averages = {
+        activity_id: round(sum(scores) / len(scores), 1)
+        for activity_id, scores in feedback_scores_by_activity.items()
+    }
+    return feedback_counts, feedback_averages
+
+
 @login_required(login_url="signin")
 def activities(request):
     if not request.user.is_superuser:
         return redirect("user_dashboard")
 
     activities_qs = Activity.objects.prefetch_related("volunteer_assignments", "beneficiary_assignments").all().order_by("date", "title")
+    activities = list(activities_qs)
+    for activity in activities:
+        activity.feedback_count = 0
+    feedback_counts, feedback_averages = _build_activity_feedback_averages()
+    for activity in activities:
+        activity.feedback_count = feedback_counts.get(activity.id, 0)
+        activity.feedback_average = feedback_averages.get(activity.id)
+        if activity.feedback_average is None:
+            activity.feedback_average_class = "is-empty"
+            activity.feedback_average_display = "-"
+        else:
+            activity.feedback_average_class = "is-good" if activity.feedback_average >= 4 else "is-okay" if activity.feedback_average >= 3 else "is-bad"
+            activity.feedback_average_display = f"{activity.feedback_average:.1f}"
     today = timezone.localdate()
     upcoming_activities = list(
         activities_qs.filter(date__gte=today, status=Activity.STATUS_ACTIVE)
@@ -7718,7 +8276,6 @@ def activities(request):
         str(activity.id): [assignment.beneficiary_id for assignment in activity.beneficiary_assignments.all()]
         for activity in activities_qs
     }
-
     # Build structured JSON for calendar filtering
     upcoming_activities_json = json.dumps([{
         'day': a.date.day,
@@ -7736,7 +8293,7 @@ def activities(request):
 
     return render(request, "admin_dashboard/activities_admin.html", {
         "active_page": "activities",
-        "activities": activities_qs,
+        "activities": activities,
         "upcoming_activities": upcoming_activities,
         "upcoming_activities_json": upcoming_activities_json,
         "volunteer_options": volunteer_options,
@@ -7752,6 +8309,7 @@ def activities(request):
         "activity_dates": activity_dates_current_month,
         "activity_dates_json": json.dumps(activity_dates_current_month),
         "activity_categories": Activity.CATEGORY_CHOICES,
+        "available_completed_donation_funds": _get_available_completed_donation_funds(),
     })
 
 
@@ -7771,10 +8329,60 @@ def add_activity(request):
     custom_category = str(request.POST.get("custom_category", "")).strip()
     description = str(request.POST.get("description", "")).strip()
     status = request.POST.get("status", Activity.STATUS_ACTIVE)
+    funding_mode = str(request.POST.get("funding_mode", "none")).strip().lower()
     volunteer_ids = _extract_activity_volunteer_ids(request.POST)
     beneficiary_ids = _extract_activity_beneficiary_ids(request.POST)
     activity_image = request.FILES.get("activity_image")
     remove_activity_image = request.POST.get("remove_activity_image") == "1"
+    use_funds_held = str(request.POST.get("use_funds_held", "")).strip().lower() in {"1", "true", "yes", "on"}
+    funds_held_raw = str(request.POST.get("funds_held_amount", "")).strip()
+    total_budget_raw = str(request.POST.get("total_budget", "")).strip()
+    donor_share_raw = str(request.POST.get("donor_share_amount", "")).strip()
+    try:
+        funds_held_amount = int(funds_held_raw) if funds_held_raw else 0
+    except ValueError:
+        funds_held_amount = 0
+    try:
+        total_budget = int(total_budget_raw) if total_budget_raw else 0
+    except ValueError:
+        total_budget = 0
+    try:
+        donor_share_amount = int(donor_share_raw) if donor_share_raw else 0
+    except ValueError:
+        donor_share_amount = 0
+    if funds_held_amount < 0:
+        funds_held_amount = 0
+    if total_budget < 0:
+        total_budget = 0
+    if donor_share_amount < 0:
+        donor_share_amount = 0
+    if status == Activity.STATUS_CANCELLED:
+        funding_mode = "none"
+        use_funds_held = False
+        funds_held_amount = 0
+        total_budget = 0
+        donor_share_amount = 0
+
+    if funding_mode not in {"none", "custom_amount", "budget_share"}:
+        funding_mode = "budget_share"
+    if not funding_mode:
+        funding_mode = "budget_share"
+    if use_funds_held and funding_mode == "none":
+        funding_mode = "custom_amount"
+    if funding_mode == "none":
+        use_funds_held = False
+        funds_held_amount = 0
+        total_budget = 0
+        donor_share_amount = 0
+    elif funding_mode == "custom_amount":
+        use_funds_held = True
+        total_budget = 0
+        if donor_share_amount <= 0:
+            donor_share_amount = funds_held_amount
+    elif funding_mode == "budget_share":
+        use_funds_held = donor_share_amount > 0
+        if total_budget <= 0:
+            total_budget = 0
 
     if status not in {Activity.STATUS_ACTIVE, Activity.STATUS_DRAFT, Activity.STATUS_CANCELLED, Activity.STATUS_COMPLETED}:
         status = Activity.STATUS_ACTIVE
@@ -7815,6 +8423,23 @@ def add_activity(request):
             activity = None
 
     if title and scheduled_date:
+        available_funds = _get_available_completed_donation_funds(activity)
+        if funding_mode == "custom_amount":
+            funds_held_amount = donor_share_amount
+        elif funding_mode == "budget_share":
+            if total_budget <= 0:
+                return HttpResponse("Set an activity budget before saving.", status=400)
+            if donor_share_amount > total_budget:
+                return HttpResponse("The donor share cannot exceed the total activity budget.", status=400)
+            funds_held_amount = donor_share_amount
+        elif funding_mode == "none":
+            funds_held_amount = 0
+
+        if use_funds_held and funds_held_amount <= 0:
+            return HttpResponse("Donation funds held must be greater than zero.", status=400)
+        if use_funds_held and funds_held_amount > available_funds:
+            return HttpResponse("This activity exceeds the available completed donation funds.", status=400)
+
         with transaction.atomic():
             if activity:
                 activity.title = title
@@ -7825,6 +8450,9 @@ def add_activity(request):
                 activity.category = category
                 activity.description = description
                 activity.status = status
+                activity.funding_mode = funding_mode
+                activity.total_budget = total_budget
+                activity.donor_share_amount = donor_share_amount
                 if activity_image:
                     if activity.image:
                         activity.image.delete(save=False)
@@ -7844,7 +8472,16 @@ def add_activity(request):
                     description=description,
                     status=status,
                     image=activity_image,
+                    funding_mode=funding_mode,
+                    total_budget=total_budget,
+                    donor_share_amount=donor_share_amount,
                 )
+
+            if use_funds_held and funds_held_amount > 0:
+                ActivityFundAllocation.objects.filter(activity=activity).update(status=ActivityFundAllocation.STATUS_RELEASED)
+                ActivityFundAllocation.objects.create(activity=activity, amount=funds_held_amount, status=ActivityFundAllocation.STATUS_RESERVED)
+            else:
+                ActivityFundAllocation.objects.filter(activity=activity).update(status=ActivityFundAllocation.STATUS_RELEASED)
 
             _sync_activity_volunteer_assignments(activity, volunteer_ids, request.user)
             _sync_activity_beneficiary_assignments(activity, beneficiary_ids, request.user)
@@ -7883,6 +8520,7 @@ def donations(request):
     _ensure_single_donation_template()
 
     donations = Donation.objects.all().order_by('-created_at')
+    item_pledges = ItemPledge.objects.select_related("user").all()
     today = date.today()
     donations_data = [{
         'id': d.id,
@@ -7928,15 +8566,19 @@ def donations(request):
 
     context = {
         'donations_data': donations_data,
+        'item_pledges': item_pledges,
+        'item_pledge_notifications_configured': bool(
+            str(getattr(django_settings, "DONATION_PLEDGE_NOTIFICATION_EMAIL", "") or "").strip()
+        ),
         'total_amount': donations.aggregate(Sum('amount'))['amount__sum'] or 0,
-        'this_month': donations.filter(status=Donation.STATUS_VERIFIED, created_at__month=today.month, created_at__year=today.year).aggregate(Sum('amount'))['amount__sum'] or 0,
+        'this_month': donations.filter(status=Donation.STATUS_COMPLETED, created_at__month=today.month, created_at__year=today.year).aggregate(Sum('amount'))['amount__sum'] or 0,
         'total_donors': donations.values('donor_name').distinct().count(),
         'pending_count': pending_count,
         'failed_count': failed_count,
         'pending_amount': donations.filter(status=Donation.STATUS_PENDING).aggregate(Sum('amount'))['amount__sum'] or 0,
-        'verified_amount': donations.filter(status=Donation.STATUS_VERIFIED).aggregate(Sum('amount'))['amount__sum'] or 0,
-        'completed_amount': donations.filter(status__in=[Donation.STATUS_VERIFIED, Donation.STATUS_COMPLETED]).aggregate(Sum('amount'))['amount__sum'] or 0,
-        'average_donation': donations.aggregate(Avg('amount'))['amount__avg'] or 0,
+        'verified_amount': donations.filter(status=Donation.STATUS_COMPLETED).aggregate(Sum('amount'))['amount__sum'] or 0,
+        'completed_amount': donations.filter(status=Donation.STATUS_COMPLETED).aggregate(Sum('amount'))['amount__sum'] or 0,
+        'available_donation_funds_remaining': _get_available_completed_donation_funds(),
         'alerts_data': alerts_data,
         'recent_activity': recent_activity,
         'active_page': 'donations',
@@ -7974,7 +8616,6 @@ def bulk_update_donations(request):
         return JsonResponse({"error": "Donation ids are invalid."}, status=400)
 
     status_map = {
-        "verified": Donation.STATUS_VERIFIED,
         "completed": Donation.STATUS_COMPLETED,
         "failed": Donation.STATUS_REJECTED,
         "cancelled": Donation.STATUS_CANCELLED,
@@ -7989,7 +8630,7 @@ def bulk_update_donations(request):
     for donation in donations:
         if status_key:
             donation.status = status_map[status_key]
-            if donation.status == Donation.STATUS_VERIFIED:
+            if donation.status == Donation.STATUS_COMPLETED:
                 donation.verified_at = timezone.now()
                 donation.verified_by = request.user
             elif donation.status == Donation.STATUS_REJECTED:
@@ -7998,10 +8639,29 @@ def bulk_update_donations(request):
             donation.save(update_fields=["status", "verified_at", "verified_by", "updated_at"])
         if impact_update:
             _send_donation_impact_update(donation, impact_update, actor=request.user)
-        if donation.status in [Donation.STATUS_VERIFIED, Donation.STATUS_COMPLETED]:
+        if donation.status == Donation.STATUS_COMPLETED:
             _generate_official_donation_receipt(donation)
             _send_donation_receipt_email(donation)
     return JsonResponse({"success": True})
+
+
+@login_required(login_url="signin")
+@require_POST
+def update_item_pledge_status(request, pledge_id):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Unauthorized"}, status=403)
+
+    status_value = str(request.POST.get("status", "")).strip()
+    if status_value not in dict(ItemPledge.STATUS_CHOICES):
+        return JsonResponse({"error": "Choose a valid item pledge status."}, status=400)
+
+    pledge = get_object_or_404(ItemPledge, pk=pledge_id)
+    pledge.status = status_value
+    try:
+        pledge.save(update_fields=["status", "updated_at"])
+    except ValidationError as exc:
+        return JsonResponse({"error": "; ".join(exc.messages)}, status=400)
+    return redirect("donations")
 
 
 @login_required(login_url="signin")
@@ -8208,7 +8868,7 @@ def download_donation_receipt(request, reference_number):
         response = FileResponse(donation.official_receipt_file.open("rb"), as_attachment=True, filename=filename)
         return response
 
-    if donation.status not in [Donation.STATUS_VERIFIED, Donation.STATUS_COMPLETED]:
+    if donation.status != Donation.STATUS_COMPLETED:
         raise Http404("Receipt is not available until the donation is confirmed.")
 
     _generate_official_donation_receipt(donation)
@@ -8257,16 +8917,15 @@ def submit_donation(request):
     if detected_content_type not in allowed_receipt_types:
         return JsonResponse({"error": "The uploaded receipt is invalid."}, status=400)
 
-    if not request.user.is_authenticated:
-        donor_name = ""
-
     if request.user.is_authenticated and request.user.is_superuser and requested_status in dict(Donation.STATUS_CHOICES):
         status = requested_status
     else:
         status = Donation.STATUS_PENDING
 
+    tracker_token, set_tracker_cookie = _donation_tracker_token(request)
     donation = Donation(
         user=request.user if request.user.is_authenticated else None,
+        tracking_token=tracker_token,
         donor_name=donor_name,
         donor_email=donor_email or (request.user.email if request.user.is_authenticated else ""),
         donor_message=donor_message,
@@ -8287,10 +8946,249 @@ def submit_donation(request):
         print(f"Unexpected error saving Donation: {type(exc).__name__}: {exc}")
         return JsonResponse({"error": "Unable to save donation. Please try again."}, status=500)
 
-    return JsonResponse({
+    response = JsonResponse({
         "message": "Donation received.",
         "donation": _serialize_donation(donation),
     }, status=201)
+    if set_tracker_cookie:
+        response.set_cookie(
+            "donation_tracker_id",
+            tracker_token,
+            max_age=60 * 60 * 24 * 365,
+            httponly=True,
+            secure=request.is_secure(),
+            samesite="Lax",
+        )
+    return response
+
+
+@require_POST
+def donation_tracker(request):
+    tracker_token = request.COOKIES.get("donation_tracker_id", "")
+    donations_query = Donation.objects.all()
+    pledges_query = ItemPledge.objects.all()
+    if request.user.is_authenticated:
+        donation_filter = Q(user=request.user)
+        pledge_filter = Q(user=request.user)
+        if tracker_token:
+            donation_filter |= Q(tracking_token=tracker_token)
+            pledge_filter |= Q(tracking_token=tracker_token)
+        donations_query = donations_query.filter(donation_filter)
+        pledges_query = pledges_query.filter(pledge_filter)
+    else:
+        donations_query = donations_query.filter(tracking_token=tracker_token) if tracker_token else Donation.objects.none()
+        pledges_query = pledges_query.filter(tracking_token=tracker_token) if tracker_token else ItemPledge.objects.none()
+
+    records = []
+    for donation in donations_query.distinct():
+        records.append({
+            "kind": "cash",
+            "title": "Cash donation",
+            "detail": f"{_donation_payment_method_label(donation.payment_method)} · ₱{donation.amount:,}",
+            "amount": donation.amount,
+            "status": donation.status,
+            "statusLabel": _donation_status_label(donation.status),
+            "date": timezone.localtime(donation.created_at).strftime("%b %d, %Y"),
+            "timestamp": donation.created_at.isoformat(),
+        })
+    for pledge in pledges_query.distinct():
+        records.append({
+            "kind": "item",
+            "title": pledge.item_name,
+            "detail": f"{pledge.quantity} item{'s' if pledge.quantity != 1 else ''} · {pledge.get_category_display()}",
+            "image": pledge.photo.url if pledge.photo else "/static/media/default-donation-receipt.svg",
+            "imageAlt": f"Photo of {pledge.item_name}" if pledge.photo else "No item photo provided",
+            "status": pledge.status,
+            "statusLabel": pledge.get_status_display(),
+            "date": timezone.localtime(pledge.created_at).strftime("%b %d, %Y"),
+            "timestamp": pledge.created_at.isoformat(),
+        })
+
+    records.sort(key=lambda record: record["timestamp"], reverse=True)
+    for record in records:
+        record.pop("timestamp")
+    return JsonResponse({"donations": records})
+
+
+def _send_item_pledge_notification(pledge):
+    recipient = str(getattr(django_settings, "DONATION_PLEDGE_NOTIFICATION_EMAIL", "") or "").strip()
+    if not recipient:
+        logger.warning(
+            "Item pledge %s was saved, but no notification recipient is configured.",
+            pledge.reference_number,
+        )
+        return
+    try:
+        validate_email(recipient)
+    except ValidationError:
+        logger.error("Item pledge notification recipient is not a valid email address.")
+        return
+
+    delivery_details = {
+        ItemPledge.DELIVERY_DROP_OFF: "Drop off",
+        ItemPledge.DELIVERY_PICKUP: (
+            f"Pick up at {pledge.delivery_address} on {pledge.preferred_date} "
+            f"at {pledge.preferred_time}"
+        ),
+        ItemPledge.DELIVERY_COURIER: (
+            f"Courier: {pledge.courier_name}; tracking number: {pledge.tracking_number}"
+        ),
+    }[pledge.delivery_method]
+    donor_name = "Anonymous" if pledge.is_anonymous else (pledge.donor_name or "Not provided")
+    body = "\n".join((
+        f"Reference: {pledge.reference_number}",
+        f"Item: {pledge.item_name}",
+        f"Category: {pledge.get_category_display()}",
+        f"Quantity: {pledge.quantity}",
+        f"Condition: {pledge.get_condition_display()}",
+        f"Description: {pledge.description or 'Not provided'}",
+        f"Delivery: {delivery_details}",
+        f"Donor: {donor_name}",
+        f"Phone: {pledge.donor_phone}",
+        f"Email: {pledge.donor_email}",
+        "Status: Pending",
+    ))
+    try:
+        EmailMultiAlternatives(
+            subject=f"New item pledge: {pledge.reference_number}",
+            body=body,
+            from_email=django_settings.DEFAULT_FROM_EMAIL,
+            to=[recipient],
+        ).send(fail_silently=False)
+    except Exception:
+        logger.exception("Unable to send notification for item pledge %s.", pledge.reference_number)
+
+
+@require_POST
+def submit_item_pledge(request):
+    item_name = str(request.POST.get("item_name", "")).strip()
+    category = str(request.POST.get("category", "")).strip()
+    condition = str(request.POST.get("condition", "")).strip()
+    description = str(request.POST.get("description", "")).strip()
+    delivery_method = str(request.POST.get("delivery_method", "")).strip()
+    delivery_address = str(request.POST.get("delivery_address", "")).strip()
+    courier_name = str(request.POST.get("courier_name", "")).strip()
+    tracking_number = str(request.POST.get("tracking_number", "")).strip()
+    donor_name = str(request.POST.get("donor_name", "")).strip()
+    donor_phone = str(request.POST.get("donor_phone", "")).strip()
+    donor_email = str(request.POST.get("donor_email", "")).strip()
+    is_anonymous = str(request.POST.get("is_anonymous", "")).strip().lower() in {"1", "true", "yes", "on"}
+
+    if not item_name or len(item_name) > 150:
+        return JsonResponse({"error": "Please enter an item name no longer than 150 characters."}, status=400)
+    if category not in dict(ItemPledge.CATEGORY_CHOICES):
+        return JsonResponse({"error": "Please choose a valid item category."}, status=400)
+    if condition not in dict(ItemPledge.CONDITION_CHOICES):
+        return JsonResponse({"error": "Please choose whether the item is new or used."}, status=400)
+    if delivery_method not in dict(ItemPledge.DELIVERY_CHOICES):
+        return JsonResponse({"error": "Please choose a delivery method."}, status=400)
+    try:
+        quantity = int(request.POST.get("quantity", ""))
+    except (TypeError, ValueError):
+        quantity = 0
+    if quantity <= 0:
+        return JsonResponse({"error": "Enter a quantity greater than zero."}, status=400)
+    if len(description) > 1000:
+        return JsonResponse({"error": "The item description must be 1,000 characters or fewer."}, status=400)
+    if len(donor_name) > 150:
+        return JsonResponse({"error": "Your name must be 150 characters or fewer."}, status=400)
+    if not donor_phone or len(donor_phone) > 32:
+        return JsonResponse({"error": "Enter a phone number so our team can contact you."}, status=400)
+    if not donor_email:
+        return JsonResponse({"error": "Enter an email address so our team can contact you."}, status=400)
+    try:
+        validate_email(donor_email)
+    except ValidationError:
+        return JsonResponse({"error": "Enter a valid email address."}, status=400)
+
+    preferred_date = None
+    preferred_time = None
+    if delivery_method == ItemPledge.DELIVERY_PICKUP:
+        if not delivery_address or len(delivery_address) > 500:
+            return JsonResponse({"error": "Enter a pickup address no longer than 500 characters."}, status=400)
+        try:
+            preferred_date = date.fromisoformat(request.POST.get("preferred_date", ""))
+            preferred_time = time.fromisoformat(request.POST.get("preferred_time", ""))
+        except (TypeError, ValueError):
+            return JsonResponse({"error": "Choose a preferred pickup date and time."}, status=400)
+    elif delivery_method == ItemPledge.DELIVERY_COURIER:
+        if not courier_name or len(courier_name) > 150:
+            return JsonResponse({"error": "Enter a courier name no longer than 150 characters."}, status=400)
+        if not tracking_number or len(tracking_number) > 150:
+            return JsonResponse({"error": "Enter a tracking number no longer than 150 characters."}, status=400)
+
+    photo = request.FILES.get("photo")
+    if photo:
+        max_photo_size = getattr(django_settings, "ITEM_PLEDGE_PHOTO_MAX_SIZE_BYTES", 5 * 1024 * 1024)
+        if photo.size > max_photo_size:
+            return JsonResponse({"error": "The item photo must be 5 MB or smaller."}, status=400)
+        photo.seek(0)
+        file_header = photo.read(12)
+        photo.seek(0)
+        if file_header.startswith(b"\xff\xd8\xff"):
+            detected_content_type = "image/jpeg"
+        elif file_header.startswith(b"\x89PNG\r\n\x1a\n"):
+            detected_content_type = "image/png"
+        elif file_header.startswith(b"RIFF") and file_header[8:12] == b"WEBP":
+            detected_content_type = "image/webp"
+        else:
+            detected_content_type = ""
+        allowed_photo_types = getattr(
+            django_settings,
+            "ITEM_PLEDGE_PHOTO_MIME_TYPES",
+            {"image/jpeg", "image/png", "image/webp"},
+        )
+        if detected_content_type not in allowed_photo_types:
+            return JsonResponse({"error": "Choose a valid JPG, PNG, or WebP item photo."}, status=400)
+
+    tracker_token, set_tracker_cookie = _donation_tracker_token(request)
+    pledge = ItemPledge(
+        user=request.user if request.user.is_authenticated else None,
+        tracking_token=tracker_token,
+        item_name=item_name,
+        category=category,
+        quantity=quantity,
+        condition=condition,
+        description=description,
+        delivery_method=delivery_method,
+        delivery_address=delivery_address if delivery_method == ItemPledge.DELIVERY_PICKUP else "",
+        preferred_date=preferred_date,
+        preferred_time=preferred_time,
+        courier_name=courier_name if delivery_method == ItemPledge.DELIVERY_COURIER else "",
+        tracking_number=tracking_number if delivery_method == ItemPledge.DELIVERY_COURIER else "",
+        donor_name="" if is_anonymous else donor_name,
+        donor_phone=donor_phone,
+        donor_email=donor_email,
+        is_anonymous=is_anonymous or not donor_name,
+        status=ItemPledge.STATUS_PLEDGED,
+        photo=photo,
+    )
+    try:
+        pledge.save()
+    except ValidationError as exc:
+        return JsonResponse({"error": "; ".join(exc.messages)}, status=400)
+    except Exception:
+        logger.exception("Unable to save an item pledge.")
+        return JsonResponse({"error": "Unable to save your item pledge. Please try again."}, status=500)
+
+    _send_item_pledge_notification(pledge)
+    response = JsonResponse({
+        "message": "Item pledge received.",
+        "pledge": {
+            "reference_number": pledge.reference_number,
+            "status": pledge.get_status_display(),
+        },
+    }, status=201)
+    if set_tracker_cookie:
+        response.set_cookie(
+            "donation_tracker_id",
+            tracker_token,
+            max_age=60 * 60 * 24 * 365,
+            httponly=True,
+            secure=request.is_secure(),
+            samesite="Lax",
+        )
+    return response
 
 
 
@@ -8304,6 +9202,18 @@ def payment(request):
 
     inquiries = ProductInquiry.objects.all().order_by('-created_at')
     method_labels = dict(ProductInquiry.PAYMENT_METHOD_CHOICES)
+    admin_status_labels = {
+        ProductInquiry.STATUS_PENDING: "Pending",
+        ProductInquiry.STATUS_VERIFIED: "Verified",
+        ProductInquiry.STATUS_IN_DELIVERY: "In Delivery",
+        ProductInquiry.STATUS_COMPLETED: "Completed",
+        ProductInquiry.STATUS_RETURN_REQUESTED: "Return Requested",
+        ProductInquiry.STATUS_REFUND_REQUESTED: "Refund Requested",
+        ProductInquiry.STATUS_RETURNED: "Returned",
+        ProductInquiry.STATUS_FAILED: "Failed",
+        ProductInquiry.STATUS_REFUNDED: "Refunded",
+        ProductInquiry.STATUS_CANCELLED: "Cancelled",
+    }
 
     payments_json = [{
         'id': inq.id,
@@ -8313,11 +9223,14 @@ def payment(request):
         'phone': inq.phone,
         'amount': inq.order_total,
         'method': method_labels.get(inq.payment_method, inq.payment_method),
-        'status': inq.status.title(),
+        'status': admin_status_labels.get(inq.status, inq.status.title()),
         'paymentDate': inq.created_at.strftime('%Y-%m-%d'),
         'reference': f"PI-{inq.id:05d}",
         'orderItems': inq.order_items,
         'screenshot': inq.payment_screenshot.url if inq.payment_screenshot else '',
+        'in_delivery_at': inq.in_delivery_at.isoformat() if inq.in_delivery_at else '',
+        'delivery_window_start': inq.delivery_window_start.isoformat() if inq.delivery_window_start else '',
+        'delivery_window_end': inq.delivery_window_end.isoformat() if inq.delivery_window_end else '',
         'delivery_street': inq.delivery_street or '',
         'delivery_city': inq.delivery_city or '',
         'delivery_province': inq.delivery_province or '',
@@ -8330,8 +9243,36 @@ def payment(request):
         'logs': [f"Order submitted on {inq.created_at.strftime('%Y-%m-%d')}"],
     } for inq in inquiries]
 
+    ratings_json = []
+    rating_products = ProductReview.objects.values("product_name").annotate(
+        average=Avg("rating"),
+        count=Count("id"),
+    ).order_by("product_name")
+    for product in rating_products:
+        reviews = ProductReview.objects.filter(product_name=product["product_name"]).select_related("inquiry").order_by("-created_at", "-id")
+        ratings_json.append({
+            "productName": product["product_name"],
+            "average": round(float(product["average"] or 0), 1),
+            "count": product["count"],
+            "reviews": [{
+                "customer": review.inquiry.full_name,
+                "rating": review.rating,
+                "message": review.message,
+                "date": review.created_at.strftime("%b %d, %Y"),
+                "orderId": f"ORD-{review.inquiry_id:04d}",
+                "variation": review.variation,
+            } for review in reviews],
+        })
+
     _confirmed_statuses = [ProductInquiry.STATUS_VERIFIED, ProductInquiry.STATUS_COMPLETED]
-    _risk_statuses = [ProductInquiry.STATUS_FAILED, ProductInquiry.STATUS_REFUNDED, ProductInquiry.STATUS_CANCELLED]
+    _risk_statuses = [
+        ProductInquiry.STATUS_FAILED,
+        ProductInquiry.STATUS_REFUNDED,
+        ProductInquiry.STATUS_CANCELLED,
+        ProductInquiry.STATUS_RETURN_REQUESTED,
+        ProductInquiry.STATUS_REFUND_REQUESTED,
+        ProductInquiry.STATUS_RETURNED,
+    ]
     confirmed_count = inquiries.filter(status__in=_confirmed_statuses).count()
     pending_count = inquiries.filter(status=ProductInquiry.STATUS_PENDING).count()
     risk_count = inquiries.filter(status__in=_risk_statuses).count()
@@ -8340,6 +9281,7 @@ def payment(request):
     return render(request, "admin_dashboard/payment_admin.html", {
         "active_page": "payment",
         "payments_json": payments_json,
+        "ratings_json": ratings_json,
         "pending_count": pending_count,
         "confirmed_count": confirmed_count,
         "risk_count": risk_count,
@@ -8382,6 +9324,57 @@ def payment_verify(request, inquiry_id):
 
 @login_required(login_url="signin")
 @require_POST
+def payment_mark_in_delivery(request, inquiry_id):
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid payload'}, status=400)
+
+    inquiry = ProductInquiry.objects.filter(id=inquiry_id).first()
+    if not inquiry:
+        return JsonResponse({'error': 'Not found'}, status=404)
+
+    delivery_window_start = payload.get('delivery_window_start')
+    delivery_window_end = payload.get('delivery_window_end')
+
+    if delivery_window_start:
+        try:
+            value = str(delivery_window_start).replace('Z', '+00:00')
+            inquiry.delivery_window_start = datetime.fromisoformat(value)
+        except ValueError:
+            return JsonResponse({'error': 'Invalid delivery window start'}, status=400)
+
+    if delivery_window_end:
+        try:
+            value = str(delivery_window_end).replace('Z', '+00:00')
+            inquiry.delivery_window_end = datetime.fromisoformat(value)
+        except ValueError:
+            return JsonResponse({'error': 'Invalid delivery window end'}, status=400)
+
+    inquiry.status = ProductInquiry.STATUS_IN_DELIVERY
+    inquiry.in_delivery_at = timezone.now()
+    inquiry.save(update_fields=[
+        'status',
+        'in_delivery_at',
+        'delivery_window_start',
+        'delivery_window_end',
+        'updated_at',
+    ])
+
+    return JsonResponse({
+        'ok': True,
+        'status': 'In Delivery',
+        'in_delivery_at': inquiry.in_delivery_at.isoformat() if inquiry.in_delivery_at else None,
+        'delivery_window_start': inquiry.delivery_window_start.isoformat() if inquiry.delivery_window_start else None,
+        'delivery_window_end': inquiry.delivery_window_end.isoformat() if inquiry.delivery_window_end else None,
+    })
+
+
+@login_required(login_url="signin")
+@require_POST
 def payment_mark_paid(request, inquiry_id):
     if not request.user.is_superuser:
         return JsonResponse({'error': 'Forbidden'}, status=403)
@@ -8407,9 +9400,11 @@ def payment_mark_failed(request, inquiry_id):
 def payment_refund(request, inquiry_id):
     if not request.user.is_superuser:
         return JsonResponse({'error': 'Forbidden'}, status=403)
-    updated = ProductInquiry.objects.filter(id=inquiry_id).update(status=ProductInquiry.STATUS_REFUNDED)
-    if not updated:
-        return JsonResponse({'error': 'Not found'}, status=404)
+
+    inquiry = get_object_or_404(ProductInquiry, id=inquiry_id)
+    inquiry.status = ProductInquiry.STATUS_REFUNDED
+    inquiry.refund_processed_at = timezone.now()
+    inquiry.save(update_fields=['status', 'refund_processed_at', 'updated_at'])
     return JsonResponse({'ok': True, 'status': 'Refunded'})
 
 
@@ -8854,7 +9849,7 @@ def _reports_analytics_payload(range_key="30d", category="all", campaign="", rec
     all_donations = Donation.objects.filter(
         created_at__date__gte=start,
         created_at__date__lte=end,
-        status__in=[Donation.STATUS_VERIFIED, Donation.STATUS_COMPLETED],
+        status=Donation.STATUS_COMPLETED,
     )
     campaign_options = all_donations.values_list("campaign", flat=True).distinct().order_by("campaign")
     donations = all_donations
@@ -8963,7 +9958,7 @@ def _reports_analytics_payload(range_key="30d", category="all", campaign="", rec
     previous_donations = Donation.objects.filter(
         created_at__date__gte=previous_start,
         created_at__date__lte=previous_end,
-        status__in=[Donation.STATUS_VERIFIED, Donation.STATUS_COMPLETED],
+        status=Donation.STATUS_COMPLETED,
     )
     previous_volunteers = VolunteerAttendanceRecord.objects.filter(
         status=VolunteerAttendanceRecord.STATUS_CONFIRMED,
@@ -9000,7 +9995,7 @@ def _reports_analytics_payload(range_key="30d", category="all", campaign="", rec
     donor_summary = donations.values("donor_name", "user__username").annotate(
         total=Sum("amount")
     ).order_by("-total").first()
-    top_donor = {"name": "No verified donations", "meta": "No finalized donation records in this period"}
+    top_donor = {"name": "No completed donations", "meta": "No finalized donation records in this period"}
     if donor_summary:
         donor_name = donor_summary["donor_name"] or donor_summary["user__username"] or "Anonymous donor"
         top_donor = {"name": donor_name, "meta": f"₱{donor_summary['total']:,.0f} in finalized donations"}

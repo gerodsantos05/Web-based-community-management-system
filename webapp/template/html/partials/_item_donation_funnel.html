@@ -1,0 +1,153 @@
+<div class="donate-mode-switch" id="donateModeSwitch" role="group" aria-label="Choose donation type" hidden>
+    <button class="donate-mode-option active" type="button" data-donation-mode="cash" aria-pressed="true">Cash (GCash / Bank)</button>
+    <button class="donate-mode-option" type="button" data-donation-mode="item" aria-pressed="false">Item / In-kind</button>
+</div>
+<form id="itemPledgeFunnel" action="{% url 'submit_item_pledge' %}" method="post" enctype="multipart/form-data" novalidate hidden>
+    {% csrf_token %}
+    <fieldset class="donate-step-panel" data-item-step="1">
+        <legend class="donate-visually-hidden">Item details</legend>
+        <h3>What would you like to give?</h3>
+        <div class="donate-item-fields">
+            <div class="donate-field">
+                <label for="pledgeItemName">Item name</label>
+                <input class="donate-input" id="pledgeItemName" name="item_name" type="text" maxlength="150" placeholder="e.g. school notebooks" required>
+            </div>
+            <div class="donate-field">
+                <label for="pledgeQuantity">Quantity</label>
+                <input class="donate-input" id="pledgeQuantity" name="quantity" type="number" min="1" step="1" inputmode="numeric" required>
+            </div>
+            <div class="donate-field">
+                <label for="pledgeCategory">Category</label>
+                <select class="donate-input" id="pledgeCategory" name="category" required>
+                    <option value="">Choose a category</option>
+                    <option value="food">Food</option>
+                    <option value="clothing">Clothing</option>
+                    <option value="school_supplies">School supplies</option>
+                    <option value="medical">Medical</option>
+                    <option value="appliances">Appliances</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="donate-field">
+                <label for="pledgeCondition">Condition</label>
+                <select class="donate-input" id="pledgeCondition" name="condition" required>
+                    <option value="">Choose a condition</option>
+                    <option value="new">New</option>
+                    <option value="used">Used</option>
+                </select>
+            </div>
+        </div>
+        <details class="donate-extra-details">
+            <summary>Add a note or photo (optional)</summary>
+            <div class="donate-field">
+                <label for="pledgeDescription">Note</label>
+                <textarea class="donate-input" id="pledgeDescription" name="description" rows="2" maxlength="1000" placeholder="Anything the team should know?"></textarea>
+            </div>
+            <div class="donate-field">
+                <label for="pledgePhoto">Photo</label>
+                <input class="donate-input" id="pledgePhoto" name="photo" type="file" accept="image/jpeg,image/png,image/webp">
+                <span id="pledgePhotoStatus" class="donate-file-status" aria-live="polite"></span>
+                <span class="donate-field-hint">JPG, PNG, or WebP · max 5 MB</span>
+            </div>
+        </details>
+        <details class="donate-extra-details donate-guidelines">
+            <summary>Check accepted item guidelines</summary>
+            <div class="donate-item-note">
+                <strong>Accepted (sample):</strong>
+                <ul>{% for item in donation_config.item_accepted_examples %}<li>{{ item }}</li>{% endfor %}</ul>
+                <strong>Not accepted (sample):</strong>
+                <ul>{% for item in donation_config.item_not_accepted_examples %}<li>{{ item }}</li>{% endfor %}</ul>
+                <p>Sample list — confirm with the project before launch.</p>
+            </div>
+        </details>
+        <div class="donate-actions">
+            <button class="donate-button" type="button" data-item-next="2">Continue</button>
+        </div>
+    </fieldset>
+
+    <fieldset class="donate-step-panel" data-item-step="2" hidden>
+        <legend class="donate-visually-hidden">Delivery</legend>
+        <h3>How will you send it?</h3>
+        <div class="donate-field">
+            <label class="donate-delivery-option"><input type="radio" name="delivery_method" value="drop_off" required> I’ll drop it off</label>
+            <label class="donate-delivery-option"><input type="radio" name="delivery_method" value="pickup"> Arrange a pickup</label>
+            <label class="donate-delivery-option"><input type="radio" name="delivery_method" value="courier"> I’ve sent it by courier</label>
+        </div>
+        <div class="donate-item-delivery" id="pledgeDropoffDetails" hidden>
+            <p><strong>Sample address:</strong> {{ donation_config.item_dropoff_address }}</p>
+            <p><strong>Sample hours:</strong> {{ donation_config.item_dropoff_hours }}</p>
+        </div>
+        <div class="donate-item-delivery" id="pledgePickupDetails" hidden>
+            <div class="donate-field">
+                <label for="pledgeDeliveryAddress">Pickup address</label>
+                <textarea class="donate-input" id="pledgeDeliveryAddress" name="delivery_address" rows="2" maxlength="500"></textarea>
+            </div>
+            <div class="donate-field">
+                <label for="pledgePreferredDate">Preferred date</label>
+                <input class="donate-input" id="pledgePreferredDate" name="preferred_date" type="date">
+            </div>
+            <div class="donate-field">
+                <label for="pledgePreferredTime">Preferred time</label>
+                <input class="donate-input" id="pledgePreferredTime" name="preferred_time" type="time">
+            </div>
+        </div>
+        <div class="donate-item-delivery" id="pledgeCourierDetails" hidden>
+            <div class="donate-field">
+                <label for="pledgeCourierName">Courier name</label>
+                <input class="donate-input" id="pledgeCourierName" name="courier_name" type="text" maxlength="150">
+            </div>
+            <div class="donate-field">
+                <label for="pledgeTrackingNumber">Tracking number</label>
+                <input class="donate-input" id="pledgeTrackingNumber" name="tracking_number" type="text" maxlength="150">
+            </div>
+        </div>
+        <div class="donate-actions">
+            <button class="donate-button-secondary" type="button" data-item-back="1">Back</button>
+            <button class="donate-button" type="button" data-item-next="3">Continue</button>
+        </div>
+    </fieldset>
+
+    <fieldset class="donate-step-panel" data-item-step="3" hidden>
+        <legend class="donate-visually-hidden">Confirm item pledge</legend>
+        <h3>How can we contact you?</h3>
+        <div class="donate-field">
+            <label for="pledgeDonorName">Name (optional)</label>
+            <input class="donate-input" id="pledgeDonorName" name="donor_name" type="text" maxlength="150" autocomplete="name">
+        </div>
+        <label class="donate-anonymous-option"><input id="pledgeAnonymous" name="is_anonymous" type="checkbox" value="true"> Keep my name private</label>
+        <div class="donate-field">
+            <label for="pledgeDonorPhone">Phone</label>
+            <input class="donate-input" id="pledgeDonorPhone" name="donor_phone" type="tel" maxlength="32" autocomplete="tel" required>
+        </div>
+        <div class="donate-field">
+            <label for="pledgeDonorEmail">Email</label>
+            <input class="donate-input" id="pledgeDonorEmail" name="donor_email" type="email" maxlength="254" autocomplete="email" required>
+        </div>
+        <p class="donate-field-hint">We’ll contact you to arrange delivery. This is a pledge, not a completed donation.</p>
+        <details class="donate-extra-details">
+            <summary>Review your details</summary>
+            <div class="donate-summary" id="pledgeSummary" aria-live="polite"></div>
+        </details>
+        <div class="donate-actions">
+            <button class="donate-button-secondary" type="button" data-item-back="2">Back</button>
+            <button class="donate-button" type="submit">Submit pledge</button>
+        </div>
+    </fieldset>
+
+    <fieldset class="donate-step-panel" data-item-step="4" hidden>
+        <legend class="donate-visually-hidden">Thank you</legend>
+        <div class="donate-item-thankyou">
+            <span class="donate-item-thankyou-icon" aria-hidden="true">
+                <svg viewBox="0 0 48 48" focusable="false"><circle cx="24" cy="24" r="21"></circle><path d="m14 24 7 7 14-15"></path></svg>
+            </span>
+            <p class="donate-kicker">A little kindness goes a long way</p>
+            <h3>Thank you for sharing with our community.</h3>
+            <p class="donate-thankyou-lede">Your generosity can make a real difference for local families. We’re grateful for your kindness.</p>
+            <div class="donate-item-thankyou-offer">
+                <span>Your offered item</span>
+                <strong id="pledgeThankYouItem"></strong>
+            </div>
+            <p class="donate-item-thankyou-followup">Our team will be in touch soon to coordinate the next steps.</p>
+        </div>
+    </fieldset>
+</form>

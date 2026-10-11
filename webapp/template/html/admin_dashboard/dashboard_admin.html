@@ -143,7 +143,7 @@
 
     .ops-dot-critical { background: #dc2626; }
     .ops-dot-high { background: #ea580c; }
-    .ops-dot-medium { background: #d97706; }
+    .ops-dot-medium { background: #2563eb; }
     .ops-dot-low { background: #16a34a; }
 
     .ops-row strong {
@@ -167,9 +167,9 @@
         white-space: nowrap;
     }
 
-    .ops-badge-critical { color: #8c1d1d; background: #fee2e2; }
-    .ops-badge-high { color: #9a3412; background: #ffedd5; }
-    .ops-badge-medium { color: #92400e; background: #fef3c7; }
+    .ops-badge-critical { color: #b42318; background: #fee4e2; }
+    .ops-badge-high { color: #b54708; background: #fff1e8; }
+    .ops-badge-medium { color: #175cd3; background: #eff8ff; }
     .ops-badge-low { color: #166534; background: #dcfce7; }
 
     .ops-calendar {
@@ -400,7 +400,7 @@
         <article class="ops-card">
             <div class="ops-head"><h2 class="ops-title">Recent Activity Feed</h2><a href="{% url 'reports' %}" class="ops-chip">Logs</a></div>
             <ul class="ops-activity-list">
-                <li class="ops-row"><span class="ops-dot ops-dot-low"></span><div><strong>Donation verified from Redwood Trust</strong><small>8 minutes ago</small></div><span class="ops-badge ops-badge-low">Done</span></li>
+                <li class="ops-row"><span class="ops-dot ops-dot-low"></span><div><strong>Donation completed from Redwood Trust</strong><small>8 minutes ago</small></div><span class="ops-badge ops-badge-low">Done</span></li>
                 <li class="ops-row"><span class="ops-dot ops-dot-low"></span><div><strong>Volunteer assigned to Barangay outreach</strong><small>15 minutes ago</small></div><span class="ops-badge ops-badge-low">Assigned</span></li>
                 <li class="ops-row"><span class="ops-dot ops-dot-medium"></span><div><strong>Inventory intake updated for Hygiene Kits</strong><small>26 minutes ago</small></div><span class="ops-badge ops-badge-medium">Updated</span></li>
                 <li class="ops-row"><span class="ops-dot ops-dot-high"></span><div><strong>Report export completed</strong><small>41 minutes ago</small></div><span class="ops-badge ops-badge-high">Export</span></li>
@@ -959,7 +959,7 @@
             <article class="ngo-panel" aria-labelledby="activity-feed-title">
                 <div class="ngo-title-row"><div><h2 id="activity-feed-title" class="ngo-title">Recent Activity</h2><p class="ngo-subtle">Live operational updates across the platform</p></div></div>
                 <ul class="ngo-feed-list">
-                    <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="badge-check"></i></span><div><strong>Donation verified from Redwood Trust</strong><span>8 minutes ago</span></div><span class="ngo-badge ngo-badge-success">Done</span></li>
+                    <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="badge-check"></i></span><div><strong>Donation completed from Redwood Trust</strong><span>8 minutes ago</span></div><span class="ngo-badge ngo-badge-success">Done</span></li>
                     <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="clipboard-check"></i></span><div><strong>Volunteer assigned to Barangay outreach</strong><span>15 minutes ago</span></div><span class="ngo-badge ngo-badge-success">Assigned</span></li>
                     <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="package"></i></span><div><strong>Inventory intake updated for Hygiene Kits</strong><span>26 minutes ago</span></div><span class="ngo-badge ngo-badge-medium">Updated</span></li>
                     <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="alert-triangle"></i></span><div><strong>Comment escalated for moderation review</strong><span>43 minutes ago</span></div><span class="ngo-badge ngo-badge-high">Escalated</span></li>
@@ -1169,7 +1169,7 @@
             <article class="ngo-panel" aria-labelledby="activity-feed-title">
                 <div class="ngo-title-row"><div><h2 id="activity-feed-title" class="ngo-title">Recent Activity</h2><p class="ngo-subtle">Live operational updates across the platform</p></div></div>
                 <ul class="ngo-feed-list">
-                    <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="badge-check"></i></span><div><strong>Donation verified from Redwood Trust</strong><span>8 minutes ago</span></div><span class="ngo-badge ngo-badge-success">Done</span></li>
+                    <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="badge-check"></i></span><div><strong>Donation completed from Redwood Trust</strong><span>8 minutes ago</span></div><span class="ngo-badge ngo-badge-success">Done</span></li>
                     <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="clipboard-check"></i></span><div><strong>Volunteer assigned to Barangay outreach</strong><span>15 minutes ago</span></div><span class="ngo-badge ngo-badge-success">Assigned</span></li>
                     <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="package"></i></span><div><strong>Inventory intake updated for Hygiene Kits</strong><span>26 minutes ago</span></div><span class="ngo-badge ngo-badge-medium">Updated</span></li>
                     <li class="ngo-feed-item"><span class="ngo-feed-icon"><i data-lucide="alert-triangle"></i></span><div><strong>Comment escalated for moderation review</strong><span>43 minutes ago</span></div><span class="ngo-badge ngo-badge-high">Escalated</span></li>
@@ -1762,7 +1762,7 @@
                     <li class="ngo-feed-item">
                         <span class="ngo-feed-icon"><i data-lucide="badge-check"></i></span>
                         <div>
-                            <strong>Donation verified from Redwood Trust</strong>
+                            <strong>Donation completed from Redwood Trust</strong>
                             <span>8 minutes ago</span>
                         </div>
                         <span class="ngo-badge ngo-badge-success">Done</span>
@@ -2188,7 +2188,7 @@
     }
 
     .ops-severity-medium {
-        background: #d97706;
+        background: #2563eb;
     }
 
     .ops-severity-low {
@@ -2204,18 +2204,18 @@
     }
 
     .ops-badge-critical {
-        color: #991b1b;
-        background: rgba(254, 226, 226, 0.9);
+        color: #b42318;
+        background: #fee4e2;
     }
 
     .ops-badge-high {
-        color: #9a3412;
-        background: rgba(255, 237, 213, 0.95);
+        color: #b54708;
+        background: #fff1e8;
     }
 
     .ops-badge-medium {
-        color: #92400e;
-        background: rgba(254, 243, 199, 0.95);
+        color: #175cd3;
+        background: #eff8ff;
     }
 
     .ops-badge-ok {
@@ -2658,7 +2658,7 @@
                 <span class="ops-chip">Live</span>
             </div>
             <ul class="ops-feed">
-                <li><div><p>Donation verified from Redwood Trust</p><small>8 minutes ago</small></div><span class="ops-badge ops-badge-ok">Done</span></li>
+                <li><div><p>Donation completed from Redwood Trust</p><small>8 minutes ago</small></div><span class="ops-badge ops-badge-ok">Done</span></li>
                 <li><div><p>Volunteer assigned to Saturday outreach</p><small>15 minutes ago</small></div><span class="ops-badge ops-badge-ok">Assigned</span></li>
                 <li><div><p>Inventory update from warehouse intake</p><small>26 minutes ago</small></div><span class="ops-badge ops-badge-medium">Updated</span></li>
             </ul>
