@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
-    'webapp',
+    'webapp.apps.WebappConfig',
 ]
 
 MIDDLEWARE = [
@@ -53,6 +53,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'webapp.middleware.TwoFactorChallengeMiddleware',
+    'webapp.middleware.AdminAuditContextMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

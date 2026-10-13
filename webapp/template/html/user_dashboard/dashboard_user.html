@@ -4994,6 +4994,13 @@
         line-height: 1.5;
     }
 
+    #dashboard-overview .udc-pickup-posted-by {
+        margin: -0.2rem 0 0.62rem;
+        color: #64748b;
+        font-size: 0.74rem;
+        line-height: 1.4;
+    }
+
     #dashboard-overview .udc-pickup-image { display: block; width: min(100%, 280px); max-height: 150px; object-fit: cover; margin: 0 0 .8rem; border-radius: 12px; }
 
     #dashboard-overview .udc-pickup-fact-list {
@@ -5073,6 +5080,14 @@
         color: #4b5563;
         line-height: 1.45;
         font-size: 0.7rem;
+    }
+
+    #dashboard-overview .udc-pickup-more-posted-by {
+        display: block;
+        margin-top: 0.08rem;
+        color: #64748b;
+        line-height: 1.4;
+        font-size: 0.68rem;
     }
 
     #dashboard-overview .udc-pickup-more-status {
@@ -6970,6 +6985,7 @@ if (document.readyState === "loading") {
                 + (activity && activity.image_url ? '<img class="udc-pickup-image" src="' + escapeHtml(activity.image_url) + '" alt="">' : '')
                 + '<p class="udc-pickup-title">' + escapeHtml(title) + '</p>'
                 + (description ? '<p class="udc-pickup-description">' + escapeHtml(description) + '</p>' : '')
+                + (activity && activity.created_by_name ? '<p class="udc-pickup-posted-by">Posted by ' + escapeHtml(activity.created_by_name) + '</p>' : '')
                 + (rows.length ? '<div class="udc-pickup-fact-list">' + rows.join("") + '</div>' : '')
                 + '<button id="udc-confirm-pickup" type="button" class="focus-ring ' + buttonClass + '" data-activity-id="' + escapeHtml(String(activity && activity.id ? activity.id : "")) + '">' + escapeHtml(buttonLabel) + '</button>';
             bindConfirmButton();
@@ -6980,6 +6996,7 @@ if (document.readyState === "loading") {
             + (activity && activity.image_url ? '<img class="udc-pickup-image" src="' + escapeHtml(activity.image_url) + '" alt="">' : '')
             + '<p class="udc-pickup-title">' + escapeHtml(title) + '</p>'
             + (description ? '<p class="udc-pickup-description">' + escapeHtml(description) + '</p>' : '')
+            + (activity && activity.created_by_name ? '<p class="udc-pickup-posted-by">Posted by ' + escapeHtml(activity.created_by_name) + '</p>' : '')
             + (rows.length ? '<div class="udc-pickup-fact-list">' + rows.join("") + '</div>' : '')
             + '<span class="' + buttonClass + '">' + escapeHtml(buttonLabel) + '</span>';
     }
@@ -7054,6 +7071,7 @@ if (document.readyState === "loading") {
                 + '<div class="udc-pickup-more-block">'
                 + '<span class="udc-pickup-more-main">' + escapeHtml(title) + '</span>'
                 + (metaParts.length ? '<span class="udc-pickup-more-meta">' + escapeHtml(metaParts.join(" · ")) + '</span>' : '')
+                + (item && item.created_by_name ? '<span class="udc-pickup-more-posted-by">Posted by ' + escapeHtml(item.created_by_name) + '</span>' : '')
                 + '</div>'
                 + '<span class="udc-pickup-more-status">' + escapeHtml(status) + '</span>'
                 + '</div>';
@@ -7223,6 +7241,7 @@ if (document.readyState === "loading") {
             id: pickup.id || (pickup.upcoming_items && pickup.upcoming_items[0] ? pickup.upcoming_items[0].id : null),
             title: pickup.title || "Upcoming activity",
             description: pickup.description || pickup.requirements || "",
+            created_by_name: pickup.created_by_name || "",
             date_label: pickup.date_label || (pickup.datetime || "").split(" · ")[0] || "",
             time_label: pickup.time_label || "",
             location: pickup.location || "",

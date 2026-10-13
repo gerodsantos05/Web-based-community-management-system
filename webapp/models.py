@@ -679,6 +679,22 @@ class Activity(models.Model):
 	), default="none")
 	total_budget = models.PositiveIntegerField(default=0)
 	donor_share_amount = models.PositiveIntegerField(default=0)
+	created_by = models.ForeignKey(
+		User,
+		on_delete=models.SET_NULL,
+		blank=True,
+		null=True,
+		related_name="created_activities",
+	)
+	created_by_name = models.CharField(max_length=150, blank=True, default="")
+	last_modified_by = models.ForeignKey(
+		User,
+		on_delete=models.SET_NULL,
+		blank=True,
+		null=True,
+		related_name="last_modified_activities",
+	)
+	last_modified_by_name = models.CharField(max_length=150, blank=True, default="")
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 
@@ -691,6 +707,30 @@ class Activity(models.Model):
 
 	def __str__(self):
 		return self.title
+
+	@property
+	def created_by_display_name(self):
+		if self.created_by_name.strip() and self.created_by_name.strip().lower() != "unknown":
+			return self.created_by_name.strip()
+		if self.created_by_id:
+			return self.created_by.get_full_name().strip() or self.created_by.get_username()
+		return "System"
+
+	@property
+	def created_by_initials(self):
+		return "".join(part[0] for part in self.created_by_display_name.split()[:2]).upper()
+
+	@property
+	def last_modified_by_display_name(self):
+		if self.last_modified_by_name.strip():
+			return self.last_modified_by_name.strip()
+		if self.last_modified_by_id:
+			return self.last_modified_by.get_full_name().strip() or self.last_modified_by.get_username()
+		return self.created_by_display_name
+
+	@property
+	def last_modified_by_initials(self):
+		return "".join(part[0] for part in self.last_modified_by_display_name.split()[:2]).upper()
 
 	@property
 	def time_label(self):
@@ -1498,3 +1538,54 @@ class StockMovement(models.Model):
 
 	def __str__(self):
 		return f"movement:{self.item.name}:{self.action}:{self.quantity}"
+
+
+class AdminActivityLog(models.Model):
+	ACTION_CREATE = "create"
+	ACTION_EDIT = "edit"
+	ACTION_DELETE = "delete"
+	ACTION_STATUS = "status"
+	ACTION_APPROVAL = "approval"
+	ACTION_CHOICES = (
+		(ACTION_CREATE, "Added"),
+		(ACTION_EDIT, "Edited"),
+		(ACTION_DELETE, "Deleted"),
+		(ACTION_STATUS, "Status changed"),
+		(ACTION_APPROVAL, "Approved or rejected"),
+	)
+	SECTION_CHOICES = (
+		("Donations", "Donations"),
+		("Payments", "Payments"),
+		("Users", "Users"),
+		("Volunteers", "Volunteers"),
+		("Beneficiaries", "Beneficiaries"),
+		("Activities", "Activities"),
+		("Inventory", "Inventory"),
+	)
+
+	admin = models.ForeignKey(
+		User,
+		on_delete=models.SET_NULL,
+		blank=True,
+		null=True,
+		related_name="activity_log_entries",
+	)
+	admin_name = models.CharField(max_length=150)
+	action = models.CharField(max_length=12, choices=ACTION_CHOICES)
+	section = models.CharField(max_length=24, choices=SECTION_CHOICES)
+	record_type = models.CharField(max_length=120)
+	record_id = models.CharField(max_length=64)
+	record_label = models.CharField(max_length=255)
+	details = models.TextField(blank=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ["-created_at", "-id"]
+		indexes = [
+			models.Index(fields=["-created_at", "-id"], name="admin_log_created_idx"),
+			models.Index(fields=["section", "action"], name="admin_log_section_action_idx"),
+			models.Index(fields=["admin_name"], name="admin_log_admin_idx"),
+		]
+
+	def __str__(self):
+		return f"{self.admin_name}: {self.get_action_display()} {self.record_label}"

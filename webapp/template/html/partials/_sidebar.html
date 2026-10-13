@@ -454,6 +454,7 @@
             regularUsers: "{% url 'regular_users' %}",
             volunteers: "{% url 'volunteers' %}",
             beneficiaries: "{% url 'beneficiaries' %}",
+            admins: "{% url 'admins' %}",
             activities: "{% url 'activities' %}",
             donations: "{% url 'donations' %}",
             inventory: "{% url 'inventory' %}",
@@ -501,7 +502,8 @@
                         children: [
                             { key: "regularUsers", label: "Users" },
                             { key: "volunteers", label: "Volunteers" },
-                            { key: "beneficiaries", label: "Beneficiaries" }
+                            { key: "beneficiaries", label: "Beneficiaries" },
+                            { key: "admins", label: "Admin" }
                         ]
                     }
                 ]
@@ -548,6 +550,9 @@
             }
             if (key === "beneficiaries") {
                 return current === "beneficiaries";
+            }
+            if (key === "admins") {
+                return current === "admins";
             }
             if (key === "activities") {
                 return current === "activities";

@@ -42,6 +42,7 @@ class DonationFunnelTests(TestCase):
         self.assertContains(response, "Thank you for sharing with our community.")
         self.assertContains(response, "Our team will be in touch soon to coordinate the next steps.")
         self.assertContains(response, 'id="donationTrackerTrigger"')
+        self.assertContains(response, 'id="donationTrackerTrigger" type="button" aria-label="Track your donations" aria-haspopup="dialog" aria-controls="donationTrackerModal" hidden')
         self.assertContains(response, 'id="donationTrackerModal"')
         self.assertContains(response, "Needs attention")
         self.assertContains(response, 'data-donation-filter="pending" class="active" aria-pressed="true"')
@@ -50,6 +51,38 @@ class DonationFunnelTests(TestCase):
         self.assertNotContains(response, "pledgeStartOver")
         self.assertNotContains(response, "pledgeReference")
         self.assertNotContains(response, "Your item is not yet marked as received.")
+
+    def test_donate_page_shows_tracker_when_cash_or_item_donation_exists(self):
+        response = self.client.get(reverse("donate"))
+        tracker_token = self.client.cookies["donation_tracker_id"].value
+        Donation.objects.create(
+            tracking_token=tracker_token,
+            donor_name="Tracked Donor",
+            amount=100,
+            payment_method=Donation.PAYMENT_CASH,
+            status=Donation.STATUS_PENDING,
+        )
+
+        response = self.client.get(reverse("donate"))
+        self.assertContains(response, 'id="donationTrackerTrigger"')
+        self.assertNotContains(response, 'aria-controls="donationTrackerModal" hidden')
+
+        item_tracker_token = "item-tracker-token-for-test"
+        self.client.cookies["donation_tracker_id"] = item_tracker_token
+        ItemPledge.objects.create(
+            tracking_token=item_tracker_token,
+            item_name="Notebooks",
+            category=ItemPledge.CATEGORY_SCHOOL_SUPPLIES,
+            quantity=2,
+            condition=ItemPledge.CONDITION_NEW,
+            delivery_method=ItemPledge.DELIVERY_DROP_OFF,
+            donor_phone="09171234567",
+            donor_email="donor@example.com",
+            status=ItemPledge.STATUS_PLEDGED,
+        )
+        response = self.client.get(reverse("donate"))
+        self.assertContains(response, 'id="donationTrackerTrigger"')
+        self.assertNotContains(response, 'aria-controls="donationTrackerModal" hidden')
 
     def test_anonymous_donation_without_name_is_pending_and_stores_no_name(self):
         response = self.client.post(
@@ -198,6 +231,8 @@ class DonationFunnelTests(TestCase):
             quantity=2,
             condition=ItemPledge.CONDITION_NEW,
             delivery_method=ItemPledge.DELIVERY_DROP_OFF,
+            donor_name="Pledge Donor",
+            description="Keep the items dry.",
             donor_phone="09171234567",
             donor_email="donor@example.com",
         )
@@ -210,6 +245,17 @@ class DonationFunnelTests(TestCase):
 
         dashboard = self.client.get(reverse("donations"))
         self.assertContains(dashboard, "Item / In-kind Pledges")
+        self.assertContains(dashboard, "Cash Donations")
+        self.assertContains(dashboard, "Item Units Pledged")
+        self.assertContains(dashboard, "Cash Awaiting Verification")
+        self.assertContains(dashboard, "Pledges Awaiting Receipt")
+        self.assertContains(dashboard, "Item Pledges Over Time")
+        self.assertContains(dashboard, "Item Units by Category")
+        self.assertContains(dashboard, "Across 1 item pledge")
+        self.assertContains(dashboard, ">2</p>", html=False)
+        self.assertContains(dashboard, '"donorName": "Pledge Donor"', html=False)
+        self.assertContains(dashboard, '"notes": "Keep the items dry."', html=False)
+        self.assertEqual(dashboard.content.decode().count('class="don-card don-kpi"'), 4)
         self.assertContains(dashboard, "Pending")
         self.assertNotContains(dashboard, "Mark as Pledged")
         self.assertContains(dashboard, pledge.reference_number)
@@ -217,8 +263,31 @@ class DonationFunnelTests(TestCase):
             self.assertContains(dashboard, f"<th scope=\"col\">{column}</th>", html=True)
         self.assertContains(dashboard, 'data-open-pledge-actions="1"')
         self.assertContains(dashboard, 'data-pledge-status-url="/donations/items/1/status/"')
+        self.assertContains(dashboard, 'data-pledge-delivery-method="drop_off"')
         self.assertNotContains(dashboard, "Save status")
         self.assertNotContains(dashboard, "Donor contact")
+
+        response = self.client.post(
+            reverse("update_item_pledge_status", args=[pledge.id]),
+            {"status": ItemPledge.STATUS_SCHEDULED},
+        )
+        self.assertEqual(response.status_code, 400)
+        pledge.refresh_from_db()
+        self.assertEqual(pledge.status, ItemPledge.STATUS_PLEDGED)
+
+        response = self.client.post(
+            reverse("update_item_pledge_status", args=[pledge.id]),
+            {"status": ItemPledge.STATUS_APPROVED},
+        )
+        self.assertEqual(response.status_code, 302)
+        pledge.refresh_from_db()
+        self.assertEqual(pledge.status, ItemPledge.STATUS_APPROVED)
+
+        response = self.client.post(
+            reverse("update_item_pledge_status", args=[pledge.id]),
+            {"status": ItemPledge.STATUS_PLEDGED},
+        )
+        self.assertEqual(response.status_code, 400)
 
         response = self.client.post(
             reverse("update_item_pledge_status", args=[pledge.id]),
@@ -227,6 +296,26 @@ class DonationFunnelTests(TestCase):
         self.assertEqual(response.status_code, 302)
         pledge.refresh_from_db()
         self.assertEqual(pledge.status, ItemPledge.STATUS_SCHEDULED)
+
+        response = self.client.post(
+            reverse("update_item_pledge_status", args=[pledge.id]),
+            {"status": ItemPledge.STATUS_RECEIVED},
+        )
+        self.assertEqual(response.status_code, 302)
+        pledge.refresh_from_db()
+        self.assertEqual(pledge.status, ItemPledge.STATUS_RECEIVED)
+
+        response = self.client.post(
+            reverse("update_item_pledge_status", args=[pledge.id]),
+            {"status": ItemPledge.STATUS_SCHEDULED},
+        )
+        self.assertEqual(response.status_code, 400)
+        pledge.refresh_from_db()
+        self.assertEqual(pledge.status, ItemPledge.STATUS_RECEIVED)
+
+        terminal_dashboard = self.client.get(reverse("donations"))
+        self.assertContains(terminal_dashboard, 'data-open-pledge-actions="1"')
+        self.assertContains(terminal_dashboard, 'detailsButton.textContent = "View details"', html=False)
 
     def test_logged_in_donor_name_is_saved_only_when_provided(self):
         user = User.objects.create_user(username="donor", password="password123")

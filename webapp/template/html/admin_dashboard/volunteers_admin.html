@@ -4,6 +4,7 @@
 {% block title %}People - Volunteers | HappYness{% endblock %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/status-filter-select.css' %}">
 <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital@1&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -2411,6 +2412,18 @@
         color: #fff !important;
     }
 
+    #vol-bulk-deactivate-modal #vol-bulk-deactivate-confirm {
+        border-color: rgba(180, 35, 24, 0.24) !important;
+        background: #B42318 !important;
+        color: #fff !important;
+    }
+
+    #vol-bulk-deactivate-modal #vol-bulk-deactivate-confirm:hover {
+        border-color: #9F1F15 !important;
+        background: #9F1F15 !important;
+        color: #fff !important;
+    }
+
     #vol-certificate-delete-modal #vol-certificate-delete-confirm {
         border-color: rgba(180, 35, 24, 0.24) !important;
         background: #B42318 !important;
@@ -2448,6 +2461,66 @@
         height: 1.1rem;
         cursor: pointer;
         accent-color: #0f766e;
+    }
+
+    .vol-bulk-bar {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin: 0.75rem 0.9rem;
+        padding: 0.7rem 0.8rem;
+        border: 1px solid #d7ebe4;
+        border-radius: 12px;
+        background: #f8fcfa;
+    }
+
+    .vol-bulk-bar[data-show="true"] {
+        display: flex;
+    }
+
+    .vol-bulk-copy {
+        display: grid;
+        gap: 0.2rem;
+        color: #173a31;
+        font-size: 0.8rem;
+    }
+
+    .vol-bulk-copy small {
+        color: #56766c;
+        font-size: 0.72rem;
+        font-weight: 400;
+    }
+
+    .vol-bulk-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+    }
+
+    .vol-bulk-actions button {
+        min-height: 2.25rem;
+        padding: 0.42rem 0.68rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 9px;
+        background: #fff;
+        color: #1b4f43;
+        font-size: 0.76rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .vol-bulk-actions button.is-danger {
+        border-color: rgba(180, 35, 24, 0.24);
+        background: #b42318;
+        color: #fff;
+    }
+
+    .vol-bulk-actions button:disabled {
+        cursor: wait;
+        opacity: 0.65;
     }
 
     .vol-table tbody tr.vol-row-selected {
@@ -2501,6 +2574,31 @@
     @media (max-width: 767px) {
         .vol-page {
             gap: 0.7rem;
+        }
+
+        .vol-bulk-bar {
+            align-items: stretch;
+        }
+
+        .vol-bulk-copy {
+            flex-basis: 100%;
+        }
+
+        .vol-bulk-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            width: 100%;
+            gap: 0.5rem;
+        }
+
+        .vol-bulk-actions button {
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            padding-inline: 0.25rem;
+            font-size: 0.72rem;
+            text-align: center;
+            white-space: nowrap;
         }
 
         .vol-head {
@@ -2594,26 +2692,53 @@
         .vol-filter-bar {
             display: grid !important;
             grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-areas:
+                "search search"
+                "status add"
+                "more more";
+            align-items: stretch;
             width: 100%;
             margin-left: 0;
             gap: 0.6rem;
         }
 
         .vol-search-wrapper {
-            grid-column: 1 / -1;
+            grid-area: search;
             width: 100%;
             flex: 1 1 100%;
+        }
+
+        .vol-filter-bar .status-filter-select--vol-status-filter {
+            grid-area: status;
+            width: 100%;
+            min-width: 0;
+            flex: none;
+        }
+
+        #vol-add-btn {
+            grid-area: add;
         }
 
         .vol-status-filter,
         .vol-add-btn,
         .vol-toggle-columns-btn {
             width: 100% !important;
-            flex: 1 1 100%;
+            flex: 1 1 auto;
             min-width: 0;
         }
 
-        .vol-add-btn,
+        #vol-toggle-columns {
+            grid-area: more;
+        }
+
+        .vol-add-btn {
+            justify-content: center;
+            gap: 0.25rem;
+            padding-inline: 0.35rem;
+            font-size: 0.76rem;
+            white-space: nowrap;
+        }
+
         .vol-toggle-columns-btn {
             justify-content: center;
         }
@@ -2703,12 +2828,14 @@
                     <svg class="vol-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
                     <input type="text" id="vol-search-input" class="vol-search-input" placeholder="Search by name, contact, email..." aria-label="Search volunteers">
                 </div>
-                <select id="vol-status-filter" class="vol-status-filter" aria-label="Filter by status">
-                    <option value="">All Statuses</option>
-                    <option value="Active">Active</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Inactive">Inactive</option>
-                </select>
+                <div class="status-filter-select status-filter-select--vol-status-filter">
+                    <select id="vol-status-filter" class="vol-status-filter" data-status-filter-custom aria-label="Filter by status">
+                        <option value="">All Statuses</option>
+                        <option value="Active">Active</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
                 <button type="button" id="vol-add-btn" class="vol-toggle-columns-btn vol-add-btn" aria-label="Add new volunteer"><i data-lucide="user-plus"></i><span>Add Volunteer</span></button>
                 <button type="button" id="vol-toggle-columns" class="vol-toggle-columns-btn" aria-label="Show more columns">Show More</button>
             </div>
@@ -2720,6 +2847,16 @@
                         <button type="button" id="vol-certifications-tab" class="vol-directory-tab" role="tab" aria-selected="false" aria-controls="vol-certifications-panel">Certifications</button>
                 </div>
                 <div id="vol-directory-panel" class="vol-directory-panel" role="tabpanel" aria-labelledby="vol-directory-tab">
+                    <div id="vol-bulk-bar" class="vol-bulk-bar" data-show="false" aria-live="polite">
+                        <div class="vol-bulk-copy">
+                            <strong><span id="vol-bulk-count">0</span> volunteers selected</strong>
+                            <small>Selected volunteers will return to regular user accounts.</small>
+                        </div>
+                        <div class="vol-bulk-actions">
+                            <button type="button" id="vol-bulk-clear">Clear selection</button>
+                            <button type="button" id="vol-bulk-remove" class="is-danger">Remove Selected</button>
+                        </div>
+                    </div>
                     <div class="vol-table-wrap">
             <table class="vol-table" aria-describedby="vol-count">
                 <thead>
@@ -3061,6 +3198,27 @@
     </footer>
 </div>
 
+<div id="vol-bulk-deactivate-modal" class="vol-modal vol-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="vol-bulk-deactivate-title" data-open="false">
+    <header class="vol-head">
+        <div>
+            <h3 id="vol-bulk-deactivate-title" class="vol-title">Remove Selected Volunteers</h3>
+        </div>
+        <div class="vol-modal-header-actions">
+            <button type="button" class="vol-modal-close-icon" data-close-bulk-deactivate="true" aria-label="Close remove confirmation" title="Close">×</button>
+        </div>
+    </header>
+    <div class="vol-profile-body">
+        <div class="vol-profile-field vol-profile-field-full">
+            <span>Confirmation</span>
+            <strong id="vol-bulk-deactivate-message">Selected accounts will return to regular user status.</strong>
+        </div>
+    </div>
+    <footer class="vol-form-actions">
+        <button type="button" class="vol-form-btn" data-close-bulk-deactivate="true">Cancel</button>
+        <button type="button" id="vol-bulk-deactivate-confirm" class="vol-form-btn vol-danger-btn">Remove Selected</button>
+    </footer>
+</div>
+
 <div id="vol-certificate-delete-modal" class="vol-modal vol-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="vol-certificate-delete-title" data-open="false">
     <header class="vol-head">
         <div>
@@ -3139,6 +3297,7 @@
 {{ pending_attendance|json_script:"pending-attendance-data" }}
 {{ pending_beneficiary_attendance|json_script:"pending-beneficiary-attendance-data" }}
 {{ volunteer_certificates|json_script:"volunteer-certificates-data" }}
+<script src="{% static 'js/status-filter-select.js' %}"></script>
 <script>
 (function () {
     "use strict";
@@ -3153,6 +3312,7 @@
     var UPDATE_VOLUNTEER_PROFILE_URL = "{% url 'update_volunteer_profile' %}";
     var UPDATE_VOLUNTEER_OJT_REQUIREMENT_URL = "{% url 'update_volunteer_ojt_requirement' %}";
     var DEACTIVATE_VOLUNTEER_URL = "{% url 'deactivate_volunteer' %}";
+    var DEACTIVATE_VOLUNTEERS_BULK_URL = "{% url 'deactivate_volunteers_bulk' %}";
     var DELETE_CERTIFICATE_URL_TEMPLATE = "{% url 'admin_certificate_delete' 0 %}";
 
     function loadJsonData(scriptId) {
@@ -3242,6 +3402,10 @@
     var attendanceFilterValue = "all";
     var selectAllCheckbox = byId("vol-select-all");
     var selectedVolunteers = new Set();
+    var bulkBar = byId("vol-bulk-bar");
+    var bulkSelectedCount = byId("vol-bulk-count");
+    var bulkClearButton = byId("vol-bulk-clear");
+    var bulkRemoveButton = byId("vol-bulk-remove");
     var assignVolunteerSearchInput = byId("assign-volunteer-search");
     var assignVolunteerList = byId("assign-volunteer-list");
     var assignSelectedVolunteers = new Set();
@@ -3265,6 +3429,9 @@
     var deactivateModal = byId("vol-deactivate-modal");
     var deactivateMessage = byId("vol-deactivate-message");
     var deactivateConfirmButton = byId("vol-deactivate-confirm");
+    var bulkDeactivateModal = byId("vol-bulk-deactivate-modal");
+    var bulkDeactivateMessage = byId("vol-bulk-deactivate-message");
+    var bulkDeactivateConfirmButton = byId("vol-bulk-deactivate-confirm");
     var certificateDeleteModal = byId("vol-certificate-delete-modal");
     var certificateDeleteMessage = byId("vol-certificate-delete-message");
     var certificateDeleteConfirmButton = byId("vol-certificate-delete-confirm");
@@ -3312,6 +3479,7 @@
     var profileMode = "view";
     var profileVolunteerId = null;
     var deactivateVolunteerId = null;
+    var bulkDeactivateVolunteerIds = null;
     var deleteCertificateId = null;
     var deleteCertificateButton = null;
     var ojtRequirementVolunteerId = null;
@@ -3554,7 +3722,14 @@
         if (deactivateModal) {
             deactivateModal.setAttribute("data-open", "false");
         }
+        if (bulkDeactivateModal) {
+            bulkDeactivateModal.setAttribute("data-open", "false");
+        }
         deactivateVolunteerId = null;
+        bulkDeactivateVolunteerIds = null;
+        if (bulkRemoveButton) {
+            bulkRemoveButton.disabled = false;
+        }
         if (modalBackdrop) {
             modalBackdrop.setAttribute("data-open", "false");
         }
@@ -3957,6 +4132,7 @@
         addVol_closeModal();
         closeVolunteerProfile();
 
+        bulkDeactivateVolunteerIds = null;
         deactivateVolunteerId = volunteerId;
         if (deactivateMessage) {
             deactivateMessage.textContent = "Are you sure you want to remove " + volunteer.name + " as a volunteer? They will return to a regular user account.";
@@ -3967,6 +4143,28 @@
         }
         if (deactivateModal) {
             deactivateModal.setAttribute("data-open", "true");
+        }
+    }
+
+    function openBulkVolunteerDeactivateConfirm() {
+        var ids = Array.from(selectedVolunteers);
+        if (!ids.length) {
+            return;
+        }
+
+        closeActionMenus();
+        addVol_closeModal();
+        closeVolunteerProfile();
+        deactivateVolunteerId = null;
+        bulkDeactivateVolunteerIds = ids;
+        if (bulkDeactivateMessage) {
+            bulkDeactivateMessage.textContent = "Are you sure you want to remove " + ids.length + " selected volunteer" + (ids.length === 1 ? "" : "s") + "? Their accounts will return to regular user status.";
+        }
+        if (modalBackdrop) {
+            modalBackdrop.setAttribute("data-open", "true");
+        }
+        if (bulkDeactivateModal) {
+            bulkDeactivateModal.setAttribute("data-open", "true");
         }
     }
 
@@ -4049,6 +4247,10 @@
     }
 
     function handleVolunteerDeactivateConfirm() {
+        if (bulkDeactivateVolunteerIds && bulkDeactivateVolunteerIds.length) {
+            handleBulkVolunteerDeactivateConfirm();
+            return;
+        }
         if (deactivateVolunteerId === null) {
             return;
         }
@@ -4097,6 +4299,66 @@
                 if (deactivateConfirmButton) {
                     deactivateConfirmButton.disabled = false;
                     deactivateConfirmButton.innerHTML = "Remove as Volunteer";
+                }
+            });
+    }
+
+    function handleBulkVolunteerDeactivateConfirm() {
+        if (!bulkDeactivateVolunteerIds || !bulkDeactivateVolunteerIds.length) {
+            return;
+        }
+
+        var body = new URLSearchParams();
+        bulkDeactivateVolunteerIds.forEach(function (id) {
+            body.append("volunteer_user_ids", String(id));
+        });
+
+        if (bulkDeactivateConfirmButton) {
+            bulkDeactivateConfirmButton.disabled = true;
+            bulkDeactivateConfirmButton.textContent = "Removing...";
+        }
+
+        fetch(DEACTIVATE_VOLUNTEERS_BULK_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-CSRFToken": getCookie("csrftoken") || ""
+            },
+            body: body.toString()
+        })
+            .then(function (response) {
+                return response.json().then(function (payload) {
+                    return { ok: response.ok, payload: payload };
+                });
+            })
+            .then(function (result) {
+                if (!result.ok) {
+                    throw new Error(result.payload.error || "Unable to remove the selected volunteers.");
+                }
+
+                var removedIds = new Set(result.payload.removed_ids.map(String));
+                volunteers = volunteers.filter(function (item) {
+                    return !removedIds.has(String(item.id));
+                });
+                removedIds.forEach(function (id) {
+                    selectedVolunteers.delete(id);
+                });
+                renderSummaryCards();
+                renderTable();
+                renderPendingApplications();
+                closeVolunteerDeactivateConfirm();
+                showToast(result.payload.message || "Selected volunteers removed successfully.");
+            })
+            .catch(function (error) {
+                showToast(error.message || "Unable to remove the selected volunteers.");
+            })
+            .then(function () {
+                if (bulkDeactivateConfirmButton) {
+                    bulkDeactivateConfirmButton.disabled = false;
+                    bulkDeactivateConfirmButton.textContent = "Remove Selected";
+                }
+                if (bulkRemoveButton) {
+                    bulkRemoveButton.disabled = false;
                 }
             });
     }
@@ -4596,10 +4858,16 @@
 
     function updateSelectAllCheckbox() {
         if (!selectAllCheckbox || !byId("vol-table-body")) return;
-        var visibleRows = byId("vol-table-body").querySelectorAll("tr");
-        var checkedRows = byId("vol-table-body").querySelectorAll("[data-volunteer-id]:has(.vol-row-checkbox:checked)");
-        selectAllCheckbox.checked = visibleRows.length > 0 && checkedRows.length === visibleRows.length;
-        selectAllCheckbox.indeterminate = checkedRows.length > 0 && checkedRows.length < visibleRows.length;
+        var checkboxes = Array.prototype.slice.call(byId("vol-table-body").querySelectorAll(".vol-row-checkbox"));
+        var checkedCount = checkboxes.filter(function (checkbox) { return checkbox.checked; }).length;
+        selectAllCheckbox.checked = checkboxes.length > 0 && checkedCount === checkboxes.length;
+        selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+        if (bulkBar) {
+            bulkBar.dataset.show = selectedVolunteers.size > 0 ? "true" : "false";
+        }
+        if (bulkSelectedCount) {
+            bulkSelectedCount.textContent = String(selectedVolunteers.size);
+        }
     }
 
     function toggleSelectAll() {
@@ -4620,6 +4888,7 @@
                 }
             }
         });
+        updateSelectAllCheckbox();
     }
 
     function renderPendingApplications() {
@@ -4952,6 +5221,12 @@
             });
         });
 
+        document.querySelectorAll("[data-close-bulk-deactivate='true']").forEach(function (button) {
+            button.addEventListener("click", function () {
+                closeVolunteerDeactivateConfirm();
+            });
+        });
+
         document.querySelectorAll("[data-close-certificate-delete='true']").forEach(function (button) {
             button.addEventListener("click", function () {
                 closeCertificateDeleteConfirm();
@@ -4981,6 +5256,10 @@
 
         if (deactivateConfirmButton) {
             deactivateConfirmButton.addEventListener("click", handleVolunteerDeactivateConfirm);
+        }
+
+        if (bulkDeactivateConfirmButton) {
+            bulkDeactivateConfirmButton.addEventListener("click", handleBulkVolunteerDeactivateConfirm);
         }
 
         if (certificateDeleteConfirmButton) {
@@ -5249,6 +5528,17 @@
 
         if (selectAllCheckbox) {
             selectAllCheckbox.addEventListener("change", toggleSelectAll);
+        }
+
+        if (bulkClearButton) {
+            bulkClearButton.addEventListener("click", function () {
+                selectedVolunteers.clear();
+                renderTable();
+            });
+        }
+
+        if (bulkRemoveButton) {
+            bulkRemoveButton.addEventListener("click", openBulkVolunteerDeactivateConfirm);
         }
 
         document.addEventListener("change", function (event) {

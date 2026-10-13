@@ -234,6 +234,13 @@
         color: #374151;
     }
 
+    #dashboard-content-scroll #dashboard-overview .vd-task-creator {
+        margin: 0.12rem 0 0;
+        color: #718096;
+        font-size: 0.76rem !important;
+        line-height: 1.35 !important;
+    }
+
     #dashboard-content-scroll #dashboard-overview .vd-announcement-item {
         padding: 0.7rem 0.75rem;
         border-left: 3px solid #0f9b8e;
@@ -704,6 +711,7 @@
                             {% if task.is_today %}<span class="vd-task-badge today">Today</span>{% else %}<span class="vd-task-badge pending">Upcoming</span>{% endif %}
                         </div>
                         <p class="vd-task-meta">{{ task.location }}, {{ task.schedule_label }}</p>
+                        <p class="vd-task-creator">Posted by {{ task.created_by_name }}</p>
                     </li>
                     {% endfor %}
                 </ul>

@@ -4,6 +4,7 @@
 {% block title %}People - Beneficiaries | HappYness{% endblock %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/status-filter-select.css' %}">
 <style data-admin-panel-style="admin-beneficiaries">
     .ben-page {
         --ben-surface: rgba(255, 255, 255, 0.95);
@@ -1635,6 +1636,11 @@
         .ben-filter-bar {
             display: grid !important;
             grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-areas:
+                "search search"
+                "status add"
+                "more more";
+            align-items: stretch;
             width: 100%;
             margin-left: 0;
             gap: 0.6rem;
@@ -1653,17 +1659,32 @@
         }
 
         .ben-search-wrapper {
-            grid-column: 1 / -1;
+            grid-area: search;
             width: 100%;
             flex: 1 1 100%;
+        }
+
+        .ben-filter-bar .status-filter-select--ben-status-filter {
+            grid-area: status;
+            width: 100%;
+            min-width: 0;
+            flex: none;
+        }
+
+        #ben-add-btn {
+            grid-area: add;
         }
 
         .ben-status-filter,
         .ben-action-btn,
         .ben-toggle-columns-btn {
             width: 100% !important;
-            flex: 1 1 100%;
+            flex: 1 1 auto;
             min-width: 0;
+        }
+
+        .ben-toggle-columns-btn {
+            grid-area: more;
         }
 
         .ben-bulk-bar {
@@ -1679,7 +1700,15 @@
             flex: 1 1 auto;
         }
 
-        .ben-action-btn,
+        .ben-action-btn {
+            justify-content: center;
+            gap: 0.25rem;
+            min-height: 2.55rem;
+            padding-inline: 0.35rem;
+            font-size: 0.72rem;
+            white-space: nowrap;
+        }
+
         .ben-toggle-columns-btn {
             justify-content: center;
         }
@@ -1764,12 +1793,14 @@
                     <svg class="ben-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
                     <input type="text" id="ben-search-input" class="ben-search-input" placeholder="Search by name, location, contact..." aria-label="Search beneficiaries">
                 </div>
-                <select id="ben-status-filter" class="ben-status-filter" aria-label="Filter by status">
-                    <option value="">All Statuses</option>
-                    <option value="Active">Active</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Inactive">Inactive</option>
-                </select>
+                <div class="status-filter-select status-filter-select--ben-status-filter">
+                    <select id="ben-status-filter" class="ben-status-filter" data-status-filter-custom aria-label="Filter by status">
+                        <option value="">All Statuses</option>
+                        <option value="Active">Active</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
                 <button type="button" id="ben-add-btn" class="ben-action-btn" aria-label="Add new beneficiary"><i data-lucide="user-plus"></i><span>Add Beneficiary</span></button>
                 <button type="button" id="ben-toggle-columns" class="ben-toggle-columns-btn" aria-label="Show more columns">Show More</button>
             </div>
@@ -2172,6 +2203,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="{% static 'js/status-filter-select.js' %}"></script>
 {{ beneficiaries_data|json_script:"beneficiaries-data" }}
 {{ volunteer_options|json_script:"volunteer-options-data" }}
 {{ assistance_feedbacks|json_script:"assistance-feedbacks-data" }}

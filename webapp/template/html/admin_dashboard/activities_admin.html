@@ -335,62 +335,80 @@
 
     .act-table {
         width: 100%;
-        min-width: 1200px;
+        min-width: 1940px;
         border-collapse: collapse;
         background: transparent;
         table-layout: fixed;
     }
 
-    .act-table th:nth-child(1),
-    .act-table td:nth-child(1) { width: 72px; }
-    .act-table th:nth-child(2),
-    .act-table td:nth-child(2) { width: 220px; }
-    .act-table th:nth-child(3),
-    .act-table td:nth-child(3) { width: 110px; }
-    .act-table th:nth-child(4),
-    .act-table td:nth-child(4) { width: 135px; }
-    .act-table th:nth-child(5),
-    .act-table td:nth-child(5) { width: 135px; }
-    .act-table th:nth-child(6),
-    .act-table td:nth-child(6) { width: 150px; }
-    .act-table th:nth-child(7),
-    .act-table td:nth-child(7) { width: 135px; }
-    .act-table th:nth-child(8),
-    .act-table td:nth-child(8) { width: 120px; }
-    .act-table th:nth-child(9),
-    .act-table td:nth-child(9) { width: 135px; }
+    .act-table th:nth-child(1), .act-table td:nth-child(1) { width: 72px; }
+    .act-table th:nth-child(2), .act-table td:nth-child(2) { width: 215px; }
+    .act-table th:nth-child(3), .act-table td:nth-child(3) { width: 120px; }
+    .act-table th:nth-child(4), .act-table td:nth-child(4) { width: 145px; }
+    .act-table th:nth-child(5), .act-table td:nth-child(5) { width: 145px; }
+    .act-table th:nth-child(6), .act-table td:nth-child(6) { width: 140px; }
+    .act-table th:nth-child(7), .act-table td:nth-child(7) { width: 120px; }
+    .act-table th:nth-child(8), .act-table td:nth-child(8) { width: 165px; }
+    .act-table th:nth-child(9), .act-table td:nth-child(9) { width: 150px; }
+    .act-table th:nth-child(10), .act-table td:nth-child(10) { width: 190px; }
+    .act-table th:nth-child(11), .act-table td:nth-child(11) { width: 190px; }
+    .act-table th:nth-child(12), .act-table td:nth-child(12) { width: 120px; }
+    .act-table th:nth-child(13), .act-table td:nth-child(13) { width: 168px; }
 
     .act-table th,
     .act-table td {
-        padding: 0.95rem 0.95rem;
+        padding: 0.78rem 0.7rem;
         font-size: 0.90rem;
         line-height: 1.4;
         border-bottom: 1px solid #e7f2ed;
         text-align: left;
+        border-right: 1px solid #e7f2ed;
         vertical-align: middle;
         color: #244235;
     }
 
+
+    .act-table th:last-child,
+    .act-table td:last-child { border-right: 0; }
     .act-table th {
         font-weight: 700;
         color: #0f4d3d;
         letter-spacing: 0.03em;
         text-transform: uppercase;
         font-size: 0.78rem;
-    }
-
-    .act-table th:nth-child(2),
-    .act-table td:nth-child(2) {
-        min-width: 170px;
-    }
-
-    .act-table th:nth-child(2) {
         white-space: nowrap;
     }
 
-    .act-table th:nth-child(7),
-    .act-table td:nth-child(7) {
+    .act-table .act-budget-cell,
+    .act-table .act-donor-share-cell {
         text-align: center;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .act-table th:nth-child(8),
+    .act-table td:nth-child(8),
+    .act-table th:nth-child(9),
+    .act-table td:nth-child(9) {
+        text-align: center;
+    }
+
+    .act-table th:nth-child(13) {
+        text-align: center;
+    }
+
+    .act-table th,
+    .act-table td {
+        border: 0;
+    }
+
+    .act-table th:nth-child(13),
+    .act-table td:nth-child(13) {
+        text-align: center !important;
+    }
+
+    .act-table .act-action-cell .act-icon-btn {
+        margin: 0 0.25rem;
     }
 
     .act-title-cell {
@@ -411,6 +429,20 @@
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 2;
         overflow: hidden;
+    }
+
+    .act-person-cell {
+        display: grid;
+        justify-items: start;
+        gap: 0.18rem;
+        white-space: normal;
+        text-align: left;
+    }
+
+    .act-person-date {
+        color: #87958f;
+        font-size: 0.66rem;
+        line-height: 1.2;
     }
 
     .act-feedback-meta {
@@ -439,12 +471,12 @@
 
     .act-action-cell {
         vertical-align: middle !important;
-        text-align: right !important;
+        text-align: center !important;
         white-space: nowrap;
     }
 
-    .act-action-cell .act-icon-btn + .act-icon-btn {
-        margin-left: 0.45rem;
+    .act-action-cell .act-icon-btn {
+        margin: 0 0.22rem;
     }
 
     .act-icon-btn {
@@ -473,31 +505,23 @@
 
     .act-modal {
         position: fixed;
-        top: 50%;
+        border-color: rgba(163, 45, 45, 0.14);
         left: 50%;
         transform: translate(-50%, -50%);
         width: min(92vw, 520px);
-        background: #fff;
+    .act-table td:nth-child(2) { width: 215px; }
         border: 1px solid rgba(15, 118, 110, 0.22);
-        border-radius: 18px;
+    .act-table td:nth-child(3) { width: 105px; }
         box-shadow: 0 28px 52px rgba(15, 118, 110, 0.18);
+    .act-table td:nth-child(4) { width: 125px; }
+        background: #fff;
+    .act-table td:nth-child(5) { width: 130px; }
+        border-radius: 18px;
+    .act-table td:nth-child(6) { width: 140px; }
         z-index: 999;
-        display: none;
+    .act-table td:nth-child(7) { width: 95px; }
         flex-direction: column;
-        overflow: hidden;
-    }
-
-    .act-modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.4);
-        z-index: 998;
-        display: none;
-    }
-
-    .act-modal-header {
-        display: flex;
-        align-items: center;
+    .act-table td:nth-child(8) { width: 150px; }
         justify-content: space-between;
         gap: 1rem;
         padding: 1.1rem 1.2rem 0.8rem;
@@ -522,25 +546,41 @@
         color: #14352d;
     }
 
-    .act-modal-content {
-        padding: 1rem 1.2rem 1.2rem;
-        display: grid;
-        gap: 0.95rem;
+    .act-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(92vw, 520px);
+        background: #fff;
+        border: 1px solid rgba(15, 118, 110, 0.22);
+        border-radius: 18px;
+        box-shadow: 0 28px 52px rgba(15, 118, 110, 0.18);
+        z-index: 999;
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
     }
 
-    .act-form-grid {
-        display: grid;
-        gap: 0.95rem;
+    .act-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 998;
+        display: none;
     }
 
-    .act-field {
-        display: grid;
-        gap: 0.35rem;
+    .act-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.1rem 1.2rem 0.8rem;
+        border-bottom: 1px solid #deefe8;
     }
-
-    .act-field label {
-        font-size: 0.76rem;
-        font-weight: 700;
+    .act-modal-header {
+        display: flex;
+        align-items: center;
         color: #1a4f43;
         text-transform: uppercase;
         letter-spacing: 0.06em;
@@ -687,36 +727,23 @@
         resize: vertical;
     }
 
-    .act-form-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 0.7rem;
-        flex-wrap: wrap;
-        margin-top: 0.35rem;
+    .act-modal-content {
+        padding: 1rem 1.2rem 1.2rem;
+        display: grid;
+        gap: 0.95rem;
     }
 
-    .act-category-custom[hidden], .act-image-preview[hidden] { display: none; }
-    .act-image-upload { display: grid; gap: .45rem; }
-    .act-image-preview { position: relative; width: 100%; max-width: 220px; }
-    .act-image-preview img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; border: 1px solid #d4e9e1; }
-    .act-image-remove { position: absolute; top: .45rem; right: .45rem; border: 0; border-radius: 999px; width: 28px; height: 28px; background: rgba(20, 53, 45, .86); color: #fff; cursor: pointer; }
-    .act-table-thumbnail { width: 52px; height: 40px; object-fit: cover; border-radius: 8px; border: 1px solid #d4e9e1; }
+    .act-field {
+        display: grid;
+        gap: 0.35rem;
+    }
 
-    .act-chip-btn {
-        background: #fff;
-        border: 1px solid #d4e9e1;
-        border-radius: 999px;
-        color: #1b4f43;
-        padding: 0.75rem 1rem;
+    .act-field label {
+        font-size: 0.76rem;
         font-weight: 700;
-        cursor: pointer;
-    }
-
-    /* Calendar day selected state */
-    .act-calendar-day.selected {
-        background: #22c55e;
-        color: #fff;
-        border-color: transparent;
+        color: #1a4f43;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
     }
 
     /* Delete confirmation modal */
@@ -785,6 +812,68 @@
         padding: 1rem 1.2rem;
         overflow-y: auto;
         flex: 1;
+    }
+
+    .act-preview-box {
+        width: min(92vw, 760px);
+    }
+
+    .act-preview-close {
+        background: none;
+        border: 1px solid #e0e0e0;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        cursor: pointer;
+        font-size: 16px;
+        color: #666;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .act-preview-close:hover { background-color: #f5f5f5; }
+
+    .act-preview-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .act-preview-field {
+        min-width: 0;
+        border: 1px solid #e2f1eb;
+        border-radius: 10px;
+        background: #fbfefd;
+        padding: 0.72rem;
+    }
+
+    .act-preview-field.is-wide { grid-column: 1 / -1; }
+
+    .act-preview-label {
+        display: block;
+        margin: 0;
+        color: #1a4f43;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .act-preview-value {
+        margin: 0.35rem 0 0;
+        color: #44695f;
+        font-size: 0.86rem;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+    }
+
+    .act-preview-image {
+        display: block;
+        max-width: 100%;
+        max-height: 260px;
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        object-fit: contain;
     }
 
     .act-modal-foot {
@@ -861,7 +950,7 @@
 
     @media (max-width: 760px) {
         .act-table {
-            min-width: 1200px;
+            min-width: 1940px;
         }
 
         .act-table th,
@@ -875,20 +964,6 @@
         }
 
         .act-upcoming-list {
-            overflow-x: auto;
-            overflow-y: hidden;
-            scrollbar-width: thin;
-        }
-
-        .act-upcoming-list::-webkit-scrollbar {
-            height: 8px;
-        }
-
-        .act-upcoming-list::-webkit-scrollbar-thumb {
-            background: #b7d4c9;
-            border-radius: 999px;
-        }
-
         .act-upcoming-item {
             width: 560px;
             grid-template-columns: 72px 1fr 100px;
@@ -1007,6 +1082,10 @@
                         <th scope="col">Location</th>
                         <th scope="col">Category</th>
                         <th scope="col">Volunteers</th>
+                        <th scope="col">Activity Budget</th>
+                        <th scope="col">Donor Shared</th>
+                        <th scope="col">Created By</th>
+                        <th scope="col">Last Modified By</th>
                         <th scope="col">Status</th>
                         <th scope="col">Actions</th>
                     </tr>
@@ -1018,12 +1097,6 @@
                             <td>
                                 <div class="act-title-cell">
                                     <strong>{{ activity.title }}</strong>
-                                    <small>{{ activity.description|default:"No description"|truncatechars:70 }}</small>
-                                    <div class="act-feedback-meta">
-                                        <span class="act-feedback-average {{ activity.feedback_average_class }}" title="Average of completed feedback responses" aria-label="Average feedback score: {{ activity.feedback_average_display }} out of 5">
-                                            {{ activity.feedback_average_display }}
-                                        </span>
-                                    </div>
                                 </div>
                             </td>
                             <td>{{ activity.date|date:"M j, Y" }}</td>
@@ -1031,8 +1104,25 @@
                             <td>{{ activity.location|default:"TBA" }}</td>
                             <td>{{ activity.get_category_display|default:"Uncategorized" }}</td>
                             <td class="act-volunteer-count-cell" data-activity-volunteer-count data-activity-id="{{ activity.id }}">0</td>
+                            <td class="act-budget-cell" data-activity-money="{{ activity.total_budget|default:0 }}">{{ activity.total_budget|default:0 }}</td>
+                            <td class="act-donor-share-cell" data-activity-money="{{ activity.donor_share_amount|default:0 }}">{{ activity.donor_share_amount|default:0 }}</td>
+                            <td>
+                                <div class="act-person-cell">
+                                    <span>{{ activity.created_by_display_name }}</span>
+                                    <small class="act-person-date">{{ activity.created_at|date:"M j, Y" }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="act-person-cell">
+                                    <span>{{ activity.last_modified_by_display_name }}</span>
+                                    <small class="act-person-date">{{ activity.updated_at|date:"M j, Y" }}</small>
+                                </div>
+                            </td>
                             <td><span class="act-badge {{ activity.status }}">{{ activity.get_status_display }}</span></td>
                             <td class="act-action-cell">
+                                <button type="button" class="act-icon-btn act-preview-btn" data-preview-activity data-created-by="{{ activity.created_by_display_name|escapejs }}" data-created-by-id="{{ activity.created_by_id|default:'' }}" data-created-at="{{ activity.created_at|date:'M j, Y g:i A' }}" data-last-modified-by="{{ activity.last_modified_by_display_name|escapejs }}" data-last-modified-at="{{ activity.updated_at|date:'M j, Y g:i A' }}" data-feedback-average="{{ activity.feedback_average_display }}" aria-label="Preview {{ activity.title }}" title="Preview activity">
+                                    <i data-lucide="eye"></i>
+                                </button>
                                 <button
                                     type="button"
                                     class="act-icon-btn"
@@ -1064,7 +1154,7 @@
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="9" class="act-table-empty">No activities are available yet.</td>
+                            <td colspan="13" class="act-table-empty">No activities are available yet.</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -1279,6 +1369,21 @@
             <button type="button" class="act-btn-save" style="background:#E24B4A;" id="actDeleteConfirmBtn">Delete</button>
         </div>
     </div>
+</div>
+
+<div class="act-modal-overlay" id="activityPreviewOverlay" aria-hidden="true">
+    <section class="act-modal-box act-preview-box" role="dialog" aria-modal="true" aria-labelledby="activityPreviewTitle">
+        <header class="act-modal-hdr">
+            <div>
+                <h3 class="act-modal-hdr-title" id="activityPreviewTitle">Activity details</h3>
+                <p class="act-card-subtitle" id="activityPreviewSubtitle"></p>
+            </div>
+            <button type="button" class="act-preview-close" id="activityPreviewClose" aria-label="Close activity preview">&#215;</button>
+        </header>
+        <div class="act-modal-body">
+            <div class="act-preview-grid" id="activityPreviewContent"></div>
+        </div>
+    </section>
 </div>
 {% endblock %}
 
@@ -1619,6 +1724,103 @@
         return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(Number(value || 0));
     }
 
+    document.querySelectorAll('[data-activity-money]').forEach(function (cell) {
+        cell.textContent = formatCurrency(cell.getAttribute('data-activity-money'));
+    });
+
+    var activityPreviewOverlay = document.getElementById('activityPreviewOverlay');
+    var activityPreviewClose = document.getElementById('activityPreviewClose');
+    var activityPreviewSubtitle = document.getElementById('activityPreviewSubtitle');
+    var activityPreviewContent = document.getElementById('activityPreviewContent');
+    var lastActivityPreviewTrigger = null;
+
+    function addActivityPreviewField(label, value, isWide) {
+        var field = document.createElement('div');
+        field.className = 'act-preview-field' + (isWide ? ' is-wide' : '');
+        var labelElement = document.createElement('strong');
+        labelElement.className = 'act-preview-label';
+        labelElement.textContent = label;
+        var valueElement = document.createElement('p');
+        valueElement.className = 'act-preview-value';
+        valueElement.textContent = value === null || value === undefined || value === '' ? '—' : String(value);
+        field.append(labelElement, valueElement);
+        activityPreviewContent.appendChild(field);
+    }
+
+    function openActivityPreview(trigger) {
+        var row = trigger.closest('tr');
+        var editButton = row && row.querySelector('[data-edit-activity]');
+        if (!row || !editButton || !activityPreviewOverlay || !activityPreviewContent) return;
+
+        var data = editButton.dataset;
+        var cells = row.cells;
+        var title = data.title || 'Activity';
+        activityPreviewSubtitle.textContent = title;
+        activityPreviewContent.replaceChildren();
+
+        if (data.imageUrl) {
+            var imageField = document.createElement('div');
+            imageField.className = 'act-preview-field is-wide';
+            var image = document.createElement('img');
+            image.className = 'act-preview-image';
+            image.src = data.imageUrl;
+            image.alt = 'Activity image: ' + title;
+            imageField.appendChild(image);
+            activityPreviewContent.appendChild(imageField);
+        }
+
+        addActivityPreviewField('Activity title', title);
+        addActivityPreviewField('Date', cells[2].textContent.trim());
+        addActivityPreviewField('Time', cells[3].textContent.trim());
+        addActivityPreviewField('Location', cells[4].textContent.trim());
+        addActivityPreviewField('Category', cells[5].textContent.trim());
+        addActivityPreviewField('Volunteers', cells[6].textContent.trim());
+        addActivityPreviewField('Activity Budget', formatCurrency(data.totalBudget));
+        addActivityPreviewField('Donor Shared', formatCurrency(data.donorShareAmount));
+        addActivityPreviewField('Created by', trigger.dataset.createdBy || 'System');
+        addActivityPreviewField('Creator ID', trigger.dataset.createdById || '—');
+        addActivityPreviewField('Date created', trigger.dataset.createdAt || '—');
+        addActivityPreviewField('Last modified by', trigger.dataset.lastModifiedBy || trigger.dataset.createdBy || 'System');
+        addActivityPreviewField('Last modified date', trigger.dataset.lastModifiedAt || trigger.dataset.createdAt || '—');
+        addActivityPreviewField('Status', cells[11].textContent.trim());
+        var feedbackAverage = trigger.dataset.feedbackAverage || '—';
+        addActivityPreviewField('Average feedback', feedbackAverage + (feedbackAverage === '—' ? '' : ' out of 5'));
+        addActivityPreviewField('Description', data.description || 'No description provided.', true);
+
+        lastActivityPreviewTrigger = trigger;
+        activityPreviewOverlay.classList.add('open');
+        activityPreviewOverlay.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        if (activityPreviewClose) activityPreviewClose.focus();
+    }
+
+    function closeActivityPreview() {
+        if (!activityPreviewOverlay || !activityPreviewOverlay.classList.contains('open')) return;
+        activityPreviewOverlay.classList.remove('open');
+        activityPreviewOverlay.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        if (lastActivityPreviewTrigger) lastActivityPreviewTrigger.focus();
+        lastActivityPreviewTrigger = null;
+    }
+
+    function bindActivityPreviewButtons() {
+        document.querySelectorAll('[data-preview-activity]').forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                openActivityPreview(button);
+            });
+        });
+        if (activityPreviewClose) activityPreviewClose.addEventListener('click', closeActivityPreview);
+        if (activityPreviewOverlay) {
+            activityPreviewOverlay.addEventListener('click', function (event) {
+                if (event.target === activityPreviewOverlay) closeActivityPreview();
+            });
+        }
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') closeActivityPreview();
+        });
+    }
+
     function syncActivityFundingState() {
         var fundingMode = document.getElementById('activityFundingMode');
         var customBlock = document.getElementById('activityFundingCustomBlock');
@@ -1898,6 +2100,7 @@
     if (document.readyState !== 'loading') {
         bindAddActivityButton();
         bindEditActivityButtons();
+        bindActivityPreviewButtons();
         bindDeleteButtons();
         bindDeleteModalButtons();
         bindModalCloseButtons();
@@ -1905,6 +2108,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             bindAddActivityButton();
             bindEditActivityButtons();
+            bindActivityPreviewButtons();
             bindDeleteButtons();
             bindDeleteModalButtons();
             bindModalCloseButtons();

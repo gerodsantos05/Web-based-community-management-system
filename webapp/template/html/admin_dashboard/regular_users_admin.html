@@ -1,8 +1,10 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}People - Users | HappYness{% endblock %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/status-filter-select.css' %}">
 <style>
     .regular-users-page {
         display: grid;
@@ -244,9 +246,17 @@
     }
 
     .regular-users-bulk-copy {
+        display: grid;
+        gap: 0.2rem;
         color: #173a31;
         font-size: 0.8rem;
         font-weight: 700;
+    }
+
+    .regular-users-bulk-copy small {
+        color: #56766c;
+        font-size: 0.72rem;
+        font-weight: 400;
     }
 
     .regular-users-bulk-actions {
@@ -1005,19 +1015,69 @@
     }
 
     @media (max-width: 760px) {
+        .regular-users-bulk-bar {
+            align-items: stretch;
+        }
+
+        .regular-users-bulk-copy {
+            flex-basis: 100%;
+        }
+
+        .regular-users-bulk-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            width: 100%;
+            gap: 0.5rem;
+        }
+
+        .regular-users-bulk-actions button {
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            padding-inline: 0.25rem;
+            font-size: 0.72rem;
+            text-align: center;
+            white-space: nowrap;
+        }
+
         .regular-users-controls {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-areas:
+                "search search"
+                "status add"
+                "more more";
+            align-items: stretch;
+            gap: 0.6rem;
             flex: 1 1 100%;
-            flex-wrap: wrap;
         }
 
         .regular-users-search-wrap {
-            flex: 1 1 100%;
+            grid-area: search;
+            width: 100%;
+        }
+
+        .regular-users-controls .status-filter-select--regular-users-status {
+            grid-area: status;
+            width: 100%;
+            min-width: 0;
+            flex: none;
+        }
+
+        #regular-user-add-open {
+            grid-area: add;
+            width: 100%;
+            min-width: 0;
+        }
+
+        #regular-users-toggle-columns {
+            grid-area: more;
             width: 100%;
         }
 
         .regular-users-status-filter,
         .regular-users-action {
-            flex: 1 1 calc(50% - 0.55rem);
+            min-width: 0;
         }
     }
 
@@ -1072,11 +1132,13 @@
                     <svg class="regular-users-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
                     <input id="regular-users-search" class="regular-users-search" type="search" placeholder="Search by name, username, email..." aria-label="Search users by name, username, email, or phone">
                 </label>
-                <select id="regular-users-status" class="regular-users-status-filter" aria-label="Filter users by status">
-                    <option value="">All Statuses</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                </select>
+                <div class="status-filter-select status-filter-select--regular-users-status">
+                    <select id="regular-users-status" class="regular-users-status-filter" data-status-filter-custom aria-label="Filter users by status">
+                        <option value="">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
                 <button type="button" id="regular-user-add-open" class="regular-users-action" aria-label="Add a regular user">
                     <i data-lucide="user-plus" aria-hidden="true"></i><span>Add User</span>
                 </button>
@@ -1084,7 +1146,10 @@
             </div>
         </div>
         <div id="regular-users-bulk-bar" class="regular-users-bulk-bar" data-show="false" aria-live="polite">
-            <strong class="regular-users-bulk-copy"><span id="regular-users-selected-count">0</span> users selected</strong>
+            <div class="regular-users-bulk-copy">
+                <strong><span id="regular-users-selected-count">0</span> users selected</strong>
+                <small>Selected user accounts will be permanently removed.</small>
+            </div>
             <div class="regular-users-bulk-actions">
                 <button type="button" id="regular-users-clear-selection">Clear selection</button>
                 <button type="button" id="regular-users-delete-selected" class="is-danger">Remove Selected</button>
@@ -1300,6 +1365,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="{% static 'js/status-filter-select.js' %}"></script>
 <script>
 (function () {
     "use strict";

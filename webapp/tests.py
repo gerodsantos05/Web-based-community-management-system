@@ -13,9 +13,11 @@ from django.urls import reverse
 from django.utils import timezone
 
 from . import views
+from .audit import reset_admin_actor, set_admin_actor
 from .avatar_utils import avatar_url_for_user, default_avatar_url
 from .context_processors import dashboard_profile_context
 from .models import (
+    AdminActivityLog,
     AdminSystemSettings,
     AdminUserPreferences,
     Activity,
@@ -661,6 +663,22 @@ class AdminDashboardKpiMetricsTests(TestCase):
         self.assertEqual(response.context["low_stock_items_count"], 1)
         self.assertEqual(response.context["low_stock_critical_count"], 1)
 
+    def test_dashboard_activity_quick_action_has_current_activity_fields(self):
+        admin = User.objects.create_superuser(username="admin-activity-quick-action", email="admin-activity-quick-action@example.com", password="testpass123")
+        self.client.force_login(admin)
+
+        response = self.client.get(reverse("admin_dashboard"))
+        content = response.content.decode("utf-8")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="end_time"')
+        self.assertContains(response, 'name="beneficiary_ids"')
+        self.assertContains(response, 'name="total_budget"')
+        self.assertContains(response, 'name="donor_share_amount"')
+        self.assertContains(response, 'value="completed">Completed')
+        self.assertContains(response, 'activity-beneficiary-options')
+        self.assertIn("Assign Beneficiaries", content)
+
     def test_product_inquiry_supports_in_delivery_status(self):
         self.assertTrue(hasattr(ProductInquiry, "STATUS_IN_DELIVERY"))
         self.assertIn((ProductInquiry.STATUS_IN_DELIVERY, "In Delivery"), ProductInquiry.STATUS_CHOICES)
@@ -1177,6 +1195,133 @@ class VolunteerAdminChatFlowTests(TestCase):
         self.assertTrue(admin_response.json()["message"]["attachment"])
 
 
+class AdminAuditRequestCoalescingTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username="audit-request-admin",
+            email="",
+            password="password123",
+        )
+        self.client.force_login(self.admin)
+
+    def test_donation_receipt_side_effect_is_one_status_row(self):
+        with tempfile.TemporaryDirectory() as temp_media_root:
+            with override_settings(MEDIA_ROOT=temp_media_root):
+                add_response = self.client.post(
+                    reverse("submit_donation"),
+                    {
+                        "donor_name": "Audit Donation",
+                        "donor_email": "",
+                        "amount": "250",
+                        "payment_method": Donation.PAYMENT_GCASH,
+                        "receipt": SimpleUploadedFile(
+                            "donation-proof.png",
+                            b"\x89PNG\r\n\x1a\nvalid-test-png",
+                            content_type="image/png",
+                        ),
+                    },
+                )
+                self.assertEqual(add_response.status_code, 201)
+                donation = Donation.objects.get(donor_name="Audit Donation")
+
+                status_response = self.client.post(
+                    reverse("bulk_update_donations"),
+                    data=json.dumps({"ids": [donation.pk], "status": "completed"}),
+                    content_type="application/json",
+                )
+                self.assertEqual(status_response.status_code, 200)
+
+        entries = AdminActivityLog.objects.filter(
+            section="Donations",
+            record_type="Donation",
+            record_id=str(donation.pk),
+        ).order_by("created_at", "pk")
+        self.assertEqual(entries.count(), 2)
+        self.assertEqual(list(entries.values_list("action", flat=True)), [
+            AdminActivityLog.ACTION_CREATE,
+            AdminActivityLog.ACTION_STATUS,
+        ])
+        self.assertEqual(entries.last().details, "Changed Pending to Completed for Audit Donation.")
+
+    def test_activity_create_and_edit_each_write_one_row(self):
+        add_response = self.client.post(
+            reverse("add_activity"),
+            {
+                "title": "Audit Activity",
+                "date": "2026-10-20",
+                "time": "09:00",
+                "location": "Bacoor",
+                "category": "outreach",
+                "status": Activity.STATUS_ACTIVE,
+                "description": "Initial details",
+                "funding_mode": "none",
+            },
+        )
+        self.assertEqual(add_response.status_code, 302)
+        activity = Activity.objects.get(title="Audit Activity")
+        activity_logs = AdminActivityLog.objects.filter(
+            section="Activities",
+            record_type="Activity",
+            record_id=str(activity.pk),
+        )
+        self.assertEqual(activity_logs.count(), 1)
+        self.assertEqual(activity_logs.get().action, AdminActivityLog.ACTION_CREATE)
+
+        edit_response = self.client.post(
+            reverse("add_activity"),
+            {
+                "activityId": str(activity.pk),
+                "title": "Audit Activity",
+                "date": "2026-10-20",
+                "time": "09:00",
+                "location": "Bacoor",
+                "category": "outreach",
+                "status": Activity.STATUS_ACTIVE,
+                "description": "Updated details",
+                "funding_mode": "none",
+            },
+        )
+        self.assertEqual(edit_response.status_code, 302)
+        self.assertEqual(activity_logs.count(), 2)
+        self.assertEqual(activity_logs.order_by("created_at", "pk").last().action, AdminActivityLog.ACTION_EDIT)
+
+    def test_volunteer_create_and_removal_each_write_one_row(self):
+        create_response = self.client.post(
+            reverse("create_volunteer"),
+            {
+                "full_name": "Audit Volunteer",
+                "email": "audit-volunteer@example.com",
+                "phone": "09170000000",
+                "availability": "Weekends",
+                "skills": "Teaching",
+                "areas_of_interest": "Bacoor",
+                "username": "audit-volunteer",
+                "password": "password123",
+                "status": "active",
+            },
+        )
+        self.assertEqual(create_response.status_code, 201)
+        volunteer_id = create_response.json()["volunteer"]["id"]
+        volunteer_application = RoleApplication.objects.get(
+            user_id=volunteer_id,
+            role=RoleApplication.ROLE_VOLUNTEER,
+        )
+        volunteer_logs = AdminActivityLog.objects.filter(
+            section="Volunteers",
+            record_id=str(volunteer_application.pk),
+        )
+        self.assertEqual(volunteer_logs.count(), 1)
+        self.assertEqual(volunteer_logs.get().action, AdminActivityLog.ACTION_CREATE)
+
+        remove_response = self.client.post(
+            reverse("deactivate_volunteers_bulk"),
+            {"volunteer_user_ids": [str(volunteer_id)]},
+        )
+        self.assertEqual(remove_response.status_code, 200)
+        self.assertEqual(volunteer_logs.count(), 2)
+        self.assertEqual(volunteer_logs.order_by("created_at", "pk").last().action, AdminActivityLog.ACTION_STATUS)
+
+
 class DonationReceiptFlowTests(TestCase):
     def test_bulk_completion_generates_official_donation_receipt(self):
         admin = User.objects.create_superuser(username="admin-donation-receipt", email="admin-donation-receipt@example.com", password="password123")
@@ -1449,6 +1594,38 @@ class ActivityVolunteerAssignmentSyncTests(TestCase):
                 contact_details=f"{volunteer.username}@example.com",
             )
 
+    def test_volunteer_upcoming_task_shows_activity_creator(self):
+        scheduled_date = timezone.localdate() + timedelta(days=2)
+        activity = Activity.objects.create(
+            title="Creator Label Activity",
+            date=scheduled_date,
+            location="Campo Santo",
+            created_by=self.admin,
+            created_by_name="Directory Admin",
+        )
+        VolunteerActivityAssignment.objects.create(
+            activity=activity,
+            volunteer=self.volunteer_one,
+            activity_name=activity.title,
+            scheduled_date=scheduled_date,
+            location=activity.location,
+            assigned_by=self.admin,
+        )
+
+        self.client.force_login(self.volunteer_one)
+        response = self.client.get(reverse("volunteer_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Created by Directory Admin")
+        self.assertEqual(response.context["upcoming_tasks"][0]["created_by_name"], "Directory Admin")
+
+    def test_activity_audit_names_fall_back_to_system_without_users(self):
+        activity = Activity.objects.create(title="System-created Activity", date="2026-10-15")
+
+        self.assertEqual(activity.created_by_display_name, "System")
+        self.assertEqual(activity.created_by_initials, "SY")
+        self.assertEqual(activity.last_modified_by_display_name, "System")
+
     def test_activity_feedback_average_uses_all_three_scores_per_submission(self):
         activity = Activity.objects.create(
             title="Feedback Average Activity",
@@ -1487,6 +1664,9 @@ class ActivityVolunteerAssignmentSyncTests(TestCase):
 
     def test_activity_creation_and_update_sync_volunteer_assignments(self):
         self.client.force_login(self.admin)
+        self.admin.first_name = "Avery"
+        self.admin.last_name = "Admin"
+        self.admin.save(update_fields=["first_name", "last_name"])
 
         add_response = self.client.post(
             reverse("add_activity"),
@@ -1498,6 +1678,8 @@ class ActivityVolunteerAssignmentSyncTests(TestCase):
                 "category": "outreach",
                 "status": Activity.STATUS_ACTIVE,
                 "description": "Community cleanup drive",
+                "created_by": str(self.volunteer_one.id),
+                "created_by_name": "Spoofed Creator",
                 "volunteer_ids[]": [str(self.volunteer_one.id), str(self.volunteer_two.id)],
             },
         )
@@ -1505,6 +1687,18 @@ class ActivityVolunteerAssignmentSyncTests(TestCase):
         self.assertEqual(add_response.status_code, 302)
         activity = Activity.objects.get(title="Community Cleanup")
         self.assertEqual(activity.category, "outreach")
+        self.assertEqual(activity.created_by_id, self.admin.id)
+        self.assertEqual(activity.created_by_name, "Avery Admin")
+        self.assertIsNone(activity.last_modified_by_id)
+        self.assertEqual(activity.created_by_display_name, "Avery Admin")
+        self.assertEqual(activity.last_modified_by_display_name, "Avery Admin")
+        directory = self.client.get(reverse("activities"))
+        self.assertContains(directory, '<th scope="col">Created By</th>', html=True)
+        self.assertContains(directory, '<th scope="col">Last Modified By</th>', html=True)
+        self.assertContains(directory, "Avery Admin")
+        self.assertContains(directory, 'data-created-by="Avery Admin"')
+        self.assertContains(directory, 'data-created-by-id="' + str(self.admin.id) + '"')
+        self.assertContains(directory, 'data-last-modified-by="Avery Admin"')
         self.assertEqual(activity.volunteer_assignments.count(), 2)
         self.assertTrue(VolunteerActivityAssignment.objects.filter(activity=activity, activity_type="outreach").exists())
         self.assertTrue(VolunteerActivityAssignment.objects.filter(activity=activity, volunteer=self.volunteer_one).exists())
@@ -1538,6 +1732,8 @@ class ActivityVolunteerAssignmentSyncTests(TestCase):
                 "category": "outreach",
                 "status": Activity.STATUS_ACTIVE,
                 "description": "Community cleanup drive",
+                "created_by": str(self.volunteer_two.id),
+                "created_by_name": "Changed Creator",
                 "volunteer_ids[]": [str(self.volunteer_two.id)],
             },
         )
@@ -1545,6 +1741,11 @@ class ActivityVolunteerAssignmentSyncTests(TestCase):
         self.assertEqual(edit_response.status_code, 302)
         activity.refresh_from_db()
         self.assertEqual(activity.category, "outreach")
+        self.assertEqual(activity.created_by_id, self.admin.id)
+        self.assertEqual(activity.created_by_name, "Avery Admin")
+        self.assertEqual(activity.last_modified_by_id, self.admin.id)
+        self.assertEqual(activity.last_modified_by_name, "Avery Admin")
+        self.assertContains(self.client.get(reverse("activities")), 'data-last-modified-by="Avery Admin"')
         self.assertFalse(VolunteerActivityAssignment.objects.filter(activity=activity, volunteer=self.volunteer_one).exists())
         self.assertTrue(VolunteerActivityAssignment.objects.filter(activity=activity, volunteer=self.volunteer_two).exists())
 
@@ -2861,6 +3062,7 @@ class AdminSystemSettingsPersistenceTests(TestCase):
 
 class UserDashboardOverviewUpcomingActivitiesTests(TestCase):
     def setUp(self):
+        self.admin = User.objects.create_superuser(username="upcoming-activity-admin", password="password123")
         self.beneficiary = User.objects.create_user(username="beneficiary-next-up", password="password123")
         profile, _ = UserProfile.objects.get_or_create(user=self.beneficiary)
         profile.account_role = UserProfile.ROLE_BENEFICIARY
@@ -2885,6 +3087,8 @@ class UserDashboardOverviewUpcomingActivitiesTests(TestCase):
             location="Molino III",
             status=Activity.STATUS_ACTIVE,
             description="School supply release",
+            created_by=self.admin,
+            created_by_name="Second Admin",
         )
         Activity.objects.create(
             title="Community Food Drive",
@@ -2893,6 +3097,8 @@ class UserDashboardOverviewUpcomingActivitiesTests(TestCase):
             location="Barangay Hall",
             status=Activity.STATUS_ACTIVE,
             description="Food drive",
+            created_by=self.admin,
+            created_by_name="Directory Admin",
         )
 
         response = self.client.get(reverse("user_dashboard_overview_api"))
@@ -2901,9 +3107,12 @@ class UserDashboardOverviewUpcomingActivitiesTests(TestCase):
         payload = response.json()
         self.assertEqual(payload["next_pickup"]["state"], "pending")
         self.assertEqual(payload["next_pickup"]["title"], "Community Food Drive")
+        self.assertEqual(payload["next_pickup"]["created_by_name"], "Directory Admin")
         self.assertEqual(len(payload["next_pickup"]["upcoming_items"]), 2)
         self.assertEqual(payload["next_pickup"]["upcoming_items"][0]["date_label"], "Sep 15, 2026")
+        self.assertEqual(payload["next_pickup"]["upcoming_items"][0]["created_by_name"], "Directory Admin")
         self.assertEqual(payload["next_pickup"]["upcoming_items"][1]["date_label"], "Sep 20, 2026")
+        self.assertEqual(payload["next_pickup"]["upcoming_items"][1]["created_by_name"], "Second Admin")
 
     def test_completed_activity_is_not_returned_as_upcoming(self):
         self.client.force_login(self.beneficiary)
@@ -3702,3 +3911,719 @@ class RegularUsersBulkActionTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertTrue(User.objects.filter(id=target.id).exists())
+
+
+class AdminDirectoryTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username="directory-admin",
+            email="directory-admin@example.com",
+            password="test-password",
+            first_name="Directory",
+            last_name="Admin",
+        )
+        self.client.force_login(self.admin)
+
+    def test_admin_directory_lists_only_admin_accounts(self):
+        inactive_admin = User.objects.create_superuser(
+            username="inactive-admin",
+            email="inactive-admin@example.com",
+            password="test-password",
+        )
+        inactive_admin.is_active = False
+        inactive_admin.save(update_fields=["is_active"])
+        regular_user = User.objects.create_user(
+            username="directory-regular-user",
+            email="regular@example.com",
+            password="test-password",
+        )
+        staff_user = User.objects.create_user(
+            username="directory-staff-user",
+            email="staff@example.com",
+            password="test-password",
+            is_staff=True,
+        )
+
+        response = self.client.get(reverse("admins"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.admin.username)
+        self.assertContains(response, self.admin.email)
+        self.assertContains(response, "Directory Admin")
+        self.assertContains(response, inactive_admin.username)
+        self.assertContains(response, "Active Admins")
+        self.assertContains(response, "Inactive Admins")
+        self.assertContains(response, "Joined This Week")
+        self.assertEqual(response.context["admin_counts"]["total"], 2)
+        self.assertEqual(response.context["admin_counts"]["active"], 1)
+        self.assertEqual(response.context["admin_counts"]["inactive"], 1)
+        self.assertEqual(response.context["admin_counts"]["joined_this_week"], 2)
+        self.assertEqual(response.content.decode().count('class="admins-card admins-kpi"'), 4)
+        self.assertNotContains(response, regular_user.username)
+        self.assertNotContains(response, staff_user.username)
+        self.assertContains(response, "Inactive")
+
+    def test_admin_directory_renders_search_status_add_and_show_more_controls(self):
+        response = self.client.get(reverse("admins"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="admins-search"')
+        self.assertContains(response, 'id="admins-status-filter"')
+        self.assertContains(response, "All Statuses")
+        self.assertContains(response, 'id="admins-add-open"')
+        self.assertContains(response, "Add Admin")
+        self.assertContains(response, 'data-admin-status="active"')
+        self.assertContains(response, 'data-admin-status="inactive"')
+        self.assertContains(response, 'name="status" value="active"')
+        self.assertContains(response, 'id="admins-toggle-columns"')
+        self.assertContains(response, "Show More")
+        self.assertContains(response, reverse("create_admin"))
+        self.assertContains(response, 'data-admin-actions-trigger')
+        self.assertContains(response, 'id="admins-actions-menu"')
+        self.assertContains(response, "Admin Profile")
+        self.assertContains(response, 'id="admins-profile-edit"')
+        self.assertContains(response, 'id="admins-profile-form"')
+        self.assertContains(response, "Save Changes")
+        self.assertContains(response, reverse("update_admin_profile"))
+        self.assertContains(response, "Deactivate Admin")
+        self.assertContains(response, "Remove Admin")
+        self.assertContains(response, reverse("update_admin_status"))
+
+    def test_admin_activity_log_filters_and_paginates_read_only_entries(self):
+        for index in range(51):
+            AdminActivityLog.objects.create(
+                admin=self.admin,
+                admin_name="Directory Admin",
+                action=AdminActivityLog.ACTION_EDIT,
+                section="Activities",
+                record_type="Activity",
+                record_id=str(index + 1),
+                record_label=f"Community activity {index + 1}",
+                details="Changed date",
+            )
+        AdminActivityLog.objects.create(
+            admin=self.admin,
+            admin_name="Directory Admin",
+            action=AdminActivityLog.ACTION_STATUS,
+            section="Payments",
+            record_type="Payment",
+            record_id="999",
+            record_label="Unrelated payment",
+            details="Changed status",
+        )
+
+        filters = {
+            "tab": "activity-log",
+            "admin": "Directory Admin",
+            "section": "Activities",
+            "action": AdminActivityLog.ACTION_EDIT,
+            "q": "Community activity",
+            "start_date": timezone.localdate().isoformat(),
+            "end_date": timezone.localdate().isoformat(),
+        }
+        response = self.client.get(reverse("admins"), filters)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Admin Activity Log")
+        self.assertContains(response, 'aria-label="Admin Activity Log"')
+        self.assertContains(response, "Date &amp; Time")
+        self.assertEqual(response.context["active_admin_tab"], "activity-log")
+        self.assertEqual(response.context["activity_log_count"], 51)
+        self.assertEqual(response.context["activity_log_page"].paginator.num_pages, 2)
+        self.assertContains(response, "Next")
+        self.assertNotContains(response, "Unrelated payment")
+
+        second_page = self.client.get(reverse("admins"), {**filters, "log_page": "2"})
+        self.assertEqual(second_page.context["activity_log_page"].number, 2)
+        self.assertEqual(len(second_page.context["activity_log_page"].object_list), 1)
+        self.assertContains(second_page, "Previous")
+
+    def test_admin_activity_log_details_are_compact_and_deduplicated(self):
+        AdminActivityLog.objects.create(
+            admin=self.admin,
+            admin_name="Directory Admin",
+            action=AdminActivityLog.ACTION_EDIT,
+            section="Users",
+            record_type="User Profile",
+            record_id="46",
+            record_label="User Profile #46",
+            details="Edited User Profile #46. Changed: Account Role, Volunteer Role.",
+        )
+        AdminActivityLog.objects.create(
+            admin=self.admin,
+            admin_name="Directory Admin",
+            action=AdminActivityLog.ACTION_CREATE,
+            section="Activities",
+            record_type="Activity",
+            record_id="107",
+            record_label="SM Baco Fest",
+            details="Added SM Baco Fest.",
+        )
+
+        response = self.client.get(reverse("admins"), {"tab": "activity-log"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<strong class="admins-log-record">User</strong>', html=True)
+        self.assertContains(response, '<small class="admins-log-record-id">#46</small>', html=True)
+        self.assertContains(response, '<small class="admins-log-change">Changed: Account Role, Volunteer Role</small>', html=True)
+        self.assertContains(response, '<strong class="admins-log-record">SM Baco Fest</strong>', html=True)
+        self.assertContains(response, '<small class="admins-log-change">Added</small>', html=True)
+        self.assertContains(response, 'title="User Profile: User Profile #46 ID 46 Edited User Profile #46. Changed: Account Role, Volunteer Role."')
+
+    def test_admin_creation_and_status_changes_are_logged(self):
+        create_response = self.client.post(
+            reverse("create_admin"),
+            {
+                "full_name": "New Administrator",
+                "username": "audit-directory-admin",
+                "email": "audit-directory-admin@example.com",
+                "password": "T#6-vrgP9E-L3x!Wqk4-2026",
+                "confirm_password": "T#6-vrgP9E-L3x!Wqk4-2026",
+            },
+        )
+        self.assertEqual(create_response.status_code, 201)
+        created_admin = User.objects.get(username="audit-directory-admin")
+        created_log = AdminActivityLog.objects.get(
+            record_id=str(created_admin.pk),
+            action=AdminActivityLog.ACTION_CREATE,
+        )
+        self.assertEqual(created_log.admin, self.admin)
+        self.assertEqual(created_log.admin_name, "Directory Admin")
+        self.assertEqual(created_log.section, "Users")
+
+        status_response = self.client.post(
+            reverse("update_admin_status"),
+            {"admin_id": created_admin.pk, "status": "inactive"},
+        )
+        self.assertEqual(status_response.status_code, 200)
+        status_log = AdminActivityLog.objects.get(
+            record_id=str(created_admin.pk),
+            action=AdminActivityLog.ACTION_STATUS,
+        )
+        self.assertIn("Inactive", status_log.details)
+
+    def test_role_approval_and_inventory_deletion_are_logged(self):
+        application = RoleApplication.objects.create(
+            user=None,
+            role=RoleApplication.ROLE_VOLUNTEER,
+            full_name="Pending Volunteer",
+            contact_details="pending@example.com",
+        )
+        item = InventoryItem.objects.create(
+            name="Audit Test Item",
+            category=InventoryItem.CATEGORY_OTHER,
+            stock=1,
+        )
+
+        token = set_admin_actor(self.admin)
+        try:
+            application.status = RoleApplication.STATUS_APPROVED
+            application.save(update_fields=["status", "updated_at"])
+            item.delete()
+        finally:
+            reset_admin_actor(token)
+
+        approval_log = AdminActivityLog.objects.get(
+            record_id=str(application.pk),
+            action=AdminActivityLog.ACTION_APPROVAL,
+        )
+        deletion_log = AdminActivityLog.objects.get(
+            record_id=str(item.pk),
+            action=AdminActivityLog.ACTION_DELETE,
+        )
+        self.assertEqual(approval_log.section, "Volunteers")
+        self.assertIn("Approved", approval_log.details)
+        self.assertEqual(deletion_log.section, "Inventory")
+
+    def test_people_directories_load_custom_status_dropdowns(self):
+        directory_routes = {
+            "admins": "status-filter-select--admins-status-filter",
+            "regular_users": "status-filter-select--regular-users-status",
+            "volunteers": "status-filter-select--vol-status-filter",
+            "beneficiaries": "status-filter-select--ben-status-filter",
+        }
+
+        for route_name, wrapper_class in directory_routes.items():
+            with self.subTest(directory=route_name):
+                response = self.client.get(reverse(route_name))
+
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, "data-status-filter-custom")
+                self.assertContains(response, wrapper_class)
+                self.assertContains(response, "css/status-filter-select.css")
+                self.assertContains(response, "js/status-filter-select.js")
+
+    def test_admin_directory_renders_bulk_selection_controls(self):
+        response = self.client.get(reverse("admins"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="admins-select-all"')
+        self.assertContains(response, "data-admin-select")
+        self.assertContains(response, 'id="admins-bulk-bar"')
+        self.assertContains(response, 'id="admins-clear-selection"')
+        self.assertContains(response, "Clear selection")
+        self.assertContains(response, 'id="admins-delete-selected"')
+        self.assertContains(response, "Remove Selected")
+        self.assertContains(response, 'id="admins-confirm-modal"')
+        self.assertContains(response, "Confirmation")
+        self.assertContains(response, 'id="admins-confirm-message"')
+        self.assertContains(response, 'id="admins-confirm-submit" class="is-danger"')
+        self.assertContains(response, "You cannot remove your own account or the last active administrator.")
+
+    def test_superuser_can_bulk_remove_other_admin_accounts(self):
+        removable_admin = User.objects.create_superuser(
+            username="removable-admin",
+            email="removable-admin@example.com",
+            password="test-password",
+        )
+
+        response = self.client.post(
+            reverse("delete_admins"),
+            {"admin_ids": [str(removable_admin.id)]},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["deleted_count"], 1)
+        self.assertFalse(User.objects.filter(id=removable_admin.id).exists())
+        self.assertTrue(User.objects.filter(id=self.admin.id).exists())
+
+    def test_admin_bulk_removal_rejects_self_without_deleting_other_accounts(self):
+        other_admin = User.objects.create_superuser(
+            username="other-admin",
+            email="other-admin@example.com",
+            password="test-password",
+        )
+
+        response = self.client.post(
+            reverse("delete_admins"),
+            {"admin_ids": [str(other_admin.id), str(self.admin.id)]},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("own administrator account", response.json()["error"])
+        self.assertTrue(User.objects.filter(id=other_admin.id).exists())
+        self.assertTrue(User.objects.filter(id=self.admin.id).exists())
+
+    def test_admin_bulk_removal_rejects_non_admin_selection_without_partial_deletion(self):
+        other_admin = User.objects.create_superuser(
+            username="validated-admin",
+            email="validated-admin@example.com",
+            password="test-password",
+        )
+        regular_user = User.objects.create_user(
+            username="not-an-admin",
+            email="not-an-admin@example.com",
+            password="test-password",
+        )
+
+        response = self.client.post(
+            reverse("delete_admins"),
+            {"admin_ids": [str(other_admin.id), str(regular_user.id)]},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertTrue(User.objects.filter(id=other_admin.id).exists())
+        self.assertTrue(User.objects.filter(id=regular_user.id).exists())
+
+    def test_superuser_can_deactivate_and_reactivate_another_admin(self):
+        target_admin = User.objects.create_superuser(
+            username="status-target-admin",
+            email="status-target-admin@example.com",
+            password="TestPassword!234",
+        )
+
+        deactivate_response = self.client.post(
+            reverse("update_admin_status"),
+            {"admin_id": str(target_admin.id), "status": "inactive"},
+        )
+
+        self.assertEqual(deactivate_response.status_code, 200)
+        self.assertFalse(User.objects.get(id=target_admin.id).is_active)
+
+        reactivate_response = self.client.post(
+            reverse("update_admin_status"),
+            {"admin_id": str(target_admin.id), "status": "active"},
+        )
+
+        self.assertEqual(reactivate_response.status_code, 200)
+        self.assertTrue(User.objects.get(id=target_admin.id).is_active)
+
+    def test_superuser_can_update_admin_profile(self):
+        target_admin = User.objects.create_superuser(
+            username="profile-target-admin",
+            email="profile-target-admin@example.com",
+            password="TestPassword!234",
+            first_name="Old",
+            last_name="Name",
+        )
+
+        response = self.client.post(
+            reverse("update_admin_profile"),
+            {
+                "admin_id": str(target_admin.id),
+                "full_name": "Updated Administrator",
+                "username": "updated-profile-admin",
+                "email": "updated-profile-admin@example.com",
+                "status": "inactive",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        target_admin.refresh_from_db()
+        self.assertEqual(target_admin.get_full_name(), "Updated Administrator")
+        self.assertEqual(target_admin.username, "updated-profile-admin")
+        self.assertEqual(target_admin.email, "updated-profile-admin@example.com")
+        self.assertFalse(target_admin.is_active)
+
+    def test_admin_profile_update_rejects_deactivating_self(self):
+        response = self.client.post(
+            reverse("update_admin_profile"),
+            {
+                "admin_id": str(self.admin.id),
+                "full_name": "Directory Admin",
+                "username": self.admin.username,
+                "email": self.admin.email,
+                "status": "inactive",
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("own administrator account", response.json()["error"])
+        self.assertTrue(User.objects.get(id=self.admin.id).is_active)
+
+    def test_admin_profile_update_rejects_duplicate_username(self):
+        target_admin = User.objects.create_superuser(
+            username="profile-duplicate-target",
+            email="profile-duplicate-target@example.com",
+            password="TestPassword!234",
+        )
+
+        response = self.client.post(
+            reverse("update_admin_profile"),
+            {
+                "admin_id": str(target_admin.id),
+                "full_name": "Duplicate Username",
+                "username": self.admin.username,
+                "email": target_admin.email,
+                "status": "active",
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("username is already taken", response.json()["error"])
+        target_admin.refresh_from_db()
+        self.assertEqual(target_admin.username, "profile-duplicate-target")
+
+    def test_non_superuser_cannot_update_admin_profile(self):
+        target_admin = User.objects.create_superuser(
+            username="profile-protected-admin",
+            email="profile-protected-admin@example.com",
+            password="TestPassword!234",
+        )
+        regular_user = User.objects.create_user(
+            username="profile-non-admin",
+            email="profile-non-admin@example.com",
+            password="TestPassword!234",
+        )
+        self.client.force_login(regular_user)
+
+        response = self.client.post(
+            reverse("update_admin_profile"),
+            {
+                "admin_id": str(target_admin.id),
+                "full_name": "Unauthorized Update",
+                "username": "unauthorized-admin-update",
+                "email": target_admin.email,
+                "status": "active",
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+        target_admin.refresh_from_db()
+        self.assertEqual(target_admin.username, "profile-protected-admin")
+
+    def test_admin_status_update_rejects_deactivating_self(self):
+        response = self.client.post(
+            reverse("update_admin_status"),
+            {"admin_id": str(self.admin.id), "status": "inactive"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("own administrator account", response.json()["error"])
+        self.assertTrue(User.objects.get(id=self.admin.id).is_active)
+
+    def test_admin_status_update_rejects_non_admin_accounts(self):
+        regular_user = User.objects.create_user(
+            username="status-not-admin",
+            email="status-not-admin@example.com",
+            password="TestPassword!234",
+        )
+
+        response = self.client.post(
+            reverse("update_admin_status"),
+            {"admin_id": str(regular_user.id), "status": "inactive"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertTrue(User.objects.get(id=regular_user.id).is_active)
+
+    def test_non_superuser_cannot_update_admin_status(self):
+        target_admin = User.objects.create_superuser(
+            username="status-protected-admin",
+            email="status-protected-admin@example.com",
+            password="TestPassword!234",
+        )
+        regular_user = User.objects.create_user(
+            username="status-non-admin",
+            email="status-non-admin@example.com",
+            password="TestPassword!234",
+        )
+        self.client.force_login(regular_user)
+
+        response = self.client.post(
+            reverse("update_admin_status"),
+            {"admin_id": str(target_admin.id), "status": "inactive"},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(User.objects.get(id=target_admin.id).is_active)
+
+    def test_non_superuser_cannot_bulk_remove_admin_accounts(self):
+        other_admin = User.objects.create_superuser(
+            username="protected-admin",
+            email="protected-admin@example.com",
+            password="test-password",
+        )
+        regular_user = User.objects.create_user(
+            username="bulk-delete-non-admin",
+            email="bulk-delete-non-admin@example.com",
+            password="test-password",
+        )
+        self.client.force_login(regular_user)
+
+        response = self.client.post(
+            reverse("delete_admins"),
+            {"admin_ids": [str(other_admin.id)]},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(User.objects.filter(id=other_admin.id).exists())
+
+    def test_superuser_can_create_admin_account(self):
+        response = self.client.post(
+            reverse("create_admin"),
+            {
+                "full_name": "New Administrator",
+                "username": "new-directory-admin",
+                "email": "new-directory-admin@example.com",
+                "password": "T#6-vrgP9E-L3x!Wqk4-2026",
+                "confirm_password": "T#6-vrgP9E-L3x!Wqk4-2026",
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        created_admin = User.objects.get(username="new-directory-admin")
+        self.assertTrue(created_admin.is_staff)
+        self.assertTrue(created_admin.is_superuser)
+        self.assertTrue(created_admin.is_active)
+        self.assertEqual(response.json()["admin"]["full_name"], "New Administrator")
+
+    def test_superuser_can_create_inactive_admin_account(self):
+        response = self.client.post(
+            reverse("create_admin"),
+            {
+                "full_name": "Inactive Administrator",
+                "username": "inactive-directory-admin",
+                "email": "inactive-directory-admin@example.com",
+                "password": "T#6-vrgP9E-L3x!Wqk4-2026",
+                "confirm_password": "T#6-vrgP9E-L3x!Wqk4-2026",
+                "status": "inactive",
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        created_admin = User.objects.get(username="inactive-directory-admin")
+        self.assertTrue(created_admin.is_superuser)
+        self.assertFalse(created_admin.is_active)
+        self.assertEqual(response.json()["admin"]["status"], "inactive")
+
+    def test_admin_creation_rejects_invalid_status(self):
+        response = self.client.post(
+            reverse("create_admin"),
+            {
+                "full_name": "Invalid Status Admin",
+                "username": "invalid-status-admin",
+                "email": "invalid-status-admin@example.com",
+                "password": "T#6-vrgP9E-L3x!Wqk4-2026",
+                "confirm_password": "T#6-vrgP9E-L3x!Wqk4-2026",
+                "status": "pending",
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("valid admin account status", response.json()["error"])
+        self.assertFalse(User.objects.filter(username="invalid-status-admin").exists())
+
+    def test_non_superuser_cannot_create_admin_account(self):
+        regular_user = User.objects.create_user(
+            username="admin-create-non-admin",
+            email="admin-create-non-admin@example.com",
+            password="test-password",
+        )
+        self.client.force_login(regular_user)
+
+        response = self.client.post(
+            reverse("create_admin"),
+            {
+                "full_name": "Should Not Be Admin",
+                "username": "not-authorized-admin",
+                "email": "not-authorized-admin@example.com",
+                "password": "T#6-vrgP9E-L3x!Wqk4-2026",
+                "confirm_password": "T#6-vrgP9E-L3x!Wqk4-2026",
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(User.objects.filter(username="not-authorized-admin").exists())
+
+    def test_admin_creation_rejects_mismatched_passwords(self):
+        response = self.client.post(
+            reverse("create_admin"),
+            {
+                "full_name": "Mismatched Admin",
+                "username": "mismatched-admin",
+                "email": "mismatched-admin@example.com",
+                "password": "T#6-vrgP9E-L3x!Wqk4-2026",
+                "confirm_password": "Different-Password-2026!",
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("passwords do not match", response.json()["error"])
+        self.assertFalse(User.objects.filter(username="mismatched-admin").exists())
+
+    def test_admin_directory_is_restricted_to_superusers(self):
+        regular_user = User.objects.create_user(
+            username="directory-non-admin",
+            email="non-admin@example.com",
+            password="test-password",
+        )
+        self.client.force_login(regular_user)
+
+        response = self.client.get(reverse("admins"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("user_dashboard"))
+
+    def test_legacy_admin_list_url_redirects_to_people_admins(self):
+        response = self.client.get(reverse("users"))
+
+        self.assertRedirects(response, reverse("admins"))
+
+    def test_admin_navigation_places_admin_after_people_lists(self):
+        response = self.client.get(reverse("admins"))
+        content = response.content.decode()
+
+        self.assertLess(content.index('label: "Users"'), content.index('label: "Volunteers"'))
+        self.assertLess(content.index('label: "Volunteers"'), content.index('label: "Beneficiaries"'))
+        self.assertLess(content.index('label: "Beneficiaries"'), content.index('label: "Admin"'))
+        self.assertContains(response, 'admins: "/admins/"')
+
+
+class VolunteerBulkRemovalTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username="volunteer-bulk-admin",
+            email="volunteer-bulk-admin@example.com",
+            password="test-password",
+        )
+        self.client.force_login(self.admin)
+
+    def create_volunteer(self, username):
+        user = User.objects.create_user(
+            username=username,
+            email=f"{username}@example.com",
+            password="test-password",
+        )
+        UserProfile.objects.create(user=user, account_role=UserProfile.ROLE_VOLUNTEER)
+        return user
+
+    def test_volunteer_directory_renders_selection_toolbar(self):
+        response = self.client.get(reverse("volunteers"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="vol-select-all"')
+        self.assertContains(response, 'id="vol-bulk-bar"')
+        self.assertContains(response, 'id="vol-bulk-clear"')
+        self.assertContains(response, "Clear selection")
+        self.assertContains(response, 'id="vol-bulk-remove"')
+        self.assertContains(response, "Remove Selected")
+        self.assertContains(response, "return to regular user accounts")
+        self.assertContains(response, reverse("deactivate_volunteers_bulk"))
+
+    def test_superuser_can_remove_multiple_volunteers_without_deleting_accounts(self):
+        volunteers = [
+            self.create_volunteer("bulk-volunteer-one"),
+            self.create_volunteer("bulk-volunteer-two"),
+        ]
+        applications = [
+            RoleApplication.objects.create(
+                user=volunteer,
+                role=RoleApplication.ROLE_VOLUNTEER,
+                status=RoleApplication.STATUS_APPROVED,
+                full_name=volunteer.username,
+                contact_details="555-0100",
+            )
+            for volunteer in volunteers
+        ]
+
+        response = self.client.post(
+            reverse("deactivate_volunteers_bulk"),
+            {"volunteer_user_ids": [str(volunteer.id) for volunteer in volunteers]},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["removed_count"], 2)
+        for volunteer in volunteers:
+            volunteer.refresh_from_db()
+            self.assertTrue(volunteer.is_active)
+            self.assertEqual(volunteer.userprofile.account_role, UserProfile.ROLE_REGULAR)
+        for application in applications:
+            application.refresh_from_db()
+            self.assertEqual(application.status, RoleApplication.STATUS_INACTIVE)
+            self.assertEqual(application.reviewed_by, self.admin)
+
+    def test_bulk_volunteer_removal_rejects_mixed_non_volunteer_selection_atomically(self):
+        volunteer = self.create_volunteer("valid-bulk-volunteer")
+        regular_user = User.objects.create_user(
+            username="not-a-bulk-volunteer",
+            email="not-a-bulk-volunteer@example.com",
+            password="test-password",
+        )
+
+        response = self.client.post(
+            reverse("deactivate_volunteers_bulk"),
+            {"volunteer_user_ids": [str(volunteer.id), str(regular_user.id)]},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        volunteer.refresh_from_db()
+        self.assertEqual(volunteer.userprofile.account_role, UserProfile.ROLE_VOLUNTEER)
+
+    def test_non_superuser_cannot_bulk_remove_volunteers(self):
+        volunteer = self.create_volunteer("protected-bulk-volunteer")
+        regular_user = User.objects.create_user(
+            username="volunteer-bulk-non-admin",
+            email="volunteer-bulk-non-admin@example.com",
+            password="test-password",
+        )
+        self.client.force_login(regular_user)
+
+        response = self.client.post(
+            reverse("deactivate_volunteers_bulk"),
+            {"volunteer_user_ids": [str(volunteer.id)]},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        volunteer.refresh_from_db()
+        self.assertEqual(volunteer.userprofile.account_role, UserProfile.ROLE_VOLUNTEER)

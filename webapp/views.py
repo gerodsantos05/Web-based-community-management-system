@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.conf import settings as django_settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.paginator import Paginator
 from django.core.files.base import ContentFile
 from django.core.mail import EmailMultiAlternatives
 from django.core.validators import validate_email
@@ -42,6 +43,7 @@ from .forms import (
 )
 from .avatar_utils import avatar_url_for_user
 from .models import (
+    AdminActivityLog,
     AdminSystemSettings,
     AdminUserPreferences,
     ALLOWED_UPLOAD_EXTENSIONS,
@@ -3470,13 +3472,23 @@ def donate(request):
                 normalized_total += percentage
             program["share"] = percentage
             program.setdefault("color", ("#5c8d68", "#d28757", "#6885a0")[index % 3])
+    tracker_token, set_tracker_cookie = _donation_tracker_token(request)
+    donation_filter = Q(tracking_token=tracker_token)
+    pledge_filter = Q(tracking_token=tracker_token)
+    if request.user.is_authenticated:
+        donation_filter |= Q(user=request.user)
+        pledge_filter |= Q(user=request.user)
+    has_donation_tracker_records = (
+        Donation.objects.filter(donation_filter).exists()
+        or ItemPledge.objects.filter(pledge_filter).exists()
+    )
     response = render(request, "donate.html", {
         "signin_form": SignInForm(),
         "signup_form": SignUpForm(),
         "donation_config": donation_config,
         "programs": programs,
+        "has_donation_tracker_records": has_donation_tracker_records,
     })
-    tracker_token, set_tracker_cookie = _donation_tracker_token(request)
     if set_tracker_cookie:
         response.set_cookie(
             "donation_tracker_id",
@@ -4767,6 +4779,57 @@ def deactivate_volunteer(request):
     })
 
 
+@login_required(login_url="signin")
+@require_POST
+def deactivate_volunteers_bulk(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Only administrators can remove volunteers."}, status=403)
+
+    volunteer_ids = []
+    for raw_volunteer_id in request.POST.getlist("volunteer_user_ids"):
+        volunteer_id = _parse_non_negative_int(raw_volunteer_id, default=0)
+        if volunteer_id <= 0:
+            return JsonResponse({"error": "Select one or more valid volunteer accounts."}, status=400)
+        if volunteer_id not in volunteer_ids:
+            volunteer_ids.append(volunteer_id)
+
+    if not volunteer_ids:
+        return JsonResponse({"error": "Select at least one volunteer account."}, status=400)
+
+    with transaction.atomic():
+        profiles = list(
+            UserProfile.objects.select_for_update()
+            .filter(user_id__in=volunteer_ids, account_role=UserProfile.ROLE_VOLUNTEER)
+            .select_related("user")
+        )
+        if len(profiles) != len(volunteer_ids):
+            return JsonResponse({"error": "One or more selected accounts are not volunteers."}, status=400)
+
+        for profile in profiles:
+            profile.account_role = UserProfile.ROLE_REGULAR
+            profile.volunteer_role = ""
+            profile.assigned_chapter_area = ""
+            profile.save(update_fields=["account_role", "volunteer_role", "assigned_chapter_area", "updated_at"])
+
+            latest_application = (
+                RoleApplication.objects
+                .filter(user_id=profile.user_id, role=RoleApplication.ROLE_VOLUNTEER)
+                .order_by("-created_at", "-id")
+                .first()
+            )
+            if latest_application:
+                latest_application.status = RoleApplication.STATUS_INACTIVE
+                latest_application.reviewed_at = timezone.now()
+                latest_application.reviewed_by = request.user
+                latest_application.save(update_fields=["status", "reviewed_at", "reviewed_by", "updated_at"])
+
+    return JsonResponse({
+        "message": f"{len(profiles)} volunteer account(s) returned to regular user status.",
+        "removed_count": len(profiles),
+        "removed_ids": [profile.user_id for profile in profiles],
+    })
+
+
 def _quarter_start(reference_dt):
     month = ((reference_dt.month - 1) // 3) * 3 + 1
     return reference_dt.replace(month=month, day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -4906,6 +4969,7 @@ def _build_user_dashboard_overview_payload(user):
 
     upcoming_activities = list(
         Activity.objects
+        .select_related("created_by")
         .filter(date__gte=now.date(), status=Activity.STATUS_ACTIVE)
         .filter(_visible_activity_filter(user))
         .distinct()
@@ -4942,6 +5006,7 @@ def _build_user_dashboard_overview_payload(user):
         upcoming_items.append({
             "id": int(activity.id),
             "title": activity.title,
+            "created_by_name": activity.created_by_display_name,
             "category": getattr(activity, "category", "other") or "other",
             "category_label": activity.get_category_display() if hasattr(activity, "get_category_display") else "Other",
             "description": description,
@@ -4978,6 +5043,7 @@ def _build_user_dashboard_overview_payload(user):
             "state": "pending",
             "id": int(first_activity.id),
             "title": first_activity.title,
+            "created_by_name": first_activity.created_by_display_name,
             "datetime": _format_activity_schedule_label(first_activity),
             "date_label": first_activity.date.strftime("%b %d, %Y") if getattr(first_activity, "date", None) else None,
             "time_label": first_time_label,
@@ -5211,7 +5277,7 @@ def _build_volunteer_dashboard_payload(user):
     assignments_qs = VolunteerActivityAssignment.objects.filter(
         volunteer=user,
         activity__isnull=False,
-    ).select_related("assigned_by")
+    ).select_related("assigned_by", "activity", "activity__created_by")
     total_tasks = assignments_qs.count()
     pending_this_week = assignments_qs.filter(
         scheduled_date__range=(week_start, week_end),
@@ -5251,6 +5317,7 @@ def _build_volunteer_dashboard_payload(user):
             "id": int(assignment.id),
             "title": assignment.activity_name or "Volunteer activity",
             "location": assignment.location or "TBA",
+            "created_by_name": assignment.activity.created_by_display_name,
             "schedule_label": assignment.scheduled_date.strftime("%b %d, %Y") + (f" · {assignment.scheduled_time.strftime('%I:%M %p').lstrip('0') }" if assignment.scheduled_time else ""),
             "is_today": is_today,
         })
@@ -7448,6 +7515,9 @@ def admin_dashboard(request):
         "activity_dates_json": json.dumps(activity_dates_current_month),
         "today": today,
         "volunteer_options": _build_volunteer_options(),
+        "beneficiary_options": _build_beneficiary_options(),
+        "activity_categories": Activity.CATEGORY_CHOICES,
+        "available_completed_donation_funds": _get_available_completed_donation_funds(),
     })
 
 
@@ -7670,14 +7740,368 @@ def delete_regular_user(request):
     })
 
 
+def _format_admin_activity_log_details(entry):
+    record_type = (entry.record_type or "Record").strip()
+    record_id = str(entry.record_id or "").strip()
+    record_label = (entry.record_label or "").strip()
+
+    if record_id:
+        id_suffix = re.compile(
+            r"\s*(?:\(#?" + re.escape(record_id) + r"\)|#?" + re.escape(record_id) + r")\s*$",
+            re.IGNORECASE,
+        )
+        while id_suffix.search(record_label):
+            record_label = id_suffix.sub("", record_label).strip()
+
+    record_label = re.sub(r"^(?:added|edited|deleted|removed|updated|changed)\s+", "", record_label, flags=re.IGNORECASE)
+    while record_type and record_label.casefold().startswith(record_type.casefold()):
+        record_label = record_label[len(record_type):].lstrip(" :#()-")
+    if not record_label:
+        record_label = re.sub(r"\s+(?:Profile|Record|Application|Assignment|Allocation)$", "", record_type, flags=re.IGNORECASE)
+
+    details = (entry.details or "").strip()
+    changed_match = re.search(r"(?:^|\.\s*)Changed:\s*(.+)$", details, re.IGNORECASE)
+    status_match = re.match(r"Changed\s+(.+?)\s+to\s+(.+?)\s+for\s+.+?\.?$", details, re.IGNORECASE)
+    approval_match = re.match(r"(Approved|Rejected)\b", details, re.IGNORECASE)
+
+    if entry.action == AdminActivityLog.ACTION_EDIT and changed_match:
+        change_summary = "Changed: " + changed_match.group(1).strip().rstrip(".")
+    elif entry.action == AdminActivityLog.ACTION_STATUS and status_match:
+        change_summary = f"Status: {status_match.group(1)} -> {status_match.group(2)}"
+    elif entry.action == AdminActivityLog.ACTION_APPROVAL and approval_match:
+        change_summary = f"Status: Pending -> {approval_match.group(1).title()}"
+    elif entry.action == AdminActivityLog.ACTION_CREATE:
+        change_summary = "Added"
+    elif entry.action == AdminActivityLog.ACTION_DELETE:
+        change_summary = "Removed"
+    else:
+        change_summary = details.replace(entry.record_label or "", "").strip(" .:") or "Action recorded"
+
+    entry.detail_title = record_label
+    entry.detail_id = record_id
+    entry.detail_change = change_summary
+    entry.detail_tooltip = " ".join(
+        part for part in (
+            f"{record_type}: {entry.record_label}" if entry.record_label else record_type,
+            f"ID {record_id}" if record_id else "",
+            details,
+        ) if part
+    )
+
+
+@login_required(login_url="signin")
+def admins(request):
+    if not request.user.is_superuser:
+        return redirect("user_dashboard")
+
+    admins_queryset = User.objects.filter(is_superuser=True).order_by("username")
+    admin_counts = admins_queryset.aggregate(
+        total=Count("id"),
+        active=Count("id", filter=Q(is_active=True)),
+        inactive=Count("id", filter=Q(is_active=False)),
+        joined_this_week=Count(
+            "id",
+            filter=Q(date_joined__gte=timezone.now() - timedelta(days=7)),
+        ),
+    )
+    activity_logs = AdminActivityLog.objects.select_related("admin").all()
+    admin_filter = str(request.GET.get("admin", "") or "").strip()
+    section_filter = str(request.GET.get("section", "") or "").strip()
+    action_filter = str(request.GET.get("action", "") or "").strip()
+    search_filter = str(request.GET.get("q", "") or "").strip()
+    start_date = str(request.GET.get("start_date", "") or "").strip()
+    end_date = str(request.GET.get("end_date", "") or "").strip()
+
+    valid_sections = {value for value, _label in AdminActivityLog.SECTION_CHOICES}
+    valid_actions = {value for value, _label in AdminActivityLog.ACTION_CHOICES}
+    if admin_filter:
+        activity_logs = activity_logs.filter(admin_name=admin_filter)
+    if section_filter in valid_sections:
+        activity_logs = activity_logs.filter(section=section_filter)
+    else:
+        section_filter = ""
+    if action_filter in valid_actions:
+        activity_logs = activity_logs.filter(action=action_filter)
+    else:
+        action_filter = ""
+    try:
+        if start_date:
+            start_day = date.fromisoformat(start_date)
+            activity_logs = activity_logs.filter(
+                created_at__gte=timezone.make_aware(datetime.combine(start_day, time.min))
+            )
+    except ValueError:
+        start_date = ""
+    try:
+        if end_date:
+            end_day_exclusive = date.fromisoformat(end_date) + timedelta(days=1)
+            activity_logs = activity_logs.filter(
+                created_at__lt=timezone.make_aware(datetime.combine(end_day_exclusive, time.min))
+            )
+    except ValueError:
+        end_date = ""
+    if search_filter:
+        activity_logs = activity_logs.filter(
+            Q(admin_name__icontains=search_filter)
+            | Q(action__icontains=search_filter)
+            | Q(section__icontains=search_filter)
+            | Q(record_label__icontains=search_filter)
+            | Q(record_type__icontains=search_filter)
+            | Q(record_id__icontains=search_filter)
+            | Q(details__icontains=search_filter)
+        )
+    activity_logs = activity_logs.order_by("-created_at", "-id")
+    activity_log_page = Paginator(activity_logs, 50).get_page(request.GET.get("log_page"))
+    for entry in activity_log_page:
+        _format_admin_activity_log_details(entry)
+    activity_log_count = activity_log_page.paginator.count
+    activity_log_query = request.GET.copy()
+    activity_log_query.pop("log_page", None)
+    return render(request, "admin_dashboard/admins_management_admin.html", {
+        "active_page": "admins",
+        "admins": admins_queryset,
+        "admin_counts": admin_counts,
+        "dashboard_scope": "admin",
+        "activity_log_page": activity_log_page,
+        "activity_log_count": activity_log_count,
+        "activity_log_admin_names": AdminActivityLog.objects.values_list("admin_name", flat=True).distinct().order_by("admin_name"),
+        "activity_log_sections": AdminActivityLog.SECTION_CHOICES,
+        "activity_log_actions": AdminActivityLog.ACTION_CHOICES,
+        "activity_log_filters": {
+            "admin": admin_filter,
+            "section": section_filter,
+            "action": action_filter,
+            "q": search_filter,
+            "start_date": start_date,
+            "end_date": end_date,
+        },
+        "activity_log_query": activity_log_query.urlencode(),
+        "active_admin_tab": "activity-log" if request.GET.get("tab") == "activity-log" else "directory",
+    })
+
+
+@login_required(login_url="signin")
+@require_POST
+def create_admin(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Only superusers can create administrator accounts."}, status=403)
+
+    full_name = str(request.POST.get("full_name", "") or "").strip()
+    username = str(request.POST.get("username", "") or "").strip()
+    email = str(request.POST.get("email", "") or "").strip()
+    password = str(request.POST.get("password", "") or "")
+    confirm_password = str(request.POST.get("confirm_password", "") or "")
+    status = str(request.POST.get("status", "active") or "").strip().lower()
+
+    if not full_name or not username or not email or not password or not confirm_password:
+        return JsonResponse({
+            "error": "Full name, username, email, password, and password confirmation are required."
+        }, status=400)
+    if status not in {"active", "inactive"}:
+        return JsonResponse({"error": "Choose a valid admin account status."}, status=400)
+    try:
+        validate_email(email)
+    except ValidationError:
+        return JsonResponse({"error": "Enter a valid email address."}, status=400)
+    if User.objects.filter(username__iexact=username).exists():
+        return JsonResponse({"error": "That username is already taken."}, status=400)
+    if User.objects.filter(email__iexact=email).exists():
+        return JsonResponse({"error": "An account with that email already exists."}, status=400)
+    if password != confirm_password:
+        return JsonResponse({"error": "The passwords do not match."}, status=400)
+
+    first_name, last_name = _split_full_name(full_name)
+    candidate_user = User(username=username, email=email, first_name=first_name, last_name=last_name)
+    try:
+        candidate_user.full_clean(exclude=["password", "last_login", "date_joined"])
+        validate_password(password, user=candidate_user)
+    except ValidationError as exc:
+        return JsonResponse({"error": " ".join(exc.messages)}, status=400)
+
+    with transaction.atomic():
+        admin_user = User.objects.create_superuser(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+        )
+        admin_user.is_active = status == "active"
+        admin_user.save(update_fields=["is_active"])
+
+    return JsonResponse({
+        "message": f"Administrator account for {full_name} was created successfully.",
+        "admin": {
+            "id": admin_user.id,
+            "full_name": full_name,
+            "username": admin_user.username,
+            "email": admin_user.email,
+            "is_active": admin_user.is_active,
+            "status": "active" if admin_user.is_active else "inactive",
+            "date_joined": timezone.localtime(admin_user.date_joined).strftime("%Y-%m-%d"),
+        },
+    }, status=201)
+
+
+@login_required(login_url="signin")
+@require_POST
+def update_admin_profile(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Only superusers can edit administrator profiles."}, status=403)
+
+    admin_id = _parse_non_negative_int(request.POST.get("admin_id"), default=0)
+    if admin_id <= 0:
+        return JsonResponse({"error": "A valid administrator account is required."}, status=400)
+
+    full_name = str(request.POST.get("full_name", "") or "").strip()
+    username = str(request.POST.get("username", "") or "").strip()
+    email = str(request.POST.get("email", "") or "").strip()
+    status = str(request.POST.get("status", "") or "").strip().lower()
+    if not full_name or not username:
+        return JsonResponse({"error": "Full name and username are required."}, status=400)
+    if status not in {"active", "inactive"}:
+        return JsonResponse({"error": "Choose a valid admin account status."}, status=400)
+    if email:
+        try:
+            validate_email(email)
+        except ValidationError:
+            return JsonResponse({"error": "Enter a valid email address."}, status=400)
+
+    admin_user = get_object_or_404(User, pk=admin_id, is_superuser=True)
+    if User.objects.filter(username__iexact=username).exclude(pk=admin_user.pk).exists():
+        return JsonResponse({"error": "That username is already taken."}, status=400)
+    if email and User.objects.filter(email__iexact=email).exclude(pk=admin_user.pk).exists():
+        return JsonResponse({"error": "An account with that email already exists."}, status=400)
+
+    first_name, last_name = _split_full_name(full_name)
+    admin_user.first_name = first_name
+    admin_user.last_name = last_name
+    admin_user.username = username
+    admin_user.email = email
+    admin_user.is_active = status == "active"
+    try:
+        admin_user.full_clean(exclude=["password", "last_login", "date_joined"])
+    except ValidationError as exc:
+        return JsonResponse({"error": " ".join(exc.messages)}, status=400)
+
+    with transaction.atomic():
+        admins_list = list(User.objects.select_for_update().filter(is_superuser=True).order_by("pk"))
+        if admin_user.pk not in {admin.pk for admin in admins_list}:
+            return JsonResponse({"error": "The selected account is not an admin account."}, status=400)
+        if not admin_user.is_active and admin_user.pk == request.user.pk:
+            return JsonResponse({"error": "You cannot deactivate your own administrator account."}, status=400)
+        if not admin_user.is_active and any(admin.pk == admin_user.pk and admin.is_active for admin in admins_list):
+            if sum(admin.is_active for admin in admins_list) <= 1:
+                return JsonResponse({
+                    "error": "At least one active administrator account must remain."
+                }, status=400)
+        admin_user.save(update_fields=["first_name", "last_name", "username", "email", "is_active"])
+
+    return JsonResponse({
+        "message": f"{_display_name_for_user(admin_user)}'s profile was updated.",
+        "admin": {
+            "id": admin_user.id,
+            "full_name": _display_name_for_user(admin_user),
+            "username": admin_user.username,
+            "email": admin_user.email or "Not provided",
+            "is_active": admin_user.is_active,
+            "last_login": timezone.localtime(admin_user.last_login).strftime("%b %d, %Y %I:%M %p").replace(" 0", " ") if admin_user.last_login else "Never",
+            "date_joined": timezone.localtime(admin_user.date_joined).strftime("%b %d, %Y").replace(" 0", " "),
+        },
+    })
+
+
+@login_required(login_url="signin")
+@require_POST
+def delete_admins(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Only superusers can remove administrator accounts."}, status=403)
+
+    admin_ids = []
+    for raw_admin_id in request.POST.getlist("admin_ids"):
+        admin_id = _parse_non_negative_int(raw_admin_id, default=0)
+        if admin_id <= 0:
+            return JsonResponse({"error": "Select one or more valid admin accounts."}, status=400)
+        if admin_id not in admin_ids:
+            admin_ids.append(admin_id)
+
+    if not admin_ids:
+        return JsonResponse({"error": "Select at least one admin account."}, status=400)
+    if request.user.id in admin_ids:
+        return JsonResponse({"error": "You cannot remove your own administrator account."}, status=400)
+
+    with transaction.atomic():
+        all_admins = list(
+            User.objects.select_for_update()
+            .filter(is_superuser=True)
+            .order_by("pk")
+        )
+        admin_by_id = {admin.id: admin for admin in all_admins}
+        if any(admin_id not in admin_by_id for admin_id in admin_ids):
+            return JsonResponse({"error": "One or more selected accounts are not admin accounts."}, status=400)
+
+        selected_admins = [admin_by_id[admin_id] for admin_id in admin_ids]
+        selected_active_count = sum(admin.is_active for admin in selected_admins)
+        active_admin_count = sum(admin.is_active for admin in all_admins)
+        if selected_active_count >= active_admin_count:
+            return JsonResponse({
+                "error": "At least one active administrator account must remain."
+            }, status=400)
+
+        User.objects.filter(pk__in=admin_ids, is_superuser=True).delete()
+
+    return JsonResponse({
+        "message": f"{len(admin_ids)} admin account(s) permanently removed.",
+        "deleted_count": len(admin_ids),
+        "deleted": True,
+    })
+
+
+@login_required(login_url="signin")
+@require_POST
+def update_admin_status(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Only superusers can update administrator access."}, status=403)
+
+    admin_id = _parse_non_negative_int(request.POST.get("admin_id"), default=0)
+    if admin_id <= 0:
+        return JsonResponse({"error": "Select a valid admin account."}, status=400)
+
+    status = str(request.POST.get("status", "") or "").strip().lower()
+    if status not in {"active", "inactive"}:
+        return JsonResponse({"error": "Choose a valid admin account status."}, status=400)
+    is_active = status == "active"
+
+    with transaction.atomic():
+        admins_queryset = User.objects.select_for_update().filter(is_superuser=True).order_by("pk")
+        admins_list = list(admins_queryset)
+        admin_by_id = {admin.id: admin for admin in admins_list}
+        admin_user = admin_by_id.get(admin_id)
+        if admin_user is None:
+            return JsonResponse({"error": "The selected account is not an admin account."}, status=400)
+        if not is_active and admin_user.id == request.user.id:
+            return JsonResponse({"error": "You cannot deactivate your own administrator account."}, status=400)
+        if not is_active and admin_user.is_active:
+            active_admin_count = sum(admin.is_active for admin in admins_list)
+            if active_admin_count <= 1:
+                return JsonResponse({
+                    "error": "At least one active administrator account must remain."
+                }, status=400)
+
+        admin_user.is_active = is_active
+        admin_user.save(update_fields=["is_active"])
+
+    return JsonResponse({
+        "message": f"Administrator access {'activated' if is_active else 'deactivated'} successfully.",
+        "is_active": is_active,
+    })
+
+
 @login_required(login_url="signin")
 def users(request):
     if not request.user.is_superuser:
         return redirect("user_dashboard")
-
-    return render(request, "admin_dashboard/admins_management_admin.html", {
-        "active_page": "users",
-    })
+    return redirect("admins")
 
 
 @login_required(login_url="signin")
@@ -8245,7 +8669,7 @@ def activities(request):
     if not request.user.is_superuser:
         return redirect("user_dashboard")
 
-    activities_qs = Activity.objects.prefetch_related("volunteer_assignments", "beneficiary_assignments").all().order_by("date", "title")
+    activities_qs = Activity.objects.select_related("created_by", "last_modified_by").prefetch_related("volunteer_assignments", "beneficiary_assignments").all().order_by("date", "title")
     activities = list(activities_qs)
     for activity in activities:
         activity.feedback_count = 0
@@ -8453,6 +8877,8 @@ def add_activity(request):
                 activity.funding_mode = funding_mode
                 activity.total_budget = total_budget
                 activity.donor_share_amount = donor_share_amount
+                activity.last_modified_by = request.user
+                activity.last_modified_by_name = request.user.get_full_name().strip() or request.user.get_username()
                 if activity_image:
                     if activity.image:
                         activity.image.delete(save=False)
@@ -8475,13 +8901,16 @@ def add_activity(request):
                     funding_mode=funding_mode,
                     total_budget=total_budget,
                     donor_share_amount=donor_share_amount,
+                    created_by=request.user,
+                    created_by_name=request.user.get_full_name().strip() or request.user.get_username(),
                 )
 
+            for allocation in ActivityFundAllocation.objects.filter(activity=activity).exclude(status=ActivityFundAllocation.STATUS_RELEASED):
+                allocation.status = ActivityFundAllocation.STATUS_RELEASED
+                allocation.save(update_fields=["status"])
+
             if use_funds_held and funds_held_amount > 0:
-                ActivityFundAllocation.objects.filter(activity=activity).update(status=ActivityFundAllocation.STATUS_RELEASED)
                 ActivityFundAllocation.objects.create(activity=activity, amount=funds_held_amount, status=ActivityFundAllocation.STATUS_RESERVED)
-            else:
-                ActivityFundAllocation.objects.filter(activity=activity).update(status=ActivityFundAllocation.STATUS_RELEASED)
 
             _sync_activity_volunteer_assignments(activity, volunteer_ids, request.user)
             _sync_activity_beneficiary_assignments(activity, beneficiary_ids, request.user)
@@ -8521,6 +8950,35 @@ def donations(request):
 
     donations = Donation.objects.all().order_by('-created_at')
     item_pledges = ItemPledge.objects.select_related("user").all()
+    item_pledges_data = [{
+        'id': pledge.id,
+        'reference': pledge.reference_number,
+        'itemName': pledge.item_name,
+        'category': pledge.get_category_display(),
+        'quantity': pledge.quantity,
+        'status': pledge.status,
+        'statusLabel': pledge.get_status_display(),
+        'date': pledge.created_at.strftime('%Y-%m-%d'),
+        'submittedAt': timezone.localtime(pledge.created_at).strftime('%b %d, %Y %I:%M %p'),
+        'condition': pledge.get_condition_display(),
+        'donorName': 'Anonymous' if pledge.is_anonymous else (pledge.donor_name or 'Name not provided'),
+        'donorPhone': pledge.donor_phone,
+        'donorEmail': pledge.donor_email,
+        'isAnonymous': pledge.is_anonymous,
+        'deliveryMethod': pledge.get_delivery_method_display(),
+        'deliveryAddress': pledge.delivery_address,
+        'preferredDate': pledge.preferred_date.isoformat() if pledge.preferred_date else '',
+        'preferredTime': pledge.preferred_time.strftime('%H:%M') if pledge.preferred_time else '',
+        'courierName': pledge.courier_name,
+        'trackingNumber': pledge.tracking_number,
+        'notes': pledge.description,
+        'photoUrl': pledge.photo.url if pledge.photo else '',
+    } for pledge in item_pledges]
+    item_pledge_statuses_awaiting_receipt = (
+        ItemPledge.STATUS_PLEDGED,
+        ItemPledge.STATUS_APPROVED,
+        ItemPledge.STATUS_SCHEDULED,
+    )
     today = date.today()
     donations_data = [{
         'id': d.id,
@@ -8567,6 +9025,12 @@ def donations(request):
     context = {
         'donations_data': donations_data,
         'item_pledges': item_pledges,
+        'item_pledges_data': item_pledges_data,
+        'item_pledge_count': item_pledges.count(),
+        'item_units_pledged': item_pledges.aggregate(total=Sum('quantity'))['total'] or 0,
+        'item_pledges_awaiting_receipt': item_pledges.filter(
+            status__in=item_pledge_statuses_awaiting_receipt
+        ).count(),
         'item_pledge_notifications_configured': bool(
             str(getattr(django_settings, "DONATION_PLEDGE_NOTIFICATION_EMAIL", "") or "").strip()
         ),
@@ -8625,8 +9089,6 @@ def bulk_update_donations(request):
         return JsonResponse({"error": "Invalid status."}, status=400)
 
     donations = list(Donation.objects.filter(id__in=parsed_ids))
-    if status_key:
-        Donation.objects.filter(id__in=parsed_ids).update(status=status_map[status_key])
     for donation in donations:
         if status_key:
             donation.status = status_map[status_key]
@@ -8656,6 +9118,14 @@ def update_item_pledge_status(request, pledge_id):
         return JsonResponse({"error": "Choose a valid item pledge status."}, status=400)
 
     pledge = get_object_or_404(ItemPledge, pk=pledge_id)
+    next_status_by_current = {
+        ItemPledge.STATUS_PLEDGED: ItemPledge.STATUS_APPROVED,
+        ItemPledge.STATUS_APPROVED: ItemPledge.STATUS_SCHEDULED,
+        ItemPledge.STATUS_SCHEDULED: ItemPledge.STATUS_RECEIVED,
+    }
+    if next_status_by_current.get(pledge.status) != status_value:
+        return JsonResponse({"error": "A pledge can only move to its next status."}, status=400)
+
     pledge.status = status_value
     try:
         pledge.save(update_fields=["status", "updated_at"])
@@ -9295,7 +9765,8 @@ def payment_verify(request, inquiry_id):
     if not request.user.is_superuser:
         return JsonResponse({'error': 'Forbidden'}, status=403)
     inquiry = get_object_or_404(ProductInquiry, id=inquiry_id)
-    ProductInquiry.objects.filter(id=inquiry_id).update(status=ProductInquiry.STATUS_VERIFIED)
+    inquiry.status = ProductInquiry.STATUS_VERIFIED
+    inquiry.save(update_fields=['status', 'updated_at'])
 
     try:
         from django.conf import settings as _conf
@@ -9378,9 +9849,9 @@ def payment_mark_in_delivery(request, inquiry_id):
 def payment_mark_paid(request, inquiry_id):
     if not request.user.is_superuser:
         return JsonResponse({'error': 'Forbidden'}, status=403)
-    updated = ProductInquiry.objects.filter(id=inquiry_id).update(status=ProductInquiry.STATUS_COMPLETED)
-    if not updated:
-        return JsonResponse({'error': 'Not found'}, status=404)
+    inquiry = get_object_or_404(ProductInquiry, id=inquiry_id)
+    inquiry.status = ProductInquiry.STATUS_COMPLETED
+    inquiry.save(update_fields=['status', 'updated_at'])
     return JsonResponse({'ok': True, 'status': 'Completed'})
 
 
@@ -9389,9 +9860,9 @@ def payment_mark_paid(request, inquiry_id):
 def payment_mark_failed(request, inquiry_id):
     if not request.user.is_superuser:
         return JsonResponse({'error': 'Forbidden'}, status=403)
-    updated = ProductInquiry.objects.filter(id=inquiry_id).update(status=ProductInquiry.STATUS_FAILED)
-    if not updated:
-        return JsonResponse({'error': 'Not found'}, status=404)
+    inquiry = get_object_or_404(ProductInquiry, id=inquiry_id)
+    inquiry.status = ProductInquiry.STATUS_FAILED
+    inquiry.save(update_fields=['status', 'updated_at'])
     return JsonResponse({'ok': True, 'status': 'Failed'})
 
 

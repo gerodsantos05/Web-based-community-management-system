@@ -1,81 +1,2120 @@
 {% extends "base.html" %}
+{% load static %}
 
-        {% block title %}Admins | HappYness{% endblock %}
+{% block title %}People - Admins | HappYness{% endblock %}
 
-        {% block extra_head %}
-        <style data-admin-panel-style="admin-admins-management">
-            :root {
-                --admin-surface: rgba(255, 255, 255, 0.94);
-                --admin-stroke: rgba(15, 118, 110, 0.16);
-                --admin-shadow: 0 10px 24px rgba(8, 83, 76, 0.1);
-                --admin-text: #14352d;
-                --admin-subtext: #54756b;
-                --admin-brand: #119c77;
-                --admin-brand-strong: #0f766e;
-            }
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/status-filter-select.css' %}">
+<style>
+    .admins-page {
+        display: grid;
+        gap: 1rem;
+        width: 100%;
+        min-width: 0;
+        padding: 0.25rem;
+        color: #173a31;
+    }
 
-            .admins-page { display: grid; gap: 1rem; }
-            .admins-card {
-                background: var(--admin-surface);
-                border: 1px solid var(--admin-stroke);
-                border-radius: 16px;
-                box-shadow: var(--admin-shadow);
-            }
+    .admins-heading h1 {
+        margin: 0;
+        color: #14352d;
+        font-size: 1.4rem;
+        font-weight: 700;
+    }
 
-            .admins-add-btn {
-                border: 1px solid rgba(16, 185, 129, 0.32);
-                background: linear-gradient(180deg, #17b388, #119c77);
-                color: #fff;
-                border-radius: 12px;
-                padding: 0.56rem 0.95rem;
-                font-size: 0.8rem;
-                font-weight: 700;
-                display: inline-flex;
-                align-items: center;
-                gap: 0.42rem;
-                cursor: pointer;
-            }
+    .admins-heading p {
+        margin: 0.3rem 0 0;
+        color: #56766c;
+        font-size: 0.9rem;
+    }
 
-            .admins-summary { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 0.75rem; }
-            .admins-kpi { min-height: 100px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; }
-            .admins-kpi-head { display: flex; justify-content: space-between; gap: 0.5rem; }
-            .admins-kpi-label { margin: 0; font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; color: #628074; font-weight: 700; }
-            .admins-kpi-value { margin: 0.35rem 0 0; font-size: 1.74rem; line-height: 1.05; font-weight: 800; color: #16372e; }
-            .admins-kpi-meta { margin: 0.35rem 0 0; font-size: 0.72rem; color: #4f766b; }
-            .admins-kpi-icon { width: 1.75rem; height: 1.75rem; border-radius: 999px; display: grid; place-items: center; color: var(--admin-brand-strong); background: rgba(16, 185, 129, 0.1); }
+    .admins-summary {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.75rem;
+    }
 
-            @media (min-width: 760px) {
-                .admins-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-            }
+    .admins-card {
+        overflow: hidden;
+        border: 1px solid rgba(15, 118, 110, 0.16);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 10px 24px rgba(8, 83, 76, 0.1);
+    }
 
-            @media (min-width: 1024px) {
-                .admins-layout { grid-template-columns: 1.72fr 1fr; }
-            }
-        </style>
-        {% endblock %}
+    .admins-kpi {
+        min-height: 108px;
+        padding: 0.8rem 0.9rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
 
-        {% block content %}
-        <div id="admins-page" class="admins-page">
-            <section class="admins-summary" aria-label="Admin summary">
-                <article class="admins-card admins-kpi" aria-labelledby="kpi-total-admins">
-                    <div class="admins-kpi-head"><p id="kpi-total-admins" class="admins-kpi-label">Total Admins</p><span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="users"></i></span></div>
-                    <p id="kpi-total-admins-value" class="admins-kpi-value" data-kpi-value="true">0</p>
-                    <p class="admins-kpi-meta">All admin accounts</p>
-                </article>
-                <article class="admins-card admins-kpi" aria-labelledby="kpi-active-admins">
-                    <div class="admins-kpi-head"><p id="kpi-active-admins" class="admins-kpi-label">Active Admins</p><span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="user-check"></i></span></div>
-                    <p id="kpi-active-admins-value" class="admins-kpi-value" data-kpi-value="true">0</p>
-                    <p class="admins-kpi-meta">Status marked active</p>
-                </article>
-                <article class="admins-card admins-kpi" aria-labelledby="kpi-recent-admins">
-                    <div class="admins-kpi-head"><p id="kpi-recent-admins" class="admins-kpi-label">Recently Active</p><span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="clock-3"></i></span></div>
-                    <p id="kpi-recent-admins-value" class="admins-kpi-value" data-kpi-value="true">0</p>
-                    <p class="admins-kpi-meta">Active in the last 7 days</p>
-                </article>
-            </section>
+    .admins-kpi-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
 
-            <!-- Admins table and activity logs removed -->
+    .admins-kpi-label {
+        margin: 0;
+        color: #618176;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+    }
+
+    .admins-kpi-icon {
+        display: grid;
+        width: 2rem;
+        height: 2rem;
+        place-items: center;
+        border-radius: 999px;
+        background: rgba(16, 185, 129, 0.14);
+        color: #0f766e;
+    }
+
+    .admins-kpi-icon svg {
+        width: 1.1rem;
+        height: 1.1rem;
+    }
+
+    .admins-kpi-value {
+        margin: 0.3rem 0 0;
+        color: #16372e;
+        font-size: 1.8rem;
+        font-weight: 800;
+        line-height: 1.05;
+    }
+
+    .admins-kpi-meta {
+        margin: 0.35rem 0 0;
+        color: #4f766b;
+        font-size: 0.78rem;
+    }
+
+    @media (min-width: 640px) {
+        .admins-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1100px) {
+        .admins-summary {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    .admins-directory-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid #deefe8;
+    }
+
+    .admins-directory-title h2 {
+        margin: 0;
+        color: #14352d;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .admins-count {
+        margin: 0.2rem 0 0;
+        color: #56766c;
+        font-size: 0.8rem;
+    }
+
+    .admins-controls {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.55rem;
+        flex: 1 1 620px;
+        min-width: 0;
+    }
+
+    .admins-search-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: min(100%, 300px);
+        flex: 1 1 200px;
+        min-width: 0;
+    }
+
+    .admins-search-icon {
+        position: absolute;
+        left: 0.65rem;
+        width: 1rem;
+        height: 1rem;
+        color: #5e7d73;
+        pointer-events: none;
+    }
+
+    .admins-search,
+    .admins-status-filter,
+    .admins-action {
+        min-height: 2.55rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        background: #fff;
+        color: #173a31;
+        font-size: 0.8rem;
+    }
+
+    .admins-search {
+        width: 100%;
+        padding: 0.5rem 0.75rem 0.5rem 2.2rem;
+    }
+
+    .admins-search::placeholder {
+        color: #9db5ac;
+    }
+
+    .admins-status-filter {
+        width: min(100%, 160px);
+        min-width: 120px;
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+    }
+
+    .admins-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        flex: 0 0 auto;
+        padding: 0.5rem 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .admins-action:hover {
+        border-color: #b8dfd1;
+        background: #f5fcf9;
+    }
+
+    .admins-action svg {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .admins-table-wrap {
+        overflow-x: auto;
+    }
+
+    .admins-table {
+        width: 100%;
+        min-width: 720px;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .admins-table th,
+    .admins-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e7f2ed;
+        text-align: left;
+        font-size: 0.82rem;
+    }
+
+    .admins-table th {
+        background: rgba(236, 253, 245, 0.86);
+        color: #2f6659;
+        font-weight: 700;
+    }
+
+    .admins-table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .admins-table tbody tr:hover {
+        background: rgba(236, 253, 245, 0.42);
+    }
+
+    .admins-table tbody tr.is-selected {
+        background: #effaf6;
+    }
+
+    .admins-directory-tabs {
+        display: flex;
+        gap: 1.1rem;
+        padding: 0 1rem;
+        border-bottom: 1px solid #e2f1eb;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .admins-directory-tabs::-webkit-scrollbar { display: none; }
+
+    .admins-directory-tab {
+        position: relative;
+        border: 0;
+        padding: 0.7rem 0.1rem 0.62rem;
+        background: transparent;
+        color: #71847e;
+        font-size: 0.78rem;
+        font-weight: 700;
+        cursor: pointer;
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .admins-directory-tab::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        bottom: -1px;
+        left: 0;
+        height: 2px;
+        background: transparent;
+    }
+
+    .admins-directory-tab[aria-selected="true"] { color: #0f766e; }
+    .admins-directory-tab[aria-selected="true"]::after { background: #0f766e; }
+    .admins-directory-panel[hidden] { display: none; }
+
+    .admins-log-filter-form {
+        display: grid;
+        grid-template-columns: minmax(180px, 1.5fr) repeat(3, minmax(125px, 0.8fr)) repeat(2, minmax(135px, 0.8fr)) auto auto;
+        align-items: end;
+        gap: 0.55rem;
+        padding: 0.9rem 1rem;
+    }
+
+    .admins-log-filter-field {
+        display: grid;
+        gap: 0.3rem;
+        min-width: 0;
+        color: #56766c;
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+
+    .admins-log-filter-control {
+        width: 100%;
+        min-width: 0;
+        min-height: 2.55rem;
+        padding: 0.5rem 0.65rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        background: #fff;
+        color: #173a31;
+        font: inherit;
+        font-weight: 400;
+    }
+
+    .admins-log-filter-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+    }
+
+    .admins-log-filter-actions a {
+        color: #0f766e;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .admins-log-count {
+        margin: 0;
+        padding: 0 1rem 0.7rem;
+        color: #56766c;
+        font-size: 0.76rem;
+    }
+
+    .admins-log-table-wrap { overflow-x: auto; }
+
+    .admins-log-table {
+        width: 100%;
+        min-width: 1060px;
+        border-collapse: collapse;
+        table-layout: fixed;
+        text-align: left;
+    }
+
+    .admins-log-table th,
+    .admins-log-table td {
+        padding: 0.72rem 0.85rem;
+        border: 0;
+        text-align: left;
+        vertical-align: top;
+        font-size: 0.8rem;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+    }
+
+    .admins-log-table th {
+        background: rgba(236, 253, 245, 0.86);
+        color: #2f6659;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .admins-log-table tbody tr:hover { background: rgba(236, 253, 245, 0.42); }
+    .admins-log-table th:nth-child(1), .admins-log-table td:nth-child(1) { width: 17%; }
+    .admins-log-table th:nth-child(2), .admins-log-table td:nth-child(2) { width: 16%; }
+    .admins-log-table th:nth-child(3), .admins-log-table td:nth-child(3) { width: 15%; }
+    .admins-log-table th:nth-child(4), .admins-log-table td:nth-child(4) { width: 33%; }
+    .admins-log-table th:nth-child(5), .admins-log-table td:nth-child(5) { width: 19%; white-space: nowrap; }
+
+    .admins-log-details { min-width: 0; text-align: left; }
+
+    .admins-log-details-top {
+        display: flex;
+        align-items: baseline;
+        gap: 0.45rem;
+        min-width: 0;
+        white-space: nowrap;
+    }
+
+    .admins-log-record {
+        display: block;
+        min-width: 0;
+        color: #173a31;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .admins-log-record-id {
+        flex: 0 0 auto;
+        color: #87958f;
+        font-size: 0.72rem;
+        font-weight: 400;
+    }
+
+    .admins-log-change {
+        display: block;
+        margin-top: 0.12rem;
+        color: #87958f;
+        font-size: 0.72rem;
+        line-height: 1.35;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .admins-log-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.8rem 1rem;
+        color: #56766c;
+        font-size: 0.78rem;
+    }
+
+    .admins-log-pagination a {
+        color: #0f766e;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .admins-log-pagination a[aria-disabled="true"] {
+        color: #9db5ac;
+        pointer-events: none;
+    }
+
+    @media (max-width: 1100px) {
+        .admins-log-filter-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .admins-log-filter-actions { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 640px) {
+        .admins-log-filter-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .admins-log-filter-field.is-search { grid-column: 1 / -1; }
+        .admins-log-pagination { align-items: flex-start; flex-direction: column; }
+    }
+
+    .admins-select-cell {
+        width: 1%;
+        text-align: center !important;
+        white-space: nowrap;
+    }
+
+    .admins-select-checkbox {
+        width: 1rem;
+        height: 1rem;
+        accent-color: #0f766e;
+        cursor: pointer;
+    }
+
+    .admins-actions-cell {
+        width: 1%;
+        text-align: right !important;
+        white-space: nowrap;
+    }
+
+    .admins-actions-trigger {
+        display: inline-grid;
+        width: 2.1rem;
+        height: 2.1rem;
+        place-items: center;
+        padding: 0;
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        background: #fff;
+        color: #1b4f43;
+        cursor: pointer;
+    }
+
+    .admins-actions-trigger:hover,
+    .admins-actions-trigger[aria-expanded="true"] {
+        border-color: #b8dfd1;
+        background: #f0faf6;
+    }
+
+    .admins-actions-dots {
+        width: 0.24rem;
+        height: 0.24rem;
+        border-radius: 999px;
+        background: currentColor;
+        box-shadow: -0.36rem 0 0 currentColor, 0.36rem 0 0 currentColor;
+    }
+
+    .admins-actions-trigger:focus-visible,
+    .admins-actions-menu button:focus-visible {
+        outline: 2px solid #0f766e;
+        outline-offset: 2px;
+    }
+
+    .admins-actions-menu[hidden] {
+        display: none;
+    }
+
+    .admins-actions-menu {
+        position: fixed;
+        z-index: 120;
+        display: grid;
+        min-width: 14rem;
+        gap: 0.14rem;
+        padding: 0.34rem;
+        border: 1px solid rgba(15, 118, 110, 0.2);
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 16px 34px rgba(13, 64, 56, 0.2);
+    }
+
+    .admins-actions-menu button {
+        display: block;
+        width: 100%;
+        padding: 0.8rem 0.75rem;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: #173a31;
+        font-size: 0.9rem;
+        font-weight: 650;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .admins-actions-menu button:hover {
+        background: #f0faf6;
+    }
+
+    .admins-actions-menu button.is-danger {
+        color: #c62828;
+    }
+
+    .admins-actions-menu button.is-danger:hover {
+        background: #fff4f3;
+    }
+
+    .admins-bulk-bar {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin: 0.85rem 0.95rem 0;
+        padding: 0.7rem 0.8rem;
+        border: 1px solid #d7ebe4;
+        border-radius: 12px;
+        background: #f8fcfa;
+    }
+
+    .admins-bulk-bar[data-show="true"] {
+        display: flex;
+    }
+
+    .admins-bulk-copy {
+        display: grid;
+        gap: 0.2rem;
+        color: #173a31;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .admins-bulk-copy small {
+        color: #56766c;
+        font-size: 0.72rem;
+        font-weight: 400;
+    }
+
+    .admins-bulk-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+    }
+
+    .admins-bulk-actions button {
+        min-height: 2.25rem;
+        padding: 0.42rem 0.68rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 9px;
+        background: #fff;
+        color: #1b4f43;
+        font-size: 0.76rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .admins-bulk-actions button.is-danger,
+    .admins-modal-footer button.is-danger {
+        border-color: #b42318;
+        background: #b42318;
+        color: #fff;
+    }
+
+    .admins-bulk-actions button:disabled,
+    .admins-modal-footer button:disabled {
+        cursor: wait;
+        opacity: 0.65;
+    }
+
+    .admins-table th:nth-child(6),
+    .admins-table td:nth-child(6),
+    .admins-table th:nth-child(7),
+    .admins-table td:nth-child(7) {
+        display: none;
+    }
+
+    .admins-table.admins-show-all th:nth-child(6),
+    .admins-table.admins-show-all td:nth-child(6),
+    .admins-table.admins-show-all th:nth-child(7),
+    .admins-table.admins-show-all td:nth-child(7) {
+        display: table-cell;
+    }
+
+    .admins-status {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 0.22rem 0.55rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+
+    .admins-status-active {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .admins-status-inactive {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .admins-empty {
+        padding: 1.5rem 1rem;
+        color: #56766c;
+        text-align: center;
+    }
+
+    .admins-modal-backdrop[hidden],
+    .admins-modal[hidden] {
+        display: none;
+    }
+
+    .admins-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: rgba(15, 35, 30, 0.48);
+    }
+
+    .admins-modal {
+        position: fixed;
+        inset: 50% auto auto 50%;
+        z-index: 101;
+        display: flex;
+        flex-direction: column;
+        width: min(92vw, 560px);
+        max-height: min(88vh, 720px);
+        overflow: hidden;
+        transform: translate(-50%, -50%);
+        border: 1px solid #d4e9e1;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 24px 60px rgba(8, 83, 76, 0.24);
+    }
+
+    #admins-modal .admins-modal-header,
+    #admins-modal .admins-modal-footer {
+        flex: 0 0 auto;
+    }
+
+    #admins-modal .admins-modal-header {
+        padding: 1rem 1.15rem;
+    }
+
+    #admins-modal .admins-modal-header h2 {
+        color: #14352d !important;
+        font-size: 1.35rem;
+        font-weight: 800;
+    }
+
+    #admins-modal .admins-modal-header p {
+        color: #14352d;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+    }
+
+    #admins-modal .admins-modal-close {
+        display: grid;
+        width: 2.25rem;
+        height: 2.25rem;
+        flex: 0 0 2.25rem;
+        place-items: center;
+        border: 1px solid #d4e9e1;
+        border-radius: 50%;
+        background: #fff;
+        color: #48665d;
+        font-size: 1.25rem;
+    }
+
+    .admins-confirm-modal {
+        width: min(92vw, 720px);
+    }
+
+    .admins-modal-header,
+    .admins-modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 1rem 1.15rem;
+    }
+
+    .admins-modal-header {
+        border-bottom: 1px solid #e7f2ed;
+    }
+
+    .admins-modal-header h2 {
+        margin: 0;
+        color: #14352d;
+        font-size: 1rem;
+    }
+
+    .admins-modal-header p {
+        margin: 0 0 0.2rem;
+        color: #618176;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .admins-profile-modal {
+        width: min(92vw, 520px);
+        max-height: min(88vh, 680px);
+        overflow-y: auto;
+    }
+
+    .admins-profile-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+    }
+
+    .admins-profile-edit,
+    .admins-profile-close {
+        display: grid;
+        width: 2.4rem;
+        height: 2.4rem;
+        flex: 0 0 2.4rem;
+        place-items: center;
+        border: 1px solid #d4e9e1;
+        border-radius: 50%;
+        background: #fff;
+        color: #0f766e;
+        cursor: pointer;
+    }
+
+    .admins-profile-edit:hover,
+    .admins-profile-close:hover {
+        border-color: #b8dfd1;
+        background: #f0faf6;
+    }
+
+    .admins-profile-edit svg {
+        width: 1.1rem;
+        height: 1.1rem;
+    }
+
+    .admins-profile-modal .admins-modal-header h2 {
+        font-size: 1.35rem;
+        font-weight: 800;
+    }
+
+    .admins-profile-identity {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin: 1rem 1.15rem 0;
+        padding: 0.85rem;
+        border-radius: 12px;
+        background: #effaf6;
+    }
+
+    .admins-profile-avatar {
+        display: grid;
+        width: 3rem;
+        height: 3rem;
+        flex: 0 0 3rem;
+        place-items: center;
+        border-radius: 50%;
+        background: #c9f0e4;
+        color: #0f766e;
+        font-size: 1.1rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .admins-profile-identity-copy {
+        display: grid;
+        gap: 0.15rem;
+        min-width: 0;
+    }
+
+    .admins-profile-identity-copy strong {
+        overflow: hidden;
+        color: #14352d;
+        font-size: 1rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .admins-profile-identity-copy span {
+        color: #56766c;
+        font-size: 0.82rem;
+    }
+
+    .admins-profile-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.8rem;
+        padding: 1.15rem;
+    }
+
+    .admins-profile-field {
+        display: grid;
+        gap: 0.35rem;
+        min-width: 0;
+        padding: 0.8rem;
+        border: 1px solid #e2f1eb;
+        border-radius: 10px;
+        background: #fbfefd;
+    }
+
+    .admins-profile-label {
+        color: #618176;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .admins-profile-value {
+        overflow-wrap: anywhere;
+        color: #173a31;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .admins-profile-field input,
+    .admins-profile-field select {
+        width: 100%;
+        min-height: 2.4rem;
+        box-sizing: border-box;
+        padding: 0.5rem 0.6rem;
+        border: 1px solid #c8e3d9;
+        border-radius: 7px;
+        background: #fff;
+        color: #173a31;
+        font: inherit;
+        font-size: 0.85rem;
+    }
+
+    .admins-profile-field [data-admin-profile-edit-control][hidden],
+    .admins-profile-field [data-admin-profile-field][hidden] {
+        display: none;
+    }
+
+    .admins-profile-message {
+        display: none;
+        margin: 0 1.15rem 0.9rem;
+        padding: 0.65rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.82rem;
+    }
+
+    .admins-profile-message[data-state="error"],
+    .admins-profile-message[data-state="success"] {
+        display: block;
+    }
+
+    .admins-profile-message[data-state="error"] {
+        background: #fef2f2;
+        color: #b42318;
+    }
+
+    .admins-profile-message[data-state="success"] {
+        background: #ecfdf5;
+        color: #166534;
+    }
+
+    .admins-profile-footer {
+        display: none;
+        justify-content: flex-end;
+        gap: 0.65rem;
+        padding: 0.85rem 1.15rem;
+        border-top: 1px solid #e7f2ed;
+    }
+
+    .admins-profile-modal.is-editing .admins-profile-footer {
+        display: flex;
+    }
+
+    .admins-profile-footer button {
+        min-height: 2.4rem;
+        padding: 0.5rem 0.9rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        background: #fff;
+        color: #173a31;
+        font-size: 0.82rem;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    .admins-profile-footer button[type="submit"] {
+        border-color: #0f766e;
+        background: #0f766e;
+        color: #fff;
+    }
+
+    .admins-profile-footer button:disabled {
+        opacity: 0.65;
+        cursor: wait;
+    }
+
+    .admins-modal-close {
+        border: 0;
+        background: transparent;
+        color: #56766c;
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
+
+    .admins-confirm-modal .admins-modal-close {
+        display: inline-flex;
+        flex: 0 0 2.5rem;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 50%;
+        background: #fff;
+        color: #56766c;
+        font-size: 1.25rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .admins-confirm-modal .admins-modal-header {
+        padding: 1rem 1.4rem;
+    }
+
+    .admins-confirm-modal .admins-modal-header h2 {
+        font-size: 1.35rem;
+        font-weight: 800;
+    }
+
+    .admins-confirm-modal .admins-confirm-message {
+        margin: 1.15rem;
+        padding: 1rem;
+        border: 1px solid #e2f1eb;
+        border-radius: 10px;
+        background: #fff;
+        color: #56766c;
+        font-size: 0.95rem;
+        font-weight: 600;
+        line-height: 1.55;
+    }
+
+    .admins-confirm-message strong {
+        display: block;
+        margin-bottom: 0.2rem;
+        color: #56766c;
+        font-size: 1rem;
+        font-weight: 800;
+    }
+
+    .admins-confirm-modal .admins-modal-footer button.is-danger:hover {
+        border-color: #9f1f15;
+        background: #9f1f15;
+    }
+
+    .admins-form {
+        display: grid;
+        flex: 1 1 auto;
+        gap: 0.85rem;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 1.15rem;
+    }
+
+    .admins-form-group {
+        display: grid;
+        gap: 0.35rem;
+    }
+
+    .admins-form label,
+    .admins-form-section-title {
+        color: #2f6659;
+        font-size: 0.78rem;
+        font-weight: 650;
+    }
+
+    .admins-form .required {
+        color: #d92d20;
+    }
+
+    .admins-form label {
+        display: block;
+    }
+
+    .admins-form-section-title {
+        margin-top: 0.15rem;
+        color: #173a31;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .admins-form input {
+        width: 100%;
+        min-height: 2.55rem;
+        box-sizing: border-box;
+        padding: 0.55rem 0.7rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        color: #173a31;
+        font-size: 0.85rem;
+    }
+
+    .admins-status-field {
+        margin-top: 0.2rem;
+    }
+
+    .admins-status-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+    }
+
+    .admins-status-option {
+        min-height: 2.2rem;
+        padding: 0.45rem 1rem;
+        border: 1px solid #9bc7ba;
+        border-radius: 999px;
+        background: #fff;
+        color: #1d5d56;
+        font-size: 0.87rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .admins-status-option.is-selected {
+        border-color: #0f766e;
+        background: #0f766e;
+        color: #fff;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+    }
+
+    .admins-modal-message {
+        display: none;
+        margin: 0 1.15rem;
+        padding: 0.65rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.82rem;
+    }
+
+    .admins-modal-message[data-state] {
+        display: block;
+    }
+
+    #admins-modal .admins-modal-message[data-state="error"],
+    #admins-modal .admins-modal-message[data-state="success"] {
+        flex: 0 0 auto;
+    }
+
+    .admins-modal-message[data-state="error"] {
+        background: #fef2f2;
+        color: #b42318;
+    }
+
+    .admins-modal-message[data-state="success"] {
+        background: #ecfdf5;
+        color: #166534;
+    }
+
+    .admins-modal-footer {
+        justify-content: flex-end;
+        border-top: 1px solid #e7f2ed;
+    }
+
+    #admins-modal .admins-modal-footer {
+        flex: 0 0 auto;
+        background: #fff;
+        box-shadow: 0 -8px 18px rgba(8, 83, 76, 0.04);
+    }
+
+    .admins-modal-footer button {
+        min-height: 2.5rem;
+        padding: 0.5rem 0.9rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 8px;
+        background: #fff;
+        color: #173a31;
+        font-size: 0.82rem;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    #admins-modal .admins-modal-footer button[type="submit"] {
+        border-color: #0f766e;
+        background: #0f766e;
+        color: #fff;
+    }
+
+    .admins-modal-footer button:disabled {
+        cursor: wait;
+        opacity: 0.65;
+    }
+
+    .admins-confirm-message {
+        margin: 1rem 1.15rem;
+        padding: 0.85rem;
+        border-radius: 10px;
+        background: #fff8f6;
+        color: #7a271a;
+        font-size: 0.84rem;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 760px) {
+        #admins-modal {
+            inset: 100px auto 16px 50%;
+            max-height: none;
+            transform: translateX(-50%);
+        }
+
+        .admins-bulk-bar {
+            align-items: stretch;
+        }
+
+        .admins-bulk-copy {
+            flex-basis: 100%;
+        }
+
+        .admins-bulk-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            width: 100%;
+            gap: 0.5rem;
+        }
+
+        .admins-bulk-actions button {
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            padding-inline: 0.25rem;
+            font-size: 0.72rem;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .admins-controls {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-areas:
+                "search search"
+                "status add"
+                "more more";
+            align-items: stretch;
+            width: 100%;
+            flex: 1 1 100%;
+            gap: 0.6rem;
+        }
+
+        .admins-search-wrap {
+            grid-area: search;
+            width: 100%;
+            flex: none;
+        }
+
+        .admins-controls .status-filter-select--admins-status-filter {
+            grid-area: status;
+            width: 100%;
+            min-width: 0;
+            flex: none;
+        }
+
+        #admins-add-open {
+            grid-area: add;
+        }
+
+        .admins-status-filter,
+        .admins-action {
+            width: 100%;
+            min-width: 0;
+            flex: none;
+        }
+
+        #admins-toggle-columns {
+            grid-area: more;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .admins-profile-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="admins-page">
+    <section class="admins-summary" aria-label="Admin account summary">
+        <article class="admins-card admins-kpi">
+            <div class="admins-kpi-head">
+                <p class="admins-kpi-label">Total Admins</p>
+                <span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="users"></i></span>
+            </div>
+            <p class="admins-kpi-value">{{ admin_counts.total }}</p>
+            <p class="admins-kpi-meta">All administrator accounts</p>
+        </article>
+        <article class="admins-card admins-kpi">
+            <div class="admins-kpi-head">
+                <p class="admins-kpi-label">Active Admins</p>
+                <span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="user-check"></i></span>
+            </div>
+            <p class="admins-kpi-value">{{ admin_counts.active }}</p>
+            <p class="admins-kpi-meta">Accounts that can sign in</p>
+        </article>
+        <article class="admins-card admins-kpi">
+            <div class="admins-kpi-head">
+                <p class="admins-kpi-label">Inactive Admins</p>
+                <span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="user-round-x"></i></span>
+            </div>
+            <p class="admins-kpi-value">{{ admin_counts.inactive }}</p>
+            <p class="admins-kpi-meta">Accounts unable to sign in</p>
+        </article>
+        <article class="admins-card admins-kpi">
+            <div class="admins-kpi-head">
+                <p class="admins-kpi-label">Joined This Week</p>
+                <span class="admins-kpi-icon" aria-hidden="true"><i data-lucide="user-round-plus"></i></span>
+            </div>
+            <p class="admins-kpi-value">{{ admin_counts.joined_this_week }}</p>
+            <p class="admins-kpi-meta">Joined in the last 7 days</p>
+        </article>
+    </section>
+
+    <section class="admins-card" aria-labelledby="admins-list-title">
+        <div class="admins-directory-heading">
+            <div class="admins-directory-title">
+                <h2 id="admins-list-title" data-directory-title="Admin Directory" data-log-title="Admin Activity Log">{% if active_admin_tab == "activity-log" %}Admin Activity Log{% else %}Admin Directory{% endif %}</h2>
+                <p id="admins-count" class="admins-count" data-directory-count="{{ admin_counts.total }} admins shown" data-log-count="{{ activity_log_count }} events" aria-live="polite">{% if active_admin_tab == "activity-log" %}{{ activity_log_count }} events{% else %}{{ admin_counts.total }} admins shown{% endif %}</p>
+            </div>
+            <div class="admins-controls" id="admins-directory-controls"{% if active_admin_tab == "activity-log" %} hidden{% endif %}>
+                <label class="admins-search-wrap">
+                    <svg class="admins-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                    <input id="admins-search" class="admins-search" type="search" placeholder="Search by name, username, email..." aria-label="Search admins by name, username, or email">
+                </label>
+                <div class="status-filter-select status-filter-select--admins-status-filter">
+                    <select id="admins-status-filter" class="admins-status-filter" data-status-filter-custom aria-label="Filter admins by status">
+                        <option value="">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <button type="button" id="admins-add-open" class="admins-action" aria-label="Add an administrator">
+                    <i data-lucide="user-plus" aria-hidden="true"></i><span>Add Admin</span>
+                </button>
+                <button type="button" id="admins-toggle-columns" class="admins-action" aria-label="Show more admin details" aria-expanded="false">Show More</button>
+            </div>
         </div>
-        {% endblock %}
+        <div class="admins-directory-tabs" role="tablist" aria-label="Admin directory views">
+            <button type="button" id="admins-directory-tab" class="admins-directory-tab" role="tab" aria-selected="{% if active_admin_tab == 'directory' %}true{% else %}false{% endif %}" aria-controls="admins-directory-panel">Directory</button>
+            <button type="button" id="admins-activity-log-tab" class="admins-directory-tab" role="tab" aria-selected="{% if active_admin_tab == 'activity-log' %}true{% else %}false{% endif %}" aria-controls="admins-activity-log-panel">Activity Log</button>
+        </div>
+        <div id="admins-directory-panel" class="admins-directory-panel" role="tabpanel" aria-labelledby="admins-directory-tab"{% if active_admin_tab == "activity-log" %} hidden{% endif %}>
+        <div id="admins-bulk-bar" class="admins-bulk-bar" data-show="false" aria-live="polite">
+            <div class="admins-bulk-copy">
+                <strong><span id="admins-selected-count">0</span> admins selected</strong>
+                <small>Selected admin accounts will be permanently removed.</small>
+            </div>
+            <div class="admins-bulk-actions">
+                <button type="button" id="admins-clear-selection">Clear selection</button>
+                <button type="button" id="admins-delete-selected" class="is-danger">Remove Selected</button>
+            </div>
+        </div>
+        <div class="admins-table-wrap">
+            <table id="admins-table" class="admins-table">
+                <caption class="sr-only">Administrator accounts</caption>
+                <thead>
+                    <tr>
+                        <th scope="col" class="admins-select-cell"><input type="checkbox" id="admins-select-all" class="admins-select-checkbox" aria-label="Select all visible admins"></th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Username</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Last Login</th>
+                        <th scope="col">Date Joined</th>
+                        <th scope="col" class="admins-actions-cell">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for admin in admins %}
+                    <tr data-admin-row data-admin-id="{{ admin.id }}" data-admin-name="{{ admin.get_full_name|default:admin.username }}" data-admin-username="{{ admin.username }}" data-admin-email="{{ admin.email|default:'Not provided' }}" data-status="{% if admin.is_active %}active{% else %}inactive{% endif %}" data-admin-self="{% if admin.id == request.user.id %}true{% else %}false{% endif %}" data-admin-last-login="{{ admin.last_login|date:'M j, Y g:i A'|default:'Never' }}" data-admin-joined="{{ admin.date_joined|date:'M j, Y' }}" data-search="{{ admin.get_full_name|default:admin.username }} {{ admin.username }} {{ admin.email }}">
+                        <td class="admins-select-cell"><input type="checkbox" class="admins-select-checkbox" data-admin-select aria-label="Select {{ admin.get_full_name|default:admin.username }}" {% if admin.id == request.user.id %}disabled title="You cannot remove your own admin account."{% endif %}></td>
+                        <td>{{ admin.get_full_name|default:admin.username }}</td>
+                        <td>{{ admin.username }}</td>
+                        <td>{{ admin.email|default:"—" }}</td>
+                        <td>
+                            {% if admin.is_active %}
+                            <span class="admins-status admins-status-active">Active</span>
+                            {% else %}
+                            <span class="admins-status admins-status-inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ admin.last_login|date:"M j, Y g:i A"|default:"Never" }}</td>
+                        <td>{{ admin.date_joined|date:"M j, Y" }}</td>
+                        <td class="admins-actions-cell">
+                            <button type="button" class="admins-actions-trigger" data-admin-actions-trigger aria-label="Actions for {{ admin.get_full_name|default:admin.username }}" aria-haspopup="menu" aria-expanded="false"><span class="admins-actions-dots" aria-hidden="true"></span></button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td class="admins-empty" colspan="8">No admin accounts found.</td>
+                    </tr>
+                    {% endfor %}
+                    <tr id="admins-no-results" hidden>
+                        <td class="admins-empty" colspan="8">No admins match your search or status filter.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        </div>
+        <div id="admins-activity-log-panel" class="admins-directory-panel" role="tabpanel" aria-labelledby="admins-activity-log-tab"{% if active_admin_tab != "activity-log" %} hidden{% endif %}>
+            <form class="admins-log-filter-form" method="get" action="{% url 'admins' %}">
+                <input type="hidden" name="tab" value="activity-log">
+                <label class="admins-log-filter-field is-search">Search
+                    <span class="admins-search-wrap">
+                        <svg class="admins-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                        <input class="admins-search admins-log-filter-control" type="search" name="q" value="{{ activity_log_filters.q }}" placeholder="Search admin, record, details..." aria-label="Search activity log">
+                    </span>
+                </label>
+                <label class="admins-log-filter-field">Admin
+                    <select class="admins-log-filter-control" name="admin" aria-label="Filter by admin">
+                        <option value="">All admins</option>
+                        {% for admin_name in activity_log_admin_names %}
+                        <option value="{{ admin_name }}"{% if activity_log_filters.admin == admin_name %} selected{% endif %}>{{ admin_name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="admins-log-filter-field">Section
+                    <select class="admins-log-filter-control" name="section" aria-label="Filter by section">
+                        <option value="">All sections</option>
+                        {% for section_value, section_label in activity_log_sections %}
+                        <option value="{{ section_value }}"{% if activity_log_filters.section == section_value %} selected{% endif %}>{{ section_label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="admins-log-filter-field">Action type
+                    <select class="admins-log-filter-control" name="action" aria-label="Filter by action type">
+                        <option value="">All actions</option>
+                        {% for action_value, action_label in activity_log_actions %}
+                        <option value="{{ action_value }}"{% if activity_log_filters.action == action_value %} selected{% endif %}>{{ action_label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="admins-log-filter-field">From date
+                    <input class="admins-log-filter-control" type="date" name="start_date" value="{{ activity_log_filters.start_date }}">
+                </label>
+                <label class="admins-log-filter-field">To date
+                    <input class="admins-log-filter-control" type="date" name="end_date" value="{{ activity_log_filters.end_date }}">
+                </label>
+                <div class="admins-log-filter-actions">
+                    <button class="admins-action" type="submit"><i data-lucide="filter" aria-hidden="true"></i><span>Filter</span></button>
+                    <a href="{% url 'admins' %}?tab=activity-log">Clear</a>
+                </div>
+            </form>
+            <p class="admins-log-count" aria-live="polite">
+                {% if activity_log_count %}Showing {{ activity_log_page.start_index }}–{{ activity_log_page.end_index }} of {{ activity_log_count }} events{% else %}No activity events found{% endif %}
+            </p>
+            <div class="admins-log-table-wrap">
+                <table class="admins-log-table" aria-label="Admin Activity Log">
+                    <thead>
+                        <tr><th scope="col">Admin</th><th scope="col">Action</th><th scope="col">Section</th><th scope="col">Details</th><th scope="col">Date &amp; Time</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in activity_log_page %}
+                        <tr>
+                            <td>{{ entry.admin_name }}</td>
+                            <td>{{ entry.get_action_display }}</td>
+                            <td>{{ entry.get_section_display }}</td>
+                            <td class="admins-log-details" title="{{ entry.detail_tooltip }}">
+                                <div class="admins-log-details-top">
+                                    <strong class="admins-log-record">{{ entry.detail_title }}</strong>
+                                    {% if entry.detail_id %}<small class="admins-log-record-id">#{{ entry.detail_id }}</small>{% endif %}
+                                </div>
+                                <small class="admins-log-change">{{ entry.detail_change }}</small>
+                            </td>
+                            <td>{{ entry.created_at|date:"M j, Y g:i A" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5">No activity events match these filters.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if activity_log_page.paginator.num_pages > 1 %}
+            <nav class="admins-log-pagination" aria-label="Activity log pages">
+                {% if activity_log_page.has_previous %}
+                <a href="?{{ activity_log_query }}&amp;log_page={{ activity_log_page.previous_page_number }}" rel="prev">Previous</a>
+                {% else %}<span>Previous</span>{% endif %}
+                <span>Page {{ activity_log_page.number }} of {{ activity_log_page.paginator.num_pages }}</span>
+                {% if activity_log_page.has_next %}
+                <a href="?{{ activity_log_query }}&amp;log_page={{ activity_log_page.next_page_number }}" rel="next">Next</a>
+                {% else %}<span>Next</span>{% endif %}
+            </nav>
+            {% endif %}
+        </div>
+    </section>
+    <div id="admins-actions-menu" class="admins-actions-menu" role="menu" aria-label="Admin actions" hidden>
+        <button type="button" role="menuitem" data-admin-action="profile">Profile</button>
+        <button type="button" role="menuitem" data-admin-action="status">Deactivate Admin</button>
+        <button type="button" role="menuitem" class="is-danger" data-admin-action="remove">Remove Admin</button>
+    </div>
+    <div id="admins-profile-backdrop" class="admins-modal-backdrop" hidden></div>
+    <section id="admins-profile-modal" class="admins-modal admins-profile-modal" role="dialog" aria-modal="true" aria-labelledby="admins-profile-title" hidden>
+        <header class="admins-modal-header">
+            <div>
+                <p>Administrator</p>
+                <h2 id="admins-profile-title">Admin Profile</h2>
+            </div>
+            <div class="admins-profile-header-actions">
+                <button type="button" id="admins-profile-edit" class="admins-profile-edit" aria-label="Edit admin profile" title="Edit profile">
+                    <i data-lucide="pencil" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="admins-profile-close" data-admin-profile-close aria-label="Close profile">×</button>
+            </div>
+        </header>
+        <div class="admins-profile-identity">
+            <span class="admins-profile-avatar" data-admin-profile-avatar aria-hidden="true"></span>
+            <div class="admins-profile-identity-copy">
+                <strong data-admin-profile-identity-name></strong>
+                <span data-admin-profile-identity-username></span>
+            </div>
+        </div>
+        <form id="admins-profile-form" action="{% url 'update_admin_profile' %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="admin_id">
+            <div class="admins-profile-grid">
+                <label class="admins-profile-field">
+                    <span class="admins-profile-label">Full name</span>
+                    <span class="admins-profile-value" data-admin-profile-field="name"></span>
+                    <input name="full_name" type="text" maxlength="150" required data-admin-profile-edit-control hidden>
+                </label>
+                <label class="admins-profile-field">
+                    <span class="admins-profile-label">Username</span>
+                    <span class="admins-profile-value" data-admin-profile-field="username"></span>
+                    <input name="username" type="text" maxlength="150" required data-admin-profile-edit-control hidden>
+                </label>
+                <label class="admins-profile-field">
+                    <span class="admins-profile-label">Email</span>
+                    <span class="admins-profile-value" data-admin-profile-field="email"></span>
+                    <input name="email" type="email" maxlength="254" data-admin-profile-edit-control hidden>
+                </label>
+                <label class="admins-profile-field">
+                    <span class="admins-profile-label">Status</span>
+                    <span class="admins-profile-value" data-admin-profile-field="status"></span>
+                    <select name="status" data-admin-profile-edit-control hidden>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </label>
+                <div class="admins-profile-field">
+                    <span class="admins-profile-label">Last Login</span>
+                    <span class="admins-profile-value" data-admin-profile-field="last-login" data-admin-profile-readonly></span>
+                </div>
+                <div class="admins-profile-field">
+                    <span class="admins-profile-label">Date Joined</span>
+                    <span class="admins-profile-value" data-admin-profile-field="joined" data-admin-profile-readonly></span>
+                </div>
+            </div>
+        </form>
+        <p id="admins-profile-message" class="admins-profile-message" role="status" aria-live="polite"></p>
+        <footer class="admins-profile-footer">
+            <button type="button" data-admin-profile-edit-cancel>Cancel</button>
+            <button type="submit" form="admins-profile-form">Save Changes</button>
+        </footer>
+    </section>
+    <div id="admins-confirm-backdrop" class="admins-modal-backdrop" hidden></div>
+    <section id="admins-confirm-modal" class="admins-modal admins-confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="admins-confirm-title" aria-describedby="admins-confirm-message" hidden>
+        <header class="admins-modal-header">
+            <h2 id="admins-confirm-title">Remove Admins</h2>
+            <button type="button" class="admins-modal-close" data-admin-confirm-cancel aria-label="Close confirmation">×</button>
+        </header>
+        <div class="admins-confirm-message">
+            <strong>Confirmation</strong>
+            <div id="admins-confirm-message">Permanently delete the selected administrator accounts? This action cannot be undone. You cannot remove your own account or the last active administrator.</div>
+        </div>
+        <p id="admins-confirm-error" class="admins-modal-message" role="alert" aria-live="assertive"></p>
+        <footer class="admins-modal-footer">
+            <button type="button" data-admin-confirm-cancel>Cancel</button>
+            <button type="button" id="admins-confirm-submit" class="is-danger">Remove Admins</button>
+        </footer>
+    </section>
+    <div id="admins-modal-backdrop" class="admins-modal-backdrop" hidden></div>
+    <section id="admins-modal" class="admins-modal" role="dialog" aria-modal="true" aria-labelledby="admins-modal-title" hidden>
+        <header class="admins-modal-header">
+            <div>
+                <p>Admins</p>
+                <h2 id="admins-modal-title">Add new admin</h2>
+            </div>
+            <button type="button" class="admins-modal-close" data-admin-modal-close aria-label="Close dialog">×</button>
+        </header>
+        <form id="admins-create-form" method="post" action="{% url 'create_admin' %}" class="admins-form">
+            {% csrf_token %}
+            <div class="admins-form-group">
+                <label for="admin-full-name">Full name <span class="required">*</span></label>
+                <input id="admin-full-name" name="full_name" type="text" autocomplete="name" maxlength="150" required>
+            </div>
+            <div class="admins-form-group admins-status-field">
+                <label>Status <span class="required">*</span></label>
+                <div class="admins-status-options" role="radiogroup" aria-label="Administrator status">
+                    <button type="button" class="admins-status-option is-selected" data-admin-status="active" aria-pressed="true">Active</button>
+                    <button type="button" class="admins-status-option" data-admin-status="inactive" aria-pressed="false">Inactive</button>
+                </div>
+                <input type="hidden" name="status" value="active">
+            </div>
+            <div class="admins-form-section-title">Account credentials</div>
+            <div class="admins-form-group">
+                <label for="admin-username">Username <span class="required">*</span></label>
+                <input id="admin-username" name="username" type="text" autocomplete="username" maxlength="150" required>
+            </div>
+            <div class="admins-form-group">
+                <label for="admin-email">Email <span class="required">*</span></label>
+                <input id="admin-email" name="email" type="email" autocomplete="email" maxlength="254" required>
+            </div>
+            <div class="admins-form-group">
+                <label for="admin-password">Password <span class="required">*</span></label>
+                <input id="admin-password" name="password" type="password" autocomplete="new-password" required>
+            </div>
+            <div class="admins-form-group">
+                <label for="admin-confirm-password">Confirm password <span class="required">*</span></label>
+                <input id="admin-confirm-password" name="confirm_password" type="password" autocomplete="new-password" required>
+            </div>
+        </form>
+        <p id="admins-modal-message" class="admins-modal-message" role="status" aria-live="polite"></p>
+        <footer class="admins-modal-footer">
+            <button type="button" data-admin-modal-close>Cancel</button>
+            <button type="submit" form="admins-create-form">Create Admin</button>
+        </footer>
+    </section>
+</main>
+{% endblock %}
 
-        {% block extra_scripts %}{% endblock %}
+{% block extra_scripts %}
+<script src="{% static 'js/status-filter-select.js' %}"></script>
+<script>
+(function () {
+    "use strict";
+
+    var directoryTab = document.getElementById("admins-directory-tab");
+    var activityLogTab = document.getElementById("admins-activity-log-tab");
+    var directoryPanel = document.getElementById("admins-directory-panel");
+    var activityLogPanel = document.getElementById("admins-activity-log-panel");
+    var directoryControls = document.getElementById("admins-directory-controls");
+    var directoryHeading = document.getElementById("admins-list-title");
+    var directoryCount = document.getElementById("admins-count");
+
+    function setAdminDirectoryTab(showActivityLog) {
+        directoryTab.setAttribute("aria-selected", showActivityLog ? "false" : "true");
+        activityLogTab.setAttribute("aria-selected", showActivityLog ? "true" : "false");
+        directoryPanel.hidden = showActivityLog;
+        activityLogPanel.hidden = !showActivityLog;
+        directoryControls.hidden = showActivityLog;
+        directoryHeading.textContent = showActivityLog ? directoryHeading.dataset.logTitle : directoryHeading.dataset.directoryTitle;
+        directoryCount.textContent = showActivityLog ? directoryCount.dataset.logCount : directoryCount.dataset.directoryCount;
+    }
+
+    function rememberAdminDirectoryTab(showActivityLog) {
+        var currentUrl = new URL(window.location.href);
+        if (showActivityLog) currentUrl.searchParams.set("tab", "activity-log");
+        else currentUrl.searchParams.delete("tab");
+        currentUrl.searchParams.delete("log_page");
+        window.history.replaceState({}, "", currentUrl.pathname + currentUrl.search + currentUrl.hash);
+    }
+
+    directoryTab.addEventListener("click", function () {
+        setAdminDirectoryTab(false);
+        rememberAdminDirectoryTab(false);
+    });
+    activityLogTab.addEventListener("click", function () {
+        setAdminDirectoryTab(true);
+        rememberAdminDirectoryTab(true);
+    });
+    setAdminDirectoryTab("{{ active_admin_tab|escapejs }}" === "activity-log");
+
+    var searchInput = document.getElementById("admins-search");
+    var statusFilter = document.getElementById("admins-status-filter");
+    var countLabel = document.getElementById("admins-count");
+    var adminRows = Array.prototype.slice.call(document.querySelectorAll("[data-admin-row]"));
+    var selectedAdminIds = new Set();
+    var selectAllCheckbox = document.getElementById("admins-select-all");
+    var bulkBar = document.getElementById("admins-bulk-bar");
+    var selectedCountLabel = document.getElementById("admins-selected-count");
+    var clearSelectionButton = document.getElementById("admins-clear-selection");
+    var deleteSelectedButton = document.getElementById("admins-delete-selected");
+    var noResultsRow = document.getElementById("admins-no-results");
+    var table = document.getElementById("admins-table");
+    var toggleColumns = document.getElementById("admins-toggle-columns");
+    var modal = document.getElementById("admins-modal");
+    var backdrop = document.getElementById("admins-modal-backdrop");
+    var addButton = document.getElementById("admins-add-open");
+    var closeButtons = document.querySelectorAll("[data-admin-modal-close]");
+    var form = document.getElementById("admins-create-form");
+    var adminStatusInput = form.querySelector('input[name="status"]');
+    var adminStatusButtons = Array.prototype.slice.call(document.querySelectorAll("[data-admin-status]"));
+    var message = document.getElementById("admins-modal-message");
+    var submitButton = document.querySelector('.admins-modal-footer button[type="submit"]');
+    var confirmModal = document.getElementById("admins-confirm-modal");
+    var confirmBackdrop = document.getElementById("admins-confirm-backdrop");
+    var confirmMessage = document.getElementById("admins-confirm-message");
+    var confirmError = document.getElementById("admins-confirm-error");
+    var confirmButton = document.getElementById("admins-confirm-submit");
+    var confirmCancelButtons = document.querySelectorAll("[data-admin-confirm-cancel]");
+    var deleteAdminsUrl = "{% url 'delete_admins' %}";
+    var updateAdminStatusUrl = "{% url 'update_admin_status' %}";
+    var actionsMenu = document.getElementById("admins-actions-menu");
+    var activeActionsTrigger = null;
+    var activeActionRow = null;
+    var profileModal = document.getElementById("admins-profile-modal");
+    var profileBackdrop = document.getElementById("admins-profile-backdrop");
+    var profileForm = document.getElementById("admins-profile-form");
+    var profileEditButton = document.getElementById("admins-profile-edit");
+    var profileMessage = document.getElementById("admins-profile-message");
+    var profileSubmitButton = document.querySelector('.admins-profile-footer button[type="submit"]');
+    var updateAdminProfileUrl = profileForm.action;
+    var activeProfileTrigger = null;
+    var pendingAction = "remove";
+    var pendingAdminIds = [];
+    var pendingAdminStatus = "";
+    var activeConfirmTrigger = null;
+
+    function syncSelection() {
+        var visibleRows = adminRows.filter(function (row) {
+            return !row.hidden && !row.querySelector("[data-admin-select]").disabled;
+        });
+        var selectedVisibleCount = 0;
+
+        adminRows.forEach(function (row) {
+            var checkbox = row.querySelector("[data-admin-select]");
+            var selected = selectedAdminIds.has(row.dataset.adminId);
+            checkbox.checked = selected;
+            row.classList.toggle("is-selected", selected);
+            if (selected && !row.hidden && !checkbox.disabled) {
+                selectedVisibleCount += 1;
+            }
+        });
+
+        selectAllCheckbox.checked = visibleRows.length > 0 && selectedVisibleCount === visibleRows.length;
+        selectAllCheckbox.indeterminate = selectedVisibleCount > 0 && selectedVisibleCount < visibleRows.length;
+        bulkBar.dataset.show = selectedAdminIds.size > 0 ? "true" : "false";
+        selectedCountLabel.textContent = String(selectedAdminIds.size);
+    }
+
+    function applyFilters() {
+        var query = searchInput.value.trim().toLocaleLowerCase();
+        var status = statusFilter.value;
+        var shown = 0;
+
+        adminRows.forEach(function (row) {
+            var matchesQuery = row.dataset.search.toLocaleLowerCase().indexOf(query) !== -1;
+            var matchesStatus = !status || row.dataset.status === status;
+            row.hidden = !(matchesQuery && matchesStatus);
+            if (!row.hidden) {
+                shown += 1;
+            }
+        });
+
+        countLabel.textContent = shown + " admin" + (shown === 1 ? "" : "s") + " shown";
+        noResultsRow.hidden = adminRows.length === 0 || shown !== 0;
+        syncSelection();
+    }
+
+    function setMessage(text, state) {
+        message.textContent = text || "";
+        if (state) {
+            message.dataset.state = state;
+        } else {
+            delete message.dataset.state;
+        }
+    }
+
+    function setAdminStatus(status) {
+        adminStatusInput.value = status;
+        adminStatusButtons.forEach(function (button) {
+            var selected = button.dataset.adminStatus === status;
+            button.classList.toggle("is-selected", selected);
+            button.setAttribute("aria-pressed", selected ? "true" : "false");
+        });
+    }
+
+    function openModal() {
+        setMessage("", "");
+        modal.hidden = false;
+        backdrop.hidden = false;
+        form.querySelector("input[name='full_name']").focus();
+    }
+
+    function closeModal() {
+        modal.hidden = true;
+        backdrop.hidden = true;
+        setMessage("", "");
+    }
+
+    function closeActionsMenu() {
+        actionsMenu.hidden = true;
+        if (activeActionsTrigger) {
+            activeActionsTrigger.setAttribute("aria-expanded", "false");
+        }
+        activeActionsTrigger = null;
+        activeActionRow = null;
+    }
+
+    function openActionsMenu(trigger, row) {
+        closeActionsMenu();
+        activeActionsTrigger = trigger;
+        activeActionRow = row;
+        trigger.setAttribute("aria-expanded", "true");
+        actionsMenu.querySelector('[data-admin-action="status"]').hidden = row.dataset.adminSelf === "true";
+        actionsMenu.querySelector('[data-admin-action="remove"]').hidden = row.dataset.adminSelf === "true";
+        actionsMenu.querySelector('[data-admin-action="status"]').textContent = row.dataset.status === "active" ? "Deactivate Admin" : "Reactivate Admin";
+        actionsMenu.hidden = false;
+
+        var triggerRect = trigger.getBoundingClientRect();
+        var menuMargin = 8;
+        var edgePadding = 10;
+        var menuWidth = actionsMenu.offsetWidth || 224;
+        var menuHeight = actionsMenu.offsetHeight || 220;
+        var left = triggerRect.left + (triggerRect.width / 2) - (menuWidth / 2);
+        var maxLeft = window.innerWidth - menuWidth - edgePadding;
+        left = Math.max(edgePadding, Math.min(left, Math.max(edgePadding, maxLeft)));
+        var top = triggerRect.bottom + menuMargin;
+        var maxTop = window.innerHeight - menuHeight - edgePadding;
+        if (top > maxTop) {
+            top = Math.max(edgePadding, triggerRect.top - menuHeight - menuMargin);
+        }
+
+        actionsMenu.style.top = top + "px";
+        actionsMenu.style.left = left + "px";
+    }
+
+    function openAdminProfile(row, trigger) {
+        var values = {
+            name: row.dataset.adminName,
+            username: row.dataset.adminUsername,
+            email: row.dataset.adminEmail,
+            status: row.dataset.status === "active" ? "Active" : "Inactive",
+            "last-login": row.dataset.adminLastLogin,
+            joined: row.dataset.adminJoined
+        };
+        Object.keys(values).forEach(function (key) {
+            profileModal.querySelector('[data-admin-profile-field="' + key + '"]').textContent = values[key] || "Not provided";
+        });
+        profileForm.elements.admin_id.value = row.dataset.adminId;
+        profileForm.elements.full_name.value = row.dataset.adminName || "";
+        profileForm.elements.username.value = row.dataset.adminUsername || "";
+        profileForm.elements.email.value = row.dataset.adminEmail === "Not provided" ? "" : row.dataset.adminEmail;
+        profileForm.elements.status.value = row.dataset.status;
+        profileModal.querySelector("[data-admin-profile-avatar]").textContent = (row.dataset.adminName || row.dataset.adminUsername || "?").trim().charAt(0);
+        profileModal.querySelector("[data-admin-profile-identity-name]").textContent = row.dataset.adminName || row.dataset.adminUsername;
+        profileModal.querySelector("[data-admin-profile-identity-username]").textContent = "@" + row.dataset.adminUsername;
+        setAdminProfileEditing(false);
+        setAdminProfileMessage("", "");
+        profileModal.hidden = false;
+        profileBackdrop.hidden = false;
+        activeProfileTrigger = trigger;
+        profileModal.querySelector("[data-admin-profile-close]").focus();
+    }
+
+    function setAdminProfileMessage(text, state) {
+        profileMessage.textContent = text || "";
+        if (state) {
+            profileMessage.dataset.state = state;
+        } else {
+            delete profileMessage.dataset.state;
+        }
+    }
+
+    function setAdminProfileEditing(isEditing) {
+        profileModal.classList.toggle("is-editing", isEditing);
+        profileModal.querySelectorAll("[data-admin-profile-edit-control]").forEach(function (control) {
+            control.hidden = !isEditing;
+        });
+        profileModal.querySelectorAll("[data-admin-profile-field]:not([data-admin-profile-readonly])").forEach(function (value) {
+            value.hidden = isEditing;
+        });
+        profileEditButton.hidden = isEditing;
+    }
+
+    function closeAdminProfile() {
+        profileModal.hidden = true;
+        profileBackdrop.hidden = true;
+        setAdminProfileEditing(false);
+        setAdminProfileMessage("", "");
+        if (activeProfileTrigger) {
+            activeProfileTrigger.focus();
+        }
+        activeProfileTrigger = null;
+    }
+
+    function cancelAdminProfileEdit() {
+        if (activeProfileTrigger) {
+            var row = activeProfileTrigger.closest("[data-admin-row]");
+            profileForm.elements.full_name.value = row.dataset.adminName || "";
+            profileForm.elements.username.value = row.dataset.adminUsername || "";
+            profileForm.elements.email.value = row.dataset.adminEmail === "Not provided" ? "" : row.dataset.adminEmail;
+            profileForm.elements.status.value = row.dataset.status;
+        }
+        setAdminProfileMessage("", "");
+        setAdminProfileEditing(false);
+    }
+
+    function submitAdminProfile(event) {
+        event.preventDefault();
+        setAdminProfileMessage("", "");
+        profileSubmitButton.disabled = true;
+
+        fetch(updateAdminProfileUrl, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": profileForm.querySelector("[name=csrfmiddlewaretoken]").value
+            },
+            body: new FormData(profileForm)
+        })
+        .then(function (response) {
+            return response.json().then(function (result) {
+                if (!response.ok) {
+                    throw new Error(result.error || "Unable to update this admin profile.");
+                }
+                return result;
+            });
+        })
+        .then(function (result) {
+            setAdminProfileMessage(result.message, "success");
+            window.setTimeout(function () {
+                window.location.reload();
+            }, 700);
+        })
+        .catch(function (error) {
+            setAdminProfileMessage(error.message || "Unable to update this admin profile. Please try again.", "error");
+            profileSubmitButton.disabled = false;
+        });
+    }
+
+    function openRemovalConfirm(adminIds, trigger) {
+        pendingAction = "remove";
+        pendingAdminIds = adminIds || Array.from(selectedAdminIds);
+        pendingAdminStatus = "";
+        activeConfirmTrigger = trigger || null;
+        confirmError.textContent = "";
+        confirmError.removeAttribute("data-state");
+        document.getElementById("admins-confirm-title").textContent = pendingAdminIds.length === 1 ? "Remove Admin" : "Remove Admins";
+        confirmMessage.textContent = "Permanently delete " + pendingAdminIds.length + " administrator account" + (pendingAdminIds.length === 1 ? "" : "s") + "? This action cannot be undone. You cannot remove your own account or the last active administrator.";
+        confirmButton.textContent = pendingAdminIds.length === 1 ? "Remove Admin" : "Remove Admins";
+        confirmButton.classList.add("is-danger");
+        deleteSelectedButton.disabled = true;
+        confirmModal.hidden = false;
+        confirmBackdrop.hidden = false;
+        confirmButton.focus();
+    }
+
+    function openStatusConfirm(row, trigger, status) {
+        pendingAction = "status";
+        pendingAdminIds = [row.dataset.adminId];
+        pendingAdminStatus = status;
+        activeConfirmTrigger = trigger;
+        confirmError.textContent = "";
+        confirmError.removeAttribute("data-state");
+        var adminName = row.dataset.adminName || row.dataset.adminUsername;
+        var isDeactivation = status === "inactive";
+        document.getElementById("admins-confirm-title").textContent = isDeactivation ? "Deactivate Admin" : "Reactivate Admin";
+        confirmMessage.textContent = isDeactivation
+            ? "Deactivate " + adminName + "? This will prevent the account from signing in. At least one active administrator must remain."
+            : "Reactivate " + adminName + "? This will restore the account's ability to sign in.";
+        confirmButton.textContent = isDeactivation ? "Deactivate Admin" : "Reactivate Admin";
+        confirmButton.classList.toggle("is-danger", isDeactivation);
+        confirmModal.hidden = false;
+        confirmBackdrop.hidden = false;
+        confirmButton.focus();
+    }
+
+    function closeRemovalConfirm() {
+        confirmModal.hidden = true;
+        confirmBackdrop.hidden = true;
+        confirmError.textContent = "";
+        confirmError.removeAttribute("data-state");
+        document.getElementById("admins-confirm-title").textContent = "Remove Admins";
+        confirmButton.textContent = "Remove Admins";
+        confirmButton.classList.add("is-danger");
+        deleteSelectedButton.disabled = false;
+        if (activeConfirmTrigger) {
+            activeConfirmTrigger.focus();
+        }
+        activeConfirmTrigger = null;
+        pendingAdminIds = [];
+        pendingAdminStatus = "";
+        pendingAction = "remove";
+    }
+
+    searchInput.addEventListener("input", applyFilters);
+    statusFilter.addEventListener("change", applyFilters);
+    selectAllCheckbox.addEventListener("change", function () {
+        adminRows.forEach(function (row) {
+            if (row.hidden || row.querySelector("[data-admin-select]").disabled) {
+                return;
+            }
+            if (selectAllCheckbox.checked) {
+                selectedAdminIds.add(row.dataset.adminId);
+            } else {
+                selectedAdminIds.delete(row.dataset.adminId);
+            }
+        });
+        syncSelection();
+    });
+
+    table.addEventListener("change", function (event) {
+        var checkbox = event.target.closest("[data-admin-select]");
+        if (!checkbox) {
+            return;
+        }
+        var row = checkbox.closest("[data-admin-row]");
+        if (checkbox.checked) {
+            selectedAdminIds.add(row.dataset.adminId);
+        } else {
+            selectedAdminIds.delete(row.dataset.adminId);
+        }
+        syncSelection();
+    });
+
+    clearSelectionButton.addEventListener("click", function () {
+        selectedAdminIds.clear();
+        syncSelection();
+    });
+
+    deleteSelectedButton.addEventListener("click", function () {
+        if (selectedAdminIds.size > 0) {
+            openRemovalConfirm();
+        }
+    });
+
+    toggleColumns.addEventListener("click", function () {
+        var expanded = table.classList.toggle("admins-show-all");
+        toggleColumns.textContent = expanded ? "Show Less" : "Show More";
+        toggleColumns.setAttribute("aria-expanded", expanded ? "true" : "false");
+        toggleColumns.setAttribute("aria-label", expanded ? "Show fewer admin details" : "Show more admin details");
+    });
+
+    addButton.addEventListener("click", openModal);
+    adminStatusButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            setAdminStatus(button.dataset.adminStatus);
+        });
+    });
+    backdrop.addEventListener("click", closeModal);
+    closeButtons.forEach(function (button) {
+        button.addEventListener("click", closeModal);
+    });
+
+    document.addEventListener("click", function (event) {
+        var actionItem = event.target.closest("[data-admin-action]");
+        if (actionItem && activeActionRow) {
+            var row = activeActionRow;
+            var trigger = activeActionsTrigger;
+            var action = actionItem.dataset.adminAction;
+            closeActionsMenu();
+            if (action === "profile") {
+                openAdminProfile(row, trigger);
+            } else if (action === "status") {
+                openStatusConfirm(row, trigger, row.dataset.status === "active" ? "inactive" : "active");
+            } else if (action === "remove") {
+                openRemovalConfirm([row.dataset.adminId], trigger);
+            }
+            return;
+        }
+
+        var actionsTrigger = event.target.closest("[data-admin-actions-trigger]");
+        if (actionsTrigger) {
+            var actionsRow = actionsTrigger.closest("[data-admin-row]");
+            if (activeActionsTrigger === actionsTrigger) {
+                closeActionsMenu();
+            } else {
+                openActionsMenu(actionsTrigger, actionsRow);
+            }
+            return;
+        }
+
+        if (!event.target.closest("#admins-actions-menu")) {
+            closeActionsMenu();
+        }
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+            if (!confirmModal.hidden) {
+                closeRemovalConfirm();
+            } else if (!profileModal.hidden) {
+                closeAdminProfile();
+            } else if (!modal.hidden) {
+                closeModal();
+            } else {
+                closeActionsMenu();
+            }
+        }
+    });
+
+    document.querySelectorAll("[data-admin-profile-close]").forEach(function (button) {
+        button.addEventListener("click", closeAdminProfile);
+    });
+    profileBackdrop.addEventListener("click", closeAdminProfile);
+    profileEditButton.addEventListener("click", function () {
+        setAdminProfileMessage("", "");
+        setAdminProfileEditing(true);
+        profileForm.elements.full_name.focus();
+    });
+    document.querySelector("[data-admin-profile-edit-cancel]").addEventListener("click", cancelAdminProfileEdit);
+    profileForm.addEventListener("submit", submitAdminProfile);
+    confirmBackdrop.addEventListener("click", closeRemovalConfirm);
+    confirmCancelButtons.forEach(function (button) {
+        button.addEventListener("click", closeRemovalConfirm);
+    });
+
+    confirmButton.addEventListener("click", function () {
+        var formData = new FormData();
+        var requestUrl = deleteAdminsUrl;
+        if (pendingAction === "status") {
+            requestUrl = updateAdminStatusUrl;
+            formData.append("admin_id", pendingAdminIds[0]);
+            formData.append("status", pendingAdminStatus);
+        } else {
+            pendingAdminIds.forEach(function (adminId) {
+                formData.append("admin_ids", adminId);
+            });
+        }
+        confirmButton.disabled = true;
+        confirmButton.textContent = pendingAction === "status"
+            ? (pendingAdminStatus === "active" ? "Reactivating..." : "Deactivating...")
+            : "Removing...";
+
+        fetch(requestUrl, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": form.querySelector("[name=csrfmiddlewaretoken]").value
+            },
+            body: formData
+        })
+        .then(function (response) {
+            return response.json().then(function (data) {
+                if (!response.ok) {
+                    throw new Error(data.error || "Unable to remove the selected admin accounts.");
+                }
+                return data;
+            });
+        })
+        .then(function () {
+            window.location.reload();
+        })
+        .catch(function (error) {
+            confirmError.textContent = error.message || "Unable to complete this admin action. Please try again.";
+            confirmError.dataset.state = "error";
+            confirmButton.disabled = false;
+            confirmButton.textContent = pendingAction === "status"
+                ? (pendingAdminStatus === "active" ? "Reactivate Admin" : "Deactivate Admin")
+                : (pendingAdminIds.length === 1 ? "Remove Admin" : "Remove Admins");
+            deleteSelectedButton.disabled = false;
+        });
+    });
+
+    window.addEventListener("resize", closeActionsMenu);
+    window.addEventListener("scroll", closeActionsMenu, true);
+
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        setMessage("", "");
+        submitButton.disabled = true;
+
+        fetch(form.action, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": form.querySelector("[name=csrfmiddlewaretoken]").value
+            },
+            body: new FormData(form)
+        })
+        .then(function (response) {
+            return response.json().then(function (data) {
+                if (!response.ok) {
+                    throw new Error(data.error || "Unable to create the admin account.");
+                }
+                return data;
+            });
+        })
+        .then(function (data) {
+            setMessage(data.message, "success");
+            window.setTimeout(function () {
+                window.location.reload();
+            }, 800);
+        })
+        .catch(function (error) {
+            setMessage(error.message || "Unable to create the admin account. Please try again.", "error");
+            submitButton.disabled = false;
+        });
+    });
+
+    applyFilters();
+})();
+</script>
+{% endblock %}
