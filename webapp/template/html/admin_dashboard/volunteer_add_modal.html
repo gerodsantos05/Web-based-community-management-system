@@ -24,7 +24,20 @@
 }
 
 #vol-add-modal > .vol-head {
+	position: relative;
 	flex: 0 0 auto;
+	padding-right: 4.5rem;
+}
+
+#vol-add-modal #vol-add-title {
+	white-space: nowrap;
+}
+
+#vol-add-modal .vol-modal-close-icon {
+	position: absolute !important;
+	top: 1rem !important;
+	right: 1.2rem !important;
+	left: auto !important;
 }
 
 #vol-add-modal .vol-profile-body {
@@ -59,11 +72,63 @@
 <div class="vol-profile-body"><form id="addvol-form" onsubmit="return false;"><div class="vol-form-grid">
 <div class="vol-assist-grid"><div class="vol-field"><label class="vol-field-label">Full name <span class="required-marker">*</span></label><input type="text" id="addvol_fullname" required placeholder="e.g. Chris Shawne Bertillo"></div><div class="vol-field"><label class="vol-field-label">Availability <span class="required-marker">*</span></label><select id="addvol_availability" required><option value="" disabled selected>Select availability</option><option>Weekdays</option><option>Weekends</option><option>Weekday evenings</option><option>Flexible / Anytime</option></select></div></div>
 <div class="vol-assist-grid"><div class="vol-field"><label class="vol-field-label">Email <span class="required-marker">*</span></label><input type="email" id="addvol_email" required placeholder="email@example.com"></div><div class="vol-field"><label class="vol-field-label">Phone number <span class="required-marker">*</span></label><input type="tel" id="addvol_phone" required placeholder="+63 9XX XXX XXXX"></div></div>
+<div class="vol-field"><label class="vol-field-label" for="addvol_gender">Gender <span class="required-marker">*</span></label><select id="addvol_gender" name="gender" required><option value="" disabled selected>Select gender</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option><option value="prefer_not">Prefer not to say</option></select></div>
+<div class="vol-field"><label class="vol-field-label" for="addvol_address">Address <span class="required-marker">*</span></label><textarea id="addvol_address" name="address_line" rows="3" maxlength="255" placeholder="Street, Barangay, City, Province" required></textarea></div>
 <div class="vol-field"><label class="vol-field-label">Status <span class="required-marker">*</span></label><div class="vol-status-row"><input class="vol-status-opt" type="radio" name="addvol_status" id="addvol_s_active" value="Active" checked><label for="addvol_s_active">Active</label><input class="vol-status-opt" type="radio" name="addvol_status" id="addvol_s_inactive" value="Inactive"><label for="addvol_s_inactive">Inactive</label><input class="vol-status-opt" type="radio" name="addvol_status" id="addvol_s_pending" value="Pending"><label for="addvol_s_pending">Pending</label></div></div>
 <div class="vol-field"><strong style="color:#1a4f43">Account credentials</strong></div><div class="vol-field"><label class="vol-field-label">Username <span class="required-marker">*</span></label><input type="text" id="addvol_username" required placeholder="e.g. chris.bertillo"></div>
 <div class="vol-assist-grid"><div class="vol-field"><label class="vol-field-label">Password <span class="required-marker">*</span></label><input type="password" id="addvol_passwordField" required placeholder="Create a password"></div><div class="vol-field"><label class="vol-field-label">Confirm password <span class="required-marker">*</span></label><input type="password" id="addvol_confirmField" required placeholder="Re-enter password"></div></div>
 </div></form></div><footer class="vol-form-actions"><button type="button" class="vol-form-btn" data-vol-add-close="true">Cancel</button><button type="button" id="addvol-confirm" class="vol-form-btn vol-save-btn">Add volunteer</button></footer>
 </div>
 <script>
-(function(){"use strict";var trigger=document.querySelector('[data-open-add-volunteer="true"]'),modal=document.getElementById("vol-add-modal"),backdrop=document.getElementById("vol-add-backdrop"),form=document.getElementById("addvol-form"),save=document.getElementById("addvol-confirm");if(!trigger||!modal||!backdrop||!form||!save)return;function close(){modal.setAttribute("data-open","false");backdrop.setAttribute("data-open","false");document.body.style.overflow="";form.reset()}function open(){modal.setAttribute("data-open","true");backdrop.setAttribute("data-open","true");document.body.style.overflow="hidden";document.getElementById("addvol_fullname").focus()}trigger.addEventListener("click",open);modal.querySelectorAll("[data-vol-add-close]").forEach(function(b){b.addEventListener("click",close)});backdrop.addEventListener("click",close);save.addEventListener("click",function(){if(!form.reportValidity())return;var password=document.getElementById("addvol_passwordField").value;if(password!==document.getElementById("addvol_confirmField").value){alert("Passwords do not match.");return}var data=new FormData();data.append("full_name",document.getElementById("addvol_fullname").value.trim());data.append("availability",document.getElementById("addvol_availability").value);data.append("email",document.getElementById("addvol_email").value.trim());data.append("phone",document.getElementById("addvol_phone").value.trim());data.append("status",(document.querySelector('input[name="addvol_status"]:checked')||{}).value||"Active");data.append("username",document.getElementById("addvol_username").value.trim());data.append("password",password);save.disabled=true;fetch("{% url 'create_volunteer' %}",{method:"POST",headers:{"X-CSRFToken":document.cookie.split(";").reduce(function(v,c){c=c.trim();return c.indexOf("csrftoken=")===0?decodeURIComponent(c.substring(10)):v},"")},body:data}).then(function(r){return r.json().then(function(d){if(!r.ok)throw d;return d})}).then(function(){close();window.location.reload()}).catch(function(e){alert(e.error||"Failed to add volunteer.")}).finally(function(){save.disabled=false})})})();
+(function(){"use strict";var trigger=document.querySelector('[data-open-add-volunteer="true"]'),modal=document.getElementById("vol-add-modal"),backdrop=document.getElementById("vol-add-backdrop"),form=document.getElementById("addvol-form"),save=document.getElementById("addvol-confirm");if(!trigger||!modal||!backdrop||!form||!save)return;function close(){modal.setAttribute("data-open","false");backdrop.setAttribute("data-open","false");document.body.style.overflow="";form.reset()}function open(){modal.setAttribute("data-open","true");backdrop.setAttribute("data-open","true");document.body.style.overflow="hidden";document.getElementById("addvol_fullname").focus()}trigger.addEventListener("click",open);modal.querySelectorAll("[data-vol-add-close]").forEach(function(b){b.addEventListener("click",close)});backdrop.addEventListener("click",close);save.addEventListener("click",function(){if(!form.reportValidity())return;var password=document.getElementById("addvol_passwordField").value;if(password!==document.getElementById("addvol_confirmField").value){alert("Passwords do not match.");return}var data=new FormData(form);data.append("full_name",document.getElementById("addvol_fullname").value.trim());data.append("availability",document.getElementById("addvol_availability").value);data.append("email",document.getElementById("addvol_email").value.trim());data.append("phone",document.getElementById("addvol_phone").value.trim());data.append("status",(document.querySelector('input[name="addvol_status"]:checked')||{}).value||"Active");data.append("username",document.getElementById("addvol_username").value.trim());data.append("password",password);save.disabled=true;fetch("{% url 'create_volunteer' %}",{method:"POST",headers:{"X-CSRFToken":document.cookie.split(";").reduce(function(v,c){c=c.trim();return c.indexOf("csrftoken=")===0?decodeURIComponent(c.substring(10)):v},"")},body:data}).then(function(r){return r.json().then(function(d){if(!r.ok)throw d;return d})}).then(function(){close();window.location.reload()}).catch(function(e){alert(e.error||"Failed to add volunteer.")}).finally(function(){save.disabled=false})})})();
+</script>
+<style>
+#vol-add-modal #addvol_ojt-settings[hidden] { display: none !important; }
+</style>
+<script>
+(function () {
+	"use strict";
+	var form = document.getElementById("addvol-form");
+	if (!form) return;
+	var credentials = form.querySelector(".vol-field strong");
+	if (!credentials) return;
+	credentials.closest(".vol-field").insertAdjacentHTML("beforebegin",
+		'<label class="vol-field"><span class="vol-field-label">Volunteer type <span class="required-marker">*</span></span><select id="addvol_type" name="volunteer_type" required><option value="ojt" selected>OJT</option><option value="community">Community</option></select></label>' +
+		'<div id="addvol_ojt-settings" class="vol-form-grid"><label class="vol-field"><span class="vol-field-label">Required OJT hours <span class="required-marker">*</span></span><input id="addvol_required-hours" name="required_ojt_hours" type="number" min="0.01" max="10000" step="0.01" value="80" required></label><fieldset class="vol-field" style="border:0;padding:0;margin:0"><legend class="vol-field-label">Regular OJT days</legend><div class="vol-ojt-weekday-picker" role="group" aria-label="Regular OJT days"><button type="button" class="vol-ojt-weekday" data-vol-add-weekday="0" aria-pressed="false">Mon</button><button type="button" class="vol-ojt-weekday" data-vol-add-weekday="1" aria-pressed="false">Tue</button><button type="button" class="vol-ojt-weekday" data-vol-add-weekday="2" aria-pressed="false">Wed</button><button type="button" class="vol-ojt-weekday" data-vol-add-weekday="3" aria-pressed="false">Thu</button><button type="button" class="vol-ojt-weekday" data-vol-add-weekday="4" aria-pressed="false">Fri</button><button type="button" class="vol-ojt-weekday" data-vol-add-weekday="5" aria-pressed="false">Sat</button><button type="button" class="vol-ojt-weekday" data-vol-add-weekday="6" aria-pressed="false">Sun</button></div></fieldset></div>' +
+		'<input type="hidden" id="addvol_schedule-days" name="schedule_days" value="[]">'
+	);
+	var typeSelect = document.getElementById("addvol_type");
+	var settings = document.getElementById("addvol_ojt-settings");
+	var requiredHours = document.getElementById("addvol_required-hours");
+	var scheduleDays = document.getElementById("addvol_schedule-days");
+	var hoursRequiredMarker = settings.querySelector(".required-marker");
+	if (hoursRequiredMarker) hoursRequiredMarker.remove();
+	requiredHours.removeAttribute("required");
+	function syncOjtFields() {
+		var isOjt = typeSelect.value === "ojt";
+		settings.hidden = !isOjt;
+		requiredHours.disabled = !isOjt;
+		requiredHours.required = false;
+		if (!isOjt) {
+			requiredHours.value = "";
+			scheduleDays.value = "[]";
+			form.querySelectorAll("[data-vol-add-weekday]").forEach(function (button) { button.setAttribute("aria-pressed", "false"); });
+		}
+	}
+	typeSelect.addEventListener("change", syncOjtFields);
+	form.addEventListener("reset", function () {
+		scheduleDays.value = "[]";
+		form.querySelectorAll("[data-vol-add-weekday]").forEach(function (button) { button.setAttribute("aria-pressed", "false"); });
+		window.setTimeout(syncOjtFields, 0);
+	});
+	form.querySelectorAll("[data-vol-add-weekday]").forEach(function (button) {
+		button.addEventListener("click", function () {
+			button.setAttribute("aria-pressed", button.getAttribute("aria-pressed") === "true" ? "false" : "true");
+			var selected = Array.from(form.querySelectorAll("[data-vol-add-weekday][aria-pressed='true']"))
+				.map(function (day) { return Number(day.getAttribute("data-vol-add-weekday")); });
+			scheduleDays.value = JSON.stringify(selected);
+		});
+	});
+	syncOjtFields();
+})();
 </script>

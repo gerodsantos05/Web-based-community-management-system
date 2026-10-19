@@ -1,6 +1,6 @@
-from django.urls import path
+from django.contrib.auth import views as auth_views
+from django.urls import path, reverse_lazy
 from . import views
-
 urlpatterns = [
 	path("", views.index, name="home"),
 	path("about/", views.about, name="about"),
@@ -17,10 +17,28 @@ urlpatterns = [
 	path("products/inquiry/", views.submit_product_inquiry, name="submit_product_inquiry"),
 	path("signin/", views.signin, name="signin"),
 	path("signup/", views.signup, name="signup"),
+	path("password-reset/request/", views.password_reset_request, name="password_reset_request"),
+	path(
+		"password-reset/<uidb64>/<token>/",
+		auth_views.PasswordResetConfirmView.as_view(
+			template_name="auth/password_reset_confirm.html",
+			success_url=reverse_lazy("password_reset_complete"),
+		),
+		name="password_reset_confirm",
+	),
+	path(
+		"password-reset/complete/",
+		auth_views.PasswordResetCompleteView.as_view(
+			template_name="auth/password_reset_complete.html",
+		),
+		name="password_reset_complete",
+	),
 	path("two-factor/verify/", views.two_factor_verify, name="two_factor_verify"),
 	path("dashboard/two-factor/setup/", views.dashboard_two_factor_setup, name="dashboard_two_factor_setup"),
 	path("apply/beneficiary/", views.apply_beneficiary, name="apply_beneficiary"),
 	path("apply/volunteer/", views.apply_volunteer, name="apply_volunteer"),
+	path("applications/<int:application_id>/complete-profile/", views.complete_role_application_profile, name="complete_role_application_profile"),
+	path("admin-dashboard/role-applications/documents/<int:document_id>/", views.view_role_application_document, name="view_role_application_document"),
 	path("admin-dashboard/role-applications/review/", views.review_role_application, name="review_role_application"),
 	path("admin-dashboard/beneficiaries/assistance/record/", views.record_beneficiary_assistance, name="record_beneficiary_assistance"),
 	path("admin-dashboard/beneficiaries/assistance/delete-bulk/", views.delete_beneficiary_assistance_bulk, name="delete_beneficiary_assistance_bulk"),
@@ -29,6 +47,7 @@ urlpatterns = [
 	path("admin-dashboard/beneficiaries/deactivate/", views.deactivate_beneficiary, name="deactivate_beneficiary"),
 	path("admin-dashboard/volunteers/create/", views.create_volunteer, name="create_volunteer"),
 	path("admin-dashboard/volunteers/profile/update/", views.update_volunteer_profile, name="update_volunteer_profile"),
+	path("admin-dashboard/volunteers/type/update/", views.update_volunteer_type, name="update_volunteer_type"),
 	path("admin-dashboard/volunteers/ojt-requirement/update/", views.update_volunteer_ojt_requirement, name="update_volunteer_ojt_requirement"),
 	path("admin-dashboard/volunteers/ojt-hours/adjust/", views.adjust_volunteer_ojt_hours, name="adjust_volunteer_ojt_hours"),
 	path("admin-dashboard/volunteers/deactivate/", views.deactivate_volunteer, name="deactivate_volunteer"),
@@ -52,6 +71,8 @@ urlpatterns = [
 	path("user-dashboard/material-work/latest/", views.latest_material_work, name="latest_material_work"),
 	path("volunteer-dashboard/tasks-ojt/assigned/", views.volunteer_assigned_activities_api, name="volunteer_assigned_activities_api"),
 	path("volunteer-dashboard/tasks-ojt/calendar/", views.volunteer_activity_calendar_api, name="volunteer_activity_calendar_api"),
+	path("volunteer-dashboard/tasks-ojt/photos/", views.volunteer_activity_photos_api, name="volunteer_activity_photos_api"),
+	path("volunteer-dashboard/tasks-ojt/photos/<int:photo_id>/", views.volunteer_activity_photo_delete, name="volunteer_activity_photo_delete"),
 	path("volunteer-dashboard/tasks-ojt/beneficiary-attendance/manage/", views.volunteer_beneficiary_attendance_page, name="volunteer_beneficiary_attendance_page"),
 	path("volunteer-dashboard/tasks-ojt/attendance/", views.volunteer_activity_attendance, name="volunteer_activity_attendance"),
 	path("volunteer-dashboard/tasks-ojt/beneficiary-attendance/", views.volunteer_beneficiary_attendance, name="volunteer_beneficiary_attendance"),
@@ -65,6 +86,10 @@ urlpatterns = [
 	path("user-dashboard/skill-learning/", views.user_dashboard_skill_learning, name="user_dashboard_skill_learning"),
 	path("user-dashboard/settings/", views.user_dashboard_settings, name="user_dashboard_settings"),
 	path("volunteer-dashboard/skill-learning/data/", views.skill_learning_data_api, name="skill_learning_data_api"),
+	path("volunteer-dashboard/skill-learning/progress/", views.volunteer_skill_learning_progress, name="volunteer_skill_learning_progress"),
+	path("volunteer-dashboard/skill-learning/progress/update/", views.volunteer_skill_learning_progress_update, name="volunteer_skill_learning_progress_update"),
+	path("volunteer-dashboard/skill-learning/progress/bulk-update/", views.volunteer_skill_learning_progress_bulk_update, name="volunteer_skill_learning_progress_bulk_update"),
+	path("volunteer-dashboard/skill-learning/materials/<uuid:material_id>/file/", views.skill_learning_material_file, name="skill_learning_material_file"),
 	path("volunteer-dashboard/skill-learning/topics/<uuid:topic_id>/open/", views.skill_learning_topic_open, name="skill_learning_topic_open"),
 	path("volunteer-dashboard/skill-learning/materials/<uuid:material_id>/engagement/", views.skill_learning_material_engagement, name="skill_learning_material_engagement"),
 	path("volunteer-dashboard/skill-learning/topics/create/", views.skill_learning_topic_create, name="skill_learning_topic_create"),

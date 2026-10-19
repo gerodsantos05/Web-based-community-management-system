@@ -63,7 +63,7 @@
         display: flex;
         flex-wrap: wrap;
         align-items: flex-end;
-        justify-content: space-between;
+        justify-content: flex-end;
         gap: 1rem;
     }
 
@@ -94,6 +94,7 @@
     #skill-learning .sl-search {
         position: relative;
         display: flex;
+        min-width: 0;
         align-items: center;
         gap: 0.6rem;
     }
@@ -111,7 +112,9 @@
     }
 
     #skill-learning .sl-search input {
+        box-sizing: border-box;
         width: 0;
+        min-width: 0;
         opacity: 0;
         height: 40px;
         padding: 0 1.1rem 0 2.8rem;
@@ -547,6 +550,24 @@
         background: #b91c1c;
     }
 
+    #skill-learning .sl-monitor-progress-btn {
+        border: 1px solid var(--sl-border);
+        border-radius: 999px;
+        background: #ffffff;
+        color: var(--sl-accent);
+        padding: 0.55rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        text-decoration: none;
+    }
+
+    #skill-learning .sl-monitor-progress-btn:hover {
+        background: #f0fdfa;
+    }
+
     #skill-learning .sl-materials {
         display: grid;
         gap: 1rem;
@@ -692,10 +713,28 @@
         cursor: pointer;
     }
 
+    #skill-learning .sl-material-complete:disabled {
+        cursor: wait;
+        opacity: 0.65;
+    }
+
     #skill-learning .sl-material-complete[aria-pressed="true"] {
         background: var(--sl-accent);
         border-color: var(--sl-accent);
         color: #ffffff;
+    }
+
+    #skill-learning .sl-engagement-message {
+        margin: 0.5rem 0 0;
+        font-size: 0.85rem;
+    }
+
+    #skill-learning .sl-engagement-message[data-state="error"] {
+        color: #b42318;
+    }
+
+    #skill-learning .sl-engagement-message[data-state="success"] {
+        color: var(--sl-accent);
     }
 
     #skill-learning .sl-material-desc {
@@ -726,6 +765,15 @@
         place-items: center;
     }
 
+    #skill-learning .sl-preview-embed {
+        width: 100%;
+        min-height: 320px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background: #ffffff;
+    }
+
     #skill-learning .sl-preview-frame.is-document {
         background: #f8fafc;
     }
@@ -733,9 +781,170 @@
     #skill-learning .sl-preview-media,
     #skill-learning .sl-preview-frame iframe {
         width: 100%;
-        height: 100%;
+        height: auto;
         border: 0;
-        object-fit: cover;
+        object-fit: contain;
+    }
+
+    #skill-learning .sl-preview-media {
+        max-height: 100%;
+        aspect-ratio: 16 / 9;
+    }
+
+    #skill-learning .sl-preview-image {
+        display: block;
+        max-width: 100%;
+        max-height: 320px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        justify-self: center;
+        align-self: center;
+    }
+
+    #skill-learning .sl-preview-embed iframe {
+        flex: 1 1 auto;
+        min-height: 280px;
+    }
+
+    #skill-learning .sl-preview-embed iframe {
+        display: block;
+        flex: 1 1 auto;
+        width: 100%;
+        min-height: 280px;
+        border: 0;
+    }
+
+    #skill-learning .sl-preview-embed.is-video iframe {
+        flex: 0 0 auto;
+        height: auto;
+        min-height: 0;
+        aspect-ratio: 16 / 9;
+    }
+
+    #skill-learning .sl-preview-open-link {
+        flex: 0 0 auto;
+        padding: 0.7rem 0.9rem;
+        border-top: 1px solid var(--sl-border);
+        color: var(--sl-accent);
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-align: center;
+        text-decoration: none;
+    }
+
+    #skill-learning .sl-preview-frame > .sl-material-complete {
+        justify-self: end;
+        min-width: 9rem;
+        min-height: 2.5rem;
+        margin: 0.65rem 0.85rem;
+        padding: 0.55rem 0.9rem;
+        border: 1px solid var(--sl-border);
+        border-radius: 0.55rem;
+        background: #ffffff;
+        color: var(--sl-accent);
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    #skill-learning .sl-preview-completion-actions {
+        display: flex;
+        justify-self: end;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0.65rem 0.85rem;
+    }
+
+    #skill-learning .sl-preview-completion-status,
+    #skill-learning .sl-material-undo {
+        display: inline-flex;
+        min-height: 2.5rem;
+        box-sizing: border-box;
+        align-items: center;
+        justify-content: center;
+        padding: 0.55rem 0.9rem;
+        border: 1px solid var(--sl-border);
+        border-radius: 0.55rem;
+        background: #ffffff;
+        color: var(--sl-accent);
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+
+    #skill-learning .sl-preview-completion-status {
+        border-color: var(--sl-accent);
+        background: #ecfdf5;
+    }
+
+    #skill-learning .sl-material-undo {
+        cursor: pointer;
+    }
+
+    #skill-learning .sl-material-undo:hover {
+        border-color: var(--sl-accent);
+        box-shadow: 0 2px 8px rgba(15, 118, 110, 0.12);
+    }
+
+    #skill-learning .sl-material-undo:disabled {
+        cursor: wait;
+        opacity: 0.65;
+    }
+
+    #skill-learning .sl-preview-frame > .sl-material-complete:hover {
+        border-color: var(--sl-accent);
+        box-shadow: 0 2px 8px rgba(15, 118, 110, 0.12);
+    }
+
+    #skill-learning .sl-preview-frame > .sl-material-complete.is-complete {
+        background: #ecfdf5;
+        color: var(--sl-accent);
+    }
+
+    #skill-learning .sl-preview-frame > .sl-material-complete:disabled {
+        cursor: wait;
+        opacity: 0.65;
+    }
+
+    #skill-learning .sl-preview-open-link:hover {
+        text-decoration: underline;
+    }
+
+    #skill-learning .sl-preview-fallback {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.9rem;
+        width: 100%;
+        min-height: 320px;
+        padding: 1.5rem;
+        background: #f8fafc;
+    }
+
+    #skill-learning .sl-preview-fallback-title {
+        color: var(--sl-ink);
+        text-align: center;
+    }
+
+    #skill-learning .sl-preview-fallback-link {
+        flex: 0 0 auto;
+        padding: 0.65rem 0.9rem;
+        border-radius: 0.55rem;
+        background: var(--sl-accent);
+        color: #fff;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    #skill-learning .sl-preview-fallback-empty {
+        color: var(--sl-muted);
+        font-size: 0.88rem;
+        text-align: center;
     }
 
     #skill-learning .sl-preview-doc {
@@ -781,6 +990,11 @@
         max-height: 90vh;
     }
 
+    #skill-learning .sl-modal-card.sl-material-modal-card {
+        width: min(92vw, 700px);
+        max-height: min(86vh, 760px);
+    }
+
     #skill-learning .sl-modal-card.wide {
         width: min(96vw, 1020px);
     }
@@ -807,6 +1021,17 @@
 
     #skill-learning .sl-modal-body {
         padding: 1.2rem 1.3rem 1.4rem;
+    }
+
+    #skill-learning .sl-material-modal-body {
+        overflow-y: auto;
+        min-height: 0;
+    }
+
+    #skill-learning .sl-material-form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.85rem;
     }
 
     #skill-learning .sl-modal-body-scroll {
@@ -838,6 +1063,58 @@
         align-items: center;
         justify-content: center;
         cursor: pointer;
+    }
+
+    #skill-learning #sl-undo-confirm-modal {
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: none;
+    }
+
+    #skill-learning #sl-undo-confirm-modal .sl-modal-card {
+        width: min(96vw, 475px);
+        max-width: 475px;
+        border-radius: 20px;
+        box-shadow: 0 28px 52px rgba(15, 118, 110, 0.18);
+    }
+
+    #skill-learning #sl-undo-confirm-modal .sl-modal-head {
+        align-items: center;
+        padding: 1.1rem 1.4rem 0.9rem;
+    }
+
+    #skill-learning #sl-undo-confirm-modal .sl-modal-title {
+        color: #14352d;
+        font-size: 1.15rem;
+        font-weight: 700;
+    }
+
+    #skill-learning #sl-undo-confirm-modal .sl-modal-body {
+        padding: 1rem 1.4rem;
+    }
+
+    #skill-learning #sl-undo-confirm-modal .sl-modal-subtitle {
+        margin: 0;
+        color: #707070;
+        font-size: 1.05rem;
+        line-height: 1.55;
+    }
+
+    #skill-learning #sl-undo-confirm-modal .sl-modal-footer {
+        padding: 1rem 1.4rem;
+    }
+
+    #skill-learning #sl-undo-confirm-modal .sl-modal-cancel-btn,
+    #skill-learning #sl-undo-confirm-modal .sl-modal-delete-btn {
+        min-height: 3.25rem;
+        padding: 0.7rem 1.2rem;
+        font-size: 0.95rem;
+        font-weight: 700;
+    }
+
+    #skill-learning #sl-undo-confirm-modal .sl-icon-btn {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
     }
 
     #skill-learning .sl-field {
@@ -1033,7 +1310,7 @@
 
     @media (max-width: 900px) {
         #skill-learning {
-            padding: 3rem 1.2rem 4rem;
+            padding: 1rem 1.2rem 4rem;
         }
 
         #skill-learning .sl-topic-grid,
@@ -1041,13 +1318,121 @@
             grid-template-columns: 1fr;
         }
 
+        #skill-learning .sl-preview-frame.is-video,
+        #skill-learning .sl-preview-frame.is-video .sl-preview-embed {
+            min-height: 0;
+        }
+
         #skill-learning .sl-title-row {
-            flex-direction: column;
-            align-items: flex-start;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        #skill-learning .sl-header-action {
+            width: auto;
+            margin-left: auto;
+            justify-content: flex-end;
+        }
+    }
+
+    @media (max-width: 640px) {
+        #skill-learning .sl-header-action {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            width: 100%;
+            margin-left: 0;
+            justify-content: flex-start;
+        }
+
+        #skill-learning .sl-header-action > .sl-monitor-progress-btn,
+        #skill-learning .sl-header-action > #sl-open-create-topic {
+            flex: 1 1 0;
+            min-height: 44px;
+            padding: 12px;
+            justify-content: center;
+            gap: 4px;
+            font-size: 14px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        #skill-learning .sl-header-action > .sl-monitor-progress-btn svg,
+        #skill-learning .sl-header-action > .sl-monitor-progress-btn i,
+        #skill-learning .sl-header-action > #sl-open-create-topic svg,
+        #skill-learning .sl-header-action > #sl-open-create-topic i {
+            flex: 0 0 18px;
+            width: 18px;
+            height: 18px;
         }
     }
 
     @media (max-width: 600px) {
+        #skill-learning .sl-header-controls {
+            width: 100%;
+        }
+
+        #skill-learning .sl-search {
+            flex: 1 1 100%;
+            width: 100%;
+        }
+
+        #skill-learning .sl-search-toggle {
+            position: absolute;
+            left: 0;
+            z-index: 1;
+            width: 40px;
+            height: 40px;
+            border: 0;
+            background: transparent;
+        }
+
+        #skill-learning .sl-search input,
+        #skill-learning .sl-search.expanded input {
+            flex: 1 1 auto;
+            width: 100%;
+            opacity: 1;
+            padding-left: 2.8rem;
+        }
+
+        #skill-learning #sl-material-modal {
+            align-items: flex-start;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 100px 1rem 1rem;
+        }
+
+        #skill-learning .sl-modal-card.sl-material-modal-card {
+            width: 100%;
+            max-height: calc(100vh - 116px);
+            max-height: calc(100dvh - 116px);
+        }
+
+        #skill-learning .sl-material-modal-body {
+            flex: 1 1 auto;
+        }
+
+        #skill-learning #sl-topic-modal {
+            align-items: flex-start;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 100px 1rem 1rem;
+        }
+
+        #skill-learning #sl-topic-modal .sl-modal-card.sl-modal-compact {
+            width: 100%;
+            max-width: 560px;
+            max-height: calc(100vh - 116px);
+            max-height: calc(100dvh - 116px);
+            flex: 0 1 auto;
+        }
+
+        #skill-learning #sl-topic-modal .sl-modal-body-scroll {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
         #skill-learning .sl-modal-card.sl-modal-compact {
             max-width: calc(100% - 2rem);
             max-height: calc(100vh - 2rem);
@@ -1065,10 +1450,6 @@
     <div class="sl-container">
         <header class="sl-header">
             <div class="sl-title-row">
-                <div>
-                    <h1 class="sl-title">Skill-Building &amp; Learning</h1>
-                    <p class="sl-subtitle">Explore and manage learning topics, then open a topic to review and maintain its materials.</p>
-                </div>
                 <div class="sl-header-action">
                     {% block sl_create_topic_action %}{% endblock %}
                 </div>
@@ -1108,6 +1489,7 @@
                         <h2 id="sl-topic-name" class="sl-detail-title">Topic title</h2>
                         <p id="sl-topic-description" class="sl-detail-desc">Topic description.</p>
                         <div id="sl-topic-progress" class="sl-progress" aria-label="Topic progress"></div>
+                        <p id="sl-engagement-message" class="sl-engagement-message" role="status" aria-live="polite" hidden></p>
                     </div>
                     <div class="sl-topic-inline-row">
                         <button id="sl-open-create-material" type="button" class="sl-topic-cta">
@@ -1205,7 +1587,7 @@
     </div>
 
     <div id="sl-material-modal" class="sl-modal" aria-hidden="true" role="dialog" aria-label="Create material dialog">
-        <div class="sl-modal-card">
+        <div class="sl-modal-card sl-material-modal-card">
             <header class="sl-modal-head">
                 <div>
                     <h3 id="sl-material-modal-title" class="sl-modal-title">Create new material</h3>
@@ -1215,11 +1597,11 @@
                     <i data-lucide="x" aria-hidden="true"></i>
                 </button>
             </header>
-            <div class="sl-modal-body">
-                <form id="sl-material-form" class="sl-create-grid">
+            <div class="sl-modal-body sl-material-modal-body">
+                <form id="sl-material-form" class="sl-material-form">
                     <input id="sl-material-id-input" name="material_id" type="hidden" />
                     <input id="sl-material-topic-id-input" name="topic_id" type="hidden" />
-                    <div class="sl-field sl-create-left">
+                    <div class="sl-field">
                         <label for="sl-material-type-input">Material type</label>
                         <select id="sl-material-type-input" name="material_type" required>
                             <option value="document">Document</option>
@@ -1227,21 +1609,22 @@
                             <option value="reference_guide">Reference Guide</option>
                         </select>
                     </div>
-                    <div class="sl-field sl-create-left">
+                    <div class="sl-field">
                         <label for="sl-material-title-input">Title</label>
                         <input id="sl-material-title-input" name="title" type="text" required placeholder="Material title" />
                     </div>
-                    <div class="sl-field sl-create-left">
+                    <div class="sl-field">
                         <label for="sl-material-desc-input">Short description</label>
                         <textarea id="sl-material-desc-input" name="description" rows="4" placeholder="What does this material cover?"></textarea>
                     </div>
-                    <div class="sl-field sl-create-left">
+                    <div class="sl-field">
                         <label for="sl-material-upload-input">Upload file or video</label>
                         <input id="sl-material-upload-input" name="file_upload" type="file" />
                     </div>
-                    <div class="sl-field sl-create-left">
+                    <div class="sl-field">
                         <label for="sl-material-link-input">Or link to the file/video</label>
                         <input id="sl-material-link-input" name="external_url" type="url" placeholder="https://..." />
+                        <small id="sl-material-source-hint">Add a file or a valid http(s) link.</small>
                     </div>
                 </form>
             </div>
@@ -1270,10 +1653,27 @@
         </div>
     </div>
     {% endblock %}
+    <div id="sl-undo-confirm-modal" class="sl-modal" aria-hidden="true" role="dialog" aria-labelledby="sl-undo-confirm-title" aria-describedby="sl-undo-confirm-message">
+        <div class="sl-modal-card sl-modal-compact">
+            <header class="sl-modal-head">
+                <h3 id="sl-undo-confirm-title" class="sl-modal-title">Undo completion?</h3>
+                <button type="button" class="sl-icon-btn" data-sl-close-modal="undo" aria-label="Cancel undo">
+                    <i data-lucide="x" aria-hidden="true"></i>
+                </button>
+            </header>
+            <div class="sl-modal-body">
+                <p id="sl-undo-confirm-message" class="sl-modal-subtitle">This will remove this material from your completed progress.</p>
+            </div>
+            <footer class="sl-modal-footer">
+                <button type="button" class="sl-modal-cancel-btn" data-sl-close-modal="undo">Keep completed</button>
+                <button id="sl-undo-confirm-btn" type="button" class="sl-modal-delete-btn">Undo completion</button>
+            </footer>
+        </div>
+    </div>
 </section>
 {% endblock %}
 
 {% block extra_scripts %}
 {{ block.super }}
-<script src="{% static 'js/skill_learning_dashboard.js' %}"></script>
+<script src="{% static 'js/skill_learning_dashboard.js' %}?v=material-progress-5"></script>
 {% endblock %}

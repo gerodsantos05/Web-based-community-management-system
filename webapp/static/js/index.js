@@ -2,6 +2,22 @@ if (window.lucide && typeof window.lucide.createIcons === "function") {
     window.lucide.createIcons();
 }
 
+document.querySelectorAll("[data-password-toggle]").forEach(function (toggle) {
+    toggle.addEventListener("click", function () {
+        const passwordInput = document.getElementById(toggle.dataset.passwordToggle);
+        if (!passwordInput) {
+            return;
+        }
+
+        const isVisible = passwordInput.type === "password";
+        passwordInput.type = isVisible ? "text" : "password";
+        const toggleLabel = isVisible ? "Hide" : "Show";
+        toggle.textContent = toggleLabel;
+        toggle.setAttribute("aria-label", toggleLabel + " password");
+        toggle.setAttribute("aria-pressed", String(isVisible));
+    });
+});
+
 const menuBtn = document.getElementById("menuBtn");
 const mobileNav = document.getElementById("mobileNav");
 
@@ -27,16 +43,30 @@ const closeSignInModalBtn = document.getElementById("closeSignInModal");
 const closeSignUpModalBtn = document.getElementById("closeSignUpModal");
 const switchToSignUpFromSignIn = document.getElementById("switchToSignUpFromSignIn");
 const switchToSignInFromSignUp = document.getElementById("switchToSignInFromSignUp");
+const forgotPasswordLink = document.getElementById("forgotPasswordLink");
+const backToSignInLink = document.getElementById("backToSignInLink");
 const modalEmailInput = document.getElementById("id_username_or_email");
 const signupModalEmailInput = document.getElementById("id_username");
 const signInModalTitle = document.getElementById("signinDialogTitle");
 const signInModalDescription = document.getElementById("signinDialogDescription");
 const signInNextInput = document.getElementById("signInNext");
+const signInPanelTitle = document.getElementById("signInPanelTitle");
+const signInForm = document.getElementById("signInForm");
+const signInSignupLink = document.getElementById("signInSignupLink");
+const resetPasswordTitle = document.getElementById("resetPasswordTitle");
+const resetPasswordDescription = document.getElementById("resetPasswordDescription");
+const resetPasswordForm = document.getElementById("resetPasswordForm");
+const resetPasswordEmail = document.getElementById("resetPasswordEmail");
+const resetPasswordError = document.getElementById("resetPasswordError");
+const resetPasswordSuccess = document.getElementById("resetPasswordSuccess");
+const resetPasswordBack = document.getElementById("resetPasswordBack");
 const defaultSignInModalTitle = signInModalTitle ? signInModalTitle.textContent.trim() : "";
 const defaultSignInModalDescription = signInModalDescription ? signInModalDescription.textContent.trim() : "";
 const signInFirstModalTitle = "Sign in First!";
 const signInFirstModalDescription = "You must sign in first before applying..";
 const productSignInModalDescription = "You must sign in first before viewing product details.";
+const resetPasswordPanelTitle = "Forgot your password?";
+const resetPasswordPanelDescription = "Enter your email and we'll help you get back into your account.";
 let signInModalSource = "default";
 function setSignInModalContent(source) {
     if (!signInModalTitle || !signInModalDescription) {
@@ -53,6 +83,82 @@ function setSignInModalContent(source) {
         signInModalTitle.textContent = defaultSignInModalTitle;
         signInModalDescription.textContent = defaultSignInModalDescription;
     }
+}
+
+function resetSignInView(focusSignInInput) {
+    if (resetPasswordForm) {
+        resetPasswordForm.reset();
+    }
+    if (resetPasswordError) {
+        resetPasswordError.textContent = "";
+        resetPasswordError.hidden = true;
+    }
+    if (resetPasswordEmail) {
+        resetPasswordEmail.removeAttribute("aria-invalid");
+    }
+    if (resetPasswordSuccess) {
+        resetPasswordSuccess.hidden = true;
+    }
+    if (signInPanelTitle) {
+        signInPanelTitle.hidden = false;
+    }
+    if (signInForm) {
+        signInForm.hidden = false;
+    }
+    if (signInSignupLink) {
+        signInSignupLink.hidden = false;
+    }
+    if (resetPasswordTitle) {
+        resetPasswordTitle.hidden = true;
+    }
+    if (resetPasswordDescription) {
+        resetPasswordDescription.hidden = true;
+    }
+    if (resetPasswordForm) {
+        resetPasswordForm.hidden = true;
+    }
+    if (resetPasswordBack) {
+        resetPasswordBack.hidden = true;
+    }
+
+    setSignInModalContent(signInModalSource);
+    if (focusSignInInput && modalEmailInput) {
+        modalEmailInput.focus();
+    }
+}
+
+function showResetPasswordView() {
+    if (!resetPasswordForm || !resetPasswordEmail) {
+        return;
+    }
+
+    resetSignInView(false);
+    if (signInPanelTitle) {
+        signInPanelTitle.hidden = true;
+    }
+    if (signInForm) {
+        signInForm.hidden = true;
+    }
+    if (signInSignupLink) {
+        signInSignupLink.hidden = true;
+    }
+    if (resetPasswordTitle) {
+        resetPasswordTitle.hidden = false;
+    }
+    if (resetPasswordDescription) {
+        resetPasswordDescription.hidden = false;
+    }
+    resetPasswordForm.hidden = false;
+    if (resetPasswordBack) {
+        resetPasswordBack.hidden = false;
+    }
+    if (signInModalTitle) {
+        signInModalTitle.textContent = resetPasswordPanelTitle;
+    }
+    if (signInModalDescription) {
+        signInModalDescription.textContent = resetPasswordPanelDescription;
+    }
+    resetPasswordEmail.focus();
 }
 
 function showModal(modal, focusEl) {
@@ -86,6 +192,7 @@ function hideModal(modal) {
 }
 
 function openSignInModal(sourceOrEvent) {
+    resetSignInView(false);
     if (sourceOrEvent === "application" || sourceOrEvent === "product") {
         signInModalSource = sourceOrEvent;
     } else {
@@ -99,6 +206,7 @@ function openSignInModal(sourceOrEvent) {
 function closeSignInModal() {
     hideModal(signInModal);
     signInModalSource = "default";
+    resetSignInView(false);
     if (signInNextInput) {
         signInNextInput.value = "";
     }
@@ -106,6 +214,7 @@ function closeSignInModal() {
 }
 
 function openSignUpModal() {
+    resetSignInView(false);
     hideModal(signInModal);
     showModal(signUpModal, signupModalEmailInput);
 }
@@ -116,6 +225,7 @@ function closeSignUpModal() {
 
 function switchToSignUp(event) {
     event.preventDefault();
+    resetSignInView(false);
     hideModal(signInModal);
     window.setTimeout(openSignUpModal, 100);
 }
@@ -152,6 +262,84 @@ if (switchToSignUpFromSignIn) {
 
 if (switchToSignInFromSignUp) {
     switchToSignInFromSignUp.addEventListener("click", switchToSignIn);
+}
+
+if (forgotPasswordLink) {
+    forgotPasswordLink.addEventListener("click", function (event) {
+        event.preventDefault();
+        showResetPasswordView();
+    });
+}
+
+if (backToSignInLink) {
+    backToSignInLink.addEventListener("click", function (event) {
+        event.preventDefault();
+        resetSignInView(true);
+    });
+}
+
+if (resetPasswordEmail && resetPasswordError) {
+    resetPasswordEmail.addEventListener("input", function () {
+        resetPasswordEmail.removeAttribute("aria-invalid");
+        resetPasswordError.textContent = "";
+        resetPasswordError.hidden = true;
+    });
+}
+
+if (resetPasswordForm && resetPasswordEmail && resetPasswordError && resetPasswordSuccess) {
+    resetPasswordForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        const email = resetPasswordEmail.value.trim();
+        const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+        if (!email || !isValidEmail) {
+            resetPasswordEmail.setAttribute("aria-invalid", "true");
+            resetPasswordError.textContent = email ? "Enter a valid email address." : "Enter your email address.";
+            resetPasswordError.hidden = false;
+            resetPasswordEmail.focus();
+            return;
+        }
+
+        resetPasswordEmail.value = email;
+        resetPasswordEmail.removeAttribute("aria-invalid");
+        resetPasswordError.hidden = true;
+        const submitButton = resetPasswordForm.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+
+        fetch(resetPasswordForm.action, {
+            method: "POST",
+            body: new FormData(resetPasswordForm),
+            credentials: "same-origin",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        })
+            .then(async function (response) {
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || "We couldn't send the reset link right now. Please try again later.");
+                }
+                return result;
+            })
+            .then(function () {
+                resetPasswordForm.hidden = true;
+                if (resetPasswordDescription) {
+                    resetPasswordDescription.hidden = true;
+                }
+                resetPasswordSuccess.hidden = false;
+            })
+            .catch(function (error) {
+                resetPasswordError.textContent = error.message || "We couldn't send the reset link right now. Please try again later.";
+                resetPasswordError.hidden = false;
+            })
+            .finally(function () {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+            });
+    });
 }
 
 function initModalAnimations() {

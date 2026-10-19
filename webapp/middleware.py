@@ -1,5 +1,6 @@
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.utils.cache import add_never_cache_headers
 
 from .audit import (
     begin_admin_audit_request,
@@ -9,6 +10,23 @@ from .audit import (
     set_admin_actor,
 )
 from .two_factor import is_two_factor_enabled, is_two_factor_session_verified
+
+
+class NoCacheAuthenticatedPagesMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.logout_path = reverse("logout").rstrip("/")
+
+    def __call__(self, request):
+        was_authenticated = bool(
+            getattr(getattr(request, "user", None), "is_authenticated", False)
+        )
+        is_logout_request = (getattr(request, "path_info", "") or "").rstrip("/") == self.logout_path
+
+        response = self.get_response(request)
+        if was_authenticated or is_logout_request:
+            add_never_cache_headers(response)
+        return response
 
 
 class TwoFactorChallengeMiddleware:

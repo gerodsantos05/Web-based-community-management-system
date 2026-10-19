@@ -171,6 +171,93 @@
         color: #0f9b8e;
     }
 
+    #dashboard-content-scroll #dashboard-overview .vd-community-impact {
+        display: grid;
+        gap: 0.6rem;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-community-impact-item {
+        display: grid;
+        grid-template-columns: minmax(7rem, 0.8fr) minmax(0, 1.2fr);
+        gap: 0.5rem;
+        align-items: start;
+        padding-bottom: 0.55rem;
+        border-bottom: 1px solid #e3ede8;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-community-impact-item:last-child {
+        padding-bottom: 0;
+        border-bottom: 0;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-community-impact-label {
+        color: #607a70;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-community-impact-value {
+        color: #0f766e;
+        font-size: 0.88rem;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-community-badges {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+        gap: 0.7rem;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-community-badge {
+        display: grid;
+        gap: 0.25rem;
+        padding: 0.7rem;
+        border: 1px solid #d7e7df;
+        border-radius: 0.7rem;
+        background: #fafcfb;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-community-badge.earned {
+        border-color: #9ed9c9;
+        background: #edf8f3;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-community-badge.current {
+        border-color: #7ccabb;
+        background: #f0faf6;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-community-badge.locked {
+        border-color: #e1e7e3;
+        background: #fbfcfb;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-community-badge-name {
+        color: #173a31;
+        font-size: 0.88rem;
+        font-weight: 800;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-community-badge-status {
+        color: #607a70;
+        font-size: 0.74rem;
+        font-weight: 700;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-community-badge-progress {
+        height: 0.28rem;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #e2eee8;
+    }
+
+    #dashboard-content-scroll #dashboard-overview .vd-community-badge-progress-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: #0f9b8e;
+    }
+
     #dashboard-content-scroll #dashboard-overview .vd-tasks-list,
     #dashboard-content-scroll #dashboard-overview .vd-announcements-list {
         margin: 0;
@@ -594,6 +681,10 @@
         #dashboard-content-scroll #dashboard-overview .vd-card {
             padding: 1rem;
         }
+
+        #dashboard-content-scroll #dashboard-overview .vd-community-badges {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 {% endblock %}
@@ -607,6 +698,18 @@
         </div>
 
         <div class="vd-metrics-row">
+            {% if is_community_volunteer %}
+            <div class="vd-metric-card">
+                <p class="vd-metric-label">Total Hours Volunteered</p>
+                <p class="vd-metric-value">{{ ojt_hours_display }}</p>
+                <p class="vd-metric-desc">Across your community activities</p>
+            </div>
+            <div class="vd-metric-card">
+                <p class="vd-metric-label">Activities Joined</p>
+                <p class="vd-metric-value">{{ tasks_assigned }}</p>
+                <p class="vd-metric-desc">{{ tasks_pending_this_week }} coming up this week</p>
+            </div>
+            {% else %}
             <div class="vd-metric-card">
                 <p class="vd-metric-label">OJT Hours Logged</p>
                 <p class="vd-metric-value">{{ ojt_hours_display }}</p>
@@ -617,6 +720,7 @@
                 <p class="vd-metric-value">{{ tasks_assigned }}</p>
                 <p class="vd-metric-desc">{{ tasks_pending_this_week }} pending this week</p>
             </div>
+            {% endif %}
             <div class="vd-metric-card">
                 <p class="vd-metric-label">Content You Manage</p>
                 <p class="vd-metric-value">{{ content_topics_count }}</p>
@@ -624,6 +728,47 @@
             </div>
         </div>
 
+        {% if is_community_volunteer %}
+        <div class="vd-row">
+            <div class="vd-card">
+                <h2 class="vd-card-title">My Impact</h2>
+                <div class="vd-community-impact">
+                    <div class="vd-community-impact-item">
+                        <span class="vd-community-impact-label">Hours this month</span>
+                        <span class="vd-community-impact-value">{{ community_hours_this_month_display }}</span>
+                    </div>
+                    <div class="vd-community-impact-item">
+                        <span class="vd-community-impact-label">Last activity attended</span>
+                        <span class="vd-community-impact-value">{{ community_last_activity }}</span>
+                    </div>
+                    <div class="vd-community-impact-item">
+                        <span class="vd-community-impact-label">Next milestone</span>
+                        <span class="vd-community-impact-value">{{ community_next_milestone_display }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="vd-card">
+                <h2 class="vd-card-title">Upcoming Activities</h2>
+                {% if upcoming_tasks %}
+                <ul class="vd-tasks-list">
+                    {% for task in upcoming_tasks %}
+                    <li class="vd-task-item">
+                        <div class="vd-task-head">
+                            <h3 class="vd-task-name">{{ task.title }}</h3>
+                            {% if task.is_today %}<span class="vd-task-badge today">Today</span>{% else %}<span class="vd-task-badge pending">Upcoming</span>{% endif %}
+                        </div>
+                        <p class="vd-task-meta">{{ task.location }}, {{ task.schedule_label }}</p>
+                        <p class="vd-task-creator">Posted by {{ task.created_by_name }}</p>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="vd-empty-state">No upcoming activities scheduled.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% else %}
         {% if active_assignment %}
         <div class="vd-row">
             <div class="vd-card vd-live-card" aria-live="polite">
@@ -721,6 +866,7 @@
             </div>
         </div>
         {% endif %}
+        {% endif %}
 
         <div class="vd-row">
             <div class="vd-card">
@@ -740,7 +886,7 @@
             </div>
 
             <div class="vd-card">
-                <h2 class="vd-card-title">Certificates</h2>
+                <h2 class="vd-card-title">{% if is_community_volunteer %}Certificates of Appreciation{% else %}Certificates{% endif %}</h2>
                 {% if certificates %}
                 {% for certificate in certificates %}
                 <div class="vd-certificate-item">

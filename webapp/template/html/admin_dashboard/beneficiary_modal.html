@@ -41,6 +41,7 @@
                 <div class="ben-field"><label for="addben_fullname">Full name <span class="ben-required-marker">*</span></label><input type="text" id="addben_fullname" required placeholder="e.g. Maria Santos"></div>
                 <div class="ben-field"><label for="addben_gender">Gender <span class="ben-required-marker">*</span></label><select id="addben_gender" required><option value="" disabled selected>Select gender</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option><option value="prefer_not">Prefer not to say</option></select></div>
             </div>
+            <div class="ben-field"><label for="addben_type">Beneficiary type <span class="ben-required-marker">*</span></label><select id="addben_type" name="beneficiary_type" required><option value="" disabled selected>Select beneficiary type</option><option value="happy_nanays">Happy Nanays</option><option value="happy_kids">Happy Kids</option><option value="happy_hearts">Happy Hearts</option></select></div>
             <div class="ben-form-row">
                 <div class="ben-field"><label for="addben_email">Email <span class="ben-required-marker">*</span></label><input type="email" id="addben_email" required placeholder="email@example.com"></div>
                 <div class="ben-field"><label for="addben_phone">Phone number <span class="ben-required-marker">*</span></label><input type="tel" id="addben_phone" required placeholder="+63 9XX XXX XXXX"></div>
@@ -66,6 +67,7 @@
     var confirmButton = document.getElementById('dashboard-addben-confirm');
     var trigger = document.querySelector('[data-open-add-beneficiary="true"], #ben-add-btn');
     if (!modal || !backdrop || !form || !confirmButton || !trigger) return;
+    var typeSelect = document.getElementById('addben_type');
     function getCookie(name) {
         var value = null;
         document.cookie.split(';').forEach(function (cookie) { var part = cookie.trim(); if (part.indexOf(name + '=') === 0) value = decodeURIComponent(part.substring(name.length + 1)); });
@@ -88,6 +90,7 @@
         data.append('username', document.getElementById('addben_username').value.trim());
         data.append('password', password);
         data.append('gender', document.getElementById('addben_gender').value);
+        data.append('beneficiary_type', typeSelect.value);
         confirmButton.disabled = true;
         fetch('{% url "create_beneficiary" %}', { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') }, body: data })
             .then(function (response) { return response.json().then(function (payload) { if (!response.ok) throw payload; return payload; }); })

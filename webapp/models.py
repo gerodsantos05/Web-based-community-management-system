@@ -2,9 +2,12 @@ import os
 import uuid
 
 from django import VERSION as DJANGO_VERSION
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.core.files.storage import FileSystemStorage
 from django.db import models
+from django.utils.deconstruct import deconstructible
 
 
 ALLOWED_UPLOAD_EXTENSIONS = {
@@ -115,10 +118,28 @@ def community_post_attachment_upload_to(instance, filename):
 	return f"community_posts/user_{instance.post.user_id}/{instance.post.id}/{random_name}"
 
 
+def volunteer_activity_photo_upload_to(instance, filename):
+	extension = os.path.splitext(filename)[1].lower()
+	random_name = f"{uuid.uuid4().hex}{extension}"
+	return f"volunteer_activity_photos/user_{instance.volunteer_id}/{random_name}"
+
+
 def volunteer_admin_attachment_upload_to(instance, filename):
 	extension = os.path.splitext(filename)[1].lower()
 	random_name = f"{uuid.uuid4().hex}{extension}"
 	return f"volunteer_admin_chat/user_{instance.message.thread_user_id}/{random_name}"
+
+
+@deconstructible
+class PrivateApplicationStorage(FileSystemStorage):
+	def __init__(self):
+		location = getattr(settings, "PRIVATE_APPLICATIONS_ROOT", settings.BASE_DIR / "private_application_documents")
+		super().__init__(location=location, base_url=None)
+
+
+def role_application_document_upload_to(instance, filename):
+	extension = os.path.splitext(filename)[1].lower()
+	return f"application_{instance.application_id}/{uuid.uuid4().hex}{extension}"
 
 
 def volunteer_certificate_upload_to(instance, filename):
@@ -418,10 +439,47 @@ class SkillLearningMaterialEngagement(models.Model):
 		]
 
 
+class SkillLearningProgressAudit(models.Model):
+	beneficiary = models.ForeignKey(User, on_delete=models.CASCADE, related_name="skill_learning_progress_changes")
+	material = models.ForeignKey(SkillLearningMaterial, on_delete=models.CASCADE, related_name="progress_changes")
+	changed_by = models.ForeignKey(
+		User,
+		on_delete=models.SET_NULL,
+		null=True,
+		related_name="skill_learning_progress_edits",
+	)
+	previous_completed_at = models.DateTimeField(null=True, blank=True)
+	new_completed_at = models.DateTimeField(null=True, blank=True)
+	changed_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ["-changed_at", "-id"]
+
+
 class UserProfile(models.Model):
 	ROLE_REGULAR = "regular"
 	ROLE_BENEFICIARY = "beneficiary"
 	ROLE_VOLUNTEER = "volunteer"
+	GENDER_CHOICES = (
+		("male", "Male"),
+		("female", "Female"),
+		("other", "Other"),
+		("prefer_not", "Prefer not to say"),
+	)
+	VOLUNTEER_TYPE_OJT = "ojt"
+	VOLUNTEER_TYPE_COMMUNITY = "community"
+	VOLUNTEER_TYPE_CHOICES = (
+		(VOLUNTEER_TYPE_OJT, "OJT"),
+		(VOLUNTEER_TYPE_COMMUNITY, "Community"),
+	)
+	BENEFICIARY_TYPE_HAPPY_KIDS = "happy_kids"
+	BENEFICIARY_TYPE_HAPPY_NANAYS = "happy_nanays"
+	BENEFICIARY_TYPE_HAPPY_HEARTS = "happy_hearts"
+	BENEFICIARY_TYPE_CHOICES = (
+		(BENEFICIARY_TYPE_HAPPY_NANAYS, "Happy Nanays"),
+		(BENEFICIARY_TYPE_HAPPY_KIDS, "Happy Kids"),
+		(BENEFICIARY_TYPE_HAPPY_HEARTS, "Happy Hearts"),
+	)
 	ROLE_CHOICES = (
 		(ROLE_REGULAR, "Regular User"),
 		(ROLE_BENEFICIARY, "Beneficiary"),
@@ -430,9 +488,13 @@ class UserProfile(models.Model):
 
 	user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="userprofile")
 	account_role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_REGULAR)
+	volunteer_type = models.CharField(max_length=16, choices=VOLUNTEER_TYPE_CHOICES, default=VOLUNTEER_TYPE_OJT)
+	beneficiary_type = models.CharField(max_length=20, choices=BENEFICIARY_TYPE_CHOICES, blank=True, default="")
+	linked_parent = models.ForeignKey("self", on_delete=models.SET_NULL, blank=True, null=True, related_name="linked_beneficiaries")
 	avatar = models.ImageField(upload_to=user_avatar_upload_to, blank=True, null=True)
 	settings_state = models.JSONField(default=dict, blank=True)
 	phone = models.CharField(max_length=50, blank=True)
+	gender = models.CharField(max_length=20, choices=GENDER_CHOICES, blank=True)
 	birthdate = models.DateField(blank=True, null=True)
 	civil_status = models.CharField(max_length=30, blank=True)
 	address_line = models.CharField(max_length=255, blank=True)
@@ -516,10 +578,11 @@ class RoleApplication(models.Model):
 	track = models.CharField(
 		max_length=30,
 		choices=(
-			("happy_nanas", "Happy Nanay's"),
+			("happy_nanas", "Happy Nanays"),
 			("happy_kids", "Happy Kid's"),
-			("intern", "Intern"),
-			("community_volunteer", "Community Volunteer"),
+			("happy_hearts", "Happy Hearts"),
+			("intern", "OJT"),
+			("community_volunteer", "Community"),
 		),
 		blank=True,
 	)
@@ -529,6 +592,9 @@ class RoleApplication(models.Model):
 	skills = models.TextField(blank=True)
 	availability = models.TextField(blank=True)
 	areas_of_interest = models.TextField(blank=True)
+	applicant_added_details = models.JSONField(default=dict, blank=True)
+	applicant_details_consent = models.BooleanField(default=False)
+	applicant_details_consented_at = models.DateTimeField(blank=True, null=True)
 	reviewed_at = models.DateTimeField(blank=True, null=True)
 	reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, related_name="reviewed_role_applications")
 	admin_notes = models.TextField(blank=True)
@@ -544,6 +610,24 @@ class RoleApplication(models.Model):
 
 	def __str__(self):
 		return f"role-application:{self.user_id}:{self.role}:{self.status}"
+
+
+class RoleApplicationDocument(models.Model):
+	application = models.ForeignKey(RoleApplication, on_delete=models.CASCADE, related_name="documents")
+	document_type = models.CharField(max_length=60)
+	file = models.FileField(storage=PrivateApplicationStorage(), upload_to=role_application_document_upload_to)
+	original_name = models.CharField(max_length=255)
+	content_type = models.CharField(max_length=100)
+	uploaded_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ["document_type", "id"]
+		constraints = [
+			models.UniqueConstraint(fields=["application", "document_type"], name="uniq_role_app_document_type"),
+		]
+
+	def __str__(self):
+		return f"role-application-document:{self.application_id}:{self.document_type}"
 
 
 class BeneficiaryAssistanceRecord(models.Model):
@@ -873,6 +957,26 @@ class VolunteerActivityAssignment(models.Model):
 	@property
 	def current_status_label(self):
 		return dict(self.STATUS_CHOICES).get(self.status, self.status.replace("_", " ").title())
+
+
+class VolunteerActivityPhoto(models.Model):
+	volunteer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="activity_photos")
+	assignment = models.ForeignKey(
+		VolunteerActivityAssignment,
+		on_delete=models.SET_NULL,
+		blank=True,
+		null=True,
+		related_name="photos",
+	)
+	image = models.ImageField(upload_to=volunteer_activity_photo_upload_to)
+	caption = models.CharField(max_length=300, blank=True)
+	uploaded_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ["-uploaded_at", "-id"]
+
+	def __str__(self):
+		return f"activity-photo:{self.volunteer_id}:{self.id}"
 
 
 class VolunteerAttendanceRecord(models.Model):

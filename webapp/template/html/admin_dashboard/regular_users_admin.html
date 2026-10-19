@@ -589,15 +589,22 @@
         font-weight: 700;
     }
 
-    .regular-user-form input {
+    .regular-user-form input,
+    .regular-user-form select,
+    .regular-user-form textarea {
         width: 100%;
-        min-height: 2.55rem;
         box-sizing: border-box;
         padding: 0.55rem 0.7rem;
         border: 1px solid #d4e9e1;
         border-radius: 8px;
+        background: #fff;
         color: #173a31;
         font-size: 0.85rem;
+    }
+
+    .regular-user-form input,
+    .regular-user-form select {
+        min-height: 2.55rem;
     }
 
     .regular-user-status-field {
@@ -818,7 +825,8 @@
     }
 
     .regular-user-profile-field input,
-    .regular-user-profile-field select {
+    .regular-user-profile-field select,
+    .regular-user-profile-field textarea {
         width: 100%;
         min-height: 2.4rem;
         box-sizing: border-box;
@@ -829,6 +837,10 @@
         color: #173a31;
         font: inherit;
         font-size: 0.85rem;
+    }
+
+    .regular-user-profile-field textarea {
+        resize: vertical;
     }
 
     .regular-user-profile-field [data-profile-edit-control][hidden],
@@ -1171,7 +1183,7 @@
                 </thead>
                 <tbody>
                     {% for account in regular_users %}
-                    <tr data-user-row data-user-id="{{ account.id }}" data-user-name="{{ account.get_full_name|default:account.username }}" data-user-username="{{ account.username }}" data-user-email="{{ account.email|default:'Not provided' }}" data-user-phone="{{ account.userprofile.phone|default:'Not provided' }}" data-user-joined="{{ account.date_joined|date:'M j, Y' }}" data-status="{% if account.is_active %}active{% else %}inactive{% endif %}" data-search="{{ account.get_full_name|default:account.username }} {{ account.username }} {{ account.email }} {{ account.userprofile.phone }}">
+                    <tr data-user-row data-user-id="{{ account.id }}" data-user-name="{{ account.get_full_name|default:account.username }}" data-user-username="{{ account.username }}" data-user-email="{{ account.email|default:'Not provided' }}" data-user-phone="{{ account.userprofile.phone|default:'Not provided' }}" data-user-gender="{{ account.userprofile.gender }}" data-user-address="{{ account.userprofile.address_line }}" data-user-joined="{{ account.date_joined|date:'M j, Y' }}" data-status="{% if account.is_active %}active{% else %}inactive{% endif %}" data-search="{{ account.get_full_name|default:account.username }} {{ account.username }} {{ account.email }} {{ account.userprofile.phone }}">
                         <td class="regular-user-select-cell"><input type="checkbox" class="regular-user-select-checkbox" data-user-select aria-label="Select {{ account.get_full_name|default:account.username }}"></td>
                         <td>
                             <div class="regular-user-name">
@@ -1264,6 +1276,22 @@
                 <span class="regular-user-profile-value" data-profile-field="phone"></span>
                 <input name="phone" type="tel" maxlength="50" data-profile-edit-control hidden>
             </label>
+            <label class="regular-user-profile-field">
+                <span class="regular-user-profile-label">Gender</span>
+                <span class="regular-user-profile-value" data-profile-field="gender"></span>
+                <select name="gender" data-profile-edit-control hidden>
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                    <option value="prefer_not">Prefer not to say</option>
+                </select>
+            </label>
+            <label class="regular-user-profile-field">
+                <span class="regular-user-profile-label">Address</span>
+                <span class="regular-user-profile-value" data-profile-field="address"></span>
+                <textarea name="address_line" rows="2" maxlength="255" data-profile-edit-control hidden></textarea>
+            </label>
             <div class="regular-user-profile-field">
                 <span class="regular-user-profile-label">Joined</span>
                 <span class="regular-user-profile-value" data-profile-field="joined" data-profile-readonly></span>
@@ -1317,6 +1345,22 @@
         <div class="regular-user-form-group">
             <label for="regular-user-full_name">Full name <span class="required">*</span></label>
             <input id="regular-user-full_name" name="full_name" type="text" autocomplete="name" maxlength="150" required>
+        </div>
+
+        <div class="regular-user-form-group">
+            <label for="regular-user-gender">Gender <span class="required">*</span></label>
+            <select id="regular-user-gender" name="gender" required>
+                <option value="" disabled selected>Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+                <option value="prefer_not">Prefer not to say</option>
+            </select>
+        </div>
+
+        <div class="regular-user-form-group">
+            <label for="regular-user-address">Address <span class="required">*</span></label>
+            <textarea id="regular-user-address" name="address_line" rows="3" maxlength="255" autocomplete="street-address" placeholder="Street, Barangay, City, Province" required></textarea>
         </div>
 
         <div class="regular-user-form-group">
@@ -1476,6 +1520,8 @@
             username: row.dataset.userUsername,
             email: row.dataset.userEmail,
             phone: row.dataset.userPhone,
+            gender: row.dataset.userGender,
+            address: row.dataset.userAddress,
             joined: row.dataset.userJoined,
             status: row.dataset.status === "active" ? "Active" : "Inactive"
         };
@@ -1487,6 +1533,8 @@
         profileForm.elements.username.value = row.dataset.userUsername || "";
         profileForm.elements.email.value = row.dataset.userEmail === "Not provided" ? "" : row.dataset.userEmail;
         profileForm.elements.phone.value = row.dataset.userPhone === "Not provided" ? "" : row.dataset.userPhone;
+        profileForm.elements.gender.value = row.dataset.userGender || "";
+        profileForm.elements.address_line.value = row.dataset.userAddress || "";
         profileForm.elements.status.value = row.dataset.status;
         profileModal.querySelector("[data-profile-avatar]").textContent = (row.dataset.userName || row.dataset.userUsername || "?").trim().charAt(0);
         profileModal.querySelector("[data-profile-identity-name]").textContent = row.dataset.userName || row.dataset.userUsername;
@@ -1815,6 +1863,8 @@
             profileForm.elements.username.value = row.dataset.userUsername || "";
             profileForm.elements.email.value = row.dataset.userEmail === "Not provided" ? "" : row.dataset.userEmail;
             profileForm.elements.phone.value = row.dataset.userPhone === "Not provided" ? "" : row.dataset.userPhone;
+            profileForm.elements.gender.value = row.dataset.userGender || "";
+            profileForm.elements.address_line.value = row.dataset.userAddress || "";
             profileForm.elements.status.value = row.dataset.status;
         }
         setProfileMessage("", "");

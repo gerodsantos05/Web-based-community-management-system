@@ -1,8 +1,63 @@
-from django import forms
-from django.contrib.auth import authenticate
-from django.contrib.auth.models import User
+import logging
 
+from django import forms
+from urllib.parse import urlsplit
+from django.conf import settings
+from django.contrib.auth import authenticate
+from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.models import User
+from django.core.mail import EmailMultiAlternatives
+from django.template import loader
+from allauth.account.models import EmailAddress
+
+from .email_utils import attach_happyness_logo
 from .models import ResourceLibraryMaterial, RoleApplication, SkillLearningMaterial, SkillLearningTopic
+
+
+logger = logging.getLogger(__name__)
+
+
+class AccountPasswordResetForm(PasswordResetForm):
+    def get_users(self, email):
+        matching_users = User.objects.filter(email__iexact=email, is_active=True)
+        verified_email_user_ids = set(
+            EmailAddress.objects.filter(
+                email__iexact=email,
+                verified=True,
+                user__is_active=True,
+            ).values_list("user_id", flat=True)
+        )
+
+        for user in matching_users:
+            if user.has_usable_password() or user.pk in verified_email_user_ids:
+                yield user
+
+    def send_mail(
+        self,
+        subject_template_name,
+        email_template_name,
+        context,
+        from_email,
+        to_email,
+        html_email_template_name=None,
+    ):
+        subject = "".join(loader.render_to_string(subject_template_name, context).splitlines())
+        body = loader.render_to_string(email_template_name, context)
+        email_message = EmailMultiAlternatives(
+            subject,
+            body,
+            from_email or settings.DEFAULT_FROM_EMAIL,
+            [to_email],
+        )
+        if html_email_template_name is not None:
+            html_email = loader.render_to_string(html_email_template_name, context)
+            email_message.attach_alternative(html_email, "text/html")
+            attach_happyness_logo(email_message)
+
+        try:
+            email_message.send()
+        except Exception:
+            logger.exception("Failed to send password reset email to %s", context["user"].pk)
 
 
 SKILL_LEARNING_FILTER_CHOICES = (
@@ -14,10 +69,12 @@ SKILL_LEARNING_FILTER_CHOICES = (
 
 
 class SignUpForm(forms.ModelForm):
+    username = forms.CharField(max_length=50)
+    email = forms.EmailField(max_length=50)
     program = forms.ChoiceField(
         label="Program",
         choices=(
-            ("happy_nanas", "Happy Nanay's"),
+            ("happy_nanas", "Happy Nanays"),
             ("happy_kids", "Happy Kid's"),
             ("intern", "Intern"),
             ("community_volunteer", "Community Volunteer"),
@@ -27,11 +84,13 @@ class SignUpForm(forms.ModelForm):
 
     password1 = forms.CharField(
         label="Password",
+        max_length=50,
         strip=False,
         widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
     )
     password2 = forms.CharField(
         label="Confirm password",
+        max_length=50,
         strip=False,
         widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
     )
@@ -68,9 +127,10 @@ class SignUpForm(forms.ModelForm):
 
 
 class SignInForm(forms.Form):
-    username_or_email = forms.CharField(label="Username or Email", max_length=254)
+    username_or_email = forms.CharField(label="Username or Email", max_length=50)
     password = forms.CharField(
         label="Password",
+        max_length=50,
         strip=False,
         widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
     )
@@ -111,8 +171,9 @@ class BeneficiaryApplicationForm(forms.ModelForm):
     track = forms.ChoiceField(
         label="Program",
         choices=(
-            ("happy_nanas", "Happy Nanay's"),
+            ("happy_nanas", "Happy Nanays"),
             ("happy_kids", "Happy Kid's"),
+            ("happy_hearts", "Happy Hearts"),
         ),
         required=True,
     )
@@ -146,8 +207,8 @@ class VolunteerApplicationForm(forms.ModelForm):
     track = forms.ChoiceField(
         label="Program",
         choices=(
-            ("intern", "Intern"),
-            ("community_volunteer", "Community Volunteer"),
+            ("intern", "OJT"),
+            ("community_volunteer", "Community"),
         ),
         required=True,
     )
@@ -228,10 +289,28 @@ class SkillLearningMaterialForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         file_upload = cleaned_data.get("file_upload")
-        external_url = str(cleaned_data.get("external_url", "") or "").strip()
-        if not file_upload and not external_url and not getattr(self.instance, "file_upload", None) and not getattr(self.instance, "external_url", ""):
+        external_url = cleaned_data.get("external_url", "")
+        if self.files.get("file_upload"):
+            self._errors.pop("external_url", None)
+            cleaned_data["external_url"] = ""
+            external_url = ""
+        if not file_upload and not external_url and not getattr(self.instance, "file_upload", None):
             raise forms.ValidationError("Upload a file or provide a link for the material.")
         return cleaned_data
+
+    def clean_external_url(self):
+        external_url = self.cleaned_data.get("external_url", "")
+        if not external_url or self.files.get("file_upload"):
+            return external_url
+        raw_url = self.data.get(self.add_prefix("external_url"), "")
+        parsed_url = urlsplit(raw_url)
+        if (
+            parsed_url.scheme.lower() not in {"http", "https"}
+            or not parsed_url.netloc
+            or not raw_url.startswith(("http://", "https://"))
+        ):
+            raise forms.ValidationError("Enter a valid http(s) URL.")
+        return external_url
 
 
 class ResourceLibraryMaterialForm(forms.ModelForm):

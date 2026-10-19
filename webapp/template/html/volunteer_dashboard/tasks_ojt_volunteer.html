@@ -1,7 +1,7 @@
 {% extends "volunteer_dashboard/base.html" %}
 {% load static %}
 
-{% block title %}Tasks & OJT | HappYness{% endblock %}
+{% block title %}{% if is_community_volunteer %}My Activities{% else %}Tasks & OJT{% endif %} | HappYness{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -13,12 +13,91 @@
     .toj-sub { color: #64748b; margin: 0.2rem 0 0; font-size: 0.95rem; }
 
     .toj-cards-container { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin-bottom:1.5rem; align-items:stretch; }
-    @media (max-width:768px) { .toj-cards-container { grid-template-columns:minmax(0,1fr); } }
+    #tasks-ojt-page.is-community .toj-cards-container { grid-template-columns:repeat(2,minmax(0,1fr)); align-items:stretch; }
+    #tasks-ojt-page.is-community .toj-left-column { display:flex; }
+    #tasks-ojt-page.is-community .toj-card-hours { align-self:stretch; }
+    #tasks-ojt-page.is-community .toj-card-calendar { grid-column:2; }
+    @media (max-width:768px) {
+        .toj-cards-container { grid-template-columns:minmax(0,1fr); }
+        #tasks-ojt-page.is-community .toj-cards-container { grid-template-columns:minmax(0,1fr); }
+        #tasks-ojt-page.is-community .toj-card-calendar { grid-column:1; }
+        #tasks-ojt-page.is-community .toj-card-milestones { height:25rem; }
+    }
     
     .toj-card { background: #fff; border: 1px solid #d8ddd7; border-radius: 1rem; padding: 0.8rem 1rem; }
     .toj-left-column { display:flex; min-width:0; min-height:0; flex-direction:column; gap:1rem; }
     .toj-card-hours { display:flex; align-self:stretch; flex-direction:column; gap:.2rem; }
     .toj-card-support { display:flex; min-height:0; flex:1; flex-direction:column; gap:.75rem; }
+    .toj-card-photos { display:flex; min-height:0; flex:1; flex-direction:column; gap:.7rem; overflow:hidden; }
+    .toj-card-milestones { display:flex; min-height:0; flex:1; flex-direction:column; gap:.65rem; overflow:hidden; }
+    .toj-milestone-summary { margin:0; color:#607a70; font-size:.76rem; font-weight:700; }
+    .toj-milestone-list { position:relative; display:flex; width:100%; min-height:0; flex:1 1 auto; flex-direction:column; gap:.12rem; overflow-y:auto; margin:0; padding:.05rem .2rem .2rem 0; list-style:none; scrollbar-width:thin; scrollbar-color:#dce7e1 transparent; }
+    .toj-milestone-list::before { position:absolute; top:.65rem; bottom:.65rem; left:.48rem; width:1px; background:#e1e9e5; content:""; }
+    .toj-milestone { position:relative; display:grid; flex:0 0 25%; grid-template-columns:1rem minmax(0,1fr); align-items:center; gap:.45rem; min-width:0; padding:.22rem 0; }
+    .toj-milestone-node { z-index:1; display:grid; width:.95rem; height:.95rem; place-items:center; border:1px solid #d4ddd8; border-radius:50%; background:#fff; color:#fff; }
+    .toj-milestone-node svg { width:.65rem; height:.65rem; stroke-width:3; }
+    .toj-milestone.is-completed .toj-milestone-node { border-color:#0f9b8e; background:#0f9b8e; }
+    .toj-milestone.is-current .toj-milestone-node { border-color:#0f766e; box-shadow:0 0 0 3px rgba(15,118,110,.13); }
+    .toj-milestone.is-current .toj-milestone-node::after { width:.34rem; height:.34rem; border-radius:50%; background:#0f766e; content:""; }
+    .toj-milestone.is-locked { opacity:.42; }
+    .toj-milestone-copy { display:grid; min-width:0; gap:.08rem; }
+    .toj-milestone-head { display:flex; min-width:0; align-items:center; gap:.3rem; }
+    .toj-milestone-name { min-width:0; color:#173a31; font-size:.76rem; font-weight:800; white-space:nowrap; }
+    .toj-milestone-target { flex:0 0 auto; color:#81938b; font-size:.68rem; font-weight:700; white-space:nowrap; }
+    .toj-milestone-check { display:inline-flex; flex:0 0 auto; color:#0f766e; }
+    .toj-milestone-type-icon { display:inline-flex; flex:0 0 auto; color:#c17b27; }
+    .toj-milestone-check svg, .toj-milestone-type-icon svg { width:.7rem; height:.7rem; stroke-width:2.5; }
+    .toj-milestone-status { color:#647b72; font-size:.62rem; font-weight:700; }
+    .toj-milestone-progress { display:grid; gap:.1rem; }
+    .toj-milestone-progress-label { color:#0f766e; font-size:.63rem; font-weight:800; }
+    .toj-milestone-progress-track { height:.22rem; overflow:hidden; border-radius:999px; background:#e2eee8; }
+    .toj-milestone-progress-fill { height:100%; border-radius:inherit; background:#0f9b8e; }
+    .toj-photo-tabs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.2rem; padding:.22rem; border:1px solid #d8e6e0; border-radius:.65rem; background:#f5faf7; }
+    .toj-photo-tab { min-width:0; min-height:2rem; padding:.35rem .55rem; border:0; border-radius:.45rem; background:transparent; color:#647b72; font:inherit; font-size:.74rem; font-weight:800; cursor:pointer; }
+    .toj-photo-tab[aria-selected="true"] { background:#fff; color:#0f766e; box-shadow:0 1px 3px rgba(15,23,42,.1); }
+    .toj-photo-panel { display:flex; min-height:0; flex:1; flex-direction:column; gap:.5rem; }
+    .toj-photo-panel[hidden] { display:none; }
+    .toj-photo-activity, .toj-photo-filter { width:100%; min-width:0; padding:.48rem .58rem; border:1px solid #d3e4dc; border-radius:.55rem; background:#fff; color:#35695b; font:inherit; font-size:.72rem; }
+    .toj-photo-dropzone { display:flex; min-height:4.5rem; flex:0 0 auto; align-items:center; justify-content:center; padding:.6rem; border:1px dashed #8fb8aa; border-radius:.75rem; background:#f7fbf9; color:#35695b; text-align:center; cursor:pointer; transition:background-color 150ms ease,border-color 150ms ease,opacity 150ms ease; }
+    .toj-photo-dropzone:hover:not([data-disabled="true"]), .toj-photo-dropzone.is-dragging { border-color:#0f766e; background:#eaf7f2; }
+    .toj-photo-dropzone[data-disabled="true"] { border-color:#d5dcd8; background:#f2f4f3; color:#9aa7a1; cursor:not-allowed; }
+    .toj-photo-dropzone[data-disabled="true"] .toj-photo-upload-copy span:last-child { color:#9aa7a1; }
+    .toj-photo-dropzone:focus-visible, .toj-photo-thumb:focus-visible, .toj-photo-modal-close:focus-visible, .toj-photo-delete:focus-visible, .toj-photo-tab:focus-visible { outline:3px solid rgba(15,155,142,.28); outline-offset:2px; }
+    .toj-photo-upload-copy { display:flex; flex-direction:column; gap:.2rem; font-size:.76rem; font-weight:700; }
+    .toj-photo-upload-copy span:last-child { color:#0f766e; font-size:.68rem; }
+    .toj-photo-staged { display:grid; min-height:0; grid-template-columns:repeat(4,minmax(0,1fr)); align-content:start; gap:.35rem; overflow-y:auto; }
+    .toj-photo-staged[hidden] { display:none; }
+    .toj-photo-staged-item { position:relative; aspect-ratio:1; overflow:hidden; border:1px solid #d8e6e0; border-radius:.55rem; background:#edf5f1; }
+    .toj-photo-staged-item img { display:block; width:100%; height:100%; object-fit:cover; }
+    .toj-photo-submit-row { display:flex; align-items:center; justify-content:space-between; gap:.5rem; margin-top:auto; }
+    .toj-photo-status { min-width:0; min-height:1rem; margin:0; color:#64748b; font-size:.7rem; }
+    .toj-photo-submit { flex:0 0 auto; min-height:2rem; padding:.4rem .7rem; border:1px solid #0f766e; border-radius:.5rem; background:#0f766e; color:#fff; font:inherit; font-size:.72rem; font-weight:800; cursor:pointer; }
+    .toj-photo-submit:disabled { border-color:#cbd5d1; background:#e8eeeb; color:#71837c; cursor:not-allowed; }
+    .toj-photo-my-controls { flex:0 0 auto; }
+    .toj-photo-groups { display:flex; min-height:0; flex:1; flex-direction:column; gap:.65rem; overflow-y:auto; padding:.05rem .2rem .2rem 0; }
+    .toj-photo-group { display:flex; flex-direction:column; gap:.38rem; }
+    .toj-photo-group-header { display:flex; align-items:center; justify-content:space-between; gap:.5rem; color:#35695b; font-size:.7rem; font-weight:800; }
+    .toj-photo-group-name { min-width:0; overflow-wrap:anywhere; }
+    .toj-photo-group-count { flex:0 0 auto; color:#81938b; font-size:.66rem; font-weight:700; }
+    .toj-photo-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-content:start; gap:.42rem; }
+    .toj-photo-empty { display:grid; min-height:5rem; grid-column:1/-1; place-items:center; margin:0; color:#94a3b8; font-size:.76rem; text-align:center; }
+    .toj-photo-thumb { display:block; width:100%; aspect-ratio:1; overflow:hidden; padding:0; border:1px solid #d8e6e0; border-radius:.7rem; background:#edf5f1; cursor:pointer; }
+    .toj-photo-thumb img { display:block; width:100%; height:100%; object-fit:cover; transition:transform 180ms ease; }
+    .toj-photo-thumb:hover img { transform:scale(1.04); }
+    .toj-photo-modal { width:min(92vw,720px); max-width:none; max-height:90vh; padding:0; overflow:hidden; border:1px solid #d8e6e0; border-radius:1rem; background:#fff; color:#173a31; box-shadow:0 24px 64px rgba(15,23,42,.28); }
+    .toj-photo-modal::backdrop { background:rgba(15,23,42,.56); }
+    .toj-photo-modal-inner { display:flex; max-height:90vh; flex-direction:column; }
+    .toj-photo-modal-image-wrap { display:grid; min-height:0; flex:1; place-items:center; overflow:auto; background:#10231e; }
+    .toj-photo-modal-image { display:block; max-width:100%; max-height:68vh; object-fit:contain; }
+    .toj-photo-modal-footer { display:flex; align-items:center; justify-content:space-between; gap:.8rem; padding:.8rem 1rem; }
+    .toj-photo-modal-meta { display:flex; min-width:0; flex-direction:column; gap:.15rem; }
+    .toj-photo-modal-meta strong { overflow-wrap:anywhere; color:#173a31; font-size:.85rem; }
+    .toj-photo-modal-meta span { color:#64748b; font-size:.72rem; }
+    .toj-photo-modal-actions { display:flex; flex:0 0 auto; align-items:center; gap:.45rem; }
+    .toj-photo-modal-close, .toj-photo-delete { min-height:2.2rem; padding:.45rem .7rem; border:1px solid #c9ddd6; border-radius:.55rem; background:#fff; color:#35695b; font:inherit; font-size:.74rem; font-weight:800; cursor:pointer; }
+    .toj-photo-delete { border-color:rgba(180,35,24,.3); color:#b42318; }
+    .toj-photo-delete:hover { background:#fff5f4; }
+    @media (max-width:560px) { .toj-photo-modal-footer { align-items:stretch; flex-direction:column; } .toj-photo-modal-actions { justify-content:flex-end; } }
     .toj-support-heading { display:flex; align-items:center; gap:.45rem; margin:0; color:#35695b; font-size:.7rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
     .toj-support-heading i, .toj-support-heading svg { width:.95rem; height:.95rem; color:#0f766e; stroke-width:1.7; }
     .toj-regular-days { display:flex; min-height:0; flex:1; flex-direction:column; justify-content:space-evenly; }
@@ -137,6 +216,44 @@
     .task-beneficiary-confirm:disabled { opacity:0.6; cursor:not-allowed; }
     .task-beneficiary-manage { align-self:flex-start; padding:0.48rem 0.78rem; border:1px solid #0f9b8e; border-radius:0.65rem; background:#fff; color:#0f766e; font-weight:800; cursor:pointer; }
     .task-beneficiary-locked { color:#64748b; font-size:0.8rem; font-weight:600; }
+    .task-card-inline-actions { align-items:center; flex-direction:row; flex-wrap:wrap; }
+    .task-add-photos { display:inline-flex; align-items:center; gap:.38rem; min-height:2.35rem; padding:.42rem .72rem; border:1px solid #0f9b8e; border-radius:.65rem; background:#fff; color:#0f766e; font:inherit; font-size:.8rem; font-weight:800; cursor:pointer; }
+    .task-add-photos svg { width:1rem; height:1rem; }
+    .task-add-photos:hover:not(:disabled) { background:#edf8f3; }
+    .task-add-photos:disabled { border-color:#d5dcd8; color:#96a39d; cursor:not-allowed; }
+    .task-photo-thumbnails { display:flex; align-items:center; gap:.4rem; margin-top:.45rem; }
+    .task-photo-thumb { width:3.5rem; height:3.5rem; overflow:hidden; padding:0; border:1px solid #d8e6e0; border-radius:.55rem; background:#edf5f1; cursor:pointer; }
+    .task-photo-thumb img { display:block; width:100%; height:100%; object-fit:cover; }
+    .task-photo-overflow { display:grid; width:3.5rem; height:3.5rem; place-items:center; border:1px solid #d8e6e0; border-radius:.55rem; background:#f3f8f5; color:#35695b; font-size:.78rem; font-weight:800; cursor:pointer; }
+    .task-photo-dialog { width:min(92vw,560px); max-width:none; max-height:88vh; padding:0; overflow:auto; border:1px solid #d8e6e0; border-radius:1rem; background:#fff; color:#173a31; box-shadow:0 24px 64px rgba(15,23,42,.28); }
+    .task-photo-dialog::backdrop { background:rgba(15,23,42,.5); }
+    .task-photo-dialog-inner { display:flex; flex-direction:column; }
+    .task-photo-dialog-header { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:1rem 1.1rem; border-bottom:1px solid #e3ede8; }
+    .task-photo-dialog-title { margin:0; color:#173a31; font-size:1rem; font-weight:800; }
+    .task-photo-dialog-close { display:grid; width:2rem; height:2rem; place-items:center; border:1px solid #d8e6e0; border-radius:50%; background:#fff; color:#35695b; font-size:1.1rem; cursor:pointer; }
+    .task-photo-dialog-cancel { min-height:2.25rem; padding:.42rem .72rem; border:1px solid #c9ddd6; border-radius:.55rem; background:#fff; color:#35695b; font:inherit; font-size:.78rem; font-weight:800; cursor:pointer; }
+    .task-photo-dialog-body { display:grid; gap:.8rem; padding:1rem 1.1rem; }
+    .task-photo-dropzone { display:grid; min-height:6.5rem; place-items:center; padding:1rem; border:1px dashed #8fb8aa; border-radius:.75rem; background:#f7fbf9; color:#35695b; text-align:center; cursor:pointer; }
+    .task-photo-dropzone.is-dragging { border-color:#0f766e; background:#eaf7f2; }
+    .task-photo-dropzone-copy { display:grid; gap:.2rem; font-size:.8rem; font-weight:700; }
+    .task-photo-dropzone-copy small { color:#71837c; font-size:.7rem; font-weight:600; }
+    .task-photo-preview-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(4.3rem,1fr)); gap:.45rem; }
+    .task-photo-preview { position:relative; aspect-ratio:1; overflow:hidden; border:1px solid #d8e6e0; border-radius:.55rem; background:#edf5f1; }
+    .task-photo-preview img { width:100%; height:100%; object-fit:cover; }
+    .task-photo-preview-remove { position:absolute; top:.2rem; right:.2rem; display:grid; width:1.35rem; height:1.35rem; place-items:center; border:0; border-radius:50%; background:rgba(15,23,42,.72); color:#fff; font-size:.9rem; cursor:pointer; }
+    .task-photo-caption-label { display:grid; gap:.3rem; color:#35695b; font-size:.74rem; font-weight:700; }
+    .task-photo-caption-input { width:100%; min-height:2.5rem; padding:.55rem .65rem; border:1px solid #d3e4dc; border-radius:.55rem; color:#173a31; font:inherit; font-size:.8rem; }
+    .task-photo-dialog-status { min-height:1rem; margin:0; color:#64748b; font-size:.72rem; }
+    .task-photo-dialog-footer { display:flex; justify-content:flex-end; gap:.5rem; padding:.8rem 1.1rem 1rem; }
+    .task-photo-dialog-submit { min-height:2.25rem; padding:.45rem .8rem; border:1px solid #0f766e; border-radius:.55rem; background:#0f766e; color:#fff; font:inherit; font-size:.78rem; font-weight:800; cursor:pointer; }
+    .task-photo-dialog-submit:disabled { border-color:#cbd5d1; background:#e8eeeb; color:#71837c; cursor:not-allowed; }
+    .task-photo-viewer-image { display:block; width:100%; max-height:65vh; object-fit:contain; background:#10231e; }
+    .task-photo-viewer-meta { display:grid; gap:.25rem; padding:.8rem 1rem; }
+    .task-photo-viewer-caption { margin:0; color:#173a31; font-size:.84rem; }
+    .task-photo-viewer-date { color:#64748b; font-size:.7rem; }
+    .task-photo-viewer-actions { display:flex; align-items:center; justify-content:space-between; gap:.5rem; padding:0 1rem 1rem; }
+    .task-photo-viewer-actions button { min-height:2rem; padding:.38rem .62rem; border:1px solid #c9ddd6; border-radius:.5rem; background:#fff; color:#35695b; font:inherit; font-size:.72rem; font-weight:800; cursor:pointer; }
+    .task-photo-viewer-actions .task-photo-delete { border-color:rgba(180,35,24,.3); color:#b42318; }
     .beneficiary-attendance-modal-backdrop { position:fixed; inset:0; z-index:80; display:grid; place-items:center; padding:1rem; background:rgba(15,23,42,.42); animation:beneficiary-attendance-fade-in 180ms ease-out both; }
     .beneficiary-attendance-modal-backdrop.is-closing { animation:beneficiary-attendance-fade-out 160ms ease-in both; }
     .beneficiary-attendance-modal { width:min(100%, 650px); max-height:min(88vh, 740px); overflow:auto; border:1px solid #dfe7e2; border-radius:1.05rem; background:#fff; box-shadow:0 24px 60px rgba(15,23,42,.24); animation:beneficiary-attendance-modal-in 220ms cubic-bezier(.2,.8,.2,1) both; }
@@ -182,6 +299,7 @@
     .task-timeout-confirm.visible { max-height:5rem; padding:0.62rem 0.7rem; border-width:1px; opacity:1; }
     .task-timeout-confirm .confirm-actions { display:flex; gap:0.4rem; }
     .task-timeout-confirm .btn { padding:0.36rem 0.58rem; font-size:0.76rem; }
+    .task-timeout-confirm .btn.teal { border:1px solid #0f9b8e; background:#0f9b8e; color:#fff; }
     @keyframes task-confirm-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
 
     .completed-summary { display:flex; justify-content:space-between; gap:1rem; align-items:center; width:100%; background:#f3f4f6; padding:0.6rem 0.75rem; border-radius:0.75rem }
@@ -210,30 +328,53 @@
 {% endblock %}
 
 {% block content %}
-<section id="tasks-ojt-page">
-    <header class="toj-header">
-        <h1 class="toj-title">Tasks &amp; OJT</h1>
-        <p class="toj-sub">Your assigned tasks and on-the-job training progress</p>
-    </header>
-
+<section id="tasks-ojt-page"{% if is_community_volunteer %} class="is-community"{% endif %}>
     <div class="toj-cards-container" id="toj-cards">
         <div class="toj-left-column">
             <div class="toj-card toj-card-hours">
                 <div class="toj-hours-summary">
-                    <div class="toj-card-hours-label toj-hours-heading"><i data-lucide="clock" aria-hidden="true"></i>Hours Logged <span id="toj-live-label" class="live-label"><span class="live-dot" aria-hidden="true"></span></span></div>
-                    <div id="toj-hours" class="toj-card-hours-value">0 hr / 80 hr</div>
+                    <div class="toj-card-hours-label toj-hours-heading"><i data-lucide="clock" aria-hidden="true"></i>{% if is_community_volunteer %}Total Hours Volunteered{% else %}Hours Logged{% endif %} <span id="toj-live-label" class="live-label"><span class="live-dot" aria-hidden="true"></span></span></div>
+                    <div id="toj-hours" class="toj-card-hours-value">{% if is_community_volunteer %}{{ ojt_hours_display }}{% else %}0 hr / 80 hr{% endif %}</div>
                 </div>
+                {% if not is_community_volunteer %}
                 <div class="toj-hours-progress">
                     <div id="toj-percent" class="toj-card-hours-percent">80 hr remaining</div>
                     <div class="progress-bar" aria-label="OJT hours progress"><div id="toj-bar" class="progress-bar-fill"></div></div>
                 </div>
+                {% endif %}
             </div>
 
+            {% if not is_community_volunteer %}
             <section class="toj-card toj-card-support" aria-labelledby="toj-support-heading">
                 <h2 id="toj-support-heading" class="toj-support-heading"><i data-lucide="calendar-days" aria-hidden="true"></i>Regular OJT Days</h2>
                 <div id="toj-regular-days" class="toj-regular-days" role="list" aria-label="Regular OJT weekdays" hidden></div>
-                <p id="toj-support-empty" class="toj-support-empty" hidden>No OJT schedule yet.</p>
+                <p id="toj-support-empty" class="toj-support-empty" hidden>Schedule not set yet.</p>
             </section>
+            {% else %}
+            <section class="toj-card toj-card-milestones" aria-labelledby="toj-milestones-heading">
+                <h2 id="toj-milestones-heading" class="toj-support-heading"><i data-lucide="milestone" aria-hidden="true"></i>My Milestones</h2>
+                <p class="toj-milestone-summary">{{ community_milestones.days_volunteered }} day{{ community_milestones.days_volunteered|pluralize }} · {{ community_milestones.current_week_streak }} week{{ community_milestones.current_week_streak|pluralize }} streak</p>
+                <ol id="toj-milestone-list" class="toj-milestone-list" aria-label="Volunteer milestones">
+                    {% for milestone in community_milestone_path %}
+                    <li class="toj-milestone is-{% if milestone.earned %}completed{% elif milestone.is_current %}current{% else %}locked{% endif %}">
+                        <span class="toj-milestone-node" aria-hidden="true">{% if milestone.earned %}<i data-lucide="check"></i>{% endif %}</span>
+                        <div class="toj-milestone-copy">
+                            <div class="toj-milestone-head">
+                                {% if milestone.kind == "weeks" %}<span class="toj-milestone-type-icon" title="Streak milestone" aria-hidden="true"><i data-lucide="flame"></i></span>{% endif %}
+                                <span class="toj-milestone-name">{{ milestone.name }}</span><span class="toj-milestone-target">· {{ milestone.target_label }}</span>
+                            </div>
+                            {% if milestone.earned %}<span class="toj-milestone-status">Earned {{ milestone.date_earned }}</span>{% elif milestone.is_current %}
+                            <div class="toj-milestone-progress">
+                                <span class="toj-milestone-progress-label">{{ milestone.progress_label }}</span>
+                                <div class="toj-milestone-progress-track" role="progressbar" aria-label="{{ milestone.name }} progress" aria-valuemin="0" aria-valuemax="{{ milestone.target }}" aria-valuenow="{{ milestone.progress }}"><div class="toj-milestone-progress-fill" style="width:{{ milestone.progress_percent }}%"></div></div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ol>
+            </section>
+            {% endif %}
         </div>
 
         <div class="toj-card toj-card-calendar" aria-label="Activity calendar">
@@ -246,7 +387,7 @@
             </div>
             <div id="toj-calendar-grid" class="toj-calendar-grid" role="grid" aria-label="Activity calendar"></div>
             <div class="toj-calendar-legend" aria-label="Calendar key">
-                <span class="toj-calendar-legend-item"><span class="toj-calendar-duty-marker" aria-hidden="true"></span>OJT duty day</span>
+                {% if not is_community_volunteer %}<span class="toj-calendar-legend-item"><span class="toj-calendar-duty-marker" aria-hidden="true"></span>OJT duty day</span>{% endif %}
                 <span class="toj-calendar-legend-item"><span class="toj-calendar-duty-marker is-assigned" aria-hidden="true"></span>Assigned task</span>
                 <span class="toj-calendar-legend-item"><span class="toj-calendar-marker is-open" aria-hidden="true"></span>Open activity</span>
                 <span class="toj-calendar-legend-item"><span class="toj-calendar-today-marker" aria-hidden="true"></span>Today</span>
@@ -257,7 +398,7 @@
     <div class="toj-tabs" role="tablist">
         <div class="toj-tab active" data-tab="upcoming">Upcoming</div>
         <div class="toj-tab" data-tab="completed">Completed</div>
-        <div class="toj-tab" data-tab="evaluations">Evaluations</div>
+        {% if not is_community_volunteer %}<div class="toj-tab" data-tab="evaluations">Evaluations</div>{% endif %}
     </div>
 
     <div id="toj-content">
@@ -282,19 +423,66 @@
             <div class="task-list" id="completed-list"></div>
         </div>
 
-        <div id="tab-evaluations" class="tab-panel" style="display:none">
+        {% if not is_community_volunteer %}<div id="tab-evaluations" class="tab-panel" style="display:none">
             <div id="evaluations-list">
                 <p class="empty">No evaluations yet.</p>
             </div>
-        </div>
+        </div>{% endif %}
     </div>
 
 </section>
 
+<dialog id="task-photo-upload-dialog" class="task-photo-dialog" aria-labelledby="task-photo-upload-title">
+    <div class="task-photo-dialog-inner">
+        <header class="task-photo-dialog-header">
+            <h2 id="task-photo-upload-title" class="task-photo-dialog-title">Add activity photos</h2>
+            <button type="button" class="task-photo-dialog-close" data-close-photo-upload aria-label="Close">×</button>
+        </header>
+        <div class="task-photo-dialog-body">
+            <p id="task-photo-activity-label" class="toj-meta"></p>
+            <label id="task-photo-dropzone" class="task-photo-dropzone" for="task-photo-file-input">
+                <span class="task-photo-dropzone-copy"><span>Drop photos here or Browse</span><small>Image files, up to 5 MB each. You can add several.</small></span>
+            </label>
+            <input id="task-photo-file-input" type="file" accept="image/*" multiple hidden>
+            <div id="task-photo-preview-grid" class="task-photo-preview-grid" aria-live="polite"></div>
+            <label class="task-photo-caption-label" for="task-photo-caption">Caption (optional)
+                <input id="task-photo-caption" class="task-photo-caption-input" type="text" maxlength="300" placeholder="Add a note about these photos">
+            </label>
+            <p id="task-photo-dialog-status" class="task-photo-dialog-status" role="status" aria-live="polite"></p>
+        </div>
+        <footer class="task-photo-dialog-footer">
+            <button type="button" class="task-photo-dialog-cancel" data-close-photo-upload>Cancel</button>
+            <button type="button" id="task-photo-dialog-submit" class="task-photo-dialog-submit" disabled>Submit</button>
+        </footer>
+    </div>
+</dialog>
+
+<dialog id="task-photo-viewer-dialog" class="task-photo-dialog" aria-labelledby="task-photo-viewer-title">
+    <div class="task-photo-dialog-inner">
+        <header class="task-photo-dialog-header">
+            <h2 id="task-photo-viewer-title" class="task-photo-dialog-title"></h2>
+            <button type="button" class="task-photo-dialog-close" data-close-photo-viewer aria-label="Close">×</button>
+        </header>
+        <img id="task-photo-viewer-image" class="task-photo-viewer-image" alt="">
+        <div class="task-photo-viewer-meta">
+            <p id="task-photo-viewer-caption" class="task-photo-viewer-caption"></p>
+            <span id="task-photo-viewer-date" class="task-photo-viewer-date"></span>
+        </div>
+        <div class="task-photo-viewer-actions">
+            <button type="button" id="task-photo-viewer-previous" aria-label="Previous photo">Previous</button>
+            <span id="task-photo-viewer-count" class="task-photo-viewer-date"></span>
+            <button type="button" id="task-photo-viewer-delete" class="task-photo-delete">Delete photo</button>
+            <button type="button" id="task-photo-viewer-next" aria-label="Next photo">Next</button>
+        </div>
+    </div>
+</dialog>
+
 <script>
 const ASSIGNED_TASKS_URL = "{% url 'volunteer_assigned_activities_api' %}";
 const ACTIVITY_CALENDAR_URL = "{% url 'volunteer_activity_calendar_api' %}";
+const COMMUNITY_PHOTOS_URL = "{% url 'volunteer_activity_photos_api' %}";
 const ATTENDANCE_URL = "{% url 'volunteer_activity_attendance' %}";
+const IS_COMMUNITY_VOLUNTEER = {{ is_community_volunteer|yesno:"true,false" }};
 
 const MODULES = ['All','Rag-making','Teaching Kids','Planting','Outreach'];
 let tasks = [];
@@ -327,6 +515,11 @@ function init(){
     renderPills();
     bindTabs();
     bindActivityCalendar();
+    bindTaskActivityPhotos();
+    const milestoneList = $('toj-milestone-list');
+    const currentMilestone = milestoneList && milestoneList.querySelector('.toj-milestone.is-current');
+    if(currentMilestone) milestoneList.scrollTop = currentMilestone.offsetTop;
+    loadVolunteerActivityPhotos().then(function(){ renderTasks(); }).catch(function(){});
     loadActivityCalendar();
     loadAssignedTasks().then(function(){
         renderTasks();
@@ -334,6 +527,468 @@ function init(){
         updateStrip();
     });
     startTasksRefreshPoller();
+}
+
+let activityPhotos = [];
+let activityPhotoGroups = [];
+let stagedActivityPhotos = [];
+let selectedActivityPhoto = null;
+let isSubmittingActivityPhotos = false;
+let assignmentPhotoRecords = [];
+let stagedAssignmentPhotos = [];
+let currentPhotoTask = null;
+let viewerPhotoTask = null;
+let viewerPhotoIndex = 0;
+
+function bindTaskActivityPhotos(){
+    const uploadDialog = $('task-photo-upload-dialog');
+    const viewerDialog = $('task-photo-viewer-dialog');
+    const fileInput = $('task-photo-file-input');
+    const dropzone = $('task-photo-dropzone');
+    if(!uploadDialog || !viewerDialog || !fileInput || !dropzone) return;
+    document.querySelectorAll('[data-close-photo-upload]').forEach(function(button){ button.addEventListener('click', closeTaskPhotoUpload); });
+    document.querySelectorAll('[data-close-photo-viewer]').forEach(function(button){ button.addEventListener('click', function(){ viewerDialog.close(); }); });
+    uploadDialog.addEventListener('click', function(event){ if(event.target === uploadDialog) closeTaskPhotoUpload(); });
+    viewerDialog.addEventListener('click', function(event){ if(event.target === viewerDialog) viewerDialog.close(); });
+    uploadDialog.addEventListener('close', function(){ clearStagedTaskPhotos(); currentPhotoTask = null; });
+    fileInput.addEventListener('change', function(){ stageTaskPhotoFiles(fileInput.files); fileInput.value = ''; });
+    ['dragenter','dragover'].forEach(function(name){ dropzone.addEventListener(name, function(event){ event.preventDefault(); dropzone.classList.add('is-dragging'); }); });
+    ['dragleave','drop'].forEach(function(name){ dropzone.addEventListener(name, function(event){ event.preventDefault(); dropzone.classList.remove('is-dragging'); }); });
+    dropzone.addEventListener('drop', function(event){ stageTaskPhotoFiles(event.dataTransfer.files); });
+    $('task-photo-dialog-submit').addEventListener('click', submitTaskPhotoFiles);
+    $('task-photo-viewer-previous').addEventListener('click', function(){ showTaskPhotoAt(viewerPhotoIndex - 1); });
+    $('task-photo-viewer-next').addEventListener('click', function(){ showTaskPhotoAt(viewerPhotoIndex + 1); });
+    $('task-photo-viewer-delete').addEventListener('click', deleteViewedTaskPhoto);
+}
+
+function loadVolunteerActivityPhotos(){
+    return fetch(COMMUNITY_PHOTOS_URL, {credentials:'same-origin'})
+        .then(function(response){ return parseActivityPhotoResponse(response,'Photos could not be loaded.'); })
+        .then(function(payload){ assignmentPhotoRecords = Array.isArray(payload.photos) ? payload.photos : []; return assignmentPhotoRecords; });
+}
+
+function photosForTask(task){
+    return assignmentPhotoRecords.filter(function(photo){ return String(photo.assignmentId) === String(task.id); });
+}
+
+function isTaskPhotoEventDay(task){
+    return task.scheduledDate === calendarDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+}
+
+function openTaskPhotoUpload(task){
+    if(!task || !isTaskPhotoEventDay(task)) return;
+    currentPhotoTask = task;
+    $('task-photo-activity-label').textContent = task.title + ' · ' + formatActivityDate(task.scheduledDate);
+    $('task-photo-caption').value = '';
+    $('task-photo-dialog-status').textContent = '';
+    $('task-photo-upload-dialog').showModal();
+    $('task-photo-file-input').focus();
+}
+
+function closeTaskPhotoUpload(){
+    const dialog = $('task-photo-upload-dialog');
+    if(dialog && dialog.open) dialog.close();
+}
+
+function stageTaskPhotoFiles(fileList){
+    const files = Array.from(fileList || []);
+    if(!files.length) return;
+    if(files.some(function(file){ return file.type && !file.type.startsWith('image/'); })){
+        $('task-photo-dialog-status').textContent = 'Choose image files.';
+        return;
+    }
+    if(files.some(function(file){ return file.size > 5 * 1024 * 1024; })){
+        $('task-photo-dialog-status').textContent = 'Each photo must be 5 MB or smaller.';
+        return;
+    }
+    files.forEach(function(file){ stagedAssignmentPhotos.push({file:file,previewUrl:URL.createObjectURL(file)}); });
+    $('task-photo-dialog-status').textContent = '';
+    renderStagedTaskPhotos();
+}
+
+function renderStagedTaskPhotos(){
+    const grid = $('task-photo-preview-grid');
+    grid.replaceChildren();
+    stagedAssignmentPhotos.forEach(function(photo,index){
+        const item = document.createElement('div'); item.className = 'task-photo-preview';
+        const image = document.createElement('img'); image.src = photo.previewUrl; image.alt = photo.file.name;
+        const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'task-photo-preview-remove'; remove.textContent = '×';
+        remove.setAttribute('aria-label','Remove ' + photo.file.name);
+        remove.addEventListener('click',function(){ URL.revokeObjectURL(photo.previewUrl); stagedAssignmentPhotos.splice(index,1); renderStagedTaskPhotos(); });
+        item.append(image,remove); grid.appendChild(item);
+    });
+    $('task-photo-dialog-submit').disabled = stagedAssignmentPhotos.length === 0 || isSubmittingActivityPhotos;
+}
+
+function clearStagedTaskPhotos(){
+    stagedAssignmentPhotos.forEach(function(photo){ URL.revokeObjectURL(photo.previewUrl); });
+    stagedAssignmentPhotos = [];
+    if($('task-photo-preview-grid')) $('task-photo-preview-grid').replaceChildren();
+    if($('task-photo-dialog-submit')) $('task-photo-dialog-submit').disabled = true;
+}
+
+function submitTaskPhotoFiles(){
+    if(!currentPhotoTask || !stagedAssignmentPhotos.length || isSubmittingActivityPhotos) return;
+    const formData = new FormData();
+    formData.append('activity_id',String(currentPhotoTask.id));
+    formData.append('caption',$('task-photo-caption').value.trim());
+    stagedAssignmentPhotos.forEach(function(photo){ formData.append('photos',photo.file); });
+    isSubmittingActivityPhotos = true;
+    $('task-photo-dialog-submit').disabled = true;
+    $('task-photo-dialog-status').textContent = 'Uploading photos…';
+    fetch(COMMUNITY_PHOTOS_URL,{method:'POST',credentials:'same-origin',headers:{'X-CSRFToken':getCookie('csrftoken')},body:formData})
+        .then(function(response){ return parseActivityPhotoResponse(response,'Photos could not be uploaded.'); })
+        .then(function(){ closeTaskPhotoUpload(); return loadVolunteerActivityPhotos(); })
+        .then(function(){ renderTasks(); })
+        .catch(function(error){ $('task-photo-dialog-status').textContent = error.message || 'Photos could not be uploaded.'; })
+        .finally(function(){ isSubmittingActivityPhotos = false; if($('task-photo-dialog-submit')) $('task-photo-dialog-submit').disabled = stagedAssignmentPhotos.length === 0; });
+}
+
+function renderTaskPhotoThumbnails(container,task){
+    const photos = photosForTask(task);
+    if(!photos.length) return;
+    const row = document.createElement('div'); row.className = 'task-photo-thumbnails';
+    const visiblePhotos = photos.length > 4 ? photos.slice(0,3) : photos.slice(0,4);
+    visiblePhotos.forEach(function(photo,index){
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'task-photo-thumb';
+        button.setAttribute('aria-label','View activity photo ' + (index + 1));
+        const image = document.createElement('img'); image.src = photo.url; image.alt = photo.caption || task.title + ' photo';
+        button.appendChild(image); button.addEventListener('click',function(){ openTaskPhotoViewer(task,index); }); row.appendChild(button);
+    });
+    if(photos.length > 4){
+        const more = document.createElement('button'); more.type = 'button'; more.className = 'task-photo-overflow';
+        more.textContent = '+' + (photos.length - 3); more.setAttribute('aria-label','View ' + (photos.length - 3) + ' more photos');
+        more.addEventListener('click',function(){ openTaskPhotoViewer(task,3); }); row.appendChild(more);
+    }
+    container.appendChild(row);
+}
+
+function openTaskPhotoViewer(task,index){
+    viewerPhotoTask = task;
+    viewerPhotoIndex = index;
+    showTaskPhotoAt(index);
+    $('task-photo-viewer-dialog').showModal();
+}
+
+function showTaskPhotoAt(index){
+    const photos = viewerPhotoTask ? photosForTask(viewerPhotoTask) : [];
+    if(!photos.length) return;
+    viewerPhotoIndex = (index + photos.length) % photos.length;
+    const photo = photos[viewerPhotoIndex];
+    $('task-photo-viewer-title').textContent = viewerPhotoTask.title;
+    $('task-photo-viewer-image').src = photo.url;
+    $('task-photo-viewer-image').alt = photo.caption || viewerPhotoTask.title;
+    $('task-photo-viewer-caption').textContent = photo.caption || '';
+    $('task-photo-viewer-date').textContent = 'Uploaded ' + formatPhotoDate(photo.uploadedAt);
+    $('task-photo-viewer-count').textContent = (viewerPhotoIndex + 1) + ' of ' + photos.length;
+    $('task-photo-viewer-previous').disabled = photos.length < 2;
+    $('task-photo-viewer-next').disabled = photos.length < 2;
+    $('task-photo-viewer-delete').hidden = false;
+}
+
+function deleteViewedTaskPhoto(){
+    const photo = viewerPhotoTask && photosForTask(viewerPhotoTask)[viewerPhotoIndex];
+    if(!photo || !window.confirm('Delete this photo?')) return;
+    fetch(COMMUNITY_PHOTOS_URL + photo.id + '/',{method:'DELETE',credentials:'same-origin',headers:{'X-CSRFToken':getCookie('csrftoken')}})
+        .then(function(response){ return parseActivityPhotoResponse(response,'Photo could not be deleted.'); })
+        .then(function(){ return loadVolunteerActivityPhotos(); })
+        .then(function(){ const photos=photosForTask(viewerPhotoTask); if(!photos.length) $('task-photo-viewer-dialog').close(); else showTaskPhotoAt(Math.min(viewerPhotoIndex,photos.length-1)); renderTasks(); })
+        .catch(function(error){ window.alert(error.message || 'Photo could not be deleted.'); });
+}
+
+function bindCommunityPhotos(){
+    const uploadArea = $('toj-photo-upload');
+    const fileInput = $('toj-photo-input');
+    const activitySelect = $('toj-photo-activity');
+    const groupsContainer = $('toj-photo-groups');
+    const modal = $('toj-photo-modal');
+    const tabs = [$('toj-photo-tab-upload'), $('toj-photo-tab-photos')];
+    tabs.forEach(function(tab){
+        tab.addEventListener('click', function(){ setPhotoTab(tab.id === 'toj-photo-tab-upload' ? 'upload' : 'photos'); });
+        tab.addEventListener('keydown', function(event){
+            if(event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+            event.preventDefault();
+            const nextTab = tabs[(tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+            setPhotoTab(nextTab.id === 'toj-photo-tab-upload' ? 'upload' : 'photos');
+            nextTab.focus();
+        });
+    });
+    activitySelect.addEventListener('change', function(){
+        clearStagedActivityPhotos();
+        $('toj-photo-status').textContent = '';
+        updatePhotoUploadState();
+    });
+    $('toj-photo-filter').addEventListener('change', renderActivityPhotos);
+    uploadArea.addEventListener('keydown', function(event){
+        if((event.key === 'Enter' || event.key === ' ') && !fileInput.disabled){ event.preventDefault(); fileInput.click(); }
+    });
+    ['dragenter', 'dragover'].forEach(function(eventName){
+        uploadArea.addEventListener(eventName, function(event){
+            event.preventDefault();
+            if(!fileInput.disabled) uploadArea.classList.add('is-dragging');
+        });
+    });
+    ['dragleave', 'drop'].forEach(function(eventName){
+        uploadArea.addEventListener(eventName, function(event){ event.preventDefault(); uploadArea.classList.remove('is-dragging'); });
+    });
+    uploadArea.addEventListener('drop', function(event){
+        if(!fileInput.disabled) stageActivityPhotoFiles(event.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', function(){ stageActivityPhotoFiles(fileInput.files); fileInput.value = ''; });
+    $('toj-photo-submit').addEventListener('click', submitActivityPhotos);
+    groupsContainer.addEventListener('click', function(event){
+        const button = event.target.closest('[data-photo-id]');
+        if(!button) return;
+        selectedActivityPhoto = activityPhotos.find(function(photo){ return String(photo.id) === button.dataset.photoId; });
+        if(!selectedActivityPhoto) return;
+        $('toj-photo-modal-image').src = selectedActivityPhoto.url;
+        $('toj-photo-modal-image').alt = selectedActivityPhoto.activityName || 'Activity photo';
+        $('toj-photo-modal-title').textContent = selectedActivityPhoto.activityName || 'Activity photo';
+        $('toj-photo-modal-activity-date').textContent = selectedActivityPhoto.activityDate ? 'Activity · ' + formatActivityDate(selectedActivityPhoto.activityDate) : 'No activity date';
+        $('toj-photo-modal-date').textContent = 'Uploaded ' + formatPhotoDate(selectedActivityPhoto.uploadedAt);
+        modal.showModal();
+    });
+    $('toj-photo-modal-close').addEventListener('click', function(){ modal.close(); });
+    $('toj-photo-delete').addEventListener('click', deleteSelectedActivityPhoto);
+    updatePhotoUploadState();
+    loadCommunityPhotos().catch(function(){});
+}
+
+function setPhotoTab(tabName){
+    const uploadSelected = tabName === 'upload';
+    $('toj-photo-tab-upload').setAttribute('aria-selected', uploadSelected ? 'true' : 'false');
+    $('toj-photo-tab-upload').tabIndex = uploadSelected ? 0 : -1;
+    $('toj-photo-tab-photos').setAttribute('aria-selected', uploadSelected ? 'false' : 'true');
+    $('toj-photo-tab-photos').tabIndex = uploadSelected ? -1 : 0;
+    $('toj-photo-upload-panel').hidden = !uploadSelected;
+    $('toj-photo-my-photos-panel').hidden = uploadSelected;
+    if(!uploadSelected) renderActivityPhotos();
+}
+
+function formatActivityDate(value){
+    const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(!match) return String(value || '');
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).toLocaleDateString(undefined, {month:'short', day:'numeric'});
+}
+
+function formatPhotoDate(value){
+    const parsed = new Date(String(value || '').replace(' ', 'T'));
+    return Number.isNaN(parsed.getTime()) ? String(value || '') : parsed.toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'});
+}
+
+function setPhotoStatus(message){
+    $('toj-photo-status').textContent = message;
+    $('toj-photo-gallery-status').textContent = message;
+}
+
+function parseActivityPhotoResponse(response, fallbackMessage){
+    return response.text().then(function(body){
+        let payload;
+        try { payload = JSON.parse(body); }
+        catch(error){ throw new Error(fallbackMessage); }
+        if(!response.ok) throw new Error(payload.error || fallbackMessage);
+        return payload;
+    });
+}
+
+function loadCommunityPhotos(){
+    return fetch(COMMUNITY_PHOTOS_URL, {credentials:'same-origin'})
+        .then(function(response){ return parseActivityPhotoResponse(response, 'Photos could not be loaded.'); })
+        .then(function(payload){
+            activityPhotos = Array.isArray(payload.photos) ? payload.photos : [];
+            const activitySelect = $('toj-photo-activity');
+            activitySelect.replaceChildren(new Option('Select activity', ''));
+            (Array.isArray(payload.activities) ? payload.activities : []).forEach(function(activity){
+                const option = new Option(activity.name + ' · ' + formatActivityDate(activity.date), String(activity.id));
+                option.disabled = Boolean(activity.isFuture);
+                activitySelect.add(option);
+            });
+            activityPhotoGroups = groupActivityPhotos(activityPhotos);
+            renderActivityPhotoFilter();
+            renderActivityPhotos();
+            updatePhotoUploadState();
+            $('toj-photo-gallery-status').textContent = '';
+            return payload;
+        })
+        .catch(function(error){
+            setPhotoStatus(error.message || 'Photos could not be loaded.');
+            throw error;
+        });
+}
+
+function photoGroupKey(photo){
+    return photo.assignmentId ? 'assignment-' + photo.assignmentId : 'untagged-' + (photo.activityDate || photo.activityName || 'photo');
+}
+
+function groupActivityPhotos(photos){
+    const groupsByKey = new Map();
+    photos.forEach(function(photo){
+        const key = photoGroupKey(photo);
+        if(!groupsByKey.has(key)){
+            groupsByKey.set(key, {
+                key:key,
+                activityName:photo.activityName || 'No activity tagged',
+                activityDate:photo.activityDate || '',
+                photos:[]
+            });
+        }
+        groupsByKey.get(key).photos.push(photo);
+    });
+    return Array.from(groupsByKey.values()).sort(function(first, second){
+        const firstDate = first.activityDate || (first.photos[0] && first.photos[0].uploadedAt) || '';
+        const secondDate = second.activityDate || (second.photos[0] && second.photos[0].uploadedAt) || '';
+        if(firstDate !== secondDate) return secondDate.localeCompare(firstDate);
+        return String(second.photos[0] && second.photos[0].uploadedAt || '').localeCompare(String(first.photos[0] && first.photos[0].uploadedAt || ''));
+    });
+}
+
+function renderActivityPhotoFilter(){
+    const filter = $('toj-photo-filter');
+    const currentValue = filter.value;
+    filter.replaceChildren(new Option('All activities', ''));
+    activityPhotoGroups.forEach(function(group){
+        filter.add(new Option(group.activityName + (group.activityDate ? ' · ' + formatActivityDate(group.activityDate) : ''), group.key));
+    });
+    if(activityPhotoGroups.some(function(group){ return group.key === currentValue; })) filter.value = currentValue;
+}
+
+function renderActivityPhotos(){
+    const container = $('toj-photo-groups');
+    container.replaceChildren();
+    const filterValue = $('toj-photo-filter').value;
+    const visibleGroups = activityPhotoGroups.filter(function(group){ return !filterValue || group.key === filterValue; });
+    if(!activityPhotos.length){
+        const empty = document.createElement('p');
+        empty.className = 'toj-photo-empty';
+        empty.textContent = 'No photos yet. Pick an activity to upload your first one.';
+        container.appendChild(empty);
+        return;
+    }
+    if(!visibleGroups.length){
+        const empty = document.createElement('p');
+        empty.className = 'toj-photo-empty';
+        empty.textContent = 'No photos for this activity yet.';
+        container.appendChild(empty);
+        return;
+    }
+    visibleGroups.forEach(function(group){
+        const section = document.createElement('section');
+        section.className = 'toj-photo-group';
+        const header = document.createElement('div');
+        header.className = 'toj-photo-group-header';
+        const name = document.createElement('span');
+        name.className = 'toj-photo-group-name';
+        name.textContent = group.activityName + (group.activityDate ? ' · ' + formatActivityDate(group.activityDate) : '');
+        const count = document.createElement('span');
+        count.className = 'toj-photo-group-count';
+        count.textContent = group.photos.length + (group.photos.length === 1 ? ' photo' : ' photos');
+        header.append(name, count);
+        const grid = document.createElement('div');
+        grid.className = 'toj-photo-grid';
+        group.photos.forEach(function(photo){
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'toj-photo-thumb';
+            button.dataset.photoId = String(photo.id);
+            button.setAttribute('aria-label', (photo.activityName || 'Activity photo') + ', uploaded ' + formatPhotoDate(photo.uploadedAt));
+            const image = document.createElement('img');
+            image.src = photo.url;
+            image.alt = '';
+            image.loading = 'lazy';
+            button.appendChild(image);
+            grid.appendChild(button);
+        });
+        section.append(header, grid);
+        container.appendChild(section);
+    });
+}
+
+function updatePhotoUploadState(){
+    const activitySelect = $('toj-photo-activity');
+    const selectedOption = activitySelect.options[activitySelect.selectedIndex];
+    const canUpload = Boolean(activitySelect.value && selectedOption && !selectedOption.disabled);
+    $('toj-photo-input').disabled = !canUpload;
+    $('toj-photo-upload').dataset.disabled = canUpload ? 'false' : 'true';
+    $('toj-photo-upload').setAttribute('aria-disabled', canUpload ? 'false' : 'true');
+    $('toj-photo-submit').disabled = !canUpload || !stagedActivityPhotos.length || isSubmittingActivityPhotos;
+}
+
+function clearStagedActivityPhotos(){
+    stagedActivityPhotos.forEach(function(photo){ URL.revokeObjectURL(photo.previewUrl); });
+    stagedActivityPhotos = [];
+    const staged = $('toj-photo-staged');
+    staged.replaceChildren();
+    staged.hidden = true;
+    updatePhotoUploadState();
+}
+
+function stageActivityPhotoFiles(fileList){
+    const files = Array.from(fileList || []);
+    if(!files.length) return;
+    if(!$('toj-photo-activity').value){
+        setPhotoStatus('Select an activity first.');
+        return;
+    }
+    if(files.some(function(file){ return file.size > 5 * 1024 * 1024; })){
+        setPhotoStatus('Each photo must be 5 MB or smaller.');
+        return;
+    }
+    if(files.some(function(file){ return file.type && !file.type.startsWith('image/'); })){
+        setPhotoStatus('Choose image files.');
+        return;
+    }
+    files.forEach(function(file){ stagedActivityPhotos.push({file:file, previewUrl:URL.createObjectURL(file)}); });
+    setPhotoStatus('');
+    renderStagedActivityPhotos();
+    updatePhotoUploadState();
+}
+
+function renderStagedActivityPhotos(){
+    const staged = $('toj-photo-staged');
+    staged.replaceChildren();
+    stagedActivityPhotos.forEach(function(photo){
+        const item = document.createElement('div');
+        item.className = 'toj-photo-staged-item';
+        item.title = photo.file.name;
+        const image = document.createElement('img');
+        image.src = photo.previewUrl;
+        image.alt = photo.file.name;
+        item.appendChild(image);
+        staged.appendChild(item);
+    });
+    staged.hidden = !stagedActivityPhotos.length;
+}
+
+function submitActivityPhotos(){
+    if(!stagedActivityPhotos.length || !$('toj-photo-activity').value || isSubmittingActivityPhotos) return;
+    const formData = new FormData();
+    stagedActivityPhotos.forEach(function(photo){ formData.append('photos', photo.file); });
+    formData.append('activity_id', $('toj-photo-activity').value);
+    isSubmittingActivityPhotos = true;
+    updatePhotoUploadState();
+    setPhotoStatus('Uploading…');
+    fetch(COMMUNITY_PHOTOS_URL, {
+        method:'POST', credentials:'same-origin', headers:{'X-CSRFToken':getCookie('csrftoken')}, body:formData
+    }).then(function(response){ return parseActivityPhotoResponse(response, 'Photos could not be uploaded.'); }).then(function(){
+        clearStagedActivityPhotos();
+        $('toj-photo-activity').value = '';
+        setPhotoStatus('Photos uploaded.');
+        setPhotoTab('photos');
+        return loadCommunityPhotos();
+    }).catch(function(error){ setPhotoStatus(error.message); })
+        .finally(function(){ isSubmittingActivityPhotos = false; updatePhotoUploadState(); });
+}
+
+function deleteSelectedActivityPhoto(){
+    if(!selectedActivityPhoto) return;
+    fetch(COMMUNITY_PHOTOS_URL + selectedActivityPhoto.id + '/', {
+        method:'DELETE', credentials:'same-origin', headers:{'X-CSRFToken':getCookie('csrftoken')}
+    }).then(function(response){ return parseActivityPhotoResponse(response, 'Photo could not be deleted.'); }).then(function(){
+        $('toj-photo-modal').close();
+        selectedActivityPhoto = null;
+        setPhotoStatus('Photo deleted.');
+        return loadCommunityPhotos();
+    }).catch(function(error){ setPhotoStatus(error.message); });
 }
 
 function calendarDateKey(year, monthIndex, day){
@@ -390,6 +1045,7 @@ function loadActivityCalendar(){
 }
 
 function renderOjtScheduleCard(){
+    if(IS_COMMUNITY_VOLUNTEER) return;
     if(window.__tojOjtTimeInTimer){
         window.clearTimeout(window.__tojOjtTimeInTimer);
         window.__tojOjtTimeInTimer = null;
@@ -772,6 +1428,12 @@ function formatHourDuration(hours){
     const wholeHours = Math.floor(Math.max(0, Number(hours || 0)));
     return wholeHours + ' hr';
 }
+function formatVolunteerDuration(hours){
+    const totalMinutes = Math.round(Math.max(0, Number(hours || 0)) * 60);
+    const wholeHours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return minutes ? wholeHours + ' hr ' + minutes + ' min' : wholeHours + ' hr';
+}
 function formatRange(startIso, endIso){ try{
     const s = new Date(startIso); const e = new Date(endIso);
     if(s.toDateString() === e.toDateString()){
@@ -811,9 +1473,9 @@ function renderTasks(){
         info.appendChild(sub);
         if(t.module){ const category = document.createElement('span'); category.className='task-category'; category.textContent=moduleLabel(t.module); info.appendChild(category); }
 
+        const beneficiaryAction = document.createElement('div');
+        beneficiaryAction.className = 'task-beneficiary-list task-card-inline-actions';
         if(Array.isArray(t.beneficiaries) && t.beneficiaries.length){
-            const beneficiaryAction = document.createElement('div');
-            beneficiaryAction.className = 'task-beneficiary-list';
             if(t.status === 'time_in' || t.status === 'in_progress'){
                 const manageButton = document.createElement('button');
                 manageButton.type = 'button';
@@ -837,8 +1499,18 @@ function renderTasks(){
                 lockedMessage.textContent = 'Time in to manage beneficiary attendance.';
                 beneficiaryAction.appendChild(lockedMessage);
             }
-            info.appendChild(beneficiaryAction);
         }
+        const photoCount = photosForTask(t).length;
+        const addPhotosButton = document.createElement('button');
+        addPhotosButton.type = 'button';
+        addPhotosButton.className = 'task-add-photos';
+        addPhotosButton.innerHTML = '<i data-lucide="camera" aria-hidden="true"></i><span>Add photos' + (photoCount ? ' (' + photoCount + ')' : '') + '</span>';
+        addPhotosButton.disabled = !isTaskPhotoEventDay(t);
+        addPhotosButton.title = addPhotosButton.disabled ? 'Photos can only be added on the activity day.' : 'Add photos from this activity';
+        addPhotosButton.addEventListener('click', function(event){ event.stopPropagation(); openTaskPhotoUpload(t); });
+        beneficiaryAction.appendChild(addPhotosButton);
+        info.appendChild(beneficiaryAction);
+        renderTaskPhotoThumbnails(info,t);
 
         const status = document.createElement('div');
         if(t.status === 'completed') { status.className='status-done'; status.textContent='Completed'; }
@@ -867,6 +1539,7 @@ function renderTasks(){
     })
     if(todayList.children.length===0) todayList.innerHTML='<div class="empty">No tasks for today.</div>';
     if(upcomingList.children.length===0) upcomingList.innerHTML='<div class="empty">No upcoming tasks.</div>';
+    if(window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
 }
 
 function formatElapsed(milliseconds){
@@ -1062,7 +1735,16 @@ function addCardAttendanceAction(card, task, action){
     actionArea.appendChild(button); card.appendChild(actionArea);
 }
 
-function showTimeoutConfirmation(card, task, timeoutButton){
+function showTimeoutConfirmation(card, task, timeoutButton, skippedPhotoPrompt){
+    if(!skippedPhotoPrompt && photosForTask(task).length === 0){
+        timeoutButton.style.display = 'none';
+        const photoPrompt = document.createElement('div'); photoPrompt.className = 'task-timeout-confirm visible';
+        photoPrompt.innerHTML = '<span>Add photos of today\'s activity first?</span><span class="confirm-actions"><button type="button" class="btn teal">Add photos</button><button type="button" class="btn">Skip</button></span>';
+        photoPrompt.querySelector('.btn.teal').addEventListener('click',function(){ photoPrompt.remove(); timeoutButton.style.display = ''; openTaskPhotoUpload(task); });
+        photoPrompt.querySelector('.confirm-actions .btn:not(.teal)').addEventListener('click',function(){ photoPrompt.remove(); showTimeoutConfirmation(card,task,timeoutButton,true); });
+        card.appendChild(photoPrompt);
+        return;
+    }
     timeoutButton.style.display = 'none';
     const confirmation = document.createElement('div'); confirmation.className = 'task-timeout-confirm visible';
     confirmation.innerHTML = '<span>Time out now? This will stop the timer.</span><span class="confirm-actions"><button type="button" class="btn">Cancel</button><button type="button" class="btn danger-outline">Confirm time out</button></span>';
@@ -1130,6 +1812,10 @@ function updateStrip(){
         liveLabel.classList.add('visible');
         logged += elapsedMilliseconds / 3600000;
     } else { liveLabel.classList.remove('visible'); }
+    if(IS_COMMUNITY_VOLUNTEER){
+        $('toj-hours').textContent = formatVolunteerDuration(logged);
+        return;
+    }
     $('toj-hours').textContent = formatHourDuration(logged) + ' / ' + formatHourDuration(required);
     const pct = Math.min(100, Math.round((logged / required)*1000)/10 || 0);
     const remaining = Math.max(0, required - logged);

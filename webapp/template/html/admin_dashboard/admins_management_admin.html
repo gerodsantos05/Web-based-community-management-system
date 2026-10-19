@@ -848,7 +848,8 @@
     }
 
     .admins-profile-field input,
-    .admins-profile-field select {
+    .admins-profile-field select,
+    .admins-profile-field textarea {
         width: 100%;
         min-height: 2.4rem;
         box-sizing: border-box;
@@ -859,6 +860,10 @@
         color: #173a31;
         font: inherit;
         font-size: 0.85rem;
+    }
+
+    .admins-profile-field textarea {
+        resize: vertical;
     }
 
     .admins-profile-field [data-admin-profile-edit-control][hidden],
@@ -1018,15 +1023,22 @@
         font-weight: 700;
     }
 
-    .admins-form input {
+    .admins-form input,
+    .admins-form select,
+    .admins-form textarea {
         width: 100%;
-        min-height: 2.55rem;
         box-sizing: border-box;
         padding: 0.55rem 0.7rem;
         border: 1px solid #d4e9e1;
         border-radius: 8px;
+        background: #fff;
         color: #173a31;
         font-size: 0.85rem;
+    }
+
+    .admins-form input,
+    .admins-form select {
+        min-height: 2.55rem;
     }
 
     .admins-status-field {
@@ -1305,7 +1317,7 @@
                 </thead>
                 <tbody>
                     {% for admin in admins %}
-                    <tr data-admin-row data-admin-id="{{ admin.id }}" data-admin-name="{{ admin.get_full_name|default:admin.username }}" data-admin-username="{{ admin.username }}" data-admin-email="{{ admin.email|default:'Not provided' }}" data-status="{% if admin.is_active %}active{% else %}inactive{% endif %}" data-admin-self="{% if admin.id == request.user.id %}true{% else %}false{% endif %}" data-admin-last-login="{{ admin.last_login|date:'M j, Y g:i A'|default:'Never' }}" data-admin-joined="{{ admin.date_joined|date:'M j, Y' }}" data-search="{{ admin.get_full_name|default:admin.username }} {{ admin.username }} {{ admin.email }}">
+                    <tr data-admin-row data-admin-id="{{ admin.id }}" data-admin-name="{{ admin.get_full_name|default:admin.username }}" data-admin-username="{{ admin.username }}" data-admin-email="{{ admin.email|default:'Not provided' }}" data-admin-gender="{{ admin.userprofile.gender }}" data-admin-address="{{ admin.userprofile.address_line }}" data-status="{% if admin.is_active %}active{% else %}inactive{% endif %}" data-admin-self="{% if admin.id == request.user.id %}true{% else %}false{% endif %}" data-admin-last-login="{{ admin.last_login|date:'M j, Y g:i A'|default:'Never' }}" data-admin-joined="{{ admin.date_joined|date:'M j, Y' }}" data-search="{{ admin.get_full_name|default:admin.username }} {{ admin.username }} {{ admin.email }}">
                         <td class="admins-select-cell"><input type="checkbox" class="admins-select-checkbox" data-admin-select aria-label="Select {{ admin.get_full_name|default:admin.username }}" {% if admin.id == request.user.id %}disabled title="You cannot remove your own admin account."{% endif %}></td>
                         <td>{{ admin.get_full_name|default:admin.username }}</td>
                         <td>{{ admin.username }}</td>
@@ -1467,6 +1479,22 @@
                     <input name="email" type="email" maxlength="254" data-admin-profile-edit-control hidden>
                 </label>
                 <label class="admins-profile-field">
+                    <span class="admins-profile-label">Gender</span>
+                    <span class="admins-profile-value" data-admin-profile-field="gender"></span>
+                    <select name="gender" data-admin-profile-edit-control hidden>
+                        <option value="">Select gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                        <option value="prefer_not">Prefer not to say</option>
+                    </select>
+                </label>
+                <label class="admins-profile-field">
+                    <span class="admins-profile-label">Address</span>
+                    <span class="admins-profile-value" data-admin-profile-field="address"></span>
+                    <textarea name="address_line" rows="2" maxlength="255" data-admin-profile-edit-control hidden></textarea>
+                </label>
+                <label class="admins-profile-field">
                     <span class="admins-profile-label">Status</span>
                     <span class="admins-profile-value" data-admin-profile-field="status"></span>
                     <select name="status" data-admin-profile-edit-control hidden>
@@ -1520,6 +1548,20 @@
             <div class="admins-form-group">
                 <label for="admin-full-name">Full name <span class="required">*</span></label>
                 <input id="admin-full-name" name="full_name" type="text" autocomplete="name" maxlength="150" required>
+            </div>
+            <div class="admins-form-group">
+                <label for="admin-gender">Gender <span class="required">*</span></label>
+                <select id="admin-gender" name="gender" required>
+                    <option value="" disabled selected>Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                    <option value="prefer_not">Prefer not to say</option>
+                </select>
+            </div>
+            <div class="admins-form-group">
+                <label for="admin-address">Address <span class="required">*</span></label>
+                <textarea id="admin-address" name="address_line" rows="3" maxlength="255" autocomplete="street-address" placeholder="Street, Barangay, City, Province" required></textarea>
             </div>
             <div class="admins-form-group admins-status-field">
                 <label>Status <span class="required">*</span></label>
@@ -1758,6 +1800,8 @@
             name: row.dataset.adminName,
             username: row.dataset.adminUsername,
             email: row.dataset.adminEmail,
+            gender: row.dataset.adminGender,
+            address: row.dataset.adminAddress,
             status: row.dataset.status === "active" ? "Active" : "Inactive",
             "last-login": row.dataset.adminLastLogin,
             joined: row.dataset.adminJoined
@@ -1769,6 +1813,8 @@
         profileForm.elements.full_name.value = row.dataset.adminName || "";
         profileForm.elements.username.value = row.dataset.adminUsername || "";
         profileForm.elements.email.value = row.dataset.adminEmail === "Not provided" ? "" : row.dataset.adminEmail;
+        profileForm.elements.gender.value = row.dataset.adminGender || "";
+        profileForm.elements.address_line.value = row.dataset.adminAddress || "";
         profileForm.elements.status.value = row.dataset.status;
         profileModal.querySelector("[data-admin-profile-avatar]").textContent = (row.dataset.adminName || row.dataset.adminUsername || "?").trim().charAt(0);
         profileModal.querySelector("[data-admin-profile-identity-name]").textContent = row.dataset.adminName || row.dataset.adminUsername;
@@ -1818,6 +1864,8 @@
             profileForm.elements.full_name.value = row.dataset.adminName || "";
             profileForm.elements.username.value = row.dataset.adminUsername || "";
             profileForm.elements.email.value = row.dataset.adminEmail === "Not provided" ? "" : row.dataset.adminEmail;
+            profileForm.elements.gender.value = row.dataset.adminGender || "";
+            profileForm.elements.address_line.value = row.dataset.adminAddress || "";
             profileForm.elements.status.value = row.dataset.status;
         }
         setAdminProfileMessage("", "");

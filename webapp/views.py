@@ -1,3 +1,5 @@
+import copy
+import mimetypes
 import os
 
 from django.contrib.auth import authenticate, login, logout
@@ -5,9 +7,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.conf import settings as django_settings
+from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.paginator import Paginator
 from django.core.files.base import ContentFile
+from PIL import Image, UnidentifiedImageError
 from django.core.mail import EmailMultiAlternatives
 from django.core.validators import validate_email
 from django.http import FileResponse, Http404, JsonResponse
@@ -17,6 +21,7 @@ from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.utils import timezone
 import secrets
 from django.db import IntegrityError, connection, transaction
@@ -28,11 +33,14 @@ import json
 import re
 import csv
 import io
+import hashlib
+import smtplib
 from pathlib import Path
 from datetime import datetime, timedelta, date, time
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from .forms import (
+    AccountPasswordResetForm,
     BeneficiaryApplicationForm,
     ResourceLibraryMaterialForm,
     SignInForm,
@@ -68,14 +76,17 @@ from .models import (
     ProductInquiry,
     ProductReview,
     RoleApplication,
+    RoleApplicationDocument,
     ResourceLibraryMaterial,
     StockMovement,
     SkillLearningMaterial,
     SkillLearningMaterialEngagement,
+    SkillLearningProgressAudit,
     SkillLearningTopic,
     SkillLearningTopicEngagement,
     UserProfile,
     VolunteerActivityAssignment,
+    VolunteerActivityPhoto,
     VolunteerOjtSchedule,
     ActivityBeneficiaryAssignment,
     VolunteerAdminMessage,
@@ -402,16 +413,25 @@ def _skill_learning_topic_payload(topic, material_engagements=None, recommended_
 
 def _skill_learning_material_payload(material, engagement=None):
     material_type_label = dict(SkillLearningMaterial.TYPE_CHOICES).get(material.material_type, material.material_type)
+    source_name = material.source_name
+    file_url = (
+        reverse("skill_learning_material_file", args=[material.id])
+        if material.file_upload
+        else ""
+    )
+    external_url = material.external_url or ""
     return {
         "id": str(material.id),
         "topicId": str(material.topic_id),
         "materialType": material.material_type,
         "materialTypeLabel": material_type_label,
+        "mimeType": mimetypes.guess_type(source_name)[0] or "",
         "title": material.title,
         "description": material.description,
-        "fileUrl": material.file_upload.url if material.file_upload else "",
-        "externalUrl": material.external_url or "",
-        "sourceUrl": material.source_url,
+        "fileName": source_name,
+        "fileUrl": file_url,
+        "externalUrl": external_url,
+        "sourceUrl": file_url or external_url,
         "sourceName": material.source_name,
         "uploadedAt": timezone.localtime(material.created_at).isoformat() if material.created_at else "",
         "viewed": bool(engagement and engagement.view_count),
@@ -488,7 +508,7 @@ def _ensure_skill_learning_content():
     if SkillLearningTopic.objects.exists():
         return
 
-    for topic_data in SKILL_LEARNING_DEFAULT_TOPICS:
+    for topic_data in copy.deepcopy(SKILL_LEARNING_DEFAULT_TOPICS):
         materials_data = topic_data.pop("materials")
         topic = SkillLearningTopic.objects.create(**topic_data)
         for material_data in materials_data:
@@ -1135,6 +1155,8 @@ def volunteer_activity_attendance(request):
         return JsonResponse({"error": "An assignment_id or duty_date is required."}, status=400)
 
     if duty_date_raw and not assignment_id:
+        if profile.volunteer_type == UserProfile.VOLUNTEER_TYPE_COMMUNITY:
+            return JsonResponse({"error": "Community volunteers time in through their assigned activities."}, status=400)
         try:
             duty_date = date.fromisoformat(duty_date_raw)
         except ValueError:
@@ -1206,8 +1228,9 @@ def volunteer_activity_attendance(request):
             return JsonResponse({"error": "This assignment cannot be re-opened."}, status=400)
         if assignment.status in {VolunteerActivityAssignment.STATUS_TIME_IN, VolunteerActivityAssignment.STATUS_IN_PROGRESS}:
             return JsonResponse({"error": "This assignment already has an active session."}, status=409)
-        schedule = _ojt_schedule_for_date(request.user, assignment.scheduled_date)
-        is_duty_date = _ojt_is_duty_date(schedule, assignment.scheduled_date)
+        is_community_volunteer = profile.volunteer_type == UserProfile.VOLUNTEER_TYPE_COMMUNITY
+        schedule = None if is_community_volunteer else _ojt_schedule_for_date(request.user, assignment.scheduled_date)
+        is_duty_date = not is_community_volunteer and _ojt_is_duty_date(schedule, assignment.scheduled_date)
         if is_duty_date:
             start_at, end_at = _ojt_duty_window(schedule, assignment.scheduled_date)
             if now < start_at or now >= end_at:
@@ -1237,7 +1260,9 @@ def volunteer_activity_attendance(request):
         return JsonResponse({"message": "Time in recorded.", "status": assignment.status})
 
     if action == "time_out":
-        _auto_close_expired_duty_sessions(request.user, now=now)
+        is_community_volunteer = profile.volunteer_type == UserProfile.VOLUNTEER_TYPE_COMMUNITY
+        if not is_community_volunteer:
+            _auto_close_expired_duty_sessions(request.user, now=now)
         assignment.refresh_from_db()
         if assignment.status == VolunteerActivityAssignment.STATUS_AWAITING_CONFIRMATION:
             record = assignment.attendance_records.order_by("-created_at", "-id").first()
@@ -1245,8 +1270,8 @@ def volunteer_activity_attendance(request):
                 return JsonResponse({"message": "Session was auto-closed and is awaiting admin review.", "status": assignment.status, "attendance": _serialize_volunteer_attendance(record)})
         if assignment.status not in {VolunteerActivityAssignment.STATUS_TIME_IN, VolunteerActivityAssignment.STATUS_IN_PROGRESS}:
             return JsonResponse({"error": "You must time in before timing out."}, status=400)
-        schedule = _ojt_schedule_for_date(request.user, assignment.scheduled_date)
-        is_duty_date = _ojt_is_duty_date(schedule, assignment.scheduled_date)
+        schedule = None if is_community_volunteer else _ojt_schedule_for_date(request.user, assignment.scheduled_date)
+        is_duty_date = not is_community_volunteer and _ojt_is_duty_date(schedule, assignment.scheduled_date)
         _, duty_end_at = _ojt_duty_window(schedule, assignment.scheduled_date) if is_duty_date else (None, None)
         auto_closed = bool(duty_end_at and now >= duty_end_at)
         time_out = duty_end_at if auto_closed else now
@@ -1943,6 +1968,191 @@ def _get_latest_role_applications(user):
     return latest_by_role
 
 
+def _application_completion_schema(application, profile=None):
+    saved = application.applicant_added_details if isinstance(application.applicant_added_details, dict) else {}
+    email, contact_phone = _split_contact_details(application.contact_details)
+    supporting = str(application.supporting_information or "").strip()
+    saved_barangay = supporting.split(", Bacoor City", 1)[0].strip() if ", Bacoor City" in supporting else ""
+    original = {
+        "full_name": application.full_name or "",
+        "email": email,
+        "phone": (getattr(profile, "phone", "") or contact_phone or "").strip(),
+        "gender": getattr(profile, "gender", "") or "",
+        "birthdate": getattr(profile, "birthdate", None).isoformat() if getattr(profile, "birthdate", None) else "",
+        "civil_status": getattr(profile, "civil_status", "") or "",
+        "barangay": getattr(profile, "barangay", "") or saved_barangay,
+        "street_address": getattr(profile, "address_line", "") or "",
+        "emergency_contact_name": getattr(profile, "emergency_contact_name", "") or "",
+        "emergency_contact_relationship": getattr(profile, "emergency_contact_relationship", "") or "",
+        "emergency_contact_phone": getattr(profile, "emergency_contact_phone", "") or "",
+        "availability_days": application.availability or "",
+        "skills": application.skills or "",
+        "reason_for_volunteering": application.areas_of_interest or "",
+        "assistance_reason": application.reason_for_assistance or "",
+        "supporting_information": supporting,
+        "city": "Bacoor City, Cavite",
+    }
+    values = dict(original)
+    sections = [
+        {"key": "personal", "label": "Personal and contact details", "fields": []},
+        {"key": "application", "label": "Application details", "fields": []},
+    ]
+    section_map = {section["key"]: section["fields"] for section in sections}
+
+    def add_field(section, name, label, field_type="text", required=True, options=None, existing=None, **attributes):
+        if existing not in (None, ""):
+            values[name] = existing
+            original[name] = existing
+            return
+        values[name] = saved.get(name, "")
+        field = {"name": name, "label": label, "type": field_type, "required": required}
+        if options is not None:
+            field["options"] = options
+        field.update(attributes)
+        section_map[section].append(field)
+
+    gender_options = [{"value": value, "label": label} for value, label in UserProfile.GENDER_CHOICES]
+    barangay_options = [
+        "Alima", "Aniban I", "Aniban II", "Aniban III", "Aniban IV", "Aniban V", "Banalo", "Bayanan",
+        "Campo Santo", "Daang Bukid", "Digman", "Dulong Bayan", "Habay I", "Habay II", "Kaingin (Poblacion)",
+        "Ligas I", "Ligas II", "Ligas III", "Mabolo I", "Mabolo II", "Mabolo III", "Maliksi I", "Maliksi II",
+        "Maliksi III", "Mambog I", "Mambog II", "Mambog III", "Mambog IV", "Mambog V", "Molino I", "Molino II",
+        "Molino III", "Molino IV", "Molino V", "Molino VI", "Molino VII", "Niog I", "Niog II", "Niog III",
+        "P.F. Espiritu I", "P.F. Espiritu II", "P.F. Espiritu III", "P.F. Espiritu IV", "P.F. Espiritu V",
+        "P.F. Espiritu VI", "P.F. Espiritu VII", "P.F. Espiritu VIII", "Queens Row Central", "Queens Row East",
+        "Queens Row West", "Real I", "Real II", "Salinas I", "Salinas II", "Salinas III", "Salinas IV",
+        "San Nicolas I", "San Nicolas II", "San Nicolas III", "Sineguelasan", "Tabing Dagat", "Talaba I",
+        "Talaba II", "Talaba III", "Talaba IV", "Talaba V", "Talaba VI", "Talaba VII", "Zapote I", "Zapote II",
+        "Zapote III", "Zapote IV", "Zapote V",
+    ]
+    barangay_choices = [{"value": item, "label": item} for item in barangay_options]
+    add_field("personal", "gender", "Gender", "select", options=gender_options, existing=original["gender"])
+    add_field("personal", "birthdate", "Birthdate", "date", existing=original["birthdate"])
+    add_field("personal", "phone", "Phone number", "tel", existing=original["phone"])
+    add_field("personal", "barangay", "Barangay", "select", options=barangay_choices, existing=original["barangay"])
+    add_field("personal", "street_address", "House number, street, or sitio", existing=original["street_address"], maxLength=255)
+
+    documents = [
+        {"key": "valid_id_photo", "label": "Valid ID photo", "required": True, "section": "personal"},
+    ]
+
+    if application.role == RoleApplication.ROLE_VOLUNTEER and application.track == "intern":
+        add_field("application", "school", "School", maxLength=180)
+        add_field("application", "course", "Course", maxLength=150)
+        documents.append({
+            "key": "endorsement_letter", "legacyKeys": ["endorsement_or_moa"],
+            "label": "Endorsement letter", "required": True, "section": "application",
+        })
+    elif application.role == RoleApplication.ROLE_VOLUNTEER:
+        if not original["skills"] or not original["availability_days"]:
+            missing_label = "Skills and availability"
+            if original["skills"]:
+                missing_label = "Availability"
+            elif original["availability_days"]:
+                missing_label = "Skills"
+            add_field("application", "skills_availability", missing_label, "textarea", maxLength=500)
+        add_field("application", "emergency_contact_name", "Emergency contact name", existing=original["emergency_contact_name"], maxLength=150)
+        add_field("application", "emergency_contact_phone", "Emergency contact number", "tel", existing=original["emergency_contact_phone"], maxLength=50)
+    elif application.track == "happy_kids":
+        add_field("application", "child_birthdate", "Child's birthdate", "date")
+        add_field("application", "school", "School", maxLength=180)
+        add_field("application", "grade_level", "Grade", maxLength=40)
+        documents.append({
+            "key": "birth_certificate", "legacyKeys": ["psa_birth_certificate"],
+            "label": "Birth certificate", "required": True, "section": "application",
+        })
+    elif application.track == "happy_hearts":
+        disability_options = [{"value": value, "label": label} for value, label in [
+            ("physical", "Physical disability"), ("visual", "Visual disability"),
+            ("hearing", "Hearing disability"), ("speech", "Speech disability"),
+            ("intellectual", "Intellectual disability"), ("psychosocial", "Psychosocial disability"),
+            ("multiple", "Multiple disabilities"), ("other", "Other"),
+        ]]
+        add_field("application", "disability_type", "Type of disability", "select", options=disability_options, maxLength=500)
+        documents.append({"key": "pwd_id", "label": "PWD ID", "required": True, "section": "application"})
+    else:
+        amount_options = [{"value": value, "label": label} for value, label in [
+            ("under_5000", "Below PHP 5,000"), ("5000_9999", "PHP 5,000-9,999"),
+            ("10000_14999", "PHP 10,000-14,999"), ("15000_24999", "PHP 15,000-24,999"),
+            ("25000_plus", "PHP 25,000 or more"), ("no_income", "No household income"), ("prefer_not", "Prefer not to say"),
+        ]]
+        add_field("application", "household_size", "Household size", "number", min=1, max=30)
+        add_field("application", "monthly_income_range", "Monthly income range", "select", options=amount_options)
+        documents.append({"key": "proof_of_residency", "label": "Proof of residency", "required": True, "section": "application"})
+
+    existing_documents = list(application.documents.all())
+    documents = [
+        {
+            **spec,
+            "fileName": getattr(next((
+                doc for doc in existing_documents
+                if doc.document_type in [spec["key"], *spec.get("legacyKeys", [])]
+            ), None), "original_name", ""),
+            "viewUrl": "",
+        }
+        for spec in documents
+    ]
+    fields = [field for section in sections for field in section["fields"]]
+    active_saved = {name: value for name, value in saved.items() if name in {field["name"] for field in fields}}
+    for name, value in active_saved.items():
+        values[name] = value
+    return {
+        "sections": sections,
+        "fields": fields,
+        "values": values,
+        "originalAnswers": original,
+        "applicantAddedDetails": active_saved,
+        "documents": documents,
+    }
+
+
+def _serialize_user_role_application(application, profile=None):
+    status_labels = {
+        RoleApplication.STATUS_PENDING: "Pending",
+        RoleApplication.STATUS_APPROVED: "Approved",
+        RoleApplication.STATUS_INACTIVE: "Completed",
+        RoleApplication.STATUS_REJECTED: "Declined",
+    }
+    schema = _application_completion_schema(application, profile)
+    fields = schema["fields"]
+    return {
+        "id": int(application.id),
+        "role": application.role,
+        "roleLabel": application.get_role_display(),
+        "trackLabel": {
+            "happy_nanas": "Happy Nanays (Parents)",
+            "happy_kids": "Happy Kids (Children)",
+            "happy_hearts": "Happy Hearts (Persons with disability)",
+            "intern": "OJT",
+            "community_volunteer": "Community Volunteer",
+        }.get(application.track, application.get_track_display() or "General"),
+        "submittedAt": timezone.localtime(application.created_at).strftime("%Y-%m-%d"),
+        "status": application.status,
+        "statusLabel": status_labels.get(application.status, application.get_status_display()),
+        "applicantAddedDetails": schema["applicantAddedDetails"],
+        "completionValues": schema["values"],
+        "originalAnswers": schema["originalAnswers"],
+        "completionSections": schema["sections"],
+        "completionDocuments": schema["documents"],
+        "completionFields": fields,
+        "completionComplete": application.applicant_details_consent,
+        "completionEditable": application.status == RoleApplication.STATUS_PENDING and not application.applicant_details_consent,
+    }
+
+
+def _application_tracker_context(user):
+    profile = UserProfile.objects.filter(user=user).first()
+    applications = RoleApplication.objects.filter(user=user).prefetch_related("documents").order_by("-created_at", "-id")
+    items = [_serialize_user_role_application(application, profile) for application in applications]
+    return {
+        "application_tracker_items": items,
+        "has_application_details_to_complete": any(
+            item["status"] == RoleApplication.STATUS_PENDING and item["completionEditable"]
+            for item in items
+        ),
+    }
+
+
 def _is_active_beneficiary(user):
     if not user or not user.is_authenticated:
         return False
@@ -1984,13 +2194,64 @@ def _serialize_pending_beneficiary_application(application):
     return {
         "id": int(application.id),
         "name": application.full_name,
+        "beneficiaryType": {
+            "happy_kids": "Happy Kids",
+            "happy_nanas": "Happy Nanays",
+        }.get(application.track, application.get_track_display() or "Not specified"),
         "contactDetails": application.contact_details,
         "email": email,
         "phone": phone,
         "location": str(location).strip()[:160],
         "reasonForAssistance": application.reason_for_assistance or "",
         "supportingInformation": application.supporting_information or "",
+        **_serialize_admin_application_details(application, profile),
         "submittedAt": timezone.localtime(application.created_at).strftime("%Y-%m-%d"),
+    }
+
+
+def _serialize_admin_application_details(application, profile=None):
+    schema = _application_completion_schema(application, profile)
+    submitted = application.applicant_details_consent
+    complete_values = schema["values"]
+    missing_items = [
+        field["label"] for field in schema["fields"]
+        if field.get("required") and complete_values.get(field["name"]) in (None, "", [])
+    ]
+    existing_document_types = set(application.documents.values_list("document_type", flat=True))
+    missing_items.extend(
+        document["label"] for document in schema["documents"]
+        if document["required"]
+        and not existing_document_types.intersection([document["key"], *document.get("legacyKeys", [])])
+    )
+    if not submitted:
+        missing_items.insert(0, "Submit details through the Application tracker")
+    labels = {}
+    for document in schema["documents"]:
+        for document_type in [document["key"], *document.get("legacyKeys", [])]:
+            labels[document_type] = document["label"]
+    documents = []
+    if submitted:
+        documents = [
+            {
+                "id": int(document.id),
+                "type": document.document_type,
+                "label": labels.get(document.document_type, document.document_type),
+                "fileName": document.original_name,
+                "contentType": document.content_type,
+                "viewUrl": reverse("view_role_application_document", args=[document.id]),
+            }
+            for document in application.documents.all()
+            if document.document_type in labels
+        ]
+    return {
+        "applicationDetails": schema["values"] if submitted else schema["originalAnswers"],
+        "applicantAddedDetails": schema["applicantAddedDetails"] if submitted else {},
+        "applicationDocuments": documents,
+        "detailsConsentGiven": submitted,
+        "profileCompleteness": {
+            "complete": submitted and not missing_items,
+            "missingItems": missing_items,
+        },
     }
 
 
@@ -2193,6 +2454,11 @@ def _build_beneficiaries_payload():
             "name": display_name,
             "email": email,
             "phone": phone,
+            "gender": profile.gender if profile else "",
+            "beneficiaryType": dict(UserProfile.BENEFICIARY_TYPE_CHOICES).get(profile.beneficiary_type, "") if profile else "",
+            "beneficiaryTypeValue": profile.beneficiary_type if profile else "",
+            "linkedParentId": profile.linked_parent.user_id if profile and profile.linked_parent_id else None,
+            "linkedParentName": _display_name_for_user(profile.linked_parent.user) if profile and profile.linked_parent_id else "",
             "contactDetails": contact_details or app.contact_details or "",
             "addressLine": address_line,
             "category": "Beneficiary",
@@ -2248,6 +2514,7 @@ def _build_admin_certificate_payload():
             "volunteer_id": certificate.volunteer_id,
             "volunteer_name": _display_name_for_user(certificate.volunteer),
             "recipient_name": certificate.recipient_name,
+            "reason": certificate.reason,
             "issued_date": timezone.localtime(certificate.issued_at).strftime("%B %d, %Y"),
             "preview_url": reverse("volunteer_certificate_download", args=[certificate.id]),
         }
@@ -2324,6 +2591,17 @@ def _build_volunteers_payload():
             "status": assignment.current_status_label,
         })
 
+    activity_photos_by_user = {}
+    for photo in VolunteerActivityPhoto.objects.filter(volunteer__in=volunteer_users).select_related("assignment"):
+        activity_photos_by_user.setdefault(photo.volunteer_id, []).append({
+            "id": int(photo.id),
+            "url": photo.image.url,
+            "assignmentId": int(photo.assignment_id) if photo.assignment_id else None,
+            "activityName": photo.assignment.activity_name if photo.assignment_id else "",
+            "activityDate": photo.assignment.scheduled_date.isoformat() if photo.assignment_id else "",
+            "uploadedAt": timezone.localtime(photo.uploaded_at).strftime("%Y-%m-%d %H:%M"),
+        })
+
     seen_volunteers = set()
 
     today = timezone.localdate()
@@ -2357,6 +2635,7 @@ def _build_volunteers_payload():
         app = latest_app_by_user.get(volunteer.id)
         activity_history = activity_history_by_user.get(volunteer.id, [])
         participated_events = participated_events_by_user.get(volunteer.id, [])
+        activity_photos = activity_photos_by_user.get(volunteer.id, [])
         duplicate_key = (volunteer.email or volunteer.username or str(volunteer.id)).strip().lower()
         if duplicate_key in seen_volunteers:
             continue
@@ -2376,6 +2655,14 @@ def _build_volunteers_payload():
         email = volunteer.email or contact_email
         phone = (profile.phone if profile else "") or contact_phone
         contact_details = " / ".join([part for part in [email, phone] if part])
+        volunteer_type = profile.volunteer_type if profile else UserProfile.VOLUNTEER_TYPE_OJT
+        if app and app.status == RoleApplication.STATUS_PENDING:
+            volunteer_type = (
+                UserProfile.VOLUNTEER_TYPE_COMMUNITY
+                if app.track == "community_volunteer"
+                else UserProfile.VOLUNTEER_TYPE_OJT
+            )
+        community_milestones = _community_volunteer_milestones(volunteer) if volunteer_type == UserProfile.VOLUNTEER_TYPE_COMMUNITY else None
 
         volunteers_data.append({
             "id": int(volunteer.id),
@@ -2384,11 +2671,14 @@ def _build_volunteers_payload():
             "email": email,
             "contact": phone,
             "contactDetails": contact_details,
+            "gender": profile.gender if profile else "",
+            "addressLine": profile.address_line if profile else "",
             "program": (profile.volunteer_role if profile else "") or "Volunteer",
             "skills": (app.skills if app else "") or ((profile.volunteer_role if profile else "") or ""),
             "areasOfInterest": (app.areas_of_interest if app else "") or ((profile.assigned_chapter_area if profile else "") or ""),
             "availability": (app.availability if app else "") or "N/A",
             "hoursRendered": 0,
+            "volunteerType": volunteer_type,
             "ojtHours": float(profile.ojt_hours or 0) if profile else 0,
             "requiredOjtHours": float(profile.required_ojt_hours or 80) if profile else 80,
             "ojtSupervisor": (profile.ojt_supervisor or "") if profile else "",
@@ -2408,8 +2698,10 @@ def _build_volunteers_payload():
             "activityHistory": activity_history,
             "activityCount": len(activity_history),
             "participatedEvents": participated_events,
+            "activityPhotos": activity_photos,
             "lastActivityDate": activity_history[0]["date"] if activity_history else "",
             "assignedThisWeek": volunteer.id in assigned_volunteer_ids,
+            "communityMilestones": community_milestones,
         })
 
     return volunteers_data
@@ -2573,6 +2865,18 @@ def _build_volunteers_dashboard_payload():
     _auto_close_expired_duty_sessions()
     monitor_records = VolunteerAttendanceRecord.objects.select_related("volunteer", "assignment")
 
+    def assignment_photos(assignment_id, volunteer_id, scheduled_date):
+        if not assignment_id or not scheduled_date:
+            return []
+        return [
+            _serialize_volunteer_activity_photo(photo)
+            for photo in VolunteerActivityPhoto.objects.filter(
+                assignment_id=assignment_id,
+                volunteer_id=volunteer_id,
+                assignment__scheduled_date=scheduled_date,
+            ).select_related("assignment", "volunteer")
+        ]
+
     def monitor_payload(attendance):
         payload = _serialize_volunteer_attendance(attendance)
         payload.update({
@@ -2580,6 +2884,12 @@ def _build_volunteers_dashboard_payload():
             "volunteer_initials": _initials_for_name(_display_name_for_user(attendance.volunteer)),
             "activity_name": attendance.assignment.activity_name if attendance.assignment_id else "OJT duty day",
             "location": attendance.assignment.location or "TBA" if attendance.assignment_id else "OJT duty day",
+            "activity_date": attendance.assignment.scheduled_date.isoformat() if attendance.assignment_id else attendance.duty_date.isoformat() if attendance.duty_date else "",
+            "photos": assignment_photos(
+                attendance.assignment_id,
+                attendance.volunteer_id,
+                attendance.assignment.scheduled_date if attendance.assignment_id else attendance.duty_date,
+            ),
         })
         return payload
 
@@ -2646,8 +2956,10 @@ def _build_volunteers_dashboard_payload():
                     "volunteer_initials": _initials_for_name(_display_name_for_user(assignment.volunteer)),
                     "activity_name": assignment.activity_name,
                     "location": assignment.location or "TBA",
+                    "activity_date": assignment.scheduled_date.isoformat(),
                     "time_in": assignment.attendance_started_at.isoformat() if assignment.attendance_started_at else "",
                     "status": assignment.status,
+                    "photos": assignment_photos(assignment.id, assignment.volunteer_id, assignment.scheduled_date),
                 }
                 for assignment in active_assignments
             ] + [
@@ -2672,13 +2984,16 @@ def _build_volunteers_dashboard_payload():
 
 
 def _serialize_pending_volunteer_application(application):
+    profile = UserProfile.objects.filter(user_id=application.user_id).first() if application.user_id else None
     return {
         "id": int(application.id),
         "name": application.full_name,
+        "track": application.track,
         "contactDetails": application.contact_details,
         "skills": application.skills or "",
         "availability": application.availability or "",
         "areasOfInterest": application.areas_of_interest or "",
+        **_serialize_admin_application_details(application, profile),
         "submittedAt": timezone.localtime(application.created_at).strftime("%Y-%m-%d"),
     }
 
@@ -2740,7 +3055,15 @@ def _review_role_application(application, *, status, reviewer, admin_notes=""):
     if status == RoleApplication.STATUS_APPROVED and application.user_id:
         profile = _get_or_create_user_profile(application.user)
         profile.account_role = application.role
-        profile.save(update_fields=["account_role", "updated_at"])
+        if application.role == RoleApplication.ROLE_VOLUNTEER:
+            profile.volunteer_type = (
+                UserProfile.VOLUNTEER_TYPE_COMMUNITY
+                if application.track == "community_volunteer"
+                else UserProfile.VOLUNTEER_TYPE_OJT
+            )
+            profile.save(update_fields=["account_role", "volunteer_type", "updated_at"])
+        else:
+            profile.save(update_fields=["account_role", "updated_at"])
 
     if status in {RoleApplication.STATUS_APPROVED, RoleApplication.STATUS_REJECTED} and application.user_id:
         if application.role == RoleApplication.ROLE_BENEFICIARY:
@@ -3369,16 +3692,26 @@ def index(request):
         profile = _get_or_create_user_profile(request.user)
         current_role = profile.account_role or UserProfile.ROLE_REGULAR
 
-    if request.user.is_authenticated and current_role == UserProfile.ROLE_BENEFICIARY:
+    if (
+        request.user.is_authenticated
+        and current_role == UserProfile.ROLE_BENEFICIARY
+        and not RoleApplication.objects.filter(user=request.user, role=RoleApplication.ROLE_BENEFICIARY).exists()
+    ):
         return redirect("user_dashboard")
-    if request.user.is_authenticated and current_role == UserProfile.ROLE_VOLUNTEER:
+    if (
+        request.user.is_authenticated
+        and current_role == UserProfile.ROLE_VOLUNTEER
+        and not RoleApplication.objects.filter(user=request.user, role=RoleApplication.ROLE_VOLUNTEER).exists()
+    ):
         return redirect("volunteer_dashboard")
 
     beneficiary_form = BeneficiaryApplicationForm()
     volunteer_form = VolunteerApplicationForm()
     latest_applications = []
+    tracker_context = {}
     if request.user.is_authenticated:
         latest_applications = list(_get_latest_role_applications(request.user).values())
+        tracker_context = _application_tracker_context(request.user)
 
     return render(request, "index.html", {
         "signin_form": SignInForm(),
@@ -3389,7 +3722,49 @@ def index(request):
         "beneficiary_application_form": beneficiary_form,
         "volunteer_application_form": volunteer_form,
         "latest_role_applications": latest_applications,
+        **tracker_context,
     })
+
+
+@require_POST
+def password_reset_request(request):
+    form = AccountPasswordResetForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse({"error": "Enter a valid email address."}, status=400)
+
+    email = form.cleaned_data["email"].casefold()
+    ip_address = request.META.get("REMOTE_ADDR", "")
+    email_digest = hashlib.sha256(email.encode("utf-8")).hexdigest()
+    ip_digest = hashlib.sha256(ip_address.encode("utf-8")).hexdigest()
+    email_limit_key = f"password-reset-email:{email_digest}"
+    ip_limit_key = f"password-reset-ip:{ip_digest}"
+    for key in (email_limit_key, ip_limit_key):
+        cache.add(key, 0, timeout=60 * 60)
+    email_request_count = cache.incr(email_limit_key)
+    ip_request_count = cache.incr(ip_limit_key)
+
+    generic_response = {
+        "message": "If an account exists for that email, we've sent a reset link.",
+    }
+    if email_request_count > 5 or ip_request_count > 20:
+        return JsonResponse(generic_response)
+
+    try:
+        form.save(
+            request=request,
+            use_https=request.is_secure(),
+            email_template_name="auth/password_reset_email.txt",
+            html_email_template_name="auth/password_reset_email.html",
+            subject_template_name="auth/password_reset_subject.txt",
+        )
+    except (OSError, smtplib.SMTPException):
+        logger.exception("Password reset email delivery failed.")
+        return JsonResponse(
+            {"error": "We couldn't send the reset link right now. Please try again later."},
+            status=503,
+        )
+
+    return JsonResponse(generic_response)
 
 
 def signin(request):
@@ -3410,7 +3785,7 @@ def signin(request):
             purpose = "setup" if not is_two_factor_confirmed(user) else "login"
             started, error_message = start_two_factor_challenge(request, user, purpose, return_url)
             if started:
-                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                login(request, user, backend="django.contrib.auth.backends.ModelBackend")
                 return redirect("two_factor_verify")
 
             form.add_error(None, error_message or "We could not send a verification code right now.")
@@ -3420,11 +3795,10 @@ def signin(request):
                 "open_modal": "signin",
             })
 
-        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
         if safe_next_url:
             return redirect(safe_next_url)
         return _redirect_to_dashboard_for_user(user)
-
     return render(request, "index.html", {
         "signin_form": form,
         "signup_form": SignUpForm(),
@@ -4229,6 +4603,9 @@ def user_dashboard(request):
     return render(request, "user_dashboard/dashboard_user.html", {
         "active_page": "dashboard",
         "dashboard_scope": "beneficiary",
+        "beneficiary_type": profile.beneficiary_type,
+        "beneficiary_dashboard_id": profile.beneficiary_type or "unassigned",
+        "beneficiary_type_label": profile.get_beneficiary_type_display() or "Beneficiary",
     })
 
 
@@ -4268,6 +4645,7 @@ def apply_beneficiary(request):
         "beneficiary_application_form": form,
         "volunteer_application_form": VolunteerApplicationForm(),
         "latest_role_applications": list(_get_latest_role_applications(request.user).values()),
+        **_application_tracker_context(request.user),
         "open_application": "beneficiary",
     })
 
@@ -4308,8 +4686,207 @@ def apply_volunteer(request):
         "beneficiary_application_form": BeneficiaryApplicationForm(),
         "volunteer_application_form": form,
         "latest_role_applications": list(_get_latest_role_applications(request.user).values()),
+        **_application_tracker_context(request.user),
         "open_application": "volunteer",
     })
+
+
+@login_required(login_url="signin")
+@require_POST
+def complete_role_application_profile(request, application_id):
+    application = get_object_or_404(RoleApplication, id=application_id, user=request.user)
+    if application.status != RoleApplication.STATUS_PENDING:
+        return JsonResponse({"error": "Only pending applications can be updated."}, status=409)
+    if application.applicant_details_consent:
+        return JsonResponse({"error": "These application details have already been submitted."}, status=409)
+
+    action = str(request.POST.get("action", "submit") or "submit").strip().lower()
+    if action != "submit":
+        return JsonResponse({"error": "Drafts are no longer supported. Submit the completed form."}, status=400)
+    if request.POST.get("consent") not in {"on", "true", "1"}:
+        return JsonResponse({"error": "Consent is required before submitting these details."}, status=400)
+
+    profile = UserProfile.objects.filter(user=request.user).first()
+    schema = _application_completion_schema(application, profile)
+    allowed_fields = {field["name"]: field for field in schema["fields"]}
+    try:
+        submitted_details = json.loads(request.POST.get("details", "{}") or "{}")
+    except (TypeError, json.JSONDecodeError):
+        return JsonResponse({"error": "Application details are not valid JSON."}, status=400)
+    if not isinstance(submitted_details, dict) or set(submitted_details) - set(allowed_fields):
+        return JsonResponse({"error": "The form contains an unrecognized field."}, status=400)
+
+    validated_details = {}
+    for name, value in submitted_details.items():
+        field = allowed_fields[name]
+        if field["type"] == "checkboxes":
+            if value in (None, ""):
+                value = []
+            if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+                return JsonResponse({"error": f"Choose valid values for {field['label'].lower()}."}, status=400)
+            allowed_values = {option["value"] for option in field.get("options", [])}
+            if set(value) - allowed_values:
+                return JsonResponse({"error": f"Choose valid values for {field['label'].lower()}."}, status=400)
+            normalized = [str(item) for item in value]
+        else:
+            normalized = str(value or "").strip()
+            if normalized and field["type"] == "select":
+                allowed_values = {option["value"] for option in field.get("options", [])}
+                if normalized not in allowed_values:
+                    return JsonResponse({"error": f"Choose a valid value for {field['label'].lower()}."}, status=400)
+            elif normalized and field["type"] == "date":
+                try:
+                    parsed_date = date.fromisoformat(normalized)
+                except ValueError:
+                    return JsonResponse({"error": f"Enter a valid date for {field['label'].lower()}."}, status=400)
+                if parsed_date > timezone.localdate():
+                    return JsonResponse({"error": f"{field['label']} cannot be in the future."}, status=400)
+                normalized = parsed_date.isoformat()
+            elif normalized and field["type"] == "number":
+                try:
+                    normalized = int(normalized)
+                except ValueError:
+                    return JsonResponse({"error": f"Enter a whole number for {field['label'].lower()}."}, status=400)
+                if normalized < field.get("min", 0) or normalized > field.get("max", 1000000):
+                    return JsonResponse({"error": f"{field['label']} is outside the allowed range."}, status=400)
+            elif normalized and len(normalized) > field.get("maxLength", 2000):
+                return JsonResponse({"error": f"{field['label']} is too long."}, status=400)
+        validated_details[name] = normalized
+
+    specs = {document["key"]: document for document in schema["documents"]}
+    document_type_aliases = {
+        key: [key, *spec.get("legacyKeys", [])]
+        for key, spec in specs.items()
+    }
+    files = request.FILES.getlist("documents")
+    file_types = request.POST.getlist("document_types")
+    if len(files) != len(file_types):
+        return JsonResponse({"error": "Each upload must have a document type."}, status=400)
+    if len(set(file_types)) != len(file_types):
+        return JsonResponse({"error": "Upload only one file for each document type."}, status=400)
+    validated_files = []
+    for upload, document_type in zip(files, file_types):
+        spec = specs.get(document_type)
+        if not spec:
+            return JsonResponse({"error": "The upload type is not valid for this application."}, status=400)
+        file_error, content_type = _validate_application_document(upload, image_only=spec.get("imageOnly", False))
+        if file_error:
+            return JsonResponse({"error": f"{spec['label']}: {file_error}"}, status=400)
+        validated_files.append((document_type, upload, content_type))
+
+    try:
+        removed_document_types = json.loads(request.POST.get("removed_documents", "[]") or "[]")
+    except (TypeError, json.JSONDecodeError):
+        return JsonResponse({"error": "The removed-document list is invalid."}, status=400)
+    if (
+        not isinstance(removed_document_types, list)
+        or any(not isinstance(item, str) for item in removed_document_types)
+        or set(removed_document_types) - set(specs)
+    ):
+        return JsonResponse({"error": "The removed-document list contains an invalid document type."}, status=400)
+
+    added_details = schema["applicantAddedDetails"]
+    submitted_details = {**added_details, **validated_details}
+    complete_values = {**schema["values"], **submitted_details}
+    missing_fields = [
+        field["label"]
+        for field in schema["fields"]
+        if field.get("required") and complete_values.get(field["name"]) in (None, "", [])
+    ]
+    available_document_types = set(application.documents.values_list("document_type", flat=True))
+    for document_key, aliases in document_type_aliases.items():
+        if available_document_types.intersection(aliases):
+            available_document_types.add(document_key)
+    available_document_types.difference_update(removed_document_types)
+    available_document_types.update(file_types)
+    missing_documents = [
+        document["label"] for document in schema["documents"]
+        if document["required"] and document["key"] not in available_document_types
+    ]
+    if missing_fields or missing_documents:
+        missing = missing_fields + missing_documents
+        return JsonResponse({"error": "Complete the required items: " + ", ".join(missing) + "."}, status=400)
+
+    with transaction.atomic():
+        for document_type in set(removed_document_types):
+            for document in RoleApplicationDocument.objects.filter(
+                application=application,
+                document_type__in=document_type_aliases[document_type],
+            ):
+                document.file.delete(save=False)
+                document.delete()
+        for document_type, upload, content_type in validated_files:
+            for previous in RoleApplicationDocument.objects.filter(
+                application=application,
+                document_type__in=document_type_aliases[document_type],
+            ):
+                previous.file.delete(save=False)
+                previous.delete()
+            RoleApplicationDocument.objects.create(
+                application=application,
+                document_type=document_type,
+                file=upload,
+                original_name=Path(upload.name).name[:255],
+                content_type=content_type,
+            )
+        application.applicant_details_consent = True
+        application.applicant_details_consented_at = timezone.now()
+        application.applicant_added_details = submitted_details
+        application.save(update_fields=[
+            "applicant_added_details", "applicant_details_consent",
+            "applicant_details_consented_at", "updated_at",
+        ])
+
+    return JsonResponse({
+        "message": "Application details submitted for review.",
+        "application": _serialize_user_role_application(application, profile),
+    })
+
+
+def _validate_application_document(upload, image_only=False):
+    if upload.size > 5 * 1024 * 1024:
+        return "Files must be 5 MB or smaller.", ""
+    extension = Path(upload.name).suffix.lower()
+    if extension not in {".jpg", ".jpeg", ".png", ".pdf"}:
+        return "Use a JPG, PNG, or PDF file.", ""
+    if image_only and extension == ".pdf":
+        return "Use a JPG or PNG image for this photo.", ""
+    if extension == ".pdf":
+        if upload.read(5) != b"%PDF-":
+            upload.seek(0)
+            return "This file is not a valid PDF.", ""
+        upload.seek(0)
+        return "", "application/pdf"
+    try:
+        image = Image.open(upload)
+        image_format = image.format
+        image.verify()
+    except (UnidentifiedImageError, OSError, ValueError):
+        upload.seek(0)
+        return "This file is not a valid image.", ""
+    upload.seek(0)
+    expected_format = "JPEG" if extension in {".jpg", ".jpeg"} else "PNG"
+    if image_format != expected_format:
+        return "The image contents do not match the file extension.", ""
+    return "", "image/jpeg" if image_format == "JPEG" else "image/png"
+
+
+@login_required(login_url="signin")
+@require_GET
+@xframe_options_sameorigin
+def view_role_application_document(request, document_id):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Only administrators can view application documents."}, status=403)
+    document = get_object_or_404(RoleApplicationDocument, id=document_id)
+    response = FileResponse(
+        document.file.open("rb"),
+        as_attachment=False,
+        filename=Path(document.original_name).name,
+        content_type=document.content_type,
+    )
+    response["Cache-Control"] = "private, no-store"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 @login_required(login_url="signin")
@@ -4321,21 +4898,47 @@ def create_volunteer(request):
     full_name = str(request.POST.get("full_name", "") or "").strip()
     email = str(request.POST.get("email", "") or "").strip()
     phone = str(request.POST.get("phone", "") or "").strip()
+    gender = str(request.POST.get("gender", "") or "").strip()
+    address_line = str(request.POST.get("address_line", "") or "").strip()
     availability = str(request.POST.get("availability", "") or "").strip()
     skills = str(request.POST.get("skills", "") or "").strip()
     areas_of_interest = str(request.POST.get("areas_of_interest", "") or "").strip()
     username = str(request.POST.get("username", "") or "").strip()
     password = str(request.POST.get("password", "") or "")
     status_value = str(request.POST.get("status", RoleApplication.STATUS_PENDING) or RoleApplication.STATUS_PENDING).strip().lower()
+    volunteer_type = str(request.POST.get("volunteer_type", UserProfile.VOLUNTEER_TYPE_OJT) or "").strip().lower()
+    raw_required_hours = str(request.POST.get("required_ojt_hours", "80") or "80").strip()
+    raw_schedule_days = request.POST.get("schedule_days", "[]")
 
-    if not full_name or not email or not phone or not availability or not username or not password:
-        return JsonResponse({"error": "Full name, email, phone, availability, username, and password are required."}, status=400)
+    if not full_name or not email or not phone or not gender or not address_line or not availability or not username or not password:
+        return JsonResponse({"error": "Full name, gender, address, email, phone, availability, username, and password are required."}, status=400)
+    if gender not in dict(UserProfile.GENDER_CHOICES):
+        return JsonResponse({"error": "Please choose a valid gender."}, status=400)
+    if len(address_line) > 255:
+        return JsonResponse({"error": "Address must be 255 characters or fewer."}, status=400)
 
     if User.objects.filter(username__iexact=username).exists():
         return JsonResponse({"error": "That username is already taken."}, status=400)
 
     if status_value not in {"active", "pending", "inactive"}:
         return JsonResponse({"error": "Please choose a valid status."}, status=400)
+    if volunteer_type not in dict(UserProfile.VOLUNTEER_TYPE_CHOICES):
+        return JsonResponse({"error": "Please choose a valid volunteer type."}, status=400)
+    try:
+        required_hours = Decimal(raw_required_hours)
+    except (InvalidOperation, ValueError):
+        return JsonResponse({"error": "Required OJT hours must be a valid number."}, status=400)
+    if not required_hours.is_finite() or required_hours <= 0 or required_hours > Decimal("10000"):
+        return JsonResponse({"error": "Required OJT hours must be between 0.01 and 10000."}, status=400)
+    if required_hours.as_tuple().exponent < -2:
+        return JsonResponse({"error": "Required OJT hours can have at most two decimal places."}, status=400)
+    try:
+        schedule_days = json.loads(raw_schedule_days or "[]")
+    except (TypeError, json.JSONDecodeError):
+        return JsonResponse({"error": "Choose valid regular OJT days."}, status=400)
+    if not isinstance(schedule_days, list) or any(not isinstance(day, int) or day < 0 or day > 6 for day in schedule_days):
+        return JsonResponse({"error": "Choose valid regular OJT days."}, status=400)
+    schedule_days = sorted(set(schedule_days)) if volunteer_type == UserProfile.VOLUNTEER_TYPE_OJT else []
 
     first_name, last_name = _split_full_name(full_name)
     application_status = {
@@ -4362,13 +4965,25 @@ def create_volunteer(request):
         user.save(update_fields=["first_name", "last_name", "email", "password", "is_active"])
 
         profile = _get_or_create_user_profile(user)
+        previous_volunteer_type = profile.volunteer_type
         profile.account_role = UserProfile.ROLE_VOLUNTEER
+        profile.volunteer_type = volunteer_type
+        profile.required_ojt_hours = required_hours
         profile.phone = phone
+        profile.gender = gender
+        profile.address_line = address_line
         profile.volunteer_role = skills or "Volunteer"
         profile.assigned_chapter_area = areas_of_interest
-        profile.save(update_fields=["account_role", "phone", "volunteer_role", "assigned_chapter_area", "updated_at"])
+        profile.save(update_fields=["account_role", "volunteer_type", "required_ojt_hours", "phone", "gender", "address_line", "volunteer_role", "assigned_chapter_area", "updated_at"])
 
-        application, _created = RoleApplication.objects.update_or_create(
+        if schedule_days:
+            VolunteerOjtSchedule.objects.update_or_create(
+                volunteer=user,
+                effective_from=timezone.localdate(),
+                defaults={"weekdays": schedule_days, "daily_times": {}},
+            )
+
+        application, application_created = RoleApplication.objects.update_or_create(
             user=user,
             role=RoleApplication.ROLE_VOLUNTEER,
             defaults={
@@ -4378,8 +4993,26 @@ def create_volunteer(request):
                 "skills": skills,
                 "availability": availability,
                 "areas_of_interest": areas_of_interest,
+                "track": "community_volunteer" if volunteer_type == UserProfile.VOLUNTEER_TYPE_COMMUNITY else "intern",
             },
         )
+
+        if application_created or previous_volunteer_type != volunteer_type:
+            type_labels = dict(UserProfile.VOLUNTEER_TYPE_CHOICES)
+            AdminActivityLog.objects.create(
+                admin=request.user,
+                admin_name=request.user.get_full_name().strip() or request.user.get_username(),
+                action=AdminActivityLog.ACTION_CREATE if application_created else AdminActivityLog.ACTION_EDIT,
+                section="Volunteers",
+                record_type="Volunteer",
+                record_id=str(user.pk),
+                record_label=full_name,
+                details=(
+                    f"Type: {type_labels[volunteer_type]}"
+                    if application_created
+                    else f"Type: {type_labels.get(previous_volunteer_type, 'OJT')} -> {type_labels[volunteer_type]}"
+                ),
+            )
 
     volunteer_payload = _build_volunteers_payload()
     created_volunteer = next((item for item in volunteer_payload if item["id"] == int(user.id)), None)
@@ -4414,6 +5047,154 @@ def create_volunteer(request):
     }, status=201)
 
 
+def _save_volunteer_type_transition(actor, user, profile, volunteer_type, *, required_hours=None, schedule_days=None):
+    previous_type = profile.volunteer_type or UserProfile.VOLUNTEER_TYPE_OJT
+    type_changed = previous_type != volunteer_type
+
+    now = timezone.now()
+    profile_updates = {"updated_at": now}
+    if type_changed:
+        profile_updates["volunteer_type"] = volunteer_type
+    if volunteer_type == UserProfile.VOLUNTEER_TYPE_OJT and required_hours is not None:
+        profile_updates["required_ojt_hours"] = required_hours
+    if len(profile_updates) > 1 or type_changed:
+        UserProfile.objects.filter(pk=profile.pk).update(**profile_updates)
+
+    if type_changed:
+        application_track = "community_volunteer" if volunteer_type == UserProfile.VOLUNTEER_TYPE_COMMUNITY else "intern"
+        application = RoleApplication.objects.filter(
+            user=user,
+            role=RoleApplication.ROLE_VOLUNTEER,
+        ).order_by("-created_at", "-id").first()
+        if application:
+            RoleApplication.objects.filter(pk=application.pk).update(track=application_track, updated_at=now)
+        else:
+            RoleApplication.objects.bulk_create([
+                RoleApplication(
+                    user=user,
+                    role=RoleApplication.ROLE_VOLUNTEER,
+                    status=RoleApplication.STATUS_APPROVED,
+                    full_name=_display_name_for_user(user),
+                    track=application_track,
+                    reviewed_at=now,
+                    reviewed_by=actor,
+                )
+            ])
+
+    if volunteer_type == UserProfile.VOLUNTEER_TYPE_OJT and schedule_days is not None:
+        today = timezone.localdate()
+        same_day_schedule = VolunteerOjtSchedule.objects.filter(
+            volunteer=user,
+            effective_from=today,
+        ).first()
+        previous_schedule = VolunteerOjtSchedule.objects.filter(
+            volunteer=user,
+            effective_from__lt=today,
+        ).filter(
+            Q(effective_until__isnull=True) | Q(effective_until__gte=today),
+        ).order_by("-effective_from", "-id").first()
+        if previous_schedule:
+            VolunteerOjtSchedule.objects.filter(pk=previous_schedule.pk).update(
+                effective_until=today - timedelta(days=1),
+            )
+        if same_day_schedule:
+            VolunteerOjtSchedule.objects.filter(pk=same_day_schedule.pk).update(
+                weekdays=schedule_days,
+                daily_times={},
+                effective_until=today if not schedule_days else same_day_schedule.effective_until,
+            )
+        elif schedule_days:
+            next_schedule = VolunteerOjtSchedule.objects.filter(
+                volunteer=user,
+                effective_from__gt=today,
+            ).order_by("effective_from", "id").first()
+            effective_until = next_schedule.effective_from - timedelta(days=1) if next_schedule else None
+            VolunteerOjtSchedule.objects.bulk_create([
+                VolunteerOjtSchedule(
+                    volunteer=user,
+                    effective_from=today,
+                    effective_until=effective_until,
+                    weekdays=schedule_days,
+                    daily_times={},
+                )
+            ])
+
+    if type_changed:
+        type_labels = dict(UserProfile.VOLUNTEER_TYPE_CHOICES)
+        AdminActivityLog.objects.create(
+            admin=actor,
+            admin_name=actor.get_full_name().strip() or actor.get_username(),
+            action=AdminActivityLog.ACTION_EDIT,
+            section="Volunteers",
+            record_type="Volunteer",
+            record_id=str(user.pk),
+            record_label=_display_name_for_user(user),
+            details=f"Type: {type_labels.get(previous_type, 'OJT')} -> {type_labels[volunteer_type]}",
+        )
+    return type_changed
+
+
+@login_required(login_url="signin")
+@require_POST
+def update_volunteer_type(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Only administrators can change volunteer types."}, status=403)
+
+    volunteer_user_id = _parse_non_negative_int(request.POST.get("volunteer_user_id") or request.POST.get("volunteer_id"), default=0)
+    if volunteer_user_id <= 0:
+        return JsonResponse({"error": "A volunteer profile is required."}, status=400)
+
+    volunteer_type = str(request.POST.get("volunteer_type") or "").strip().lower()
+    if volunteer_type not in {UserProfile.VOLUNTEER_TYPE_OJT, UserProfile.VOLUNTEER_TYPE_COMMUNITY}:
+        return JsonResponse({"error": "Please choose OJT or Community as the volunteer type."}, status=400)
+
+    user = get_object_or_404(User, pk=volunteer_user_id)
+    profile = _get_or_create_user_profile(user)
+    if profile.account_role != UserProfile.ROLE_VOLUNTEER:
+        return JsonResponse({"error": "This user is not currently a volunteer."}, status=400)
+
+    required_hours = None
+    schedule_days = None
+    if volunteer_type == UserProfile.VOLUNTEER_TYPE_OJT:
+        raw_required_hours = str(request.POST.get("required_ojt_hours", "80") or "80").strip()
+        try:
+            required_hours = Decimal(raw_required_hours)
+        except (InvalidOperation, ValueError):
+            return JsonResponse({"error": "Required OJT hours must be a valid number."}, status=400)
+        if not required_hours.is_finite() or required_hours <= 0 or required_hours > Decimal("10000"):
+            return JsonResponse({"error": "Required OJT hours must be greater than 0 and no more than 10,000."}, status=400)
+        if required_hours.as_tuple().exponent < -2:
+            return JsonResponse({"error": "Required OJT hours can have at most 2 decimal places."}, status=400)
+        try:
+            raw_schedule_days = json.loads(request.POST.get("schedule_days") or "[]")
+            if not isinstance(raw_schedule_days, list):
+                raise ValueError
+            schedule_days = sorted({int(day) for day in raw_schedule_days})
+        except (json.JSONDecodeError, TypeError, ValueError):
+            return JsonResponse({"error": "Choose valid regular OJT days."}, status=400)
+        if any(day < 0 or day > 6 for day in schedule_days):
+            return JsonResponse({"error": "Choose valid regular OJT days."}, status=400)
+
+    with transaction.atomic():
+        User.objects.select_for_update().get(pk=user.pk)
+        profile = UserProfile.objects.select_for_update().get(pk=profile.pk)
+        changed = _save_volunteer_type_transition(
+            request.user,
+            user,
+            profile,
+            volunteer_type,
+            required_hours=required_hours,
+            schedule_days=schedule_days,
+        )
+
+    volunteer_payload = _get_volunteer_payload_for_user(user.pk)
+    return JsonResponse({
+        "message": "Volunteer type updated." if changed else "Volunteer already has that type.",
+        "changed": changed,
+        "volunteer": volunteer_payload,
+    })
+
+
 @login_required(login_url="signin")
 @require_POST
 def update_volunteer_profile(request):
@@ -4430,16 +5211,25 @@ def update_volunteer_profile(request):
     full_name = str(request.POST.get("full_name", "") or "").strip()
     email = str(request.POST.get("email", "") or "").strip()
     phone = str(request.POST.get("phone", "") or "").strip()
+    gender = str(request.POST.get("gender", "") or "").strip()
+    address_line = str(request.POST.get("address_line", "") or "").strip()
     availability = str(request.POST.get("availability", "") or "").strip()
     skills = str(request.POST.get("skills", "") or "").strip()
     areas_of_interest = str(request.POST.get("areas_of_interest", "") or "").strip()
+    volunteer_type = str(request.POST.get("volunteer_type", profile.volunteer_type) or profile.volunteer_type).strip().lower()
     status_value = str(request.POST.get("status", "Active") or "Active").strip().lower()
 
     if not full_name or not email or not phone or not availability:
         return JsonResponse({"error": "Full name, email, phone, and availability are required."}, status=400)
+    if gender and gender not in dict(UserProfile.GENDER_CHOICES):
+        return JsonResponse({"error": "Please choose a valid gender."}, status=400)
+    if len(address_line) > 255:
+        return JsonResponse({"error": "Address must be 255 characters or fewer."}, status=400)
 
     if status_value not in {"active", "pending", "inactive"}:
         return JsonResponse({"error": "Please choose a valid status."}, status=400)
+    if volunteer_type not in {UserProfile.VOLUNTEER_TYPE_OJT, UserProfile.VOLUNTEER_TYPE_COMMUNITY}:
+        return JsonResponse({"error": "Please choose OJT or Community as the volunteer type."}, status=400)
 
     name_parts = full_name.split()
     first_name = name_parts[0] if name_parts else ""
@@ -4449,19 +5239,64 @@ def update_volunteer_profile(request):
         "pending": RoleApplication.STATUS_PENDING,
         "inactive": RoleApplication.STATUS_INACTIVE,
     }[status_value]
+    type_changed = profile.volunteer_type != volunteer_type
+    required_hours = None
+    schedule_days = None
+    if volunteer_type == UserProfile.VOLUNTEER_TYPE_OJT:
+        raw_required_hours = str(request.POST.get("required_ojt_hours", "80") or "80").strip()
+        try:
+            required_hours = Decimal(raw_required_hours)
+        except (InvalidOperation, ValueError):
+            return JsonResponse({"error": "Required OJT hours must be a valid number."}, status=400)
+        if not required_hours.is_finite() or required_hours <= 0 or required_hours > Decimal("10000"):
+            return JsonResponse({"error": "Required OJT hours must be greater than 0 and no more than 10,000."}, status=400)
+        if required_hours.as_tuple().exponent < -2:
+            return JsonResponse({"error": "Required OJT hours can have at most 2 decimal places."}, status=400)
+        try:
+            raw_schedule_days = json.loads(request.POST.get("schedule_days") or "[]")
+            if not isinstance(raw_schedule_days, list):
+                raise ValueError
+            schedule_days = sorted({int(day) for day in raw_schedule_days})
+        except (json.JSONDecodeError, TypeError, ValueError):
+            return JsonResponse({"error": "Choose valid regular OJT days."}, status=400)
+        if any(day < 0 or day > 6 for day in schedule_days):
+            return JsonResponse({"error": "Choose valid regular OJT days."}, status=400)
 
     with transaction.atomic():
-        user.first_name = first_name
-        user.last_name = last_name
-        user.email = email
-        user.is_active = True
-        user.save(update_fields=["first_name", "last_name", "email", "is_active"])
+        if type_changed:
+            User.objects.select_for_update().get(pk=user.pk)
+            profile = UserProfile.objects.select_for_update().get(pk=profile.pk)
+            now = timezone.now()
+            User.objects.filter(pk=user.pk).update(
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                is_active=True,
+            )
+            UserProfile.objects.filter(pk=profile.pk).update(
+                account_role=UserProfile.ROLE_VOLUNTEER,
+                phone=phone,
+                gender=gender,
+                address_line=address_line,
+                volunteer_role=skills or profile.volunteer_role or "Volunteer",
+                assigned_chapter_area=areas_of_interest,
+                updated_at=now,
+            )
+        else:
+            user.first_name = first_name
+            user.last_name = last_name
+            user.email = email
+            user.is_active = True
+            user.save(update_fields=["first_name", "last_name", "email", "is_active"])
 
-        profile.account_role = UserProfile.ROLE_VOLUNTEER
-        profile.phone = phone
-        profile.volunteer_role = skills or profile.volunteer_role or "Volunteer"
-        profile.assigned_chapter_area = areas_of_interest
-        profile.save(update_fields=["account_role", "phone", "volunteer_role", "assigned_chapter_area", "updated_at"])
+            profile.account_role = UserProfile.ROLE_VOLUNTEER
+            profile.volunteer_type = volunteer_type
+            profile.phone = phone
+            profile.gender = gender
+            profile.address_line = address_line
+            profile.volunteer_role = skills or profile.volunteer_role or "Volunteer"
+            profile.assigned_chapter_area = areas_of_interest
+            profile.save(update_fields=["account_role", "volunteer_type", "phone", "gender", "address_line", "volunteer_role", "assigned_chapter_area", "updated_at"])
 
         volunteer_application = (
             RoleApplication.objects
@@ -4471,28 +5306,71 @@ def update_volunteer_profile(request):
         )
 
         contact_details = f"{phone} / {email}" if phone and email else (phone or email)
+        application_track = "community_volunteer" if volunteer_type == UserProfile.VOLUNTEER_TYPE_COMMUNITY else "intern"
         if volunteer_application:
-            volunteer_application.full_name = full_name
-            volunteer_application.contact_details = contact_details
-            volunteer_application.skills = skills
-            volunteer_application.availability = availability
-            volunteer_application.areas_of_interest = areas_of_interest
-            volunteer_application.status = application_status
-            volunteer_application.reviewed_at = timezone.now()
-            volunteer_application.reviewed_by = request.user
-            volunteer_application.save(update_fields=["full_name", "contact_details", "skills", "availability", "areas_of_interest", "status", "reviewed_at", "reviewed_by", "updated_at"])
+            if type_changed:
+                RoleApplication.objects.filter(pk=volunteer_application.pk).update(
+                    full_name=full_name,
+                    contact_details=contact_details,
+                    skills=skills,
+                    availability=availability,
+                    areas_of_interest=areas_of_interest,
+                    status=application_status,
+                    reviewed_at=now,
+                    reviewed_by=request.user,
+                    updated_at=now,
+                )
+            else:
+                volunteer_application.full_name = full_name
+                volunteer_application.contact_details = contact_details
+                volunteer_application.skills = skills
+                volunteer_application.availability = availability
+                volunteer_application.areas_of_interest = areas_of_interest
+                volunteer_application.track = application_track
+                volunteer_application.status = application_status
+                volunteer_application.reviewed_at = timezone.now()
+                volunteer_application.reviewed_by = request.user
+                volunteer_application.save(update_fields=["full_name", "contact_details", "skills", "availability", "areas_of_interest", "track", "status", "reviewed_at", "reviewed_by", "updated_at"])
         else:
-            volunteer_application = RoleApplication.objects.create(
-                user=user,
-                role=RoleApplication.ROLE_VOLUNTEER,
-                status=application_status,
-                full_name=full_name,
-                contact_details=contact_details,
-                skills=skills,
-                availability=availability,
-                areas_of_interest=areas_of_interest,
-                reviewed_at=timezone.now(),
-                reviewed_by=request.user,
+            if type_changed:
+                volunteer_application = RoleApplication.objects.bulk_create([
+                    RoleApplication(
+                        user=user,
+                        role=RoleApplication.ROLE_VOLUNTEER,
+                        status=application_status,
+                        full_name=full_name,
+                        contact_details=contact_details,
+                        skills=skills,
+                        availability=availability,
+                        areas_of_interest=areas_of_interest,
+                        track=application_track,
+                        reviewed_at=now,
+                        reviewed_by=request.user,
+                    )
+                ])[0]
+            else:
+                volunteer_application = RoleApplication.objects.create(
+                    user=user,
+                    role=RoleApplication.ROLE_VOLUNTEER,
+                    status=application_status,
+                    full_name=full_name,
+                    contact_details=contact_details,
+                    skills=skills,
+                    availability=availability,
+                    areas_of_interest=areas_of_interest,
+                    track=application_track,
+                    reviewed_at=timezone.now(),
+                    reviewed_by=request.user,
+                )
+
+        if type_changed or volunteer_type == UserProfile.VOLUNTEER_TYPE_OJT:
+            _save_volunteer_type_transition(
+                request.user,
+                user,
+                profile,
+                volunteer_type,
+                required_hours=required_hours,
+                schedule_days=schedule_days,
             )
 
     volunteer_payload = _get_volunteer_payload_for_user(user.id)
@@ -4503,11 +5381,14 @@ def update_volunteer_profile(request):
             "username": user.username,
             "email": email,
             "contact": phone,
+            "gender": gender,
+            "addressLine": address_line,
             "program": skills or "Volunteer",
             "skills": skills or "",
             "areasOfInterest": areas_of_interest,
             "availability": availability,
             "hoursRendered": 0,
+            "volunteerType": volunteer_type,
             "ojtHours": 0,
             "status": status_value.capitalize(),
             "participationRate": 0,
@@ -4618,6 +5499,8 @@ def update_volunteer_ojt_requirement(request):
     profile = _get_or_create_user_profile(user)
     if profile.account_role != UserProfile.ROLE_VOLUNTEER:
         return JsonResponse({"error": "This user is not currently a volunteer."}, status=400)
+    if profile.volunteer_type == UserProfile.VOLUNTEER_TYPE_COMMUNITY:
+        return JsonResponse({"error": "OJT requirements only apply to OJT volunteers."}, status=400)
 
     schedule = None
     if schedule_update_requested:
@@ -5268,6 +6151,108 @@ def format_ojt_duration_display(hours_value):
     return f"{sign}{whole_hours} hr"
 
 
+COMMUNITY_VOLUNTEER_MILESTONE_DEFINITIONS = (
+    {"name": "First Step", "kind": "days", "target": 1, "target_label": "1 day"},
+    {"name": "Getting Started", "kind": "days", "target": 5, "target_label": "5 days"},
+    {"name": "Regular Helper", "kind": "days", "target": 10, "target_label": "10 days"},
+    {"name": "Dedicated", "kind": "days", "target": 25, "target_label": "25 days"},
+    {"name": "Community Pillar", "kind": "days", "target": 50, "target_label": "50 days"},
+    {"name": "Two-Week Streak", "kind": "weeks", "target": 2, "target_label": "2 weeks"},
+    {"name": "Four-Week Streak", "kind": "weeks", "target": 4, "target_label": "4 weeks"},
+    {"name": "Eight-Week Streak", "kind": "weeks", "target": 8, "target_label": "8 weeks"},
+)
+
+
+def _community_volunteer_milestones(user, today=None):
+    today = today or timezone.localdate()
+    completed_attendance = VolunteerAttendanceRecord.objects.filter(
+        volunteer=user,
+        status__in=[
+            VolunteerAttendanceRecord.STATUS_PENDING,
+            VolunteerAttendanceRecord.STATUS_CONFIRMED,
+        ],
+        time_in__isnull=False,
+        time_out__isnull=False,
+    ).order_by("time_in", "id").values_list("time_in", flat=True)
+    volunteer_days = sorted({
+        timezone.localtime(time_in).date()
+        for time_in in completed_attendance
+    })
+
+    days_by_week = {}
+    for volunteer_day in volunteer_days:
+        week_start = volunteer_day - timedelta(days=volunteer_day.weekday())
+        days_by_week.setdefault(week_start, []).append(volunteer_day)
+
+    week_starts = sorted(days_by_week)
+    longest_week_streak = 0
+    week_streak = 0
+    previous_week = None
+    streak_earned_dates = {}
+    for week_start in week_starts:
+        week_streak = week_streak + 1 if previous_week and week_start - previous_week == timedelta(days=7) else 1
+        longest_week_streak = max(longest_week_streak, week_streak)
+        for target in (2, 4, 8):
+            if week_streak == target and target not in streak_earned_dates:
+                streak_earned_dates[target] = days_by_week[week_start][0]
+        previous_week = week_start
+
+    current_week_start = today - timedelta(days=today.weekday())
+    current_week_streak = 0
+    latest_active_week = week_starts[-1] if week_starts else None
+    if latest_active_week and current_week_start - timedelta(days=7) <= latest_active_week <= current_week_start:
+        week_cursor = latest_active_week
+        while week_cursor in days_by_week:
+            current_week_streak += 1
+            week_cursor -= timedelta(days=7)
+
+    days_volunteered = len(volunteer_days)
+    next_index = next((
+        index for index, definition in enumerate(COMMUNITY_VOLUNTEER_MILESTONE_DEFINITIONS)
+        if (days_volunteered if definition["kind"] == "days" else longest_week_streak) < definition["target"]
+    ), None)
+    milestones = []
+    for index, definition in enumerate(COMMUNITY_VOLUNTEER_MILESTONE_DEFINITIONS):
+        is_day_milestone = definition["kind"] == "days"
+        progress = days_volunteered if is_day_milestone else current_week_streak
+        earned = (days_volunteered >= definition["target"] if is_day_milestone
+                  else longest_week_streak >= definition["target"])
+        earned_date = (
+            volunteer_days[definition["target"] - 1] if is_day_milestone and earned
+            else streak_earned_dates.get(definition["target"]) if earned
+            else None
+        )
+        is_current = not earned and index == next_index
+        progress_value = min(progress, definition["target"])
+        unit = "day" if is_day_milestone else "week"
+        milestones.append({
+            **definition,
+            "earned": earned,
+            "is_current": is_current,
+            "is_locked": not earned and not is_current,
+            "date_earned": f"{earned_date.strftime('%b')} {earned_date.day}, {earned_date.year}" if earned_date else "",
+            "progress": progress_value,
+            "progress_label": f"{progress_value} of {definition['target']} {unit}{'' if definition['target'] == 1 else 's'}",
+            "progress_percent": round(progress_value / definition["target"] * 100),
+        })
+
+    if next_index is None:
+        next_milestone_display = "All milestones earned"
+    else:
+        next_definition = COMMUNITY_VOLUNTEER_MILESTONE_DEFINITIONS[next_index]
+        progress = days_volunteered if next_definition["kind"] == "days" else current_week_streak
+        remaining = max(0, next_definition["target"] - progress)
+        unit = "day" if next_definition["kind"] == "days" else "week"
+        next_milestone_display = f"{remaining} {unit}{'' if remaining == 1 else 's'} to go"
+
+    return {
+        "days_volunteered": days_volunteered,
+        "current_week_streak": current_week_streak,
+        "milestones": milestones,
+        "next_milestone_display": next_milestone_display,
+    }
+
+
 def _build_volunteer_dashboard_payload(user):
     profile = _get_or_create_user_profile(user)
     today = timezone.localdate()
@@ -5366,6 +6351,8 @@ def _build_volunteer_dashboard_payload(user):
     content_topics_count = SkillLearningTopic.objects.count()
     content_materials_total = SkillLearningMaterial.objects.count()
 
+    is_community_volunteer = profile.volunteer_type == UserProfile.VOLUNTEER_TYPE_COMMUNITY
+    community_milestones = _community_volunteer_milestones(user) if is_community_volunteer else None
     ojt_hours = float(profile.ojt_hours or 0)
     required_ojt_hours = float(profile.required_ojt_hours or 80)
     ojt_progress = min(100, max(0, round((ojt_hours / required_ojt_hours) * 100, 1))) if required_ojt_hours else 0
@@ -5393,8 +6380,21 @@ def _build_volunteer_dashboard_payload(user):
     ojt_remaining_hours = max(0, required_ojt_hours - ojt_hours)
     ojt_remaining_display = "Required hours completed" if ojt_remaining_hours <= 0 else f"{format_ojt_duration_display(ojt_remaining_hours)} remaining"
 
+    month_start = today.replace(day=1)
+    community_attendance = VolunteerAttendanceRecord.objects.filter(
+        volunteer=user,
+        status=VolunteerAttendanceRecord.STATUS_CONFIRMED,
+        time_out__isnull=False,
+    )
+    community_month_minutes = community_attendance.filter(
+        time_out__date__gte=month_start,
+        time_out__date__lte=today,
+    ).aggregate(total=Sum("duration_minutes"))["total"] or 0
+    last_attendance = community_attendance.filter(assignment__isnull=False).select_related("assignment").order_by("-time_out", "-id").first()
     return {
         "current_date": timezone.localdate().strftime("%B %d, %Y"),
+        "volunteer_type": profile.volunteer_type,
+        "is_community_volunteer": is_community_volunteer,
         "ojt_hours": ojt_hours,
         "ojt_hours_display": ojt_hours_display,
         "ojt_hours_required": required_ojt_hours,
@@ -5402,6 +6402,10 @@ def _build_volunteer_dashboard_payload(user):
         "ojt_remaining_display": ojt_remaining_display,
         "ojt_progress_percent": ojt_progress,
         "ojt_status_label": ojt_status_label,
+        "community_milestones": community_milestones,
+        "community_hours_this_month_display": format_ojt_duration_display(round(community_month_minutes / 60, 2)),
+        "community_last_activity": last_attendance.assignment.activity_name if last_attendance else "No activity attended yet",
+        "community_next_milestone_display": community_milestones["next_milestone_display"] if community_milestones else "",
         "tasks_assigned": total_tasks,
         "tasks_pending_this_week": pending_this_week,
         "content_topics_count": content_topics_count,
@@ -5528,6 +6532,21 @@ def admin_certificate_create(request):
     if not recipient_name or not reason:
         return JsonResponse({"error": "Volunteer name and certificate body are required."}, status=400)
 
+    existing_certificate = VolunteerCertificate.objects.filter(
+        volunteer=volunteer,
+        recipient_name=recipient_name,
+        reason=reason,
+    ).first()
+    if existing_certificate:
+        return JsonResponse({
+            "message": "This certificate already exists.",
+            "duplicate": True,
+            "certificate": {
+                "id": existing_certificate.id,
+                "download_url": reverse("volunteer_certificate_download", args=[existing_certificate.id]),
+            },
+        }, status=200)
+
     certificate = VolunteerCertificate.objects.create(
         volunteer=volunteer,
         issued_by=request.user,
@@ -5639,11 +6658,27 @@ def volunteer_dashboard_tasks_ojt(request):
     if not _is_active_volunteer(request.user):
         return redirect("home")
 
-    # Placeholder view: template includes client-side hooks for real data integration.
-    return render(request, "volunteer_dashboard/tasks_ojt_volunteer.html", {
+    profile = _get_or_create_user_profile(request.user)
+    is_community_volunteer = profile.volunteer_type == UserProfile.VOLUNTEER_TYPE_COMMUNITY
+    context = {
         "active_page": "tasks_ojt",
         "dashboard_scope": "volunteer",
-    })
+        "is_community_volunteer": is_community_volunteer,
+        "ojt_hours_display": format_ojt_duration_display(profile.ojt_hours or 0),
+    }
+    if is_community_volunteer:
+        community_milestones = _community_volunteer_milestones(request.user)
+        milestone_path = sorted(
+            (dict(milestone) for milestone in community_milestones["milestones"]),
+            key=lambda milestone: milestone["target"] * (7 if milestone["kind"] == "weeks" else 1),
+        )
+        current_milestone = next((milestone for milestone in milestone_path if not milestone["earned"]), None)
+        for milestone in milestone_path:
+            milestone["is_current"] = milestone is current_milestone
+            milestone["is_locked"] = not milestone["earned"] and not milestone["is_current"]
+        context["community_milestones"] = community_milestones
+        context["community_milestone_path"] = milestone_path
+    return render(request, "volunteer_dashboard/tasks_ojt_volunteer.html", context)
     
 @login_required(login_url="signin")
 def volunteer_beneficiary_attendance_page(request):
@@ -5729,6 +6764,132 @@ def volunteer_assigned_activities_api(request):
     })
 
 
+VOLUNTEER_ACTIVITY_PHOTO_MAX_BYTES = 5 * 1024 * 1024
+
+
+def _volunteer_activity_photo_user(request):
+    if request.user.is_superuser:
+        return None
+    profile = _get_or_create_user_profile(request.user)
+    if profile.account_role != UserProfile.ROLE_VOLUNTEER:
+        return None
+    return request.user
+
+
+def _serialize_volunteer_activity_photo(photo):
+    return {
+        "id": int(photo.id),
+        "url": photo.image.url,
+        "assignmentId": int(photo.assignment_id) if photo.assignment_id else None,
+        "activityName": photo.assignment.activity_name if photo.assignment_id else "",
+        "activityDate": photo.assignment.scheduled_date.isoformat() if photo.assignment_id else "",
+        "uploadedAt": timezone.localtime(photo.uploaded_at).strftime("%Y-%m-%d %H:%M"),
+        "caption": photo.caption or "",
+        "volunteerId": int(photo.volunteer_id),
+        "volunteerName": _display_name_for_user(photo.volunteer),
+    }
+
+
+@login_required(login_url="signin")
+@require_http_methods(["GET", "POST"])
+def volunteer_activity_photos_api(request):
+    if request.user.is_superuser and request.method == "GET":
+        raw_activity_id = str(request.GET.get("activity_id") or "").strip()
+        try:
+            activity_id = int(raw_activity_id)
+        except (TypeError, ValueError):
+            return JsonResponse({"error": "Choose an activity to view photos."}, status=400)
+        activity = get_object_or_404(Activity, pk=activity_id)
+        photos = VolunteerActivityPhoto.objects.filter(
+            assignment__activity=activity,
+        ).select_related("assignment", "volunteer")
+        groups_by_volunteer = {}
+        for photo in photos:
+            group = groups_by_volunteer.setdefault(photo.volunteer_id, {
+                "volunteerId": int(photo.volunteer_id),
+                "volunteerName": _display_name_for_user(photo.volunteer),
+                "photos": [],
+            })
+            group["photos"].append(_serialize_volunteer_activity_photo(photo))
+        return JsonResponse({"groups": list(groups_by_volunteer.values())})
+
+    volunteer = _volunteer_activity_photo_user(request)
+    if volunteer is None:
+        return JsonResponse({"error": "Only volunteers can access activity photos."}, status=403)
+
+    if request.method == "GET":
+        today = timezone.localdate()
+        assignments = VolunteerActivityAssignment.objects.filter(
+            volunteer=volunteer,
+        ).exclude(status=VolunteerActivityAssignment.STATUS_CANCELLED).order_by("-scheduled_date", "-id")
+        return JsonResponse({
+            "photos": [
+                _serialize_volunteer_activity_photo(photo)
+                for photo in VolunteerActivityPhoto.objects.filter(volunteer=volunteer).select_related("assignment", "volunteer")
+            ],
+            "activities": [
+                {
+                    "id": assignment.id,
+                    "name": assignment.activity_name,
+                    "date": assignment.scheduled_date.isoformat(),
+                    "isFuture": assignment.scheduled_date > today,
+                    "isEventDay": assignment.scheduled_date == today,
+                }
+                for assignment in assignments
+            ],
+        })
+
+    uploaded_files = request.FILES.getlist("photos")
+    if not uploaded_files:
+        return JsonResponse({"error": "Choose at least one JPG or PNG photo."}, status=400)
+
+    assignment_id = str(request.POST.get("activity_id") or "").strip()
+    if not assignment_id:
+        return JsonResponse({"error": "Select an activity before uploading photos."}, status=400)
+    try:
+        assignment = VolunteerActivityAssignment.objects.get(pk=int(assignment_id), volunteer=volunteer)
+    except (TypeError, ValueError, VolunteerActivityAssignment.DoesNotExist):
+        return JsonResponse({"error": "Choose an activity you joined."}, status=400)
+    if assignment.status == VolunteerActivityAssignment.STATUS_CANCELLED:
+        return JsonResponse({"error": "Choose an activity you joined."}, status=400)
+    if assignment.scheduled_date != timezone.localdate():
+        return JsonResponse({"error": "Photos can only be uploaded on the activity day."}, status=400)
+
+    caption = str(request.POST.get("caption") or "").strip()
+    if len(caption) > VolunteerActivityPhoto._meta.get_field("caption").max_length:
+        return JsonResponse({"error": "Captions must be 300 characters or fewer."}, status=400)
+
+    for uploaded_file in uploaded_files:
+        if uploaded_file.size > VOLUNTEER_ACTIVITY_PHOTO_MAX_BYTES:
+            return JsonResponse({"error": "Each photo must be 5 MB or smaller."}, status=400)
+        try:
+            with Image.open(uploaded_file) as image:
+                image.verify()
+            uploaded_file.seek(0)
+        except (UnidentifiedImageError, OSError, ValueError):
+            return JsonResponse({"error": "One or more files are not supported image files."}, status=400)
+
+    photos = [
+        VolunteerActivityPhoto.objects.create(volunteer=volunteer, assignment=assignment, image=uploaded_file, caption=caption)
+        for uploaded_file in uploaded_files
+    ]
+    return JsonResponse({
+        "photos": [_serialize_volunteer_activity_photo(photo) for photo in VolunteerActivityPhoto.objects.filter(pk__in=[photo.pk for photo in photos]).select_related("assignment", "volunteer")],
+    }, status=201)
+
+
+@login_required(login_url="signin")
+@require_http_methods(["DELETE"])
+def volunteer_activity_photo_delete(request, photo_id):
+    volunteer = _volunteer_activity_photo_user(request)
+    if volunteer is None:
+        return JsonResponse({"error": "Only volunteers can delete activity photos."}, status=403)
+    photo = get_object_or_404(VolunteerActivityPhoto, pk=photo_id, volunteer=volunteer)
+    photo.image.delete(save=False)
+    photo.delete()
+    return JsonResponse({"message": "Photo deleted."})
+
+
 @login_required(login_url="signin")
 @require_GET
 def volunteer_activity_calendar_api(request):
@@ -5748,7 +6909,9 @@ def volunteer_activity_calendar_api(request):
     month_end = parsed_month.replace(day=calendar.monthrange(parsed_month.year, parsed_month.month)[1])
     now = timezone.localtime(timezone.now())
 
-    _auto_close_expired_duty_sessions(request.user, now=now)
+    is_community_volunteer = profile.volunteer_type == UserProfile.VOLUNTEER_TYPE_COMMUNITY
+    if not is_community_volunteer:
+        _auto_close_expired_duty_sessions(request.user, now=now)
 
     assignments = list(
         VolunteerActivityAssignment.objects.filter(
@@ -5797,6 +6960,22 @@ def volunteer_activity_calendar_api(request):
         }
         for activity in open_activities
     ]
+
+    if is_community_volunteer:
+        return JsonResponse({
+            "month": month_start.strftime("%Y-%m"),
+            "items": assigned_items + open_items,
+            "assigned_items": assigned_items,
+            "open_items": open_items,
+            "duty_days": [],
+            "schedule_weekdays": [],
+            "has_schedule": False,
+            "schedule_effective_from": "",
+            "today_duty": None,
+            "next_duty_date": "",
+            "recent_duty_days": [],
+            "has_more_duty_days": False,
+        })
 
     schedules = list(
         VolunteerOjtSchedule.objects.filter(
@@ -5913,7 +7092,7 @@ def volunteer_activity_calendar_api(request):
         "open_items": open_items,
         "duty_days": duty_days,
         "schedule_weekdays": sorted({int(day) for day in (summary_schedule.weekdays or []) if str(day).isdigit()}) if summary_schedule else [],
-        "has_schedule": bool(summary_schedule),
+        "has_schedule": bool(summary_schedule and summary_schedule.weekdays),
         "schedule_effective_from": summary_schedule.effective_from.isoformat() if summary_schedule else "",
         "today_duty": today_duty,
         "next_duty_date": next_duty_date.isoformat() if next_duty_date else "",
@@ -6851,6 +8030,206 @@ def volunteer_dashboard_skill_learning(request):
 
 
 @login_required(login_url="signin")
+def volunteer_skill_learning_progress(request):
+    if request.user.is_superuser:
+        return redirect("admin_dashboard")
+    if not _is_active_volunteer(request.user):
+        return redirect("home")
+
+    latest_beneficiary_applications = {}
+    applications = (
+        RoleApplication.objects
+        .filter(role=RoleApplication.ROLE_BENEFICIARY, user__isnull=False)
+        .select_related("user", "user__userprofile")
+        .order_by("-created_at", "-id")
+    )
+    for application in applications:
+        user = application.user
+        if user.id in latest_beneficiary_applications:
+            continue
+        if (
+            application.status in {RoleApplication.STATUS_APPROVED, RoleApplication.STATUS_INACTIVE}
+            and getattr(user, "userprofile", None)
+            and user.userprofile.account_role == UserProfile.ROLE_BENEFICIARY
+        ):
+            latest_beneficiary_applications[user.id] = {
+                "id": user.id,
+                "name": _display_name_for_user(user),
+            }
+
+    beneficiaries = list(latest_beneficiary_applications.values())
+    beneficiary_ids = [beneficiary["id"] for beneficiary in beneficiaries]
+    topics = list(SkillLearningTopic.objects.prefetch_related("materials"))
+    topic_ids = [topic.id for topic in topics]
+
+    engagements = (
+        SkillLearningMaterialEngagement.objects
+        .filter(user_id__in=beneficiary_ids, material__topic_id__in=topic_ids)
+        .select_related("user", "material")
+    )
+    engagement_by_pair = {
+        (engagement.user_id, engagement.material_id): engagement
+        for engagement in engagements
+    }
+    audits = (
+        SkillLearningProgressAudit.objects
+        .filter(beneficiary_id__in=beneficiary_ids, material__topic_id__in=topic_ids)
+        .select_related("changed_by")
+        .order_by("-changed_at", "-id")
+    )
+    audit_by_pair = {}
+    for audit in audits:
+        audit_by_pair.setdefault((audit.beneficiary_id, audit.material_id), audit)
+
+    progress_rows = []
+    for beneficiary in beneficiaries:
+        for topic in topics:
+            materials = []
+            completed_count = 0
+            for material in topic.materials.all():
+                engagement = engagement_by_pair.get((beneficiary["id"], material.id))
+                completed = bool(engagement and engagement.completed_at)
+                if completed:
+                    completed_count += 1
+                audit = audit_by_pair.get((beneficiary["id"], material.id))
+                materials.append({
+                    "id": material.id,
+                    "title": material.title,
+                    "completed": completed,
+                    "last_edit": (
+                        f"{_display_name_for_user(audit.changed_by)} · "
+                        f"{timezone.localtime(audit.changed_at).strftime('%b %d, %Y %I:%M %p')}"
+                        if audit and audit.changed_by else ""
+                    ),
+                })
+
+            total_count = len(materials)
+            progress_rows.append({
+                "beneficiary_id": beneficiary["id"],
+                "beneficiary_name": beneficiary["name"],
+                "topic_id": topic.id,
+                "topic_title": topic.title,
+                "completed_count": completed_count,
+                "total_count": total_count,
+                "progress_percent": round(completed_count * 100 / total_count) if total_count else 0,
+                "materials": materials,
+                "search_text": f"{beneficiary['name']} {topic.title}".lower(),
+            })
+
+    return render(request, "volunteer_dashboard/skill_learning_progress.html", {
+        "active_page": "skill_learning",
+        "dashboard_scope": "volunteer",
+        "progress_rows": progress_rows,
+        "beneficiary_count": len(beneficiaries),
+        "topic_count": len(topics),
+    })
+
+
+@login_required(login_url="signin")
+@require_POST
+def volunteer_skill_learning_progress_update(request):
+    if request.user.is_superuser or not _is_active_volunteer(request.user):
+        return JsonResponse({"error": "Only active volunteers can edit learning progress."}, status=403)
+
+    beneficiary_id = _parse_non_negative_int(request.POST.get("beneficiary_id"), default=0)
+    material_id = request.POST.get("material_id")
+    action = str(request.POST.get("action") or "").lower()
+    if beneficiary_id <= 0 or action not in {"complete", "uncomplete"} or not material_id:
+        return JsonResponse({"error": "A beneficiary, material, and valid progress action are required."}, status=400)
+
+    beneficiary = get_object_or_404(User, pk=beneficiary_id)
+    if not _is_active_beneficiary(beneficiary):
+        return JsonResponse({"error": "Progress can only be updated for an active beneficiary."}, status=403)
+    material = get_object_or_404(SkillLearningMaterial, pk=material_id)
+
+    engagement, _created = SkillLearningMaterialEngagement.objects.get_or_create(
+        user=beneficiary,
+        material=material,
+    )
+    previous_completed_at = engagement.completed_at
+    new_completed_at = timezone.now() if action == "complete" else None
+    if bool(previous_completed_at) != bool(new_completed_at):
+        engagement.completed_at = new_completed_at
+        engagement.last_accessed_at = timezone.now()
+        engagement.save(update_fields=["completed_at", "last_accessed_at"])
+        SkillLearningProgressAudit.objects.create(
+            beneficiary=beneficiary,
+            material=material,
+            changed_by=request.user,
+            previous_completed_at=previous_completed_at,
+            new_completed_at=new_completed_at,
+        )
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({
+            "ok": True,
+            "completed": bool(engagement.completed_at),
+        })
+    return redirect("volunteer_skill_learning_progress")
+
+
+@login_required(login_url="signin")
+@require_POST
+def volunteer_skill_learning_progress_bulk_update(request):
+    if request.user.is_superuser or not _is_active_volunteer(request.user):
+        return JsonResponse({"error": "Only active volunteers can edit learning progress."}, status=403)
+
+    beneficiary_id = _parse_non_negative_int(request.POST.get("beneficiary_id"), default=0)
+    topic_id = request.POST.get("topic_id")
+    material_id = request.POST.get("material_id")
+    action = str(request.POST.get("action") or "").lower()
+    if (
+        beneficiary_id <= 0
+        or action not in {"complete", "uncomplete"}
+        or bool(topic_id) == bool(material_id)
+    ):
+        return JsonResponse({
+            "error": "A beneficiary, exactly one topic or material, and a valid progress action are required."
+        }, status=400)
+
+    beneficiary = get_object_or_404(User, pk=beneficiary_id)
+    if not _is_active_beneficiary(beneficiary):
+        return JsonResponse({"error": "Progress can only be updated for an active beneficiary."}, status=403)
+    if material_id:
+        materials = [get_object_or_404(SkillLearningMaterial, pk=material_id)]
+    else:
+        topic = get_object_or_404(SkillLearningTopic, pk=topic_id)
+        materials = list(topic.materials.order_by("id"))
+    completed = action == "complete"
+    changed_at = timezone.now() if completed else None
+    updated_count = 0
+
+    with transaction.atomic():
+        for material in materials:
+            engagement, _created = SkillLearningMaterialEngagement.objects.get_or_create(
+                user=beneficiary,
+                material=material,
+            )
+            previous_completed_at = engagement.completed_at
+            if bool(previous_completed_at) == completed:
+                continue
+
+            engagement.completed_at = changed_at
+            engagement.last_accessed_at = timezone.now()
+            engagement.save(update_fields=["completed_at", "last_accessed_at"])
+            SkillLearningProgressAudit.objects.create(
+                beneficiary=beneficiary,
+                material=material,
+                changed_by=request.user,
+                previous_completed_at=previous_completed_at,
+                new_completed_at=changed_at,
+            )
+            updated_count += 1
+
+    return JsonResponse({
+        "ok": True,
+        "completed": completed,
+        "updated": updated_count,
+        "total": len(materials),
+    })
+
+
+@login_required(login_url="signin")
 @require_GET
 def skill_learning_data_api(request):
     if request.user.is_superuser:
@@ -6860,6 +8239,28 @@ def skill_learning_data_api(request):
         return JsonResponse({"error": "Only dashboard users can access learning topics."}, status=403)
 
     return JsonResponse(_skill_learning_payload(request.user))
+
+
+@login_required(login_url="signin")
+@require_GET
+def skill_learning_material_file(request, material_id):
+    if request.user.is_superuser or not _has_dashboard_access(request.user):
+        return JsonResponse({"error": "Only dashboard users can access learning materials."}, status=403)
+
+    material = get_object_or_404(SkillLearningMaterial, pk=material_id)
+    if not material.file_upload:
+        raise Http404("This learning material has no uploaded file.")
+
+    source_name = material.source_name
+    content_type = mimetypes.guess_type(source_name)[0] or "application/octet-stream"
+    response = FileResponse(
+        material.file_upload.open("rb"),
+        as_attachment=False,
+        filename=source_name,
+        content_type=content_type,
+    )
+    response["X-Frame-Options"] = "SAMEORIGIN"
+    return response
 
 
 @login_required(login_url="signin")
@@ -6969,11 +8370,22 @@ def skill_learning_material_update(request, material_id):
         return JsonResponse({"error": "Only volunteers can manage learning materials."}, status=403)
 
     material = get_object_or_404(SkillLearningMaterial.objects.select_related("topic"), pk=material_id)
+    previous_file = material.file_upload
     form = SkillLearningMaterialForm(request.POST, request.FILES, instance=material)
     if not form.is_valid():
         return JsonResponse({"error": "Please fix the highlighted material fields.", "fields": form.errors}, status=400)
 
     form.save()
+    if request.FILES.get("file_upload"):
+        material.external_url = ""
+        material.save(update_fields=["external_url", "updated_at"])
+        if previous_file and previous_file.name != material.file_upload.name:
+            previous_file.delete(save=False)
+    elif form.cleaned_data.get("external_url") and previous_file:
+        previous_file.delete(save=False)
+        material.file_upload = None
+        material.save(update_fields=["file_upload", "updated_at"])
+
     topic = SkillLearningTopic.objects.prefetch_related("materials").get(pk=material.topic_id)
     return JsonResponse({"message": "Material updated.", "topic": _skill_learning_topic_payload(topic)})
 
@@ -7574,16 +8986,22 @@ def create_regular_user(request):
     username = str(request.POST.get("username", "") or "").strip()
     email = str(request.POST.get("email", "") or "").strip()
     phone = str(request.POST.get("phone", "") or "").strip()
+    gender = str(request.POST.get("gender", "") or "").strip()
+    address_line = str(request.POST.get("address_line", "") or "").strip()
     status = str(request.POST.get("status", "active") or "active").strip().lower()
     password = str(request.POST.get("password", "") or "")
     confirm_password = str(request.POST.get("confirm_password", "") or "")
 
     if status not in {"active", "inactive", "pending"}:
         return JsonResponse({"error": "Please select a valid user status."}, status=400)
-    if not full_name or not username or not email or not password or not confirm_password:
+    if not full_name or not username or not email or not gender or not address_line or not password or not confirm_password:
         return JsonResponse({
-            "error": "Full name, username, email, password, and password confirmation are required."
+            "error": "Full name, gender, address, username, email, password, and password confirmation are required."
         }, status=400)
+    if gender not in dict(UserProfile.GENDER_CHOICES):
+        return JsonResponse({"error": "Please choose a valid gender."}, status=400)
+    if len(address_line) > 255:
+        return JsonResponse({"error": "Address must be 255 characters or fewer."}, status=400)
     try:
         validate_email(email)
     except ValidationError:
@@ -7615,7 +9033,9 @@ def create_regular_user(request):
         profile = _get_or_create_user_profile(user)
         profile.account_role = UserProfile.ROLE_REGULAR
         profile.phone = phone
-        profile.save(update_fields=["account_role", "phone", "updated_at"])
+        profile.gender = gender
+        profile.address_line = address_line
+        profile.save(update_fields=["account_role", "phone", "gender", "address_line", "updated_at"])
 
     return JsonResponse({
         "message": f"User account for {full_name} was created successfully.",
@@ -7655,11 +9075,17 @@ def update_regular_user_profile(request):
     username = str(request.POST.get("username", "") or "").strip()
     email = str(request.POST.get("email", "") or "").strip()
     phone = str(request.POST.get("phone", "") or "").strip()
+    gender = str(request.POST.get("gender", "") or "").strip()
+    address_line = str(request.POST.get("address_line", "") or "").strip()
     status = str(request.POST.get("status", "") or "").strip().lower()
     if not full_name or not username:
         return JsonResponse({"error": "Full name and username are required."}, status=400)
     if status not in {"active", "inactive"}:
         return JsonResponse({"error": "Please select a valid user status."}, status=400)
+    if gender and gender not in dict(UserProfile.GENDER_CHOICES):
+        return JsonResponse({"error": "Please choose a valid gender."}, status=400)
+    if len(address_line) > 255:
+        return JsonResponse({"error": "Address must be 255 characters or fewer."}, status=400)
     if email:
         try:
             validate_email(email)
@@ -7685,7 +9111,9 @@ def update_regular_user_profile(request):
         regular_user.save(update_fields=["username", "email", "first_name", "last_name", "is_active"])
         profile = _get_or_create_user_profile(regular_user)
         profile.phone = phone
-        profile.save(update_fields=["phone", "updated_at"])
+        profile.gender = gender
+        profile.address_line = address_line
+        profile.save(update_fields=["phone", "gender", "address_line", "updated_at"])
 
     return JsonResponse({
         "message": f"{_display_name_for_user(regular_user)}'s profile was updated.",
@@ -7695,6 +9123,8 @@ def update_regular_user_profile(request):
             "username": regular_user.username,
             "email": regular_user.email or "Not provided",
             "phone": profile.phone or "Not provided",
+            "gender": profile.gender or "",
+            "address_line": profile.address_line or "",
             "date_joined": timezone.localtime(regular_user.date_joined).strftime("%b %d, %Y").replace(" 0", " "),
             "is_active": regular_user.is_active,
         },
@@ -7794,7 +9224,7 @@ def admins(request):
     if not request.user.is_superuser:
         return redirect("user_dashboard")
 
-    admins_queryset = User.objects.filter(is_superuser=True).order_by("username")
+    admins_queryset = User.objects.select_related("userprofile").filter(is_superuser=True).order_by("username")
     admin_counts = admins_queryset.aggregate(
         total=Count("id"),
         active=Count("id", filter=Q(is_active=True)),
@@ -7889,14 +9319,20 @@ def create_admin(request):
     full_name = str(request.POST.get("full_name", "") or "").strip()
     username = str(request.POST.get("username", "") or "").strip()
     email = str(request.POST.get("email", "") or "").strip()
+    gender = str(request.POST.get("gender", "") or "").strip()
+    address_line = str(request.POST.get("address_line", "") or "").strip()
     password = str(request.POST.get("password", "") or "")
     confirm_password = str(request.POST.get("confirm_password", "") or "")
     status = str(request.POST.get("status", "active") or "").strip().lower()
 
-    if not full_name or not username or not email or not password or not confirm_password:
+    if not full_name or not username or not email or not gender or not address_line or not password or not confirm_password:
         return JsonResponse({
-            "error": "Full name, username, email, password, and password confirmation are required."
+            "error": "Full name, gender, address, username, email, password, and password confirmation are required."
         }, status=400)
+    if gender not in dict(UserProfile.GENDER_CHOICES):
+        return JsonResponse({"error": "Please choose a valid gender."}, status=400)
+    if len(address_line) > 255:
+        return JsonResponse({"error": "Address must be 255 characters or fewer."}, status=400)
     if status not in {"active", "inactive"}:
         return JsonResponse({"error": "Choose a valid admin account status."}, status=400)
     try:
@@ -7928,6 +9364,10 @@ def create_admin(request):
         )
         admin_user.is_active = status == "active"
         admin_user.save(update_fields=["is_active"])
+        profile = _get_or_create_user_profile(admin_user)
+        profile.gender = gender
+        profile.address_line = address_line
+        profile.save(update_fields=["gender", "address_line", "updated_at"])
 
     return JsonResponse({
         "message": f"Administrator account for {full_name} was created successfully.",
@@ -7956,11 +9396,17 @@ def update_admin_profile(request):
     full_name = str(request.POST.get("full_name", "") or "").strip()
     username = str(request.POST.get("username", "") or "").strip()
     email = str(request.POST.get("email", "") or "").strip()
+    gender = str(request.POST.get("gender", "") or "").strip()
+    address_line = str(request.POST.get("address_line", "") or "").strip()
     status = str(request.POST.get("status", "") or "").strip().lower()
     if not full_name or not username:
         return JsonResponse({"error": "Full name and username are required."}, status=400)
     if status not in {"active", "inactive"}:
         return JsonResponse({"error": "Choose a valid admin account status."}, status=400)
+    if gender and gender not in dict(UserProfile.GENDER_CHOICES):
+        return JsonResponse({"error": "Please choose a valid gender."}, status=400)
+    if len(address_line) > 255:
+        return JsonResponse({"error": "Address must be 255 characters or fewer."}, status=400)
     if email:
         try:
             validate_email(email)
@@ -7996,6 +9442,10 @@ def update_admin_profile(request):
                     "error": "At least one active administrator account must remain."
                 }, status=400)
         admin_user.save(update_fields=["first_name", "last_name", "username", "email", "is_active"])
+        profile = _get_or_create_user_profile(admin_user)
+        profile.gender = gender
+        profile.address_line = address_line
+        profile.save(update_fields=["gender", "address_line", "updated_at"])
 
     return JsonResponse({
         "message": f"{_display_name_for_user(admin_user)}'s profile was updated.",
@@ -8004,6 +9454,8 @@ def update_admin_profile(request):
             "full_name": _display_name_for_user(admin_user),
             "username": admin_user.username,
             "email": admin_user.email or "Not provided",
+            "gender": profile.gender or "",
+            "address_line": profile.address_line or "",
             "is_active": admin_user.is_active,
             "last_login": timezone.localtime(admin_user.last_login).strftime("%b %d, %Y %I:%M %p").replace(" 0", " ") if admin_user.last_login else "Never",
             "date_joined": timezone.localtime(admin_user.date_joined).strftime("%b %d, %Y").replace(" 0", " "),
@@ -8276,6 +9728,20 @@ def beneficiaries(request):
         "active_page": "beneficiaries",
         "dashboard_scope": "admin",
         "beneficiaries_data": _build_beneficiaries_payload(),
+        "beneficiary_parent_options": [
+            {
+                "id": parent.user_id,
+                "name": _display_name_for_user(parent.user),
+            }
+            for parent in UserProfile.objects
+            .filter(
+                account_role=UserProfile.ROLE_BENEFICIARY,
+                beneficiary_type=UserProfile.BENEFICIARY_TYPE_HAPPY_NANAYS,
+                user__is_active=True,
+            )
+            .select_related("user")
+            .order_by("user__first_name", "user__last_name", "user__username")
+        ],
         "volunteer_options": _build_volunteer_options(),
         "assistance_tracking": _build_assistance_tracking_payload(),
         "assistance_feedbacks": _build_assistance_feedbacks_payload(),
@@ -8414,8 +9880,11 @@ def update_beneficiary_profile(request):
     full_name = str(request.POST.get("full_name", "") or request.POST.get("fullName", "")).strip()
     contact_details = str(request.POST.get("contact_details", "") or request.POST.get("contactDetails", "")).strip()
     supporting_information = str(request.POST.get("supporting_information", "") or request.POST.get("supportingInformation", "")).strip()
+    gender = str(request.POST.get("gender", "") or "").strip()
     admin_notes = str(request.POST.get("admin_notes", "") or request.POST.get("notes", "")).strip()
     raw_status = str(request.POST.get("status", "") or "").strip().lower()
+    beneficiary_type = str(request.POST.get("beneficiary_type", "") or "").strip()
+    linked_parent_id = str(request.POST.get("linked_parent_id", "") or "").strip()
 
     if not application_id:
         return JsonResponse({"error": "beneficiary_application_id is required."}, status=400)
@@ -8432,6 +9901,26 @@ def update_beneficiary_profile(request):
 
     if not contact_details:
         return JsonResponse({"error": "contact_details is required."}, status=400)
+    if gender and gender not in dict(UserProfile.GENDER_CHOICES):
+        return JsonResponse({"error": "Please choose a valid gender."}, status=400)
+    if len(supporting_information) > 255:
+        return JsonResponse({"error": "Address must be 255 characters or fewer."}, status=400)
+    if beneficiary_type and beneficiary_type not in dict(UserProfile.BENEFICIARY_TYPE_CHOICES):
+        return JsonResponse({"error": "Please choose a valid beneficiary type."}, status=400)
+    parent_profile = None
+    if linked_parent_id:
+        if beneficiary_type != UserProfile.BENEFICIARY_TYPE_HAPPY_KIDS:
+            return JsonResponse({"error": "Only Happy Kids can be linked to a parent."}, status=400)
+        parent_profile = UserProfile.objects.filter(
+            user_id=linked_parent_id,
+            account_role=UserProfile.ROLE_BENEFICIARY,
+            beneficiary_type=UserProfile.BENEFICIARY_TYPE_HAPPY_NANAYS,
+            user__is_active=True,
+        ).select_related("user").first()
+        if not parent_profile:
+            return JsonResponse({"error": "Choose a valid Happy Nanays parent."}, status=400)
+        if beneficiary.user_id == parent_profile.user_id:
+            return JsonResponse({"error": "A beneficiary cannot be linked as their own parent."}, status=400)
 
     if raw_status in {"active", RoleApplication.STATUS_APPROVED}:
         status = RoleApplication.STATUS_APPROVED
@@ -8463,11 +9952,27 @@ def update_beneficiary_profile(request):
             user.save(update_fields=["first_name", "last_name", "email"])
 
             profile = _get_or_create_user_profile(user)
+            previous_type = profile.beneficiary_type
             if contact_phone:
                 profile.phone = contact_phone
+            profile.gender = gender
             profile.address_line = supporting_information
             profile.account_role = UserProfile.ROLE_BENEFICIARY
-            profile.save(update_fields=["phone", "address_line", "account_role", "updated_at"])
+            profile.beneficiary_type = beneficiary_type
+            profile.linked_parent = parent_profile if beneficiary_type == UserProfile.BENEFICIARY_TYPE_HAPPY_KIDS else None
+            profile.save(update_fields=["phone", "gender", "address_line", "account_role", "beneficiary_type", "linked_parent", "updated_at"])
+            if previous_type != beneficiary_type:
+                type_labels = dict(UserProfile.BENEFICIARY_TYPE_CHOICES)
+                AdminActivityLog.objects.create(
+                    admin=request.user,
+                    admin_name=request.user.get_full_name().strip() or request.user.get_username(),
+                    action=AdminActivityLog.ACTION_EDIT,
+                    section="Beneficiaries",
+                    record_type="Beneficiary",
+                    record_id=str(user.pk),
+                    record_label=_display_name_for_user(user),
+                    details=f"Type: {type_labels.get(previous_type, 'Not set')} -> {type_labels.get(beneficiary_type, 'Not set')}",
+                )
 
     payload = _build_beneficiaries_dashboard_payload()
     payload["message"] = "Beneficiary profile updated successfully."
@@ -8488,10 +9993,12 @@ def create_beneficiary(request):
     full_name = str(request.POST.get("full_name", "") or request.POST.get("name", "") or "").strip()
     email = str(request.POST.get("email", "") or "").strip()
     phone = str(request.POST.get("phone", "") or "").strip()
+    gender = str(request.POST.get("gender", "") or "").strip()
     address = str(request.POST.get("address", "") or request.POST.get("supporting_information", "") or "").strip()
     raw_status = str(request.POST.get("status", "") or "Active").strip()
     username = str(request.POST.get("username", "") or "").strip()
     password = str(request.POST.get("password", "") or "").strip()
+    beneficiary_type = str(request.POST.get("beneficiary_type", "") or "").strip()
 
     # allow empty values for now (accept submissions with missing fields)
     status_map = {
@@ -8522,12 +10029,18 @@ def create_beneficiary(request):
     else:
         password_to_set = password
 
+    if gender and gender not in dict(UserProfile.GENDER_CHOICES):
+        return JsonResponse({"error": "Please choose a valid gender."}, status=400)
+    if beneficiary_type not in dict(UserProfile.BENEFICIARY_TYPE_CHOICES):
+        return JsonResponse({"error": "Please choose a valid beneficiary type."}, status=400)
+    if len(address) > 255:
+        return JsonResponse({"error": "Address must be 255 characters or fewer."}, status=400)
+
     user_obj = User.objects.filter(username__iexact=username).first()
     if not user_obj and email:
         user_obj = User.objects.filter(email__iexact=email).first()
 
     is_new_user = user_obj is None
-
     if not user_obj:
         user_obj = User.objects.create(username=username, email=email, is_active=True)
 
@@ -8541,15 +10054,17 @@ def create_beneficiary(request):
     user_obj.save()
 
     profile = _get_or_create_user_profile(user_obj)
+    previous_type = profile.beneficiary_type
     profile.phone = phone
+    profile.gender = gender
     profile.address_line = address
-    # set account role to beneficiary so they get beneficiary dashboard access
     profile.account_role = UserProfile.ROLE_BENEFICIARY
-    profile.save()
+    profile.beneficiary_type = beneficiary_type
+    profile.save(update_fields=["account_role", "beneficiary_type", "phone", "gender", "address_line", "updated_at"])
 
     contact_details = email + (" / " + phone if email and phone else (phone or ""))
 
-    application, _created = RoleApplication.objects.update_or_create(
+    application, application_created = RoleApplication.objects.update_or_create(
         user=user_obj,
         role=RoleApplication.ROLE_BENEFICIARY,
         defaults={
@@ -8560,11 +10075,37 @@ def create_beneficiary(request):
         },
     )
 
+    if application_created:
+        log_action = AdminActivityLog.ACTION_CREATE
+        log_details = f"Type: {dict(UserProfile.BENEFICIARY_TYPE_CHOICES)[beneficiary_type]}"
+    elif previous_type != beneficiary_type:
+        log_action = AdminActivityLog.ACTION_EDIT
+        type_labels = dict(UserProfile.BENEFICIARY_TYPE_CHOICES)
+        log_details = f"Type: {type_labels.get(previous_type, 'Not set')} -> {type_labels.get(beneficiary_type, 'Not set')}"
+    else:
+        log_action = None
+        log_details = ""
+    if log_action:
+        AdminActivityLog.objects.create(
+            admin=request.user,
+            admin_name=request.user.get_full_name().strip() or request.user.get_username(),
+            action=log_action,
+            section="Beneficiaries",
+            record_type="Beneficiary",
+            record_id=str(user_obj.pk),
+            record_label=full_name,
+            details=log_details,
+        )
+
     response_obj = {
         "applicationId": int(application.id),
         "name": application.full_name,
         "email": email,
         "phone": phone,
+        "gender": gender,
+        "beneficiaryType": dict(UserProfile.BENEFICIARY_TYPE_CHOICES)[beneficiary_type],
+        "beneficiaryTypeValue": beneficiary_type,
+        "linkedParentId": profile.linked_parent.user_id if profile.linked_parent_id else None,
         "contactDetails": application.contact_details,
         "addressLine": application.supporting_information,
         "location": application.supporting_information[:100] if application.supporting_information else "To be determined",
@@ -10483,6 +12024,8 @@ def _reports_analytics_payload(range_key="30d", category="all", campaign="", rec
         user__is_superuser=False,
     ).select_related("user")
     for profile in active_volunteer_profiles:
+        if profile.volunteer_type == UserProfile.VOLUNTEER_TYPE_COMMUNITY:
+            continue
         ojt_hours = float(profile.ojt_hours or 0)
         required_hours = float(profile.required_ojt_hours or 80)
         if ojt_hours <= 0 or required_hours <= 0:
@@ -10845,6 +12388,147 @@ def admin_system_settings_update(request):
     return JsonResponse({"message": "System settings saved.", "settings": next_settings})
 
 
+@login_required(login_url="signin")
+@require_POST
+def admin_user_preferences_update(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Only administrators can update interface preferences."}, status=403)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"error": "Invalid preferences payload."}, status=400)
+
+    proposed_preferences = payload.get("preferences") if isinstance(payload, dict) else None
+    if not isinstance(proposed_preferences, dict):
+        return JsonResponse({"error": "Preferences must be an object."}, status=400)
+    if set(proposed_preferences) != set(ADMIN_USER_PREFERENCE_DEFAULTS):
+        return JsonResponse({"error": "All supported interface preferences are required."}, status=400)
+
+    cleaned_preferences = {}
+    for key, value in proposed_preferences.items():
+        if key in ADMIN_USER_PREFERENCE_BOOLEAN_KEYS:
+            if not isinstance(value, bool):
+                return JsonResponse({"error": f"{key} must be true or false."}, status=400)
+        elif not isinstance(value, str) or value not in ADMIN_USER_PREFERENCE_CHOICES[key]:
+            return JsonResponse({"error": f"{key} has an unsupported value."}, status=400)
+        cleaned_preferences[key] = value
+
+    preference_record, _ = AdminUserPreferences.objects.get_or_create(user=request.user)
+    preference_record.preferences = cleaned_preferences
+    preference_record.save(update_fields=["preferences", "updated_at"])
+    return JsonResponse({"message": "Interface preferences saved.", "preferences": cleaned_preferences})
+
+
+@login_required(login_url="signin")
+def audit_logs(request):
+    if not request.user.is_superuser:
+        return redirect("user_dashboard")
+
+    _ensure_single_audit_logs_template()
+
+    return render(request, "admin_dashboard/audit_logs_admin.html", {
+        "active_page": "audit_logs",
+    })
+
+
+def logout_view(request):
+    clear_two_factor_state(request)
+    logout(request)
+    return redirect("signin")
+def admin_user_preferences_update(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Only administrators can update interface preferences."}, status=403)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"error": "Invalid preferences payload."}, status=400)
+
+    proposed_preferences = payload.get("preferences") if isinstance(payload, dict) else None
+    if not isinstance(proposed_preferences, dict):
+        return JsonResponse({"error": "Preferences must be an object."}, status=400)
+    if set(proposed_preferences) != set(ADMIN_USER_PREFERENCE_DEFAULTS):
+        return JsonResponse({"error": "All supported interface preferences are required."}, status=400)
+
+    cleaned_preferences = {}
+    for key, value in proposed_preferences.items():
+        if key in ADMIN_USER_PREFERENCE_BOOLEAN_KEYS:
+            if not isinstance(value, bool):
+                return JsonResponse({"error": f"{key} must be true or false."}, status=400)
+        elif not isinstance(value, str) or value not in ADMIN_USER_PREFERENCE_CHOICES[key]:
+            return JsonResponse({"error": f"{key} has an unsupported value."}, status=400)
+        cleaned_preferences[key] = value
+
+    preference_record, _ = AdminUserPreferences.objects.get_or_create(user=request.user)
+    preference_record.preferences = cleaned_preferences
+    preference_record.save(update_fields=["preferences", "updated_at"])
+    return JsonResponse({"message": "Interface preferences saved.", "preferences": cleaned_preferences})
+
+
+@login_required(login_url="signin")
+def audit_logs(request):
+    if not request.user.is_superuser:
+        return redirect("user_dashboard")
+
+    _ensure_single_audit_logs_template()
+
+    return render(request, "admin_dashboard/audit_logs_admin.html", {
+        "active_page": "audit_logs",
+    })
+
+
+def logout_view(request):
+    clear_two_factor_state(request)
+    logout(request)
+    return redirect("signin")
+@require_POST
+def admin_user_preferences_update(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Only administrators can update interface preferences."}, status=403)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"error": "Invalid preferences payload."}, status=400)
+
+    proposed_preferences = payload.get("preferences") if isinstance(payload, dict) else None
+    if not isinstance(proposed_preferences, dict):
+        return JsonResponse({"error": "Preferences must be an object."}, status=400)
+    if set(proposed_preferences) != set(ADMIN_USER_PREFERENCE_DEFAULTS):
+        return JsonResponse({"error": "All supported interface preferences are required."}, status=400)
+
+    cleaned_preferences = {}
+    for key, value in proposed_preferences.items():
+        if key in ADMIN_USER_PREFERENCE_BOOLEAN_KEYS:
+            if not isinstance(value, bool):
+                return JsonResponse({"error": f"{key} must be true or false."}, status=400)
+        elif not isinstance(value, str) or value not in ADMIN_USER_PREFERENCE_CHOICES[key]:
+            return JsonResponse({"error": f"{key} has an unsupported value."}, status=400)
+        cleaned_preferences[key] = value
+
+    preference_record, _ = AdminUserPreferences.objects.get_or_create(user=request.user)
+    preference_record.preferences = cleaned_preferences
+    preference_record.save(update_fields=["preferences", "updated_at"])
+    return JsonResponse({"message": "Interface preferences saved.", "preferences": cleaned_preferences})
+
+
+@login_required(login_url="signin")
+def audit_logs(request):
+    if not request.user.is_superuser:
+        return redirect("user_dashboard")
+
+    _ensure_single_audit_logs_template()
+
+    return render(request, "admin_dashboard/audit_logs_admin.html", {
+        "active_page": "audit_logs",
+    })
+
+
+def logout_view(request):
+    clear_two_factor_state(request)
+    logout(request)
+    return redirect("signin")
 @login_required(login_url="signin")
 @require_POST
 def admin_user_preferences_update(request):

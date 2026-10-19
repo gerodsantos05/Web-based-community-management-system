@@ -5,6 +5,7 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/status-filter-select.css' %}">
+<link rel="stylesheet" href="{% static 'css/application-review-details.css' %}">
 <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital@1&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -35,9 +36,9 @@
     }
 
     .vol-head {
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(220px, 0.85fr) minmax(0, 2fr);
         align-items: center;
-        justify-content: space-between;
         gap: 0.65rem;
         padding: 0.8rem 0.95rem;
         border-bottom: 1px solid #deefe8;
@@ -122,13 +123,15 @@
         max-height: 33rem;
         width: 100%;
         max-width: 100%;
+        min-width: 0;
     }
 
     .vol-table {
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
-        min-width: 1180px;
+        min-width: 980px;
+        table-layout: fixed;
     }
 
     .vol-table th,
@@ -150,6 +153,28 @@
         background: rgba(236, 253, 245, 0.86);
         border-bottom: 1px solid rgba(15, 118, 110, 0.16);
     }
+
+    .vol-pending-applications-table {
+        width: 100%;
+        min-width: 0;
+        table-layout: fixed;
+    }
+
+    .vol-pending-applications-table th,
+    .vol-pending-applications-table td {
+        padding: .52rem .35rem;
+        overflow-wrap: anywhere;
+    }
+
+    .vol-pending-applications-table th { white-space: normal; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:nth-child(3) { white-space: normal !important; overflow-wrap: anywhere; }
+    .vol-pending-applications-table th:nth-child(1), .vol-pending-applications-table td:nth-child(1) { width: 17%; }
+    .vol-pending-applications-table th:nth-child(2), .vol-pending-applications-table td:nth-child(2) { width: 19%; }
+    .vol-pending-applications-table th:nth-child(3), .vol-pending-applications-table td:nth-child(3) { width: 24%; }
+    .vol-pending-applications-table th:nth-child(4), .vol-pending-applications-table td:nth-child(4) { width: 12%; }
+    .vol-pending-applications-table th:nth-child(5), .vol-pending-applications-table td:nth-child(5) { width: 11%; }
+    .vol-pending-applications-table th:nth-child(6), .vol-pending-applications-table td:nth-child(6) { width: 9%; }
+    .vol-pending-applications-table th:nth-child(7), .vol-pending-applications-table td:nth-child(7) { width: 8%; }
 
     .vol-table tbody tr:hover {
         background: rgba(236, 253, 245, 0.44);
@@ -209,12 +234,68 @@
         margin: 0;
         font-size: 0.7rem;
         color: #5f7d73;
+        overflow-wrap: anywhere;
     }
 
     .vol-hours {
         font-weight: 700;
         color: #1b4f43;
         font-variant-numeric: tabular-nums;
+    }
+
+    .vol-table th:nth-child(1),
+    .vol-table td:nth-child(1) { width: 42px; }
+
+    .vol-table th:nth-child(2),
+    .vol-table td:nth-child(2) {
+        width: 235px;
+        min-width: 0;
+    }
+
+    .vol-table td:nth-child(2) .vol-profile-link { max-width: 100%; }
+    .vol-table td:nth-child(2) .vol-name { white-space: normal; overflow-wrap: anywhere; }
+
+    .vol-table th:nth-child(3),
+    .vol-table td:nth-child(3) {
+        width: 90px;
+        white-space: nowrap;
+    }
+
+    .vol-table th:nth-child(4),
+    .vol-table td:nth-child(4) { width: 220px; }
+    .vol-table th:nth-child(5),
+    .vol-table td:nth-child(5) { width: 220px; }
+    .vol-table th:nth-child(6),
+    .vol-table td:nth-child(6) { width: 150px; }
+    .vol-table th:nth-child(7),
+    .vol-table td:nth-child(7) { width: 110px; }
+    .vol-table th:nth-child(8),
+    .vol-table td:nth-child(8) { width: 100px; }
+    .vol-table th:nth-child(9),
+    .vol-table td:nth-child(9) { width: 92px; }
+
+    .vol-type-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 1.45rem;
+        padding: 0.2rem 0.58rem;
+        border: 0;
+        border-radius: 999px;
+        font-size: 0.68rem;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    .vol-type-pill-ojt {
+        background: #e8f0fb;
+        color: #315b88;
+    }
+
+    .vol-type-pill-community {
+        background: #e3f5eb;
+        color: #17613e;
     }
 
     .vol-rate {
@@ -376,39 +457,6 @@
         color: #b42318;
     }
 
-    .vol-layout-two {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 0.9rem;
-    }
-
-    .vol-list {
-        list-style: none;
-        margin: 0;
-        padding: 0.56rem 0.82rem 0.82rem;
-        display: grid;
-        gap: 0;
-    }
-
-    .vol-list-item {
-        border: 0;
-        border-bottom: 1px solid #e2f1eb;
-        background: transparent;
-        padding: 0.7rem 0.1rem;
-        display: grid;
-        grid-template-columns: auto 1fr auto;
-        gap: 0.45rem;
-        align-items: center;
-        transition: background-color 160ms ease;
-        cursor: pointer;
-    }
-
-    .vol-list-item:hover {
-        background: rgba(236, 253, 245, 0.6);
-    }
-
-    .vol-list-item:last-child {
-        border-bottom: 0;
         padding-bottom: 0.2rem;
     }
 
@@ -426,21 +474,41 @@
 
     .vol-inline-actions {
         display: inline-flex;
-        gap: 0.36rem;
-        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.38rem;
+        flex-wrap: nowrap;
+    }
+
+    .vol-table th:last-child,
+    .vol-table td:last-child,
+    .vol-pending-applications-table th:last-child,
+    .vol-pending-applications-table td:last-child {
+        text-align: right;
     }
 
     .vol-chip-btn {
-        border: 0;
-        border-radius: 0;
-        background: transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.1rem;
+        height: 2.1rem;
+        border: 1px solid #d4e9e1;
+        border-radius: 10px;
+        background: #fff;
         color: #195144;
-        font-size: 0.67rem;
+        font-size: 0;
         font-weight: 700;
         padding: 0;
         cursor: pointer;
-        text-decoration: underline;
-        text-underline-offset: 0.14em;
+        text-decoration: none;
+        box-sizing: border-box;
+        transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .vol-chip-btn svg {
+        width: 0.9rem;
+        height: 0.9rem;
     }
 
     .vol-mini-grid {
@@ -545,23 +613,24 @@
     }
 
     .vol-filter-bar {
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(180px, 1fr) 150px 145px auto auto;
+        grid-template-areas: "search status type add more";
         align-items: center;
         gap: 0.75rem;
-        margin-left: auto;
-        flex: 1 1 auto;
+        margin-left: 0;
+        flex: 1 1 760px;
         min-width: 0;
-        flex-wrap: nowrap;
-        justify-content: flex-end;
+        justify-content: start;
     }
 
     .vol-head > div:first-child {
-        flex: 1 1 auto;
         min-width: 0;
     }
 
     .vol-head > div:last-child {
-        flex-shrink: 0;
+        width: 100%;
+        min-width: 0;
     }
 
     .vol-directory-tabs {
@@ -608,6 +677,8 @@
         color: var(--vol-green-deep);
     }
 
+    .vol-directory-tab-count { margin-left:.28rem; color:#0f766e; font-size:.7rem; font-weight:800; }
+
     .vol-directory-tab[aria-selected="true"]::after {
         background: var(--vol-green-deep);
     }
@@ -624,7 +695,33 @@
     .vol-certification-actions a, .vol-certification-actions button { border: 1px solid #cfe8df; border-radius: .45rem; padding: .38rem .62rem; background: #fff; color: #0f766e; font-weight: 700; cursor: pointer; text-decoration: none; }
     .vol-certification-actions button { color: #b42318; }
 
+    .vol-milestones-table-wrap { overflow-x: auto; }
+    .vol-milestones-table { width: 100%; min-width: 760px; border-collapse: collapse; table-layout: fixed; }
+    .vol-milestones-table th, .vol-milestones-table td { padding: .72rem .7rem; text-align: left; vertical-align: top; border: 0; overflow-wrap: anywhere; }
+    .vol-milestones-table thead th { color: #2f6659; font-size: .72rem; background: rgba(236, 253, 245, 0.86); }
+    .vol-milestones-table tbody tr { background: transparent; }
+    .vol-milestones-table tbody tr:hover { background: rgba(236, 253, 245, 0.42); }
+    .vol-milestones-table th:nth-child(1), .vol-milestones-table td:nth-child(1) { width: 18%; }
+    .vol-milestones-table th:nth-child(2), .vol-milestones-table td:nth-child(2) { width: 12%; }
+    .vol-milestones-table th:nth-child(3), .vol-milestones-table td:nth-child(3) { width: 12%; }
+    .vol-milestones-table th:nth-child(4), .vol-milestones-table td:nth-child(4) { width: 20%; }
+    .vol-milestones-table th:nth-child(5), .vol-milestones-table td:nth-child(5) { width: 22%; }
+    .vol-milestones-table th:nth-child(6), .vol-milestones-table td:nth-child(6) { width: 16%; }
+    .vol-milestone-cell { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
+    .vol-milestone-cell strong { font-size: .82rem; color: #173a31; }
+    .vol-milestone-cell small { color: #5f7d73; font-size: .7rem; }
+    .vol-milestone-progress { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+    .vol-milestone-progress-bar { width: 100%; height: .5rem; border-radius: 999px; background: #e5efe9; overflow: hidden; }
+    .vol-milestone-progress-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #16a34a, #10b981); }
+    .vol-milestone-progress-label { font-size: .7rem; color: #48665d; }
+    .vol-milestone-status { color: #5f7d73; font-size: .72rem; }
+    .vol-milestone-actions { display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; }
+    .vol-milestone-action-btn { border: 1px solid #b7ddcf; border-radius: .45rem; background: #fff; color: #0f766e; font-size: .72rem; font-weight: 700; padding: .42rem .62rem; cursor: pointer; }
+    .vol-milestone-action-btn:hover { background: #f1fbf7; }
+    .vol-milestone-action-btn { max-width: 100%; white-space: normal; }
+
     .vol-search-wrapper {
+        grid-area: search;
         position: relative;
         display: flex;
         align-items: center;
@@ -633,8 +730,32 @@
         min-width: 0;
     }
 
+    .vol-filter-bar .status-filter-select--vol-status-filter {
+        grid-area: status;
+    }
+
+    .vol-filter-bar .status-filter-select--vol-type-filter {
+        grid-area: type;
+    }
+
+    #vol-add-btn {
+        grid-area: add;
+    }
+
+    #vol-toggle-columns {
+        grid-area: more;
+        justify-self: end;
+    }
+
     .vol-filter-bar .vol-status-filter {
+        grid-area: status;
         flex: 0 1 160px;
+        min-width: 120px;
+    }
+
+    .vol-filter-bar .vol-type-filter {
+        grid-area: type;
+        flex: 0 1 145px;
         min-width: 120px;
     }
 
@@ -1917,6 +2038,43 @@
         font-size: 0.78rem;
     }
 
+    .vol-profile-photos-card {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border: 1px solid #e2eee8;
+        border-radius: 10px;
+        background: #f8fcfa;
+    }
+
+    .vol-profile-photos-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .vol-profile-photos-group + .vol-profile-photos-group { padding-top: 0.65rem; border-top: 1px solid #e2eee8; }
+    .vol-profile-photos-group-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: #35695b; font-size: 0.7rem; font-weight: 800; }
+    .vol-profile-photos-group-count { flex: 0 0 auto; color: #81938b; font-size: 0.66rem; }
+    .vol-profile-photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 0.55rem; }
+
+    .vol-profile-photo-item {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        gap: 0.28rem;
+        color: #5e7d73;
+        font-size: 0.68rem;
+        text-decoration: none;
+    }
+
+    .vol-profile-photo-item img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1;
+        border: 1px solid #d5e8df;
+        border-radius: 8px;
+        object-fit: cover;
+    }
+
+    .vol-profile-photo-item span { overflow-wrap: anywhere; }
+
     .vol-profile-issued-certificate {
         display: grid;
         gap: 0.18rem;
@@ -1976,45 +2134,50 @@
     }
 
     .vol-attendance-records-table {
-        min-width: 1320px;
+        min-width: 900px;
+        width: 100%;
         table-layout: fixed;
     }
 
     .vol-attendance-records-table th:nth-child(1),
-    .vol-attendance-records-table td:nth-child(1) { width: 15%; }
+    .vol-attendance-records-table td:nth-child(1) { width: 18%; }
     .vol-attendance-records-table th:nth-child(2),
-    .vol-attendance-records-table td:nth-child(2) { width: 18%; }
+    .vol-attendance-records-table td:nth-child(2) { width: 16%; }
     .vol-attendance-records-table th:nth-child(3),
-    .vol-attendance-records-table td:nth-child(3) { width: 12%; }
+    .vol-attendance-records-table td:nth-child(3) { width: 11%; }
     .vol-attendance-records-table th:nth-child(4),
-    .vol-attendance-records-table td:nth-child(4) { width: 9%; }
+    .vol-attendance-records-table td:nth-child(4) { width: 8%; }
     .vol-attendance-records-table th:nth-child(5),
-    .vol-attendance-records-table td:nth-child(5) { width: 12%; }
+    .vol-attendance-records-table td:nth-child(5) { width: 9%; }
     .vol-attendance-records-table th:nth-child(6),
-    .vol-attendance-records-table td:nth-child(6) { width: 16%; }
+    .vol-attendance-records-table td:nth-child(6) { width: 14%; }
     .vol-attendance-records-table th:nth-child(7),
-    .vol-attendance-records-table td:nth-child(7) { width: 18%; }
+    .vol-attendance-records-table td:nth-child(7) { width: 12%; }
+    .vol-attendance-records-table th:nth-child(8),
+    .vol-attendance-records-table td:nth-child(8) { width: 12%; }
 
     .vol-attendance-records-table .vol-attendance-actions {
         justify-content: flex-start;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
         margin-left: 0;
     }
 
     .vol-attendance-records-table .vol-attendance-actions .vol-form-btn {
-        flex: 0 0 auto;
+        flex: 1 1 4.2rem;
         min-width: 0;
-        white-space: nowrap;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        text-align: center;
     }
 
     .vol-attendance-table th,
     .vol-attendance-table td {
-        padding: 0.62rem 0.75rem;
+        padding: 0.54rem 0.38rem;
         font-size: 0.8rem;
         text-align: left;
         vertical-align: middle;
-        border: 1px solid #dceee7;
-        border-width: 0 0 1px;
+        border: 0;
+        overflow-wrap: anywhere;
     }
 
     .vol-attendance-table th {
@@ -2022,7 +2185,7 @@
         color: #2f6659;
         font-weight: 700;
         background: rgba(236, 253, 245, 0.86);
-        border-bottom: 1px solid rgba(15, 118, 110, 0.16);
+        border-bottom: 0;
     }
 
     .vol-attendance-table tbody tr:hover {
@@ -2030,8 +2193,32 @@
     }
 
     .vol-attendance-table .vol-attendance-person {
-        min-width: 180px;
+        min-width: 0;
     }
+
+    .vol-attendance-records-table .vol-attendance-status { white-space: normal; }
+    .vol-attendance-records-table th { white-space: normal; font-size: .74rem; }
+    .vol-attendance-records-table td { min-width: 0; }
+    .vol-attendance-records-table .vol-attendance-actions { width: 100%; min-width: 0; }
+    .vol-attendance-photos { display:flex; align-items:center; gap:.2rem; min-width:0; }
+    .vol-attendance-photo-trigger { position:relative; display:block; width:1.8rem; height:1.8rem; padding:0; border:0; border-radius:.42rem; background:transparent; cursor:pointer; }
+    .vol-attendance-photo-thumb { display:block; width:100%; height:100%; border-radius:.42rem; object-fit:cover; }
+    .vol-attendance-photo-more { display:inline-flex; min-width:1.25rem; height:1.25rem; align-items:center; justify-content:center; padding:0 .2rem; border-radius:999px; background:#e6f5f0; color:#0f766e; font-size:.68rem; font-weight:800; white-space:nowrap; }
+    .vol-attendance-no-photos { color:#9aa7a1; font-size:.72rem; font-weight:600; white-space:nowrap; }
+    .vol-attendance-photo-dialog { width:min(92vw,760px); max-width:none; max-height:88vh; padding:0; overflow:auto; border:1px solid #d8e6e0; border-radius:1rem; background:#fff; color:#173a31; box-shadow:0 24px 64px rgba(15,23,42,.28); }
+    .vol-attendance-photo-dialog::backdrop { background:rgba(15,23,42,.48); }
+    .vol-attendance-photo-dialog-header { display:flex; align-items:center; justify-content:space-between; gap:.8rem; padding:1rem 1.1rem; border-bottom:1px solid #e3ede8; }
+    .vol-attendance-photo-dialog-title { margin:0; color:#173a31; font-size:1rem; font-weight:800; }
+    .vol-attendance-photo-dialog-subtitle { margin:.2rem 0 0; color:#647b72; font-size:.78rem; }
+    .vol-attendance-photo-close { display:grid; width:2.2rem; height:2.2rem; place-items:center; border:1px solid #d8e6e0; border-radius:50%; background:#fff; color:#35695b; font-size:1.1rem; cursor:pointer; }
+    .vol-attendance-photo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(9rem,1fr)); gap:.7rem; padding:1rem 1.1rem 1.1rem; }
+    .vol-attendance-photo-grid-item { display:grid; gap:.3rem; min-width:0; padding:0; border:0; background:transparent; color:#56766c; text-align:left; cursor:pointer; }
+    .vol-attendance-photo-grid-item img { display:block; width:100%; aspect-ratio:4/3; border-radius:.55rem; object-fit:cover; background:#f3f8f5; }
+    .vol-attendance-photo-caption { overflow:hidden; font-size:.72rem; text-overflow:ellipsis; white-space:nowrap; }
+    .vol-attendance-photo-viewer { width:min(92vw,900px); max-width:none; max-height:90vh; padding:0; overflow:hidden; border:1px solid #d8e6e0; border-radius:1rem; background:#10231e; color:#fff; }
+    .vol-attendance-photo-viewer::backdrop { background:rgba(15,23,42,.65); }
+    .vol-attendance-photo-viewer img { display:block; width:100%; max-height:78vh; object-fit:contain; }
+    .vol-attendance-photo-viewer-caption { margin:0; padding:.65rem 1rem; color:#fff; font-size:.82rem; }
 
     .vol-ojt-progress-table-wrap {
         overflow-x: auto;
@@ -2275,6 +2462,12 @@
         overflow-x: hidden;
     }
 
+    .vol-type-change-ojt-options[hidden],
+    #vol-type-change-community-note[hidden],
+    .vol-type-edit-ojt-settings[hidden] {
+        display: none !important;
+    }
+
     .vol-ojt-requirement-modal > .vol-head {
         position: relative;
         padding-right: 4rem;
@@ -2442,19 +2635,34 @@
         gap: 0.5rem;
     }
 
-    .vol-table th:nth-child(4),
-    .vol-table td:nth-child(4),
     .vol-table th:nth-child(5),
-    .vol-table td:nth-child(5) {
+    .vol-table td:nth-child(5),
+    .vol-table th:nth-child(6),
+    .vol-table td:nth-child(6) {
         display: none;
     }
 
-    .vol-table.vol-show-all th:nth-child(4),
-    .vol-table.vol-show-all td:nth-child(4),
     .vol-table.vol-show-all th:nth-child(5),
-    .vol-table.vol-show-all td:nth-child(5) {
+    .vol-table.vol-show-all td:nth-child(5),
+    .vol-table.vol-show-all th:nth-child(6),
+    .vol-table.vol-show-all td:nth-child(6) {
         display: table-cell;
     }
+
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table {
+        width: 100%;
+        min-width: 0 !important;
+    }
+
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th,
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td { display: table-cell !important; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:nth-child(1), #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:nth-child(1) { width: 17%; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:nth-child(2), #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:nth-child(2) { width: 19%; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:nth-child(3), #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:nth-child(3) { width: 24%; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:nth-child(4), #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:nth-child(4) { width: 12%; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:nth-child(5), #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:nth-child(5) { width: 11%; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:nth-child(6), #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:nth-child(6) { width: 9%; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:nth-child(7), #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:nth-child(7) { width: 8%; }
 
     .vol-checkbox {
         width: 1.1rem;
@@ -2571,6 +2779,28 @@
         }
     }
 
+    @media (max-width: 1119px) {
+        .vol-head {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .vol-filter-bar {
+            grid-template-columns: minmax(180px, 1fr) minmax(125px, 150px) minmax(125px, 145px);
+            grid-template-areas:
+                "search status type"
+                "add more more";
+        }
+
+        #vol-add-btn {
+            grid-area: add;
+        }
+
+        #vol-toggle-columns {
+            grid-area: more;
+            justify-self: end;
+        }
+    }
+
     @media (max-width: 767px) {
         .vol-page {
             gap: 0.7rem;
@@ -2602,6 +2832,7 @@
         }
 
         .vol-head {
+            grid-template-columns: minmax(0, 1fr);
             flex-wrap: wrap;
             align-items: flex-start;
         }
@@ -2694,8 +2925,8 @@
             grid-template-columns: repeat(2, minmax(0, 1fr));
             grid-template-areas:
                 "search search"
-                "status add"
-                "more more";
+                "status type"
+                "add more";
             align-items: stretch;
             width: 100%;
             margin-left: 0;
@@ -2715,11 +2946,19 @@
             flex: none;
         }
 
+        .vol-filter-bar .status-filter-select--vol-type-filter {
+            grid-area: type;
+            width: 100%;
+            min-width: 0;
+            flex: none;
+        }
+
         #vol-add-btn {
             grid-area: add;
         }
 
         .vol-status-filter,
+        .vol-type-filter,
         .vol-add-btn,
         .vol-toggle-columns-btn {
             width: 100% !important;
@@ -2729,6 +2968,7 @@
 
         #vol-toggle-columns {
             grid-area: more;
+            justify-self: end;
         }
 
         .vol-add-btn {
@@ -2774,6 +3014,43 @@
             align-items: flex-start;
         }
     }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table {
+        width: 100%;
+        min-width: 1380px !important;
+        table-layout: fixed;
+        border-collapse: collapse;
+    }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th,
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td {
+        border: 0;
+        white-space: normal;
+        word-break: normal;
+        overflow-wrap: normal;
+    }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:nth-child(1), #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:nth-child(1) { width: 210px; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:nth-child(2), #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:nth-child(2) { width: 190px; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:nth-child(3), #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:nth-child(3) { width: 320px; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:nth-child(4), #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:nth-child(4) { width: 190px; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:nth-child(5), #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:nth-child(5) { width: 160px; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:nth-child(6), #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:nth-child(6) { width: 150px; white-space: nowrap; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:last-child,
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:last-child {
+        position: sticky;
+        right: 0;
+        z-index: 3;
+        width: 160px !important;
+        min-width: 160px !important;
+        text-align: center;
+        background: #fff;
+    }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table thead th:last-child { z-index: 4; background: rgba(236, 253, 245, 0.96); }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table tbody tr:hover td:last-child { background: #f5fcf9; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table .vol-inline-actions { display: flex; justify-content: space-evenly; gap: 0.5rem; min-width: 120px; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table .vol-chip-btn { flex: 0 0 2.1rem; border: 0; background: transparent; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table .vol-chip-btn:hover { background: #edf7f2; }
+    .vol-pending-type-pill { max-width: 100%; min-height: 0; padding: 0.32rem 0.6rem; border: 0; font-size: 0.72rem; font-weight: 700; line-height: 1.2; white-space: normal; }
+    .vol-pending-type-pill.is-complete { background: #dcfce7; color: #14532d; }
+    .vol-pending-type-pill.is-incomplete { background: #fef3c7; color: #92400e; }
 </style>
 {% endblock %}
 
@@ -2832,8 +3109,14 @@
                     <select id="vol-status-filter" class="vol-status-filter" data-status-filter-custom aria-label="Filter by status">
                         <option value="">All Statuses</option>
                         <option value="Active">Active</option>
-                        <option value="Pending">Pending</option>
                         <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="status-filter-select status-filter-select--vol-type-filter">
+                    <select id="vol-type-filter" class="vol-status-filter vol-type-filter" aria-label="Filter by volunteer type">
+                        <option value="">All Types</option>
+                        <option value="ojt">OJT</option>
+                        <option value="community">Community</option>
                     </select>
                 </div>
                 <button type="button" id="vol-add-btn" class="vol-toggle-columns-btn vol-add-btn" aria-label="Add new volunteer"><i data-lucide="user-plus"></i><span>Add Volunteer</span></button>
@@ -2842,8 +3125,10 @@
         </header>
                 <div class="vol-directory-tabs" role="tablist" aria-label="Volunteer directory views">
                         <button type="button" id="vol-directory-tab" class="vol-directory-tab" role="tab" aria-selected="true" aria-controls="vol-directory-panel">Directory</button>
+                    <button type="button" id="vol-pending-applications-tab" class="vol-directory-tab" role="tab" aria-selected="false" aria-controls="vol-pending-applications-panel">Pending Applications <span id="vol-pending-applications-count" class="vol-directory-tab-count"></span></button>
                         <button type="button" id="vol-attendance-tab" class="vol-directory-tab" role="tab" aria-selected="false" aria-controls="vol-attendance-panel">Attendance Monitor</button>
                         <button type="button" id="vol-ojt-progress-tab" class="vol-directory-tab" role="tab" aria-selected="false" aria-controls="vol-ojt-progress-panel">OJT Progress</button>
+                        <button type="button" id="vol-milestones-tab" class="vol-directory-tab" role="tab" aria-selected="false" aria-controls="vol-milestones-panel">Milestones</button>
                         <button type="button" id="vol-certifications-tab" class="vol-directory-tab" role="tab" aria-selected="false" aria-controls="vol-certifications-panel">Certifications</button>
                 </div>
                 <div id="vol-directory-panel" class="vol-directory-panel" role="tabpanel" aria-labelledby="vol-directory-tab">
@@ -2863,10 +3148,11 @@
                     <tr>
                         <th style="width: 2.5rem;"><input type="checkbox" id="vol-select-all" class="vol-checkbox" aria-label="Select all volunteers"></th>
                         <th>Name</th>
+                        <th>Type</th>
                         <th>Contact</th>
                         <th>Email</th>
                         <th>Availability</th>
-                        <th>OJT Hours</th>
+                        <th>Hours Logged</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -2875,9 +3161,35 @@
             </table>
           </div>
         </div>
+        <div id="vol-pending-applications-panel" class="vol-directory-panel" role="tabpanel" aria-labelledby="vol-pending-applications-tab" hidden>
+            <div class="vol-table-wrap">
+                <table class="vol-table vol-pending-applications-table" aria-label="Pending volunteer applications">
+                    <thead><tr><th>Applicant</th><th>Volunteer Type</th><th>Contact</th><th>Skills / Areas</th><th>Availability</th><th>Date Applied</th><th>Actions</th></tr></thead>
+                    <tbody id="vol-pending-applications-body"></tbody>
+                </table>
+            </div>
+        </div>
         <div id="vol-attendance-panel" class="vol-directory-panel" role="tabpanel" aria-labelledby="vol-attendance-tab" hidden>
             <div id="vol-attendance-review" class="vol-attendance-monitor"></div>
         </div>
+        <dialog id="vol-attendance-photo-dialog" class="vol-attendance-photo-dialog" aria-labelledby="vol-attendance-photo-title">
+            <header class="vol-attendance-photo-dialog-header">
+                <div>
+                    <h2 id="vol-attendance-photo-title" class="vol-attendance-photo-dialog-title"></h2>
+                    <p id="vol-attendance-photo-subtitle" class="vol-attendance-photo-dialog-subtitle"></p>
+                </div>
+                <button type="button" id="vol-attendance-photo-close" class="vol-attendance-photo-close" aria-label="Close photos">×</button>
+            </header>
+            <div id="vol-attendance-photo-grid" class="vol-attendance-photo-grid"></div>
+        </dialog>
+        <dialog id="vol-attendance-photo-viewer" class="vol-attendance-photo-viewer" aria-labelledby="vol-attendance-photo-viewer-caption">
+            <header class="vol-attendance-photo-dialog-header">
+                <strong id="vol-attendance-photo-viewer-heading" class="vol-attendance-photo-dialog-title"></strong>
+                <button type="button" id="vol-attendance-photo-viewer-close" class="vol-attendance-photo-close" aria-label="Close photo">×</button>
+            </header>
+            <img id="vol-attendance-photo-viewer-image" alt="">
+            <p id="vol-attendance-photo-viewer-caption" class="vol-attendance-photo-viewer-caption"></p>
+        </dialog>
         <div id="vol-ojt-progress-panel" class="vol-directory-panel" role="tabpanel" aria-labelledby="vol-ojt-progress-tab" hidden>
             <div class="vol-ojt-progress-table-wrap">
                 <table class="vol-ojt-progress-table" aria-label="OJT progress by volunteer">
@@ -2892,6 +3204,23 @@
                         </tr>
                     </thead>
                     <tbody id="vol-ojt-progress-body"></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="vol-milestones-panel" class="vol-directory-panel" role="tabpanel" aria-labelledby="vol-milestones-tab" hidden>
+            <div class="vol-milestones-table-wrap">
+                <table class="vol-milestones-table" aria-label="Community volunteer milestones">
+                    <thead>
+                        <tr>
+                            <th>Volunteer</th>
+                            <th>Day count</th>
+                            <th>Week streak</th>
+                            <th>Latest milestone</th>
+                            <th>Next milestone</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vol-milestones-body"></tbody>
                 </table>
             </div>
         </div>
@@ -2969,6 +3298,14 @@
     <footer id="vol-profile-footer" class="vol-form-actions vol-profile-footer"></footer>
 </div>
 
+<dialog id="role-application-review-dialog" class="role-application-review-dialog" aria-labelledby="role-application-review-title">
+    <header>
+        <div><p>Application review</p><h2 id="role-application-review-title">Applicant-added details</h2></div>
+        <button type="button" data-close-application-review aria-label="Close application details">×</button>
+    </header>
+    <div id="role-application-review-body"></div>
+</dialog>
+
 <div id="vol-ojt-requirement-modal" class="vol-modal vol-confirm-modal vol-ojt-requirement-modal" role="dialog" aria-modal="true" aria-labelledby="vol-ojt-requirement-title" data-open="false">
     <header class="vol-head">
         <div>
@@ -3034,6 +3371,54 @@
     <footer class="vol-form-actions">
         <button type="button" class="vol-form-btn" data-close-ojt-requirement="true">Cancel</button>
         <button type="submit" form="vol-ojt-requirement-form" id="vol-ojt-requirement-save" class="vol-form-btn vol-save-btn">Save changes</button>
+    </footer>
+</div>
+
+<div id="vol-type-change-modal" class="vol-modal vol-confirm-modal vol-ojt-requirement-modal" role="dialog" aria-modal="true" aria-labelledby="vol-type-change-title" data-open="false">
+    <header class="vol-head">
+        <div>
+            <h3 id="vol-type-change-title" class="vol-title">Change Volunteer Type</h3>
+            <p id="vol-type-change-volunteer" class="vol-sub">Choose the volunteer's program type.</p>
+        </div>
+        <div class="vol-modal-header-actions">
+            <button type="button" class="vol-modal-close-icon" data-close-volunteer-type="true" aria-label="Close type change dialog" title="Close">×</button>
+        </div>
+    </header>
+    <div class="vol-profile-body">
+        <form id="vol-type-change-form" class="vol-ojt-requirement-form">
+            <div class="vol-field-group">
+                <label class="vol-field-label" for="vol-type-change-select">Type</label>
+                <select id="vol-type-change-select" class="vol-input" required>
+                    <option value="ojt">OJT</option>
+                    <option value="community">Community</option>
+                </select>
+            </div>
+            <p id="vol-type-change-community-note" class="vol-sub vol-profile-field-full" hidden>All logged hours will be kept as total volunteer hours. OJT-only items will no longer appear.</p>
+            <div id="vol-type-change-ojt-options" class="vol-type-change-ojt-options vol-profile-field-full" hidden>
+                <div class="vol-field-group">
+                    <label class="vol-field-label" for="vol-type-change-hours">Required OJT hours</label>
+                    <input id="vol-type-change-hours" class="vol-input" type="number" min="0.01" max="10000" step="0.01" inputmode="decimal" value="80">
+                </div>
+                <fieldset class="vol-field-group">
+                    <legend class="vol-field-label">Regular OJT days</legend>
+                    <div class="vol-ojt-weekday-picker" role="group" aria-label="Regular OJT days">
+                        <button type="button" class="vol-ojt-weekday" data-type-change-weekday="0" aria-pressed="false">Mon</button>
+                        <button type="button" class="vol-ojt-weekday" data-type-change-weekday="1" aria-pressed="false">Tue</button>
+                        <button type="button" class="vol-ojt-weekday" data-type-change-weekday="2" aria-pressed="false">Wed</button>
+                        <button type="button" class="vol-ojt-weekday" data-type-change-weekday="3" aria-pressed="false">Thu</button>
+                        <button type="button" class="vol-ojt-weekday" data-type-change-weekday="4" aria-pressed="false">Fri</button>
+                        <button type="button" class="vol-ojt-weekday" data-type-change-weekday="5" aria-pressed="false">Sat</button>
+                        <button type="button" class="vol-ojt-weekday" data-type-change-weekday="6" aria-pressed="false">Sun</button>
+                    </div>
+                    <p class="vol-sub">Leave all days unselected if there is no recurring schedule.</p>
+                </fieldset>
+            </div>
+            <div id="vol-type-change-error" class="vol-ojt-requirement-error" role="alert" aria-live="polite"></div>
+        </form>
+    </div>
+    <footer class="vol-form-actions">
+        <button type="button" class="vol-form-btn" data-close-volunteer-type="true">Cancel</button>
+        <button type="submit" form="vol-type-change-form" id="vol-type-change-save" class="vol-form-btn vol-save-btn">Confirm type change</button>
     </footer>
 </div>
 
@@ -3240,6 +3625,26 @@
     </footer>
 </div>
 
+<div id="vol-certificate-view-modal" class="vol-modal vol-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="vol-certificate-view-title" data-open="false">
+    <header class="vol-head">
+        <div>
+            <h3 id="vol-certificate-view-title" class="vol-title">Certificate details</h3>
+        </div>
+        <div class="vol-modal-header-actions">
+            <button type="button" class="vol-modal-close-icon" data-close-certificate-view="true" aria-label="Close certificate details" title="Close">×</button>
+        </div>
+    </header>
+    <div class="vol-profile-body">
+        <div class="vol-profile-field"><span>Volunteer</span><strong id="vol-certificate-view-name">Volunteer</strong></div>
+        <div class="vol-profile-field"><span>Issued</span><strong id="vol-certificate-view-date">—</strong></div>
+        <div class="vol-profile-field vol-profile-field-full"><span>Certificate text</span><p id="vol-certificate-view-reason" class="vol-profile-multi-line">No certificate details are available.</p></div>
+    </div>
+    <footer class="vol-form-actions">
+        <button type="button" class="vol-form-btn" data-close-certificate-view="true">Close</button>
+        <a id="vol-certificate-view-download" href="#" class="vol-form-btn vol-save-btn" target="_blank" rel="noopener">Download</a>
+    </footer>
+</div>
+
 {{ activity_options|json_script:"activity-options-data" }}
 <div id="assign-activity-modal" class="vol-modal assign-activity-modal" role="dialog" aria-modal="true" aria-labelledby="assign-activity-title" data-open="false">
     <header class="vol-head">
@@ -3310,9 +3715,11 @@
     var CREATE_VOLUNTEER_URL = "{% url 'create_volunteer' %}";
     var ASSIGN_ACTIVITY_URL = "{% url 'assign_volunteer_activity' %}";
     var UPDATE_VOLUNTEER_PROFILE_URL = "{% url 'update_volunteer_profile' %}";
+    var UPDATE_VOLUNTEER_TYPE_URL = "{% url 'update_volunteer_type' %}";
     var UPDATE_VOLUNTEER_OJT_REQUIREMENT_URL = "{% url 'update_volunteer_ojt_requirement' %}";
     var DEACTIVATE_VOLUNTEER_URL = "{% url 'deactivate_volunteer' %}";
     var DEACTIVATE_VOLUNTEERS_BULK_URL = "{% url 'deactivate_volunteers_bulk' %}";
+    var CREATE_CERTIFICATE_URL = "{% url 'admin_certificate_create' %}";
     var DELETE_CERTIFICATE_URL_TEMPLATE = "{% url 'admin_certificate_delete' 0 %}";
 
     function loadJsonData(scriptId) {
@@ -3359,20 +3766,7 @@
         pendingAttendance = Array.isArray(payload && payload.pending_attendance) ? payload.pending_attendance : [];
         pendingBeneficiaryAttendance = Array.isArray(payload && payload.pending_beneficiary_attendance) ? payload.pending_beneficiary_attendance : [];
         attendanceMonitor = payload && payload.attendance_monitor ? payload.attendance_monitor : attendanceMonitor;
-        var mergedVolunteers = volunteersPayload.slice();
-        var seenIds = new Set(mergedVolunteers.map(function (item) { return String(item && item.id); }));
-
-        pendingPayload.forEach(function (application) {
-            var pendingVolunteer = normalizePendingApplication(application);
-            var key = String(pendingVolunteer.id);
-            if (seenIds.has(key)) {
-                return;
-            }
-            mergedVolunteers.push(pendingVolunteer);
-            seenIds.add(key);
-        });
-
-        volunteers = mergedVolunteers;
+        volunteers = volunteersPayload.filter(function (item) { return item && item.status !== "Pending"; });
         pendingApplications = pendingPayload;
     }
 
@@ -3398,7 +3792,9 @@
 
     var searchInput = byId("vol-search-input");
     var statusFilter = byId("vol-status-filter");
+    var volunteerTypeFilter = byId("vol-type-filter");
     var directoryFilterValue = "";
+    var volunteerTypeFilterValue = "";
     var attendanceFilterValue = "all";
     var selectAllCheckbox = byId("vol-select-all");
     var selectedVolunteers = new Set();
@@ -3435,6 +3831,16 @@
     var certificateDeleteModal = byId("vol-certificate-delete-modal");
     var certificateDeleteMessage = byId("vol-certificate-delete-message");
     var certificateDeleteConfirmButton = byId("vol-certificate-delete-confirm");
+    var volunteerTypeChangeModal = byId("vol-type-change-modal");
+    var volunteerTypeChangeForm = byId("vol-type-change-form");
+    var volunteerTypeChangeSelect = byId("vol-type-change-select");
+    var volunteerTypeChangeVolunteer = byId("vol-type-change-volunteer");
+    var volunteerTypeChangeCommunityNote = byId("vol-type-change-community-note");
+    var volunteerTypeChangeOjtOptions = byId("vol-type-change-ojt-options");
+    var volunteerTypeChangeHours = byId("vol-type-change-hours");
+    var volunteerTypeChangeError = byId("vol-type-change-error");
+    var volunteerTypeChangeSave = byId("vol-type-change-save");
+    var volunteerTypeChangeVolunteerId = null;
     var ojtRequirementModal = byId("vol-ojt-requirement-modal");
     var ojtRequirementForm = byId("vol-ojt-requirement-form");
     var ojtRequirementInput = byId("vol-ojt-requirement-input");
@@ -3511,6 +3917,16 @@
             return "vol-badge vol-status-inactive";
         }
         return "vol-badge vol-status-pending";
+    }
+
+    function normalizedVolunteerType(type) {
+        return type === "community" ? "community" : "ojt";
+    }
+
+    function volunteerTypeBadgeMarkup(type) {
+        var volunteerType = normalizedVolunteerType(type);
+        var label = volunteerType === "community" ? "Community" : "OJT";
+        return "<span class=\"vol-type-pill vol-type-pill-" + volunteerType + "\">" + label + "</span>";
     }
 
     function profileStatusClass(status) {
@@ -3594,6 +4010,7 @@
 
     function renderVolunteerProfileView(volunteer) {
         var contactDetails = volunteer.contact || volunteer.contactDetails || "N/A";
+        var isCommunityVolunteer = volunteer.volunteerType === "community";
         var requiredHours = Number(volunteer.requiredOjtHours || 80);
         if (!Number.isFinite(requiredHours) || requiredHours <= 0) {
             requiredHours = 80;
@@ -3612,24 +4029,62 @@
                 return "<div class=\"vol-profile-issued-certificate\"><strong>Certificate issued</strong><span>Recipient: " + esc(certificate.recipient_name || volunteer.name) + "</span><span>Issued: " + esc(certificate.issued_date || "N/A") + "</span></div>";
             }).join("")
             : "<span>No issued certificates are tracked yet.</span>";
+        var activityPhotos = Array.isArray(volunteer.activityPhotos) ? volunteer.activityPhotos : [];
+        var photoGroupsByKey = Object.create(null);
+        activityPhotos.forEach(function (photo) {
+            var groupKey = photo.assignmentId ? "assignment-" + photo.assignmentId : "untagged-" + (photo.activityName || "photo");
+            if (!photoGroupsByKey[groupKey]) {
+                var activityDateLabel = photo.activityDate
+                    ? new Date(photo.activityDate + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })
+                    : "";
+                photoGroupsByKey[groupKey] = {
+                    activityName: photo.activityName || "No activity tagged",
+                    activityDate: photo.activityDate || "",
+                    activityDateLabel: activityDateLabel,
+                    photos: []
+                };
+            }
+            photoGroupsByKey[groupKey].photos.push(photo);
+        });
+        var activityPhotoGroups = Object.keys(photoGroupsByKey).map(function (key) { return photoGroupsByKey[key]; }).sort(function (first, second) {
+            return second.activityDate.localeCompare(first.activityDate);
+        });
+        var activityPhotosContent = activityPhotos.length
+            ? "<div class=\"vol-profile-photos-card vol-profile-field-full\">" + activityPhotoGroups.map(function (group) {
+                var groupLabel = group.activityName + (group.activityDateLabel ? " · " + group.activityDateLabel : "");
+                return "<section class=\"vol-profile-photos-group\"><div class=\"vol-profile-photos-group-heading\"><span>" + esc(groupLabel) + "</span><span class=\"vol-profile-photos-group-count\">" + group.photos.length + (group.photos.length === 1 ? " photo" : " photos") + "</span></div><div class=\"vol-profile-photos-grid\">" + group.photos.map(function (photo) {
+                    var activityLabel = photo.activityName || "Activity photo";
+                    return "<a class=\"vol-profile-photo-item\" href=\"" + esc(photo.url || "") + "\" target=\"_blank\" rel=\"noopener noreferrer\"><img src=\"" + esc(photo.url || "") + "\" alt=\"" + esc(activityLabel) + "\" loading=\"lazy\"><span>Uploaded " + esc(photo.uploadedAt || "") + "</span></a>";
+                }).join("") + "</div></section>";
+            }).join("") + "</div>"
+            : "<div class=\"vol-profile-certificate-card vol-profile-field-full\"><span>No activity photos yet.</span></div>";
+        var hoursSummary = isCommunityVolunteer
+            ? "<div class=\"vol-profile-section-heading vol-profile-field-full\">Volunteer Hours</div>"
+                + buildVolunteerProfileCard("Total hours volunteered", "<i data-lucide=\"clock-3\"></i>", esc(completedHours.toFixed(2) + " hrs"), false, false)
+            : "<div class=\"vol-profile-section-heading vol-profile-field-full\">OJT Progress</div>"
+                + buildVolunteerProfileCard("Hours completed", "<i data-lucide=\"clock-3\"></i>", esc(completedHours.toFixed(2) + " / " + requiredHours + " hrs"), false, false)
+                + buildVolunteerProfileCard("Progress", "<i data-lucide=\"chart-no-axes-column-increasing\"></i>", esc(Math.round(progress) + "% complete"), false, false)
+                + buildVolunteerProfileCard("Supervisor", "<i data-lucide=\"user-round-check\"></i>", esc(supervisor), false, false)
+                + buildVolunteerProfileCard("OJT status", "<i data-lucide=\"badge-check\"></i>", esc(ojtStatus), false, false);
 
         return buildVolunteerProfileCard("Full name", "<i data-lucide=\"user\"></i>", esc(volunteer.name || "N/A"), false, false)
             + buildVolunteerProfileCard("Username", "<i data-lucide=\"at-sign\"></i>", esc(volunteer.username || "N/A"), false, false)
             + buildVolunteerProfileCard("Contact details", "<i data-lucide=\"phone\"></i>", esc(contactDetails), false, false)
             + buildVolunteerProfileCard("Email", "<i data-lucide=\"mail\"></i>", esc(volunteer.email || "N/A"), false, false)
+            + buildVolunteerProfileCard("Gender", "<i data-lucide=\"user-round\"></i>", esc(({ male: "Male", female: "Female", other: "Other", prefer_not: "Prefer not to say" })[volunteer.gender] || "Not provided"), false, false)
+            + buildVolunteerProfileCard("Address", "<i data-lucide=\"map-pin\"></i>", esc(volunteer.addressLine || "Not provided"), false, false)
             + buildVolunteerProfileCard("Availability", "<i data-lucide=\"calendar-days\"></i>", esc(volunteer.availability || "N/A"), false, false)
+            + buildVolunteerProfileCard("Type", "<i data-lucide=\"users-round\"></i>", volunteerTypeBadgeMarkup(volunteer.volunteerType), false, false)
             + buildVolunteerProfileCard("Status", "<i data-lucide=\"shield-check\"></i>", "<span class=\"vol-profile-pill " + profileStatusClass(volunteer.status) + "\">" + esc(volunteer.status || "N/A") + "</span>", false, false)
             + buildVolunteerProfileCard("Joined", "<i data-lucide=\"calendar-check\"></i>", esc(volunteer.joinedDate || "N/A"), false, false)
-            + "<div class=\"vol-profile-section-heading vol-profile-field-full\">OJT Progress</div>"
-            + buildVolunteerProfileCard("Hours completed", "<i data-lucide=\"clock-3\"></i>", esc(completedHours.toFixed(2) + " / " + requiredHours + " hrs"), false, false)
-            + buildVolunteerProfileCard("Progress", "<i data-lucide=\"chart-no-axes-column-increasing\"></i>", esc(Math.round(progress) + "% complete"), false, false)
-            + buildVolunteerProfileCard("Supervisor", "<i data-lucide=\"user-round-check\"></i>", esc(supervisor), false, false)
-            + buildVolunteerProfileCard("OJT status", "<i data-lucide=\"badge-check\"></i>", esc(ojtStatus), false, false)
+            + hoursSummary
             + "<div class=\"vol-profile-section-heading vol-profile-field-full\">Certificates</div>"
                 + "<div class=\"vol-profile-certificate-card vol-profile-field-full\">"
                 + certificateContent
                 + certificateButton
-                + "</div>";
+                + "</div>"
+            + "<div class=\"vol-profile-section-heading vol-profile-field-full\">Activity Photos</div>"
+            + activityPhotosContent;
     }
 
     function renderVolunteerProfileEdit(volunteer) {
@@ -3638,7 +4093,11 @@
             + "<label class=\"vol-field vol-profile-field vol-profile-editable\"><span class=\"vol-field-label\">Full name</span><input name=\"full_name\" type=\"text\" value=\"" + esc(volunteer.name || "") + "\" required></label>"
             + "<label class=\"vol-field vol-profile-field vol-profile-editable\"><span class=\"vol-field-label\">Email</span><input name=\"email\" type=\"email\" value=\"" + esc(volunteer.email || "") + "\" required></label>"
             + "<label class=\"vol-field vol-profile-field vol-profile-editable\"><span class=\"vol-field-label\">Phone number</span><input name=\"phone\" type=\"tel\" value=\"" + esc(volunteer.contact || "") + "\" required></label>"
+            + "<label class=\"vol-field vol-profile-field vol-profile-editable\"><span class=\"vol-field-label\">Gender</span><select name=\"gender\"><option value=\"\">Select gender</option><option value=\"male\"" + (volunteer.gender === "male" ? " selected" : "") + ">Male</option><option value=\"female\"" + (volunteer.gender === "female" ? " selected" : "") + ">Female</option><option value=\"other\"" + (volunteer.gender === "other" ? " selected" : "") + ">Other</option><option value=\"prefer_not\"" + (volunteer.gender === "prefer_not" ? " selected" : "") + ">Prefer not to say</option></select></label>"
+            + "<label class=\"vol-field vol-profile-field vol-profile-editable\"><span class=\"vol-field-label\">Address</span><textarea name=\"address_line\" rows=\"2\" maxlength=\"255\">" + esc(volunteer.addressLine || "") + "</textarea></label>"
             + "<label class=\"vol-field vol-profile-field vol-profile-editable\"><span class=\"vol-field-label\">Availability</span><input name=\"availability\" type=\"text\" value=\"" + esc(volunteer.availability || "") + "\" required></label>"
+            + "<label class=\"vol-field vol-profile-field vol-profile-editable\"><span class=\"vol-field-label\">Type</span><select name=\"volunteer_type\"><option value=\"ojt\"" + (normalizedVolunteerType(volunteer.volunteerType) === "ojt" ? " selected" : "") + ">OJT</option><option value=\"community\"" + (normalizedVolunteerType(volunteer.volunteerType) === "community" ? " selected" : "") + ">Community</option></select></label>"
+            + "<div class=\"vol-type-edit-ojt-settings vol-profile-field-full\" data-volunteer-edit-ojt-settings hidden><div class=\"vol-field-group\"><label class=\"vol-field-label\" for=\"vol-profile-required-hours\">Required OJT hours</label><input id=\"vol-profile-required-hours\" class=\"vol-input\" name=\"required_ojt_hours\" type=\"number\" min=\"0.01\" max=\"10000\" step=\"0.01\" value=\"" + esc(volunteer.volunteerType === "community" ? 80 : (volunteer.requiredOjtHours || 80)) + "\"></div><fieldset class=\"vol-field-group\"><legend class=\"vol-field-label\">Regular OJT days</legend><div class=\"vol-ojt-weekday-picker\" role=\"group\" aria-label=\"Regular OJT days\">" + ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(function (dayLabel, dayIndex) { var isSelected = ((volunteer.ojtSchedule || {}).weekdays || []).map(Number).indexOf(dayIndex) !== -1; return "<button type=\"button\" class=\"vol-ojt-weekday\" data-volunteer-edit-weekday=\"" + dayIndex + "\" aria-pressed=\"" + (isSelected ? "true" : "false") + "\">" + dayLabel + "</button>"; }).join("") + "</div><p class=\"vol-sub\">Leave all days unselected if there is no recurring schedule.</p></fieldset></div>"
             + "<label class=\"vol-field vol-profile-field vol-profile-editable\"><span class=\"vol-field-label\">Skills</span><textarea name=\"skills\" rows=\"4\">" + esc(volunteer.skills || volunteer.program || "") + "</textarea></label>"
             + "<label class=\"vol-field vol-profile-field vol-profile-editable\"><span class=\"vol-field-label\">Areas of interest</span><textarea name=\"areas_of_interest\" rows=\"4\">" + esc(volunteer.areasOfInterest || "") + "</textarea></label>"
             + "<label class=\"vol-field vol-profile-field vol-profile-editable\"><span class=\"vol-field-label\">Status</span><select name=\"status\"><option value=\"Active\"" + (volunteer.status === "Active" ? " selected" : "") + ">Active</option><option value=\"Pending\"" + (volunteer.status === "Pending" ? " selected" : "") + ">Pending</option><option value=\"Inactive\"" + (volunteer.status === "Inactive" ? " selected" : "") + ">Inactive</option></select></label>"
@@ -3684,6 +4143,34 @@
         renderVolunteerProfileStrip(volunteer);
         if (profileContent) {
             profileContent.innerHTML = profileMode === "edit" ? renderVolunteerProfileEdit(volunteer) : renderVolunteerProfileView(volunteer);
+            if (profileMode === "edit") {
+                var typeSelect = profileContent.querySelector('select[name="volunteer_type"]');
+                var ojtSettings = profileContent.querySelector("[data-volunteer-edit-ojt-settings]");
+                var requiredHours = profileContent.querySelector('input[name="required_ojt_hours"]');
+                function syncEditOjtSettings() {
+                    var isOjt = typeSelect && typeSelect.value === "ojt";
+                    if (ojtSettings) {
+                        ojtSettings.hidden = !isOjt;
+                    }
+                    if (requiredHours) {
+                        requiredHours.disabled = !isOjt;
+                        requiredHours.required = false;
+                        if (!isOjt) requiredHours.value = "";
+                    }
+                    if (!isOjt && ojtSettings) {
+                        ojtSettings.querySelectorAll("[data-volunteer-edit-weekday]").forEach(function (button) {
+                            button.setAttribute("aria-pressed", "false");
+                        });
+                    }
+                }
+                if (typeSelect) typeSelect.addEventListener("change", syncEditOjtSettings);
+                syncEditOjtSettings();
+                profileContent.querySelectorAll("[data-volunteer-edit-weekday]").forEach(function (button) {
+                    button.addEventListener("click", function () {
+                        button.setAttribute("aria-pressed", button.getAttribute("aria-pressed") === "true" ? "false" : "true");
+                    });
+                });
+            }
         }
         renderVolunteerProfileFooter(volunteer, profileMode);
 
@@ -3844,7 +4331,7 @@
 
     function openOjtRequirementModal(volunteerId, currentRequirement) {
         var volunteer = volunteers.find(function (item) { return item.id === volunteerId; });
-        if (!volunteer || !ojtRequirementModal || !ojtRequirementInput) {
+        if (!volunteer || volunteer.volunteerType === "community" || !ojtRequirementModal || !ojtRequirementInput) {
             return;
         }
 
@@ -4195,6 +4682,13 @@
         var submitButton = form.querySelector('button[type="submit"]');
         var originalLabel = submitButton ? submitButton.innerHTML : "Save Changes";
         var body = new URLSearchParams(new FormData(form));
+        var volunteer = volunteers.find(function (item) { return item.id === profileVolunteerId; });
+        var selectedType = form.querySelector('select[name="volunteer_type"]');
+        if (selectedType && selectedType.value === "ojt") {
+            var selectedDays = Array.prototype.slice.call(form.querySelectorAll("[data-volunteer-edit-weekday][aria-pressed='true']"))
+                .map(function (button) { return Number(button.getAttribute("data-volunteer-edit-weekday")); });
+            body.set("schedule_days", JSON.stringify(selectedDays));
+        }
 
         if (submitButton) {
             submitButton.disabled = true;
@@ -4617,6 +5111,114 @@
         });
     }
 
+    function updateVolunteerTypeChangeMode() {
+        var switchingToCommunity = volunteerTypeChangeSelect && volunteerTypeChangeSelect.value === "community";
+        if (volunteerTypeChangeOjtOptions) {
+            volunteerTypeChangeOjtOptions.hidden = switchingToCommunity;
+        }
+        if (volunteerTypeChangeCommunityNote) {
+            volunteerTypeChangeCommunityNote.hidden = !switchingToCommunity;
+        }
+        if (volunteerTypeChangeVolunteer) {
+            var volunteer = volunteers.find(function (item) { return item.id === volunteerTypeChangeVolunteerId; });
+            volunteerTypeChangeVolunteer.textContent = switchingToCommunity
+                ? "Change " + (volunteer ? volunteer.name : "this volunteer") + " to Community? Logged hours will be kept."
+                : "Change " + (volunteer ? volunteer.name : "this volunteer") + " to OJT? Set the required hours and regular days."
+        }
+    }
+
+    function openVolunteerTypeChangeModal(volunteerId) {
+        var volunteer = volunteers.find(function (item) { return item.id === volunteerId; });
+        if (!volunteer || !volunteerTypeChangeModal || !volunteerTypeChangeSelect) {
+            return;
+        }
+
+        closeActionMenus();
+        addVol_closeModal();
+        closeVolunteerProfile();
+        closeVolunteerDeactivateConfirm();
+        closeCertificateDeleteConfirm();
+        closeOjtRequirementModal();
+        closeOjtAdjustModal();
+        volunteerTypeChangeVolunteerId = volunteerId;
+        volunteerTypeChangeSelect.value = normalizedVolunteerType(volunteer.volunteerType) === "community" ? "ojt" : "community";
+        if (volunteerTypeChangeHours) {
+            volunteerTypeChangeHours.value = normalizedVolunteerType(volunteer.volunteerType) === "community"
+                ? 80
+                : (volunteer.requiredOjtHours || 80);
+        }
+        var selectedDays = new Set(((volunteer.ojtSchedule || {}).weekdays || []).map(String));
+        volunteerTypeChangeModal.querySelectorAll("[data-type-change-weekday]").forEach(function (button) {
+            button.setAttribute("aria-pressed", selectedDays.has(button.getAttribute("data-type-change-weekday")) ? "true" : "false");
+        });
+        if (volunteerTypeChangeError) volunteerTypeChangeError.textContent = "";
+        updateVolunteerTypeChangeMode();
+        volunteerTypeChangeModal.setAttribute("data-open", "true");
+        if (modalBackdrop) modalBackdrop.setAttribute("data-open", "true");
+    }
+
+    function closeVolunteerTypeChangeModal() {
+        if (volunteerTypeChangeModal) volunteerTypeChangeModal.setAttribute("data-open", "false");
+        volunteerTypeChangeVolunteerId = null;
+        if (volunteerTypeChangeError) volunteerTypeChangeError.textContent = "";
+        if (volunteerTypeChangeSave) {
+            volunteerTypeChangeSave.disabled = false;
+            volunteerTypeChangeSave.textContent = "Confirm type change";
+        }
+        if (modalBackdrop) modalBackdrop.setAttribute("data-open", "false");
+    }
+
+    function handleVolunteerTypeChangeSubmit(event) {
+        event.preventDefault();
+        if (!volunteerTypeChangeVolunteerId || !volunteerTypeChangeSelect) return;
+
+        var volunteerType = volunteerTypeChangeSelect.value;
+        var body = new URLSearchParams({
+            volunteer_user_id: String(volunteerTypeChangeVolunteerId),
+            volunteer_type: volunteerType
+        });
+        if (volunteerType === "ojt") {
+            var selectedDays = Array.prototype.slice.call(volunteerTypeChangeModal.querySelectorAll("[data-type-change-weekday][aria-pressed='true']"))
+                .map(function (button) { return Number(button.getAttribute("data-type-change-weekday")); });
+            body.set("required_ojt_hours", String(volunteerTypeChangeHours && volunteerTypeChangeHours.value || "80"));
+            body.set("schedule_days", JSON.stringify(selectedDays));
+        }
+
+        if (volunteerTypeChangeSave) {
+            volunteerTypeChangeSave.disabled = true;
+            volunteerTypeChangeSave.textContent = "Saving...";
+        }
+        fetch(UPDATE_VOLUNTEER_TYPE_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-CSRFToken": getCookie("csrftoken") || ""
+            },
+            body: body.toString()
+        }).then(function (response) {
+            return response.json().then(function (payload) {
+                if (!response.ok) throw new Error(payload.error || "Unable to change volunteer type.");
+                return payload;
+            });
+        }).then(function (payload) {
+            if (payload.volunteer) updateVolunteerRecord(payload.volunteer);
+            selectedVolunteers.clear();
+            renderSummaryCards();
+            renderTable();
+            renderOjtProgress();
+            renderPendingApplications();
+            closeVolunteerTypeChangeModal();
+            showToast(payload.message || "Volunteer type updated.");
+            if (window.lucide && typeof window.lucide.createIcons === "function") window.lucide.createIcons();
+        }).catch(function (error) {
+            if (volunteerTypeChangeError) volunteerTypeChangeError.textContent = error.message || "Unable to change volunteer type.";
+            if (volunteerTypeChangeSave) {
+                volunteerTypeChangeSave.disabled = false;
+                volunteerTypeChangeSave.textContent = "Confirm type change";
+            }
+        });
+    }
+
     function openActionMenu(trigger) {
         var actionMenu = byId("vol-actions-menu");
         if (!actionMenu) {
@@ -4630,6 +5232,7 @@
 
         actionMenu.innerHTML = [
             { key: "profile", label: "Profile" },
+            { key: "type", label: "Change type" },
             { key: "assign", label: "Assign to activity" },
             { key: "remove", label: "Remove as Volunteer", danger: true }
         ].map(function (item) {
@@ -4695,7 +5298,7 @@
     function renderSummaryCards() {
         var activeCount = volunteers.filter(function (item) { return item.status === "Active"; }).length;
         var assignedCount = volunteers.filter(function (item) { return item.assignedThisWeek; }).length;
-        var pendingCount = volunteers.filter(function (item) { return item.status === "Pending"; }).length;
+        var pendingCount = pendingApplications.length;
 
         byId("vol-kpi-total").textContent = String(volunteers.length);
         byId("vol-kpi-active").textContent = String(activeCount);
@@ -4717,6 +5320,7 @@
             areasOfInterest: application.areasOfInterest || "",
             availability: application.availability || "N/A",
             ojtHours: 0,
+            volunteerType: application.track === "community_volunteer" ? "community" : "ojt",
             status: "Pending",
             participationRate: 0,
             joinedDate: application.submittedAt || "",
@@ -4732,6 +5336,9 @@
         if (item && item.status === "Pending") {
             var applicationId = item.applicationId != null ? item.applicationId : item.id;
             return "<div class=\"vol-inline-actions\">"
+                + "<button type=\"button\" class=\"vol-chip-btn application-review-detail-button\" data-application-review-details=\"" + applicationId + "\" aria-label=\"View details for " + esc(item.name) + "\" title=\"View details\">"
+                + "<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z'></path><circle cx='12' cy='12' r='3'></circle></svg>"
+                + "</button>"
                 + "<button type=\"button\" class=\"vol-chip-btn\" data-application-action=\"Approve\" data-id=\"" + applicationId + "\" aria-label=\"Approve application for " + esc(item.name) + "\" title=\"Approve\">"
                 + "<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M20 6L9 17l-5-5'></path></svg>"
                 + "</button>"
@@ -4750,23 +5357,16 @@
 
         var tableRows = volunteers.slice();
 
-        var pendingCount = tableRows.filter(function (item) {
-            return item.status === "Pending";
-        }).length;
-
-        var pendingOption = statusFilter ? statusFilter.querySelector('option[value="Pending"]') : null;
-        if (pendingOption) {
-            pendingOption.textContent = "Pending (" + pendingCount + ")";
-        }
-
         var filteredVolunteers = tableRows.filter(function (item) {
             var matchesSearch = searchTerm === "" ||
                 item.name.toLowerCase().includes(searchTerm) ||
                 item.email.toLowerCase().includes(searchTerm) ||
                 item.contact.toLowerCase().includes(searchTerm) ||
-                item.program.toLowerCase().includes(searchTerm);
+                item.program.toLowerCase().includes(searchTerm) ||
+                (normalizedVolunteerType(item.volunteerType) === "community" ? "community" : "ojt").includes(searchTerm);
             var matchesStatus = statusValue === "" || item.status === statusValue;
-            return matchesSearch && matchesStatus;
+            var matchesType = volunteerTypeFilterValue === "" || normalizedVolunteerType(item.volunteerType) === volunteerTypeFilterValue;
+            return matchesSearch && matchesStatus && matchesType;
         });
 
         var body = byId("vol-table-body");
@@ -4781,6 +5381,7 @@
             tr.innerHTML = ""
                 + "<td><input type=\"checkbox\" class=\"vol-checkbox vol-row-checkbox\" data-id=\"" + rowId + "\" aria-label=\"Select " + item.name + "\" " + (isSelected ? "checked" : "") + "></td>"
                 + "<td><button type=\"button\" class=\"vol-profile-link\" data-open-profile=\"" + rowId + "\" aria-label=\"View profile for " + esc(item.name) + "\"><span class=\"vol-avatar\">" + initials(item.name) + "</span><span><p class=\"vol-name\">" + esc(item.name) + "</p></span></button></td>"
+                + "<td>" + volunteerTypeBadgeMarkup(item.volunteerType) + "</td>"
                 + "<td><p class=\"vol-contact\">" + item.contact + "</p></td>"
                 + "<td><p class=\"vol-email\">" + item.email + "</p></td>"
                 + "<td>" + item.availability + "</td>"
@@ -4814,7 +5415,7 @@
         }
 
         var approvedVolunteers = volunteers.filter(function (item) {
-            return item && item.status === "Active";
+            return item && item.status === "Active" && item.volunteerType !== "community";
         });
         var rows = approvedVolunteers.map(function (item) {
             item = item || {};
@@ -4853,7 +5454,94 @@
                 + "</tr>";
         });
 
-        target.innerHTML = rows.length ? rows.join("") : "<tr><td colspan=\"6\" class=\"vol-history-empty\">No approved volunteers have OJT progress yet.</td></tr>";
+        target.innerHTML = rows.length ? rows.join("") : "<tr><td colspan=\"6\" class=\"vol-history-empty\">No approved OJT volunteers have progress yet.</td></tr>";
+    }
+
+    function getCommunityMilestoneData(item) {
+        if (!item || !item.communityMilestones || !Array.isArray(item.communityMilestones.milestones)) {
+            return null;
+        }
+        return item.communityMilestones;
+    }
+
+    function buildMilestoneCertificateReason(milestoneName, volunteerName) {
+        return "In recognition of " + (volunteerName || "Volunteer") + " reaching the " + (milestoneName || "milestone") + " milestone while serving with the HappYness Project community.";
+    }
+
+    function formatMilestoneDateLabel(dateValue) {
+        if (!dateValue) return "—";
+        var parsed = new Date(dateValue);
+        if (Number.isNaN(parsed.getTime())) {
+            return String(dateValue);
+        }
+        return parsed.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function hasIssuedMilestoneCertificate(volunteerId, milestoneName) {
+        if (!volunteerId || !milestoneName || !Array.isArray(volunteerCertificates)) {
+            return false;
+        }
+        var targetName = String(milestoneName).toLowerCase();
+        return volunteerCertificates.some(function (certificate) {
+            return String(certificate.volunteer_id) === String(volunteerId) && String(certificate.reason || "").toLowerCase().indexOf(targetName) !== -1;
+        });
+    }
+
+    function renderMilestones() {
+        var target = byId("vol-milestones-body");
+        if (!target) {
+            return;
+        }
+
+        var searchTerm = (searchInput && searchInput.value.toLowerCase()) || "";
+        var statusValue = directoryFilterValue;
+        var communityVolunteers = volunteers.filter(function (item) {
+            return item && normalizedVolunteerType(item.volunteerType) === "community";
+        });
+
+        var filteredVolunteers = communityVolunteers.filter(function (item) {
+            var milestoneData = getCommunityMilestoneData(item);
+            if (!milestoneData) {
+                return false;
+            }
+            var matchesSearch = searchTerm === "" || (item.name || "").toLowerCase().includes(searchTerm) || (item.email || "").toLowerCase().includes(searchTerm) || (item.contact || "").toLowerCase().includes(searchTerm) || (item.program || "").toLowerCase().includes(searchTerm) || (normalizedVolunteerType(item.volunteerType) === "community" ? "community" : "").includes(searchTerm);
+            var matchesStatus = statusValue === "" || item.status === statusValue;
+            var matchesType = volunteerTypeFilterValue === "" || normalizedVolunteerType(item.volunteerType) === volunteerTypeFilterValue;
+            return matchesSearch && matchesStatus && matchesType && milestoneData;
+        });
+
+        var rows = filteredVolunteers.map(function (item) {
+            var milestoneData = getCommunityMilestoneData(item) || { days_volunteered: 0, current_week_streak: 0, milestones: [] };
+            var earnedMilestones = milestoneData.milestones.filter(function (milestone) { return milestone && milestone.earned; });
+            var latestMilestone = earnedMilestones.sort(function (first, second) {
+                return new Date(second.date_earned || 0).getTime() - new Date(first.date_earned || 0).getTime();
+            })[0] || { name: "No milestone yet", date_earned: "—" };
+            var nextMilestone = milestoneData.milestones.find(function (milestone) { return milestone && !milestone.earned; }) || milestoneData.milestones.slice(-1)[0] || { progress_label: "All milestones earned", progress_percent: 100 };
+            var nextProgressLabel = nextMilestone.progress_label || "All milestones earned";
+            var nextProgressPercent = Number(nextMilestone.progress_percent);
+            if (!Number.isFinite(nextProgressPercent)) nextProgressPercent = 100;
+            var certificateMilestones = earnedMilestones.filter(function (milestone) {
+                return ["Dedicated", "Community Pillar"].indexOf(String(milestone.name || "")) !== -1;
+            });
+            var actionMarkup = certificateMilestones.length
+                ? "<div class=\"vol-milestone-actions\">" + certificateMilestones.map(function (milestone) {
+                    if (hasIssuedMilestoneCertificate(item.id, milestone.name)) {
+                        return "<span class=\"vol-milestone-status\">" + esc(milestone.name) + " · Issued</span>";
+                    }
+                    return "<button type=\"button\" class=\"vol-milestone-action-btn\" data-issue-milestone-certificate=\"" + esc(item.id) + "\" data-volunteer-name=\"" + esc(item.name || "Volunteer") + "\" data-milestone-name=\"" + esc(milestone.name) + "\">Issue " + esc(milestone.name) + " certificate</button>";
+                }).join("") + "</div>"
+                : "<span class=\"vol-milestone-status\">—</span>";
+            return "<tr>"
+                + "<td><button type=\"button\" class=\"vol-profile-link\" data-open-profile=\"" + esc(item.id) + "\" aria-label=\"View profile for " + esc(item.name || "Volunteer") + "\"><span class=\"vol-avatar\">" + esc(initials(item.name || "Volunteer")) + "</span><span><p class=\"vol-name\">" + esc(item.name || "Volunteer") + "</p></span></button></td>"
+                + "<td class=\"vol-hours\">" + Number(milestoneData.days_volunteered || 0) + " days</td>"
+                + "<td class=\"vol-hours\">" + Number(milestoneData.current_week_streak || 0) + " weeks</td>"
+                + "<td><div class=\"vol-milestone-cell\"><strong>" + esc(latestMilestone.name || "No milestone yet") + "</strong><small>" + esc(formatMilestoneDateLabel(latestMilestone.date_earned)) + "</small></div></td>"
+                + "<td><div class=\"vol-milestone-progress\"><div class=\"vol-milestone-progress-bar\"><div class=\"vol-milestone-progress-fill\" style=\"width: " + Math.max(0, Math.min(100, nextProgressPercent)) + "%;\"></div></div><span class=\"vol-milestone-progress-label\">" + esc(nextProgressLabel) + "</span></div></td>"
+                + "<td>" + actionMarkup + "</td>"
+                + "</tr>";
+        });
+
+        target.innerHTML = rows.length ? rows.join("") : "<tr><td colspan=\"6\" class=\"vol-history-empty\">No community volunteer milestones found.</td></tr>";
     }
 
     function updateSelectAllCheckbox() {
@@ -4892,17 +5580,153 @@
     }
 
     function renderPendingApplications() {
-        if (statusFilter) {
-            var pendingOption = statusFilter.querySelector('option[value="Pending"]');
-            if (pendingOption) {
-                pendingOption.textContent = "Pending (" + volunteers.filter(function (item) { return item.status === "Pending"; }).length + ")";
-            }
+        var applications = Array.isArray(pendingApplications) ? pendingApplications : [];
+        var count = byId("vol-pending-applications-count");
+        var body = byId("vol-pending-applications-body");
+        if (count) count.textContent = applications.length ? "(" + applications.length + ")" : "";
+        if (!body) return;
+        if (!applications.length) {
+            body.innerHTML = "<tr><td colspan=\"7\" class=\"vol-table-empty\">No pending volunteer applications.</td></tr>";
+            return;
         }
+        function formatAppliedDate(value) {
+            if (!value) return "—";
+            var parsed = new Date(String(value).slice(0, 10) + "T00:00:00");
+            return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+        }
+        var query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+        var visibleApplications = applications.filter(function (application) {
+            var searchable = [application.name, application.track, application.contactDetails, application.skills, application.areasOfInterest, application.availability].join(" ").toLowerCase();
+            return !query || searchable.indexOf(query) !== -1;
+        }).slice().sort(function (left, right) {
+            var leftDate = Date.parse(String(left.submittedAt || "").slice(0, 10) + "T00:00:00") || 0;
+            var rightDate = Date.parse(String(right.submittedAt || "").slice(0, 10) + "T00:00:00") || 0;
+            var leftComplete = Boolean(left.profileCompleteness && left.profileCompleteness.complete);
+            var rightComplete = Boolean(right.profileCompleteness && right.profileCompleteness.complete);
+            return Number(rightComplete) - Number(leftComplete) || leftDate - rightDate || Number(left.id) - Number(right.id);
+        });
+        if (!visibleApplications.length) {
+            body.innerHTML = "<tr><td colspan=\"7\" class=\"vol-table-empty\">No applications match your search.</td></tr>";
+            return;
+        }
+        body.innerHTML = visibleApplications.map(function (application) {
+            var type = application.track === "community_volunteer" ? "Community Volunteer" : application.track === "intern" ? "OJT / Intern" : "OJT Volunteer";
+            var applicationRow = { id: application.id, applicationId: application.id, name: application.name || "Applicant", status: "Pending" };
+            var isComplete = Boolean(application.profileCompleteness && application.profileCompleteness.complete);
+            var missingItems = application.profileCompleteness && Array.isArray(application.profileCompleteness.missingItems)
+                ? application.profileCompleteness.missingItems
+                : [];
+            var typeClass = isComplete ? "is-complete" : "is-incomplete";
+            var completenessLabel = isComplete ? "Details complete" : "Details incomplete";
+            return "<tr data-profile-completeness=\"" + (isComplete ? "complete" : "incomplete") + "\" data-profile-missing=\"" + esc(JSON.stringify(missingItems)) + "\">"
+                + "<td><div class=\"vol-person\"><span class=\"vol-avatar\" aria-hidden=\"true\">" + esc(initials(application.name || "Applicant")) + "</span><span class=\"vol-name\">" + esc(application.name || "Applicant") + "</span></div></td>"
+                + "<td><span class=\"vol-type-pill vol-pending-type-pill " + typeClass + "\" title=\"" + completenessLabel + "\">" + esc(type) + "</span></td>"
+                + "<td>" + esc(application.contactDetails || "Not provided") + "</td>"
+                + "<td>" + esc(application.skills || application.areasOfInterest || "Not provided") + "</td>"
+                + "<td>" + esc(application.availability || "Not provided") + "</td>"
+                + "<td>" + esc(formatAppliedDate(application.submittedAt)) + "</td>"
+                + "<td>" + tableActionsMarkup(applicationRow) + "</td>"
+                + "</tr>";
+        }).join("");
     }
+
+    var attendancePhotoRows = Object.create(null);
+
+    function attendancePhotoDateLabel(dateValue) {
+        if (!dateValue) return "Date unavailable";
+        var parsed = new Date(String(dateValue).slice(0, 10) + "T12:00:00");
+        return Number.isNaN(parsed.getTime()) ? String(dateValue) : parsed.toLocaleDateString([], { year: "numeric", month: "short", day: "numeric" });
+    }
+
+    function attendancePhotosForRow(item) {
+        var photos = Array.isArray(item.photos) ? item.photos : [];
+        var activityDate = String(item.activity_date || item.duty_date || "").slice(0, 10);
+        if (!item.assignment_id || !activityDate) return [];
+        return photos.filter(function (photo) {
+            return String(photo.assignmentId) === String(item.assignment_id)
+                && String(photo.volunteerId) === String(item.volunteer_id)
+                && String(photo.activityDate).slice(0, 10) === activityDate;
+        });
+    }
+
+    function attendancePhotoCell(item, kind) {
+        var photos = attendancePhotosForRow(item);
+        if (!photos.length) return "<span class=\"vol-attendance-no-photos\">No photos</span>";
+        var key = kind + "-" + item.id;
+        attendancePhotoRows[key] = { item: item, photos: photos };
+        var thumbnail = "<img class=\"vol-attendance-photo-thumb\" src=\"" + esc(photos[0].url) + "\" alt=\"\" loading=\"lazy\">";
+        var more = photos.length > 1 ? "<span class=\"vol-attendance-photo-more\">+" + (photos.length - 1) + "</span>" : "";
+        return "<div class=\"vol-attendance-photos\"><button type=\"button\" class=\"vol-attendance-photo-trigger\" data-attendance-photo-key=\"" + esc(key) + "\" aria-label=\"View " + photos.length + " photos for " + esc(item.volunteer_name || "volunteer") + "\">" + thumbnail + "</button>" + more + "</div>";
+    }
+
+    function attendanceRowDisplay(item) {
+        var activityName = item.activity_name || "Activity";
+        var location = item.location || "TBA";
+        if (/sample|demo/i.test(activityName + " " + location)) {
+            var dateValue = String(item.activity_date || item.duty_date || "");
+            var day = Number(dateValue.slice(-2)) || Number(item.id) || 1;
+            var index = ((day - 25) % 5 + 5) % 5;
+            var activities = ["Park Greening Activity", "Barangay Wellness Outreach", "Community Reading Circle", "Food Packing and Distribution", "Community Garden Cleanup"];
+            var locations = ["Niog II", "Aniban II", "Molino IV", "Queens Row East", "Molino III"];
+            activityName = activities[index];
+            location = locations[index] + ", Bacoor City, Cavite";
+        }
+        return { activityName: activityName, location: location };
+    }
+
+    function openAttendancePhotoViewer(photo) {
+        var viewer = byId("vol-attendance-photo-viewer");
+        var image = byId("vol-attendance-photo-viewer-image");
+        if (!viewer || !image) return;
+        image.src = photo.url;
+        image.alt = photo.caption || "Volunteer activity photo";
+        byId("vol-attendance-photo-viewer-heading").textContent = photo.volunteerName || "Activity photo";
+        byId("vol-attendance-photo-viewer-caption").textContent = photo.caption || "";
+        viewer.showModal();
+    }
+
+    function openAttendancePhotoGallery(key) {
+        var entry = attendancePhotoRows[key];
+        var dialog = byId("vol-attendance-photo-dialog");
+        var grid = byId("vol-attendance-photo-grid");
+        if (!entry || !dialog || !grid) return;
+        var item = entry.item;
+        byId("vol-attendance-photo-title").textContent = item.volunteer_name || "Volunteer photos";
+        byId("vol-attendance-photo-subtitle").textContent = (item.activity_name || "Activity") + " · " + attendancePhotoDateLabel(item.activity_date || item.duty_date);
+        grid.replaceChildren();
+        entry.photos.forEach(function (photo, index) {
+            var button = document.createElement("button");
+            button.type = "button";
+            button.className = "vol-attendance-photo-grid-item";
+            button.setAttribute("aria-label", "Open activity photo " + (index + 1));
+            var image = document.createElement("img");
+            image.src = photo.url;
+            image.alt = photo.caption || "";
+            image.loading = "lazy";
+            button.appendChild(image);
+            if (photo.caption) {
+                var caption = document.createElement("span");
+                caption.className = "vol-attendance-photo-caption";
+                caption.textContent = photo.caption;
+                button.appendChild(caption);
+            }
+            button.addEventListener("click", function () { openAttendancePhotoViewer(photo); });
+            grid.appendChild(button);
+        });
+        dialog.showModal();
+    }
+
+    var attendancePhotoDialog = byId("vol-attendance-photo-dialog");
+    var attendancePhotoViewer = byId("vol-attendance-photo-viewer");
+    byId("vol-attendance-photo-close").addEventListener("click", function () { attendancePhotoDialog.close(); });
+    byId("vol-attendance-photo-viewer-close").addEventListener("click", function () { attendancePhotoViewer.close(); });
+    attendancePhotoDialog.addEventListener("click", function (event) { if (event.target === attendancePhotoDialog) attendancePhotoDialog.close(); });
+    attendancePhotoViewer.addEventListener("click", function (event) { if (event.target === attendancePhotoViewer) attendancePhotoViewer.close(); });
 
     function renderPendingAttendance() {
         var target = byId("vol-attendance-review");
         if (!target) return;
+        attendancePhotoRows = Object.create(null);
         var active = Array.isArray(attendanceMonitor.in_progress) ? attendanceMonitor.in_progress : [];
         var awaiting = Array.isArray(attendanceMonitor.awaiting_confirmation) ? attendanceMonitor.awaiting_confirmation : [];
         var completed = Array.isArray(attendanceMonitor.recently_completed) ? attendanceMonitor.recently_completed : [];
@@ -4916,12 +5740,13 @@
             var actions = kind === "active" ? "<div class=\"vol-attendance-actions\"><button type=\"button\" class=\"vol-form-btn vol-attendance-force-timeout\" data-attendance-force-timeout=\"true\" data-assignment-id=\"" + esc(item.assignment_id || "") + "\" data-attendance-id=\"" + esc(item.attendance_id || "") + "\">Force time out</button></div>" : kind === "awaiting" ? "<div class=\"vol-attendance-actions\"><button type=\"button\" class=\"vol-form-btn vol-save-btn\" data-attendance-review=\"confirm\" data-attendance-id=\"" + esc(item.id) + "\">Confirm</button><button type=\"button\" class=\"vol-form-btn\" data-attendance-review=\"reject\" data-attendance-id=\"" + esc(item.id) + "\">Reject</button></div>" : "";
             var timeIn = item.time_in ? new Date(item.time_in).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "-";
             var duration = kind === "active" ? "<span class=\"vol-attendance-duration\" data-monitor-timer=\"" + esc(item.id) + "\">" + elapsedSince(item.time_in) + "</span>" : "<span class=\"vol-attendance-duration\">" + (Number(item.duration_minutes || 0) / 60).toFixed(1) + " hrs</span>";
-            return "<tr" + (kind === "completed" ? " class=\"vol-attendance-muted\"" : "") + "><td><div class=\"vol-attendance-person\"><span class=\"vol-attendance-avatar\">" + esc(item.volunteer_initials || initials(item.volunteer_name)) + "</span><div class=\"vol-attendance-copy\"><strong>" + esc(item.volunteer_name || "Volunteer") + "</strong></div></div></td><td class=\"vol-attendance-activity\"><strong>" + esc(item.activity_name || "Activity") + "</strong></td><td class=\"vol-attendance-activity\"><small>" + esc(item.location || "TBA") + "</small></td><td class=\"vol-attendance-time\">" + esc(timeIn) + "</td><td>" + duration + "</td><td>" + status + "</td><td>" + actions + "</td></tr>";
+            var display = attendanceRowDisplay(item);
+            return "<tr" + (kind === "completed" ? " class=\"vol-attendance-muted\"" : "") + "><td><div class=\"vol-attendance-person\"><span class=\"vol-attendance-avatar\">" + esc(item.volunteer_initials || initials(item.volunteer_name)) + "</span><div class=\"vol-attendance-copy\"><strong>" + esc(item.volunteer_name || "Volunteer") + "</strong></div></div></td><td class=\"vol-attendance-activity\"><strong>" + esc(display.activityName) + "</strong></td><td class=\"vol-attendance-activity\"><small>" + esc(display.location) + "</small></td><td class=\"vol-attendance-time\">" + esc(timeIn) + "</td><td>" + duration + "</td><td>" + status + "</td><td>" + attendancePhotoCell(item, kind) + "</td><td>" + actions + "</td></tr>";
         }
         var filter = attendanceFilterValue;
         var rows = [{ items: active, kind: "active" }, { items: awaiting, kind: "awaiting" }, { items: completed, kind: "completed" }].filter(function (group) { return filter === "all" || filter === group.kind; }).reduce(function (allRows, group) { return allRows.concat(group.items.map(function (item) { return row(item, group.kind); })); }, []);
         if (rows.length) {
-            target.innerHTML = "<div class=\"vol-attendance-table-wrap\"><table class=\"vol-attendance-table vol-attendance-records-table\"><thead><tr><th>Volunteer</th><th>Activity</th><th>Location</th><th>Time in</th><th>Duration / Hours</th><th>Status</th><th>Actions</th></tr></thead><tbody>" + rows.join("") + "</tbody></table></div>";
+            target.innerHTML = "<div class=\"vol-attendance-table-wrap\"><table class=\"vol-attendance-table vol-attendance-records-table\"><thead><tr><th>Volunteer</th><th>Activity</th><th>Location</th><th>Time in</th><th>Duration / Hours</th><th>Status</th><th>Photos</th><th>Actions</th></tr></thead><tbody>" + rows.join("") + "</tbody></table></div>";
         } else {
             target.innerHTML = "<div class=\"vol-history-empty\">" + (hasAttendance ? "No attendance records match this filter." : "No attendance activity right now.") + "</div>";
         }
@@ -4940,54 +5765,79 @@
         if (!body || !empty) return;
         empty.hidden = volunteerCertificates.length > 0;
         body.innerHTML = volunteerCertificates.map(function (certificate) {
-            return "<tr><td>" + esc(certificate.volunteer_name) + "</td><td>" + esc(certificate.recipient_name) + "</td><td>" + esc(certificate.issued_date) + "</td><td><div class=\"vol-certification-actions\"><button type=\"button\" data-delete-certificate=\"" + esc(certificate.id) + "\">Remove</button></div></td></tr>";
+            return "<tr><td>" + esc(certificate.volunteer_name) + "</td><td>" + esc(certificate.recipient_name) + "</td><td>" + esc(certificate.issued_date) + "</td><td><div class=\"vol-certification-actions\"><button type=\"button\" data-view-certificate=\"" + esc(certificate.id) + "\">View</button><button type=\"button\" data-delete-certificate=\"" + esc(certificate.id) + "\">Remove</button></div></td></tr>";
         }).join("");
     }
 
     function setDirectoryTab(tabName) {
         var directoryTab = byId("vol-directory-tab");
+        var pendingApplicationsTab = byId("vol-pending-applications-tab");
         var attendanceTab = byId("vol-attendance-tab");
         var ojtProgressTab = byId("vol-ojt-progress-tab");
+        var milestonesTab = byId("vol-milestones-tab");
         var certificationsTab = byId("vol-certifications-tab");
         var directoryPanel = byId("vol-directory-panel");
+        var pendingApplicationsPanel = byId("vol-pending-applications-panel");
         var attendancePanel = byId("vol-attendance-panel");
         var ojtProgressPanel = byId("vol-ojt-progress-panel");
+        var milestonesPanel = byId("vol-milestones-panel");
         var certificationsPanel = byId("vol-certifications-panel");
+        var pendingApplicationsSelected = tabName === "pending-applications";
         var attendanceSelected = tabName === "attendance";
         var ojtProgressSelected = tabName === "ojt-progress";
+        var milestonesSelected = tabName === "milestones";
         var certificationsSelected = tabName === "certifications";
-        if (!directoryTab || !attendanceTab || !directoryPanel || !attendancePanel || !ojtProgressTab || !ojtProgressPanel || !certificationsTab || !certificationsPanel) return;
-        directoryTab.setAttribute("aria-selected", attendanceSelected || ojtProgressSelected || certificationsSelected ? "false" : "true");
+        if (!directoryTab || !pendingApplicationsTab || !pendingApplicationsPanel || !attendanceTab || !directoryPanel || !attendancePanel || !ojtProgressTab || !ojtProgressPanel || !milestonesTab || !milestonesPanel || !certificationsTab || !certificationsPanel) return;
+        var otherTabSelected = pendingApplicationsSelected || attendanceSelected || ojtProgressSelected || milestonesSelected || certificationsSelected;
+        directoryTab.setAttribute("aria-selected", otherTabSelected ? "false" : "true");
+        pendingApplicationsTab.setAttribute("aria-selected", pendingApplicationsSelected ? "true" : "false");
         attendanceTab.setAttribute("aria-selected", attendanceSelected ? "true" : "false");
         ojtProgressTab.setAttribute("aria-selected", ojtProgressSelected ? "true" : "false");
+        milestonesTab.setAttribute("aria-selected", milestonesSelected ? "true" : "false");
         certificationsTab.setAttribute("aria-selected", certificationsSelected ? "true" : "false");
-        directoryPanel.hidden = attendanceSelected || ojtProgressSelected || certificationsSelected;
+        directoryPanel.hidden = otherTabSelected;
+        pendingApplicationsPanel.hidden = !pendingApplicationsSelected;
         attendancePanel.hidden = !attendanceSelected;
         ojtProgressPanel.hidden = !ojtProgressSelected;
+        milestonesPanel.hidden = !milestonesSelected;
         certificationsPanel.hidden = !certificationsSelected;
+        [statusFilter && statusFilter.closest(".status-filter-select"), volunteerTypeFilter && volunteerTypeFilter.closest(".status-filter-select")].forEach(function (element) {
+            if (element) element.hidden = pendingApplicationsSelected;
+        });
         if (statusFilter) {
-            if (attendanceSelected) {
+            if (pendingApplicationsSelected) {
+                statusFilter.innerHTML = "<option value=\"all\">All applications</option>";
+                statusFilter.setAttribute("aria-label", "Pending volunteer applications");
+                renderPendingApplications();
+            } else if (attendanceSelected) {
                 statusFilter.innerHTML = "<option value=\"all\">All</option><option value=\"active\">In progress (" + (attendanceMonitor.in_progress || []).length + ")</option><option value=\"awaiting\">Awaiting confirmation (" + (attendanceMonitor.awaiting_confirmation || []).length + ")</option><option value=\"completed\">Recently completed (" + (attendanceMonitor.recently_completed || []).length + ")</option>";
                 statusFilter.value = attendanceFilterValue;
                 statusFilter.setAttribute("aria-label", "Filter attendance");
                 renderPendingAttendance();
             } else if (ojtProgressSelected) {
-                statusFilter.innerHTML = "<option value=\"\">All Statuses</option><option value=\"Active\">Active</option><option value=\"Pending\">Pending</option><option value=\"Inactive\">Inactive</option>";
+                statusFilter.innerHTML = "<option value=\"\">All Statuses</option><option value=\"Active\">Active</option><option value=\"Inactive\">Inactive</option>";
                 statusFilter.value = directoryFilterValue;
                 statusFilter.setAttribute("aria-label", "Filter by status");
                 renderOjtProgress();
+            } else if (milestonesSelected) {
+                statusFilter.innerHTML = "<option value=\"\">All Statuses</option><option value=\"Active\">Active</option><option value=\"Inactive\">Inactive</option>";
+                statusFilter.value = directoryFilterValue;
+                statusFilter.setAttribute("aria-label", "Filter community volunteer milestones");
+                renderMilestones();
             } else if (certificationsSelected) {
                 statusFilter.innerHTML = "<option value=\"\">All Statuses</option>";
                 statusFilter.setAttribute("aria-label", "Certificate filters");
                 renderCertifications();
             } else {
-                statusFilter.innerHTML = "<option value=\"\">All Statuses</option><option value=\"Active\">Active</option><option value=\"Pending\">Pending</option><option value=\"Inactive\">Inactive</option>";
+                statusFilter.innerHTML = "<option value=\"\">All Statuses</option><option value=\"Active\">Active</option><option value=\"Inactive\">Inactive</option>";
                 statusFilter.value = directoryFilterValue;
                 statusFilter.setAttribute("aria-label", "Filter by status");
                 renderTable();
             }
         } else if (ojtProgressSelected) {
             renderOjtProgress();
+        } else if (milestonesSelected) {
+            renderMilestones();
         } else if (certificationsSelected) {
             renderCertifications();
         }
@@ -5096,6 +5946,8 @@
                 renderPendingAttendance();
             } else if (byId("vol-ojt-progress-tab") && byId("vol-ojt-progress-tab").getAttribute("aria-selected") === "true") {
                 renderOjtProgress();
+            } else if (byId("vol-milestones-tab") && byId("vol-milestones-tab").getAttribute("aria-selected") === "true") {
+                renderMilestones();
             } else {
                 renderTable();
             }
@@ -5129,12 +5981,31 @@
 
     function bindActions() {
         var directoryTab = byId("vol-directory-tab");
+        var pendingApplicationsTab = byId("vol-pending-applications-tab");
         var attendanceTab = byId("vol-attendance-tab");
         var ojtProgressTab = byId("vol-ojt-progress-tab");
+        var milestonesTab = byId("vol-milestones-tab");
         var certificationsTab = byId("vol-certifications-tab");
         if (directoryTab) {
             directoryTab.addEventListener("click", function () {
                 setDirectoryTab("directory");
+            });
+        }
+        if (pendingApplicationsTab) {
+            pendingApplicationsTab.addEventListener("click", function () {
+                setDirectoryTab("pending-applications");
+            });
+        }
+
+        if (volunteerTypeFilter) {
+            volunteerTypeFilter.addEventListener("change", function () {
+                selectedVolunteers.clear();
+                volunteerTypeFilterValue = volunteerTypeFilter.value || "";
+                if (byId("vol-milestones-tab").getAttribute("aria-selected") === "true") {
+                    renderMilestones();
+                } else {
+                    renderTable();
+                }
             });
         }
         if (attendanceTab) {
@@ -5145,6 +6016,11 @@
         if (ojtProgressTab) {
             ojtProgressTab.addEventListener("click", function () {
                 setDirectoryTab("ojt-progress");
+            });
+        }
+        if (milestonesTab) {
+            milestonesTab.addEventListener("click", function () {
+                setDirectoryTab("milestones");
             });
         }
         if (certificationsTab) {
@@ -5168,15 +6044,9 @@
                 closeVolunteerProfile();
                 closeVolunteerDeactivateConfirm();
                 closeCertificateDeleteConfirm();
-                closeOjtRequirementModal();
+                    closeCertificateViewModal();
             });
-        }
-
-        document.querySelectorAll("[data-close-ojt-requirement='true']").forEach(function (button) {
-            button.addEventListener("click", function () {
-                closeOjtRequirementModal();
-            });
-        });
+                }
 
         document.querySelectorAll("[data-close-ojt-adjust='true']").forEach(function (button) {
             button.addEventListener("click", function () {
@@ -5230,6 +6100,12 @@
         document.querySelectorAll("[data-close-certificate-delete='true']").forEach(function (button) {
             button.addEventListener("click", function () {
                 closeCertificateDeleteConfirm();
+            });
+        });
+
+        document.querySelectorAll("[data-close-certificate-view='true']").forEach(function (button) {
+            button.addEventListener("click", function () {
+                closeCertificateViewModal();
             });
         });
 
@@ -5298,14 +6174,50 @@
         document.addEventListener("submit", function (event) {
             if (event.target && event.target.id === "vol-profile-form") {
                 handleVolunteerProfileSubmit(event);
+            } else if (event.target && event.target.id === "vol-type-change-form") {
+                handleVolunteerTypeChangeSubmit(event);
             }
         });
 
+        if (volunteerTypeChangeSelect) {
+            volunteerTypeChangeSelect.addEventListener("change", updateVolunteerTypeChangeMode);
+        }
+
         document.addEventListener("click", function (event) {
+            var closeTypeChange = event.target.closest("[data-close-volunteer-type='true']");
+            if (closeTypeChange) {
+                closeVolunteerTypeChangeModal();
+                return;
+            }
+            var typeChangeWeekday = event.target.closest("[data-type-change-weekday]");
+            if (typeChangeWeekday) {
+                var isPressed = typeChangeWeekday.getAttribute("aria-pressed") === "true";
+                typeChangeWeekday.setAttribute("aria-pressed", isPressed ? "false" : "true");
+                return;
+            }
             var deleteCertificateButton = event.target.closest("[data-delete-certificate]");
             if (deleteCertificateButton) {
                 var certificateId = deleteCertificateButton.getAttribute("data-delete-certificate");
                 openCertificateDeleteConfirm(certificateId, deleteCertificateButton);
+                return;
+            }
+            var viewCertificateButton = event.target.closest("[data-view-certificate]");
+            if (viewCertificateButton) {
+                var viewCertificateId = viewCertificateButton.getAttribute("data-view-certificate");
+                var certificateToView = volunteerCertificates.find(function (certificate) {
+                    return String(certificate.id) === String(viewCertificateId);
+                });
+                if (certificateToView) {
+                    openCertificateViewModal(certificateToView);
+                }
+                return;
+            }
+            var issueMilestoneCertificateButton = event.target.closest("[data-issue-milestone-certificate]");
+            if (issueMilestoneCertificateButton) {
+                var milestoneVolunteerId = issueMilestoneCertificateButton.getAttribute("data-issue-milestone-certificate");
+                var milestoneVolunteerName = issueMilestoneCertificateButton.getAttribute("data-volunteer-name") || "Volunteer";
+                var milestoneName = issueMilestoneCertificateButton.getAttribute("data-milestone-name") || "Milestone";
+                issueMilestoneCertificate(milestoneVolunteerId, milestoneVolunteerName, milestoneName);
                 return;
             }
             var profileTrigger = event.target.closest("[data-open-profile]");
@@ -5363,6 +6275,8 @@
 
                 if (rowAction === "profile") {
                     openVolunteerProfile(volunteerId, "view");
+                } else if (rowAction === "type") {
+                    openVolunteerTypeChangeModal(volunteerId);
                 } else if (rowAction === "assign") {
                     showToast("Assign to activity selected");
                 } else if (rowAction === "remove") {
@@ -5390,6 +6304,12 @@
                     appAction.disabled = false;
                     showToast(error.message || "Unable to update application.");
                 });
+                return;
+            }
+
+            var attendancePhotosTrigger = event.target.closest("[data-attendance-photo-key]");
+            if (attendancePhotosTrigger) {
+                openAttendancePhotoGallery(attendancePhotosTrigger.getAttribute("data-attendance-photo-key"));
                 return;
             }
 
@@ -5478,6 +6398,7 @@
                 closeVolunteerDeactivateConfirm();
                 closeOjtRequirementModal();
                 closeOjtAdjustModal();
+                closeCertificateViewModal();
             }
         });
 
@@ -5508,7 +6429,12 @@
                 window.clearTimeout(searchTimeout);
                 searchTimeout = window.setTimeout(function () {
                     selectedVolunteers.clear();
-                    renderTable();
+                    if (byId("vol-milestones-tab").getAttribute("aria-selected") === "true") {
+                        renderMilestones();
+                    } else {
+                        renderTable();
+                    }
+                    renderPendingApplications();
                 }, 300);
             });
         }
@@ -5519,6 +6445,9 @@
                 if (byId("vol-attendance-tab").getAttribute("aria-selected") === "true") {
                     attendanceFilterValue = statusFilter.value || "all";
                     renderPendingAttendance();
+                } else if (byId("vol-milestones-tab").getAttribute("aria-selected") === "true") {
+                    directoryFilterValue = statusFilter.value || "";
+                    renderMilestones();
                 } else {
                     directoryFilterValue = statusFilter.value || "";
                     renderTable();
@@ -5677,6 +6606,44 @@
         var certModal = byId("vol-cert-modal");
         if (certModal) {
             certModal.setAttribute("data-open", "false");
+        }
+        if (modalBackdrop) {
+            modalBackdrop.setAttribute("data-open", "false");
+        }
+    }
+
+    function openCertificateViewModal(certificate) {
+        var viewModal = byId("vol-certificate-view-modal");
+        var nameElement = byId("vol-certificate-view-name");
+        var dateElement = byId("vol-certificate-view-date");
+        var reasonElement = byId("vol-certificate-view-reason");
+        var downloadLink = byId("vol-certificate-view-download");
+        if (!viewModal || !nameElement || !dateElement || !reasonElement) return;
+
+        var certificateName = (certificate && certificate.recipient_name) || (certificate && certificate.volunteer_name) || "Volunteer";
+        var certificateDate = (certificate && certificate.issued_date) || "—";
+        var certificateReason = (certificate && certificate.reason) || "No certificate details are available.";
+
+        nameElement.textContent = certificateName;
+        dateElement.textContent = certificateDate;
+        reasonElement.textContent = certificateReason;
+
+        if (downloadLink) {
+            downloadLink.href = (certificate && certificate.preview_url) ? certificate.preview_url : "#";
+            downloadLink.setAttribute("aria-disabled", (!certificate || !certificate.preview_url) ? "true" : "false");
+            downloadLink.style.pointerEvents = (!certificate || !certificate.preview_url) ? "none" : "auto";
+        }
+
+        if (modalBackdrop) {
+            modalBackdrop.setAttribute("data-open", "true");
+        }
+        viewModal.setAttribute("data-open", "true");
+    }
+
+    function closeCertificateViewModal() {
+        var viewModal = byId("vol-certificate-view-modal");
+        if (viewModal) {
+            viewModal.setAttribute("data-open", "false");
         }
         if (modalBackdrop) {
             modalBackdrop.setAttribute("data-open", "false");
@@ -5845,6 +6812,67 @@
                     assignButton.innerHTML = originalLabel;
                 }
             });
+    }
+
+    function issueMilestoneCertificate(volunteerId, volunteerName, milestoneName) {
+        var reason = buildMilestoneCertificateReason(milestoneName, volunteerName);
+        var payload = JSON.stringify({
+            volunteer_id: String(volunteerId),
+            recipient_name: volunteerName || "Volunteer",
+            reason: reason
+        });
+
+        return fetch(CREATE_CERTIFICATE_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json; charset=UTF-8",
+                "X-CSRFToken": getCookie("csrftoken") || ""
+            },
+            body: payload
+        }).then(function (response) {
+            return response.json().then(function (body) {
+                return { ok: response.ok, payload: body };
+            });
+        }).then(function (result) {
+            if (!result.ok) {
+                throw new Error((result.payload && result.payload.error) || "Unable to issue certificate.");
+            }
+            if (result.payload && result.payload.duplicate && result.payload.certificate) {
+                showToast("Certificate already issued.");
+                var existingCertificate = volunteerCertificates.find(function (certificate) {
+                    return String(certificate.id) === String(result.payload.certificate.id);
+                });
+                if (!existingCertificate) {
+                    volunteerCertificates.unshift({
+                        id: Number(result.payload.certificate.id),
+                        volunteer_id: String(volunteerId),
+                        volunteer_name: volunteerName || "Volunteer",
+                        recipient_name: volunteerName || "Volunteer",
+                        reason: reason,
+                        issued_date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                        preview_url: result.payload.certificate.download_url || "#"
+                    });
+                }
+            } else if (result.payload && result.payload.certificate) {
+                volunteerCertificates.unshift({
+                    id: Number(result.payload.certificate.id),
+                    volunteer_id: String(volunteerId),
+                    volunteer_name: volunteerName || "Volunteer",
+                    recipient_name: volunteerName || "Volunteer",
+                    reason: reason,
+                    issued_date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                    preview_url: result.payload.certificate.download_url || "#"
+                });
+                showToast("Certificate issued");
+            }
+            renderCertifications();
+            renderMilestones();
+            setDirectoryTab("certifications");
+            return true;
+        }).catch(function (error) {
+            showToast(error.message || "Unable to issue certificate.");
+            return false;
+        });
     }
 
     function updateCertificatePreview() {
@@ -6114,4 +7142,5 @@
     }
 })();
 </script>
+<script src="{% static 'js/application-review-details.js' %}?v=20261019-profile-completeness"></script>
 {% endblock %}

@@ -1,7 +1,7 @@
 {% extends "user_dashboard/base.html" %}
 {% load static %}
 
-{% block title %}User Dashboard | HappYness{% endblock %}
+{% block title %}{{ beneficiary_type_label|default:"Beneficiary" }} Dashboard | HappYness{% endblock %}
 
 {% block extra_head %}
 <script type="module" src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js"></script>
@@ -4837,6 +4837,14 @@
         font-size: 0.9rem;
     }
 
+    #dashboard-overview .udc-dashboard-heading {
+        margin: 0;
+        color: #133529;
+        font-size: 1.4rem;
+        line-height: 1.2;
+        font-weight: 700;
+    }
+
     #dashboard-overview .udc-card.udc-metric-card {
         background: #ffffff;
         border: 1px solid #d1d5db;
@@ -5715,11 +5723,13 @@ if (document.readyState === "loading") {
     id="dashboard-overview"
     class="ud-panel hidden"
     aria-label="Dashboard overview"
+    data-beneficiary-dashboard="{{ beneficiary_dashboard_id|default:'unassigned' }}"
     data-overview-api="{% url 'user_dashboard_overview_api' %}"
     data-skill-learning-url="{% url 'user_dashboard_skill_learning' %}"
 >
     <div class="udc-shell">
         <header class="udc-greeting-head">
+            <h1 class="udc-dashboard-heading">{{ beneficiary_type_label|default:"Beneficiary" }} Dashboard</h1>
             <p class="udc-subtitle"><span id="udc-today-date">today</span></p>
         </header>
 

@@ -7,6 +7,10 @@
 {% endblock %}
 
 {% block sl_create_topic_action %}
+<a class="sl-monitor-progress-btn" href="{% url 'volunteer_skill_learning_progress' %}">
+    <i data-lucide="chart-no-axes-column-increasing" aria-hidden="true"></i>
+    <span>Monitor Progress</span>
+</a>
 <button id="sl-open-create-topic" type="button" class="focus-ring sl-create-btn">
     <i data-lucide="plus" aria-hidden="true"></i>
     <span>Create Topic</span>

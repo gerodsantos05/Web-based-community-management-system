@@ -5,6 +5,7 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/status-filter-select.css' %}">
+<link rel="stylesheet" href="{% static 'css/application-review-details.css' %}">
 <style data-admin-panel-style="admin-beneficiaries">
     .ben-page {
         --ben-surface: rgba(255, 255, 255, 0.95);
@@ -196,6 +197,7 @@
     .ben-status-active { color: #14532d; background: #dcfce7; border-color: #bbf7d0; }
     .ben-status-pending { color: #8a4b10; background: #ffedd5; border-color: #fed7aa; }
     .ben-status-inactive { color: #55626b; background: #f1f5f9; border-color: #dce3eb; }
+    .ben-type-badge { color: #155e59; background: #ccfbf1; border-color: #99f6e4; }
     .ben-aid-complete { color: #14532d; background: #dcfce7; border-color: #bbf7d0; }
     .ben-aid-scheduled { color: #115e59; background: #ccfbf1; border-color: #99f6e4; }
     .ben-aid-pending { color: #9a3412; background: #ffedd5; border-color: #fed7aa; }
@@ -807,8 +809,22 @@
 
     .ben-secondary-table th:last-child,
     .ben-secondary-table td:last-child {
-        width: 5.2rem;
-        min-width: 5.2rem;
+        width: 6rem;
+        min-width: 6rem;
+        text-align: right;
+    }
+
+    .ben-table thead th:last-child,
+    .ben-table tbody td:last-child,
+    .ben-secondary-table thead th:last-child,
+    .ben-secondary-table tbody td:last-child {
+        text-align: right;
+    }
+
+    .ben-row-action-btn svg {
+        width: 0.9rem;
+        height: 0.9rem;
+        display: block;
     }
 
     .ben-feedback-score {
@@ -850,11 +866,24 @@
     .ben-table-action-group {
         display: inline-flex;
         align-items: center;
+        justify-content: flex-end;
         gap: 0.35rem;
+        width: 100%;
     }
 
     .ben-table-action-group .ben-chip {
         margin: 0;
+    }
+
+    .ben-table th:nth-child(6),
+    .ben-table td:nth-child(6),
+    .ben-secondary-table th:nth-child(6),
+    .ben-secondary-table td:nth-child(6) {
+        width: 12rem;
+        min-width: 12rem;
+        max-width: 12rem;
+        white-space: normal;
+        word-break: break-word;
     }
 
     .ben-assist-list {
@@ -1739,6 +1768,55 @@
             max-height: calc(100vh - 120px) !important;
         }
     }
+    .ben-pending-applications-table {
+        width: 100%;
+        min-width: 1400px;
+        table-layout: fixed;
+        border-collapse: collapse;
+    }
+    .ben-pending-applications-table th,
+    .ben-pending-applications-table td {
+        border: 0;
+        white-space: normal;
+        word-break: normal;
+        overflow-wrap: normal;
+    }
+    .ben-pending-applications-table th:nth-child(1), .ben-pending-applications-table td:nth-child(1) { width: 42px; }
+    .ben-pending-applications-table th:nth-child(2), .ben-pending-applications-table td:nth-child(2) { width: 220px; }
+    .ben-pending-applications-table th:nth-child(3), .ben-pending-applications-table td:nth-child(3) { width: 170px; }
+    .ben-pending-applications-table th:nth-child(4), .ben-pending-applications-table td:nth-child(4) { width: 260px; white-space: nowrap; }
+    .ben-pending-applications-table th:nth-child(5), .ben-pending-applications-table td:nth-child(5) { width: 160px; white-space: nowrap; }
+    .ben-pending-applications-table th:nth-child(6), .ben-pending-applications-table td:nth-child(6) { width: 240px; }
+    .ben-pending-applications-table th:nth-child(7), .ben-pending-applications-table td:nth-child(7) { width: 150px; white-space: nowrap; }
+    #dashboard-shell.admin-page .ben-table.ben-pending-applications-table th:last-child,
+    #dashboard-shell.admin-page .ben-table.ben-pending-applications-table td:last-child {
+        position: sticky;
+        right: 0;
+        z-index: 2;
+        width: 150px !important;
+        min-width: 150px !important;
+        text-align: center !important;
+        background: #fff;
+    }
+    .ben-pending-applications-table thead th:last-child { z-index: 4; background: rgba(236, 253, 245, 0.96); }
+    .ben-pending-applications-table tbody tr:hover td:last-child { background: #f5fcf9; }
+    .ben-pending-applications-table .ben-table-action-group { display: flex; justify-content: space-evenly; gap: 0.5rem; min-width: 116px; }
+    .ben-pending-applications-table .ben-row-action-btn { flex: 0 0 2.1rem; border: 0; background: transparent; }
+    .ben-pending-applications-table .ben-row-action-btn:hover { background: #edf7f2; }
+    .ben-pending-type-pill {
+        display: inline-flex;
+        align-items: center;
+        max-width: 100%;
+        padding: 0.32rem 0.6rem;
+        border: 0;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: normal;
+    }
+    .ben-pending-type-pill.is-complete { background: #dcfce7; color: #14532d; }
+    .ben-pending-type-pill.is-incomplete { background: #fef3c7; color: #92400e; }
 </style>
 {% endblock %}
 
@@ -1801,6 +1879,15 @@
                         <option value="Inactive">Inactive</option>
                     </select>
                 </div>
+                <div class="status-filter-select">
+                    <select id="ben-type-filter" class="ben-status-filter" aria-label="Filter by beneficiary type">
+                        <option value="">All Types</option>
+                        <option value="happy_nanays">Happy Nanays</option>
+                        <option value="happy_kids">Happy Kids</option>
+                        <option value="happy_hearts">Happy Hearts</option>
+                        <option value="unassigned">Unassigned</option>
+                    </select>
+                </div>
                 <button type="button" id="ben-add-btn" class="ben-action-btn" aria-label="Add new beneficiary"><i data-lucide="user-plus"></i><span>Add Beneficiary</span></button>
                 <button type="button" id="ben-toggle-columns" class="ben-toggle-columns-btn" aria-label="Show more columns">Show More</button>
             </div>
@@ -1824,7 +1911,7 @@
         <div class="ben-table-wrap">
             <table class="ben-table" aria-describedby="ben-count">
                 <thead>
-                    <tr><th style="width: 2.5rem;"><input type="checkbox" id="ben-select-all" class="ben-checkbox" aria-label="Select all beneficiaries"></th><th>Name</th><th>Location</th><th>Email</th><th>Phone</th><th>Status</th><th>Last Assistance Date</th><th>Actions</th></tr>
+                    <tr><th style="width: 2.5rem;"><input type="checkbox" id="ben-select-all" class="ben-checkbox" aria-label="Select all beneficiaries"></th><th>Name</th><th>Type</th><th>Location</th><th>Email</th><th>Phone</th><th>Status</th><th>Last Assistance Date</th><th>Actions</th></tr>
                 </thead>
                 <tbody id="ben-table-body"></tbody>
             </table>
@@ -1840,19 +1927,23 @@
                 </div>
             </div>
             <div class="ben-table-wrap">
-                <table class="ben-table ben-secondary-table" aria-label="Pending beneficiary applications">
-                    <thead><tr><th style="width: 2.5rem;"><input type="checkbox" id="ben-pending-select-all" class="ben-checkbox" aria-label="Select all pending applications"></th><th>Applicant Name</th><th>Email</th><th>Phone Number</th><th>Location</th><th>Date Applied</th><th>Actions</th></tr></thead>
+                <table class="ben-table ben-secondary-table ben-pending-applications-table" aria-label="Pending beneficiary applications">
+                    <thead><tr><th style="width: 2.5rem;"><input type="checkbox" id="ben-pending-select-all" class="ben-checkbox" aria-label="Select all pending applications"></th><th>Applicant Name</th><th>Beneficiary Type</th><th>Email</th><th>Phone Number</th><th>Location</th><th>Date Applied</th><th>Actions</th></tr></thead>
                     <tbody id="ben-pending-list" aria-live="polite">
                 {% if pending_beneficiary_applications %}
                     {% for application in pending_beneficiary_applications %}
                             <tr>
                                 <td><input type="checkbox" class="ben-checkbox ben-pending-checkbox" data-id="{{ application.id }}" aria-label="Select {{ application.name }}"></td>
                                 <td><div class="ben-name"><span class="ben-avatar">{{ application.name|slice:":1" }}</span><div><strong>{{ application.name }}</strong></div></div></td>
+                                <td><span class="ben-pending-type-pill {% if application.profileCompleteness.complete %}is-complete{% else %}is-incomplete{% endif %}" title="{% if application.profileCompleteness.complete %}Details complete{% else %}Details incomplete{% endif %}">{{ application.beneficiaryType|default:"Not specified" }}</span></td>
                                 <td>{{ application.email|default:"Not provided" }}</td>
                                 <td>{{ application.phone|default:"Not provided" }}</td>
                                 <td>{{ application.location|default:"Not provided" }}</td>
                                 <td>{{ application.submittedAt }}</td>
                                 <td><div class="ben-table-action-group">
+                                    <button type="button" class="ben-row-action-btn" data-application-review-details="{{ application.id }}" aria-label="View details for {{ application.name }}" title="View details">
+                                        <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z'></path><circle cx='12' cy='12' r='3'></circle></svg>
+                                    </button>
                                     <button type="button" class="ben-row-action-btn" data-pending-action="approve" data-id="{{ application.id }}" aria-label="Approve application for {{ application.name }}" title="Approve">
                                         <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M20 6L9 17l-5-5'></path></svg>
                                     </button>
@@ -1863,7 +1954,7 @@
                             </tr>
                         {% endfor %}
                 {% else %}
-                    <tr><td colspan="7" class="ben-table-empty">No pending applications. New beneficiary applications will appear here.</td></tr>
+                    <tr><td colspan="9" class="ben-table-empty">No pending applications. New beneficiary applications will appear here.</td></tr>
                 {% endif %}
             </tbody></table></div>
         </div>
@@ -1894,6 +1985,14 @@
         <div id="ben-feedback-detail-body" class="ben-feedback-detail-body"></div>
     </div>
 </div>
+
+<dialog id="role-application-review-dialog" class="role-application-review-dialog" aria-labelledby="role-application-review-title">
+    <header>
+        <div><p>Application review</p><h2 id="role-application-review-title">Applicant-added details</h2></div>
+        <button type="button" data-close-application-review aria-label="Close application details">×</button>
+    </header>
+    <div id="role-application-review-body"></div>
+</dialog>
 
 <div id="ben-profile-modal" class="ben-modal ben-assist-modal ben-profile-modal" role="dialog" aria-modal="true" aria-labelledby="ben-profile-title" data-open="false">
     <header class="ben-head">
@@ -2205,6 +2304,7 @@
 {% block extra_scripts %}
 <script src="{% static 'js/status-filter-select.js' %}"></script>
 {{ beneficiaries_data|json_script:"beneficiaries-data" }}
+{{ beneficiary_parent_options|json_script:"beneficiary-parent-options-data" }}
 {{ volunteer_options|json_script:"volunteer-options-data" }}
 {{ assistance_feedbacks|json_script:"assistance-feedbacks-data" }}
 {{ pending_beneficiary_applications|json_script:"pending-beneficiary-applications-data" }}
@@ -2241,6 +2341,7 @@
     }
 
     var BENEFICIARIES = loadJsonData("beneficiaries-data");
+    var BENEFICIARY_PARENT_OPTIONS = loadJsonData("beneficiary-parent-options-data");
     var VOLUNTEER_OPTIONS = loadJsonData("volunteer-options-data");
 
     var REVIEW_ROLE_APPLICATION_URL = "{% url 'review_role_application' %}";
@@ -2273,6 +2374,7 @@
     var feedbackList = document.getElementById("ben-feedback-list");
     var searchInput = document.getElementById("ben-search-input");
     var statusFilter = document.getElementById("ben-status-filter");
+    var typeFilter = document.getElementById("ben-type-filter");
     var selectAllCheckbox = document.getElementById("ben-select-all");
     var directoryTab = document.getElementById("ben-directory-tab");
     var pendingTab = document.getElementById("ben-pending-tab");
@@ -2587,6 +2689,7 @@
     function renderTable() {
         var searchTerm = (searchInput && searchInput.value.toLowerCase()) || "";
         var statusValue = (statusFilter && statusFilter.value) || "";
+        var typeValue = (typeFilter && typeFilter.value) || "";
 
         var filteredBeneficiaries = BENEFICIARIES.filter(function (item) {
             var matchesSearch = searchTerm === "" || 
@@ -2597,7 +2700,8 @@
                 (item.contactDetails && item.contactDetails.toLowerCase().includes(searchTerm)) ||
                 (item.notes && item.notes.toLowerCase().includes(searchTerm));
             var matchesStatus = statusValue === "" || item.status === statusValue;
-            return matchesSearch && matchesStatus;
+            var matchesType = typeValue === "" || (typeValue === "unassigned" ? !item.beneficiaryTypeValue : item.beneficiaryTypeValue === typeValue);
+            return matchesSearch && matchesStatus && matchesType;
         });
 
         tableBody.innerHTML = filteredBeneficiaries.map(function (item) {
@@ -2613,6 +2717,7 @@
             return "<tr data-beneficiary-id=\"" + item.id + "\" class=\"" + (isSelected ? "ben-row-selected" : "") + (isInactive ? " ben-row-inactive" : "") + "\">"
                 + "<td><input type=\"checkbox\" class=\"ben-checkbox ben-row-checkbox\" data-id=\"" + item.id + "\" aria-label=\"Select " + esc(item.name) + "\" " + (isSelected ? "checked" : "") + (isInactive ? " disabled" : "") + "></td>"
                 + "<td><div class=\"ben-name\"><span class=\"ben-avatar\">" + initials(item.name) + "</span><div><strong>" + esc(item.name) + "</strong></div></div></td>"
+                + "<td><span class=\"ben-badge ben-type-badge\">" + esc(item.beneficiaryType || "Not set") + "</span></td>"
                 + "<td>" + esc(item.location) + "</td>"
                 + "<td>" + esc(contact.email || "N/A") + "</td>"
                 + "<td>" + esc(contact.phone || "N/A") + "</td>"
@@ -2637,20 +2742,48 @@
         }).map(function (item) { return item.id; }));
 
         if (!PENDING_APPLICATIONS.length) {
-            pendingList.innerHTML = "<tr><td colspan=\"7\" class=\"ben-table-empty\">No pending applications. New beneficiary applications will appear here.</td></tr>";
+            pendingList.innerHTML = "<tr><td colspan=\"8\" class=\"ben-table-empty\">No pending applications. New beneficiary applications will appear here.</td></tr>";
             syncPendingBulkBar();
             return;
         }
 
-        pendingList.innerHTML = PENDING_APPLICATIONS.map(function (item) {
-            return "<tr>"
+        var query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+        var visibleApplications = PENDING_APPLICATIONS.filter(function (item) {
+            var searchable = [item.name, item.beneficiaryType, item.email, item.phone, item.location].join(" ").toLowerCase();
+            return !query || searchable.indexOf(query) !== -1;
+        }).slice().sort(function (left, right) {
+            var leftDate = Date.parse(String(left.submittedAt || "").slice(0, 10) + "T00:00:00") || 0;
+            var rightDate = Date.parse(String(right.submittedAt || "").slice(0, 10) + "T00:00:00") || 0;
+            var leftComplete = Boolean(left.profileCompleteness && left.profileCompleteness.complete);
+            var rightComplete = Boolean(right.profileCompleteness && right.profileCompleteness.complete);
+            return Number(rightComplete) - Number(leftComplete) || leftDate - rightDate || Number(left.id) - Number(right.id);
+        });
+        if (!visibleApplications.length) {
+            pendingList.innerHTML = "<tr><td colspan=\"8\" class=\"ben-table-empty\">No applications match your search.</td></tr>";
+            syncPendingBulkBar();
+            return;
+        }
+
+        pendingList.innerHTML = visibleApplications.map(function (item) {
+            var isComplete = Boolean(item.profileCompleteness && item.profileCompleteness.complete);
+            var missingItems = item.profileCompleteness && Array.isArray(item.profileCompleteness.missingItems)
+                ? item.profileCompleteness.missingItems
+                : [];
+            var typeLabel = item.beneficiaryType || "Not specified";
+            var typeClass = isComplete ? "is-complete" : "is-incomplete";
+            var completenessLabel = isComplete ? "Details complete" : "Details incomplete";
+            return "<tr data-profile-completeness=\"" + (isComplete ? "complete" : "incomplete") + "\" data-profile-missing=\"" + esc(JSON.stringify(missingItems)) + "\">"
                 + "<td><input type=\"checkbox\" class=\"ben-checkbox ben-pending-checkbox\" data-id=\"" + item.id + "\" aria-label=\"Select " + esc(item.name) + "\"" + (selectedPendingApplications.has(item.id) ? " checked" : "") + "></td>"
                 + "<td><div class=\"ben-name\"><span class=\"ben-avatar\">" + esc(initials(item.name)) + "</span><div><strong>" + esc(item.name) + "</strong></div></div></td>"
+                + "<td><span class=\"ben-pending-type-pill " + typeClass + "\" title=\"" + completenessLabel + "\">" + esc(typeLabel) + "</span></td>"
                 + "<td>" + esc(item.email || "Not provided") + "</td>"
                 + "<td>" + esc(item.phone || "Not provided") + "</td>"
                 + "<td>" + esc(item.location || "Not provided") + "</td>"
                 + "<td>" + formatDate(item.submittedAt) + "</td>"
                 + "<td><div class=\"ben-table-action-group\">" 
+                + "<button type=\"button\" class=\"ben-row-action-btn\" data-application-review-details=\"" + item.id + "\" aria-label=\"View details for " + esc(item.name) + "\" title=\"View details\">"
+                + "<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z'></path><circle cx='12' cy='12' r='3'></circle></svg>"
+                + "</button> "
                 + "<button type=\"button\" class=\"ben-row-action-btn\" data-pending-action=\"approve\" data-id=\"" + item.id + "\" aria-label=\"Approve application for " + esc(item.name) + "\" title=\"Approve\">"
                 + "<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M20 6L9 17l-5-5'></path></svg>"
                 + "</button> "
@@ -2953,6 +3086,7 @@
         var history = getBeneficiaryHistory(beneficiary);
         return buildBeneficiaryProfileCard("Full name", "<i data-lucide=\"user\"></i>", esc(beneficiary.name || "N/A"), false, false)
             + buildBeneficiaryProfileCard("Contact details", "<i data-lucide=\"phone\"></i>", esc(beneficiary.contactDetails || "N/A"), false, false)
+            + buildBeneficiaryProfileCard("Gender", "<i data-lucide=\"user-round\"></i>", esc(({ male: "Male", female: "Female", other: "Other", prefer_not: "Prefer not to say" })[beneficiary.gender] || "Not provided"), false, false)
             + buildBeneficiaryProfileCard("Status", "<i data-lucide=\"shield-check\"></i>", "<span class=\"ben-profile-pill " + profileStatusClass(beneficiary.status) + "\">" + esc(beneficiary.status) + "</span>", false, false)
             + buildBeneficiaryProfileCard("Registered", "<i data-lucide=\"calendar-days\"></i>", esc(beneficiary.registeredAt || "N/A"), false, false)
             + buildBeneficiaryProfileCard("Last assistance", "<i data-lucide=\"calendar-check\"></i>", esc(beneficiary.lastAssistanceDate || "N/A"), false, false)
@@ -2960,14 +3094,21 @@
     }
 
     function renderProfileEdit(beneficiary) {
+        var selectedType = beneficiary.beneficiaryTypeValue || "";
+        var parentOptions = "<option value=\"\">No linked parent</option>" + BENEFICIARY_PARENT_OPTIONS.map(function (parent) {
+            return "<option value=\"" + esc(parent.id) + "\"" + (String(parent.id) === String(beneficiary.linkedParentId || "") ? " selected" : "") + ">" + esc(parent.name) + "</option>";
+        }).join("");
         return "<form id=\"ben-profile-form\" class=\"ben-profile-form\">"
             + "<input type=\"hidden\" name=\"beneficiary_application_id\" value=\"" + beneficiary.applicationId + "\">"
             + "<label class=\"ben-field ben-profile-field ben-profile-editable\"><span class=\"ben-field-label\">Full name</span><input name=\"full_name\" type=\"text\" value=\"" + esc(beneficiary.name || "") + "\" required></label>"
             + "<label class=\"ben-field ben-profile-field ben-profile-editable\"><span class=\"ben-field-label\"><span aria-hidden=\"true\"><i data-lucide=\"phone\"></i></span> Contact details</span><input name=\"contact_details\" type=\"text\" value=\"" + esc(beneficiary.contactDetails || "") + "\" required></label>"
+            + "<label class=\"ben-field ben-profile-field ben-profile-editable\"><span class=\"ben-field-label\">Beneficiary type</span><select name=\"beneficiary_type\"><option value=\"\"" + (selectedType ? "" : " selected") + ">Not set</option><option value=\"happy_nanays\"" + (selectedType === "happy_nanays" ? " selected" : "") + ">Happy Nanays</option><option value=\"happy_kids\"" + (selectedType === "happy_kids" ? " selected" : "") + ">Happy Kids</option><option value=\"happy_hearts\"" + (selectedType === "happy_hearts" ? " selected" : "") + ">Happy Hearts</option></select></label>"
+            + "<label class=\"ben-field ben-profile-field ben-profile-editable\" data-beneficiary-parent-edit" + (selectedType === "happy_kids" ? "" : " hidden") + "><span class=\"ben-field-label\">Linked parent</span><select name=\"linked_parent_id\">" + parentOptions + "</select></label>"
+            + "<label class=\"ben-field ben-profile-field ben-profile-editable\"><span class=\"ben-field-label\"><span aria-hidden=\"true\"><i data-lucide=\"user-round\"></i></span> Gender</span><select name=\"gender\"><option value=\"\">Select gender</option><option value=\"male\"" + (beneficiary.gender === "male" ? " selected" : "") + ">Male</option><option value=\"female\"" + (beneficiary.gender === "female" ? " selected" : "") + ">Female</option><option value=\"other\"" + (beneficiary.gender === "other" ? " selected" : "") + ">Other</option><option value=\"prefer_not\"" + (beneficiary.gender === "prefer_not" ? " selected" : "") + ">Prefer not to say</option></select></label>"
             + "<label class=\"ben-field ben-profile-field ben-profile-editable\"><span class=\"ben-field-label\"><span aria-hidden=\"true\"><i data-lucide=\"shield-check\"></i></span> Status</span><select name=\"status\"><option value=\"Active\"" + (beneficiary.status === "Active" ? " selected" : "") + ">Active</option><option value=\"Inactive\"" + (beneficiary.status === "Inactive" ? " selected" : "") + ">Inactive</option></select></label>"
             + "<label class=\"ben-field ben-profile-field ben-profile-editable\"><span class=\"ben-field-label\"><span aria-hidden=\"true\"><i data-lucide=\"calendar-days\"></i></span> Registered</span><input type=\"text\" value=\"" + esc(beneficiary.registeredAt || "N/A") + "\" readonly></label>"
             + "<label class=\"ben-field ben-profile-field ben-profile-editable\"><span class=\"ben-field-label\"><span aria-hidden=\"true\"><i data-lucide=\"calendar-check\"></i></span> Last assistance</span><input type=\"text\" value=\"" + esc(beneficiary.lastAssistanceDate || "N/A") + "\" readonly></label>"
-            + "<label class=\"ben-field ben-profile-field ben-profile-editable\"><span class=\"ben-field-label\"><span aria-hidden=\"true\"><i data-lucide=\"map-pin\"></i></span> Address</span><textarea name=\"supporting_information\" rows=\"3\">" + esc(beneficiary.addressLine || beneficiary.location || "") + "</textarea></label>"
+            + "<label class=\"ben-field ben-profile-field ben-profile-editable\"><span class=\"ben-field-label\"><span aria-hidden=\"true\"><i data-lucide=\"map-pin\"></i></span> Address</span><textarea name=\"supporting_information\" rows=\"3\" maxlength=\"255\">" + esc(beneficiary.addressLine || beneficiary.location || "") + "</textarea></label>"
             + "</form>";
     }
 
@@ -3054,6 +3195,18 @@
         renderProfileStrip(beneficiary);
         if (profileContent) {
             profileContent.innerHTML = profileMode === "edit" ? renderProfileEdit(beneficiary) : renderProfileView(beneficiary);
+            if (profileMode === "edit") {
+                var typeSelect = profileContent.querySelector('select[name="beneficiary_type"]');
+                var parentField = profileContent.querySelector("[data-beneficiary-parent-edit]");
+                var parentSelect = profileContent.querySelector('select[name="linked_parent_id"]');
+                if (typeSelect && parentField && parentSelect) {
+                    typeSelect.addEventListener("change", function () {
+                        var isHappyKids = typeSelect.value === "happy_kids";
+                        parentField.hidden = !isHappyKids;
+                        if (!isHappyKids) parentSelect.value = "";
+                    });
+                }
+            }
         }
         renderProfileFooter(beneficiary, profileMode);
 
@@ -3738,13 +3891,23 @@
                 searchTimeout = window.setTimeout(function () {
                     selectedBeneficiaries.clear();
                     renderTable();
+                    renderPendingApplications();
                     syncBulkBar();
                 }, 300);
             });
         }
 
+
         if (statusFilter) {
             statusFilter.addEventListener("change", function () {
+                selectedBeneficiaries.clear();
+                renderTable();
+                syncBulkBar();
+            });
+        }
+
+        if (typeFilter) {
+            typeFilter.addEventListener("change", function () {
                 selectedBeneficiaries.clear();
                 renderTable();
                 syncBulkBar();
@@ -3985,4 +4148,5 @@
 
 })();
 </script>
+<script src="{% static 'js/application-review-details.js' %}?v=20261019-profile-completeness"></script>
 {% endblock %}

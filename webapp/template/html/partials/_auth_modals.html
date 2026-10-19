@@ -23,8 +23,12 @@
         </article>
 
         <article class="modal-right">
-            <h3>Sign In</h3>
-            <form class="modal-form" method="post" action="{% url 'signin' %}">
+            <h3 id="signInPanelTitle">Sign In</h3>
+            <h3 id="resetPasswordTitle" hidden>Reset Password</h3>
+            <p id="resetPasswordDescription" class="reset-password-description" hidden>
+                Enter your email and we'll send you a link to reset your password.
+            </p>
+            <form id="signInForm" class="modal-form" method="post" action="{% url 'signin' %}">
                 {% csrf_token %}
                 <input id="signInNext" type="hidden" name="next" value="">
 
@@ -37,17 +41,23 @@
                 {% endif %}
 
                 <label class="sr-only" for="id_username_or_email">Username or Email</label>
-                <input id="id_username_or_email" class="auth-input" type="text" name="username_or_email" value="{{ signin_form.username_or_email.value|default:'' }}" placeholder="Username or Email" required>
+                <input id="id_username_or_email" class="auth-input" type="text" name="username_or_email" value="{{ signin_form.username_or_email.value|default:'' }}" placeholder="Username or Email" maxlength="50" required>
                 {% if signin_form.username_or_email.errors %}
                     <p class="form-error form-error-msg">{{ signin_form.username_or_email.errors.0 }}</p>
                 {% endif %}
 
                 <label class="sr-only" for="id_password">Password</label>
-                <input id="id_password" class="auth-input" type="password" name="password" placeholder="Password" required>
+                <div class="auth-password-field">
+                    <input id="id_password" class="auth-input" type="password" name="password" placeholder="Password" maxlength="50" required>
+                    <button class="auth-password-toggle" type="button" data-password-toggle="id_password" aria-controls="id_password" aria-label="Show password" aria-pressed="false">
+                        Show
+                    </button>
+                </div>
                 {% if signin_form.password.errors %}
                     <p class="form-error form-error-msg">{{ signin_form.password.errors.0 }}</p>
                 {% endif %}
 
+                <a href="#" id="forgotPasswordLink" class="forgot-link">Forgot password?</a>
                 <button class="btn modal-login-btn" type="submit">LOGIN</button>
 
                 <div class="auth-divider">or</div>
@@ -56,7 +66,21 @@
                     <span class="google-auth-text">Continue with Google</span>
                 </a>
             </form>
-            <p class="modal-signup">Don't have an account? <a href="#" id="switchToSignUpFromSignIn">Sign up</a></p>
+            <p id="signInSignupLink" class="modal-signup">Don't have an account? <a href="#" id="switchToSignUpFromSignIn">Sign up</a></p>
+
+            <form id="resetPasswordForm" class="modal-form" method="post" action="{% url 'password_reset_request' %}" novalidate hidden>
+                {% csrf_token %}
+                <label class="sr-only" for="resetPasswordEmail">Email Address</label>
+                <input id="resetPasswordEmail" class="auth-input" type="email" name="email" placeholder="Email Address" autocomplete="email" maxlength="254" required>
+                <p id="resetPasswordError" class="form-error form-error-msg" role="alert" hidden></p>
+                <button class="btn modal-login-btn" type="submit">SEND RESET LINK</button>
+            </form>
+            <p id="resetPasswordSuccess" class="reset-password-success" role="status" hidden>
+                If an account exists for that email, we've sent a reset link.
+            </p>
+            <p id="resetPasswordBack" class="modal-signup reset-password-back" hidden>
+                <a href="#" id="backToSignInLink">Back to sign in</a>
+            </p>
         </article>
     </section>
 </div>
@@ -97,25 +121,35 @@
                 {% endif %}
 
                 <label class="sr-only" for="id_username">Username</label>
-                <input id="id_username" class="auth-input" type="text" name="username" value="{{ signup_form.username.value|default:'' }}" placeholder="Username" required>
+                <input id="id_username" class="auth-input" type="text" name="username" value="{{ signup_form.username.value|default:'' }}" placeholder="Username" maxlength="50" required>
                 {% if signup_form.username.errors %}
                     <p class="form-error form-error-msg">{{ signup_form.username.errors.0 }}</p>
                 {% endif %}
 
                 <label class="sr-only" for="id_email">Email</label>
-                <input id="id_email" class="auth-input" type="email" name="email" value="{{ signup_form.email.value|default:'' }}" placeholder="Email Address" required>
+                <input id="id_email" class="auth-input" type="email" name="email" value="{{ signup_form.email.value|default:'' }}" placeholder="Email Address" maxlength="50" required>
                 {% if signup_form.email.errors %}
                     <p class="form-error form-error-msg">{{ signup_form.email.errors.0 }}</p>
                 {% endif %}
 
                 <label class="sr-only" for="id_password1">Password</label>
-                <input id="id_password1" class="auth-input" type="password" name="password1" placeholder="Password" required>
+                <div class="auth-password-field">
+                    <input id="id_password1" class="auth-input" type="password" name="password1" placeholder="Password" maxlength="50" required>
+                    <button class="auth-password-toggle" type="button" data-password-toggle="id_password1" aria-controls="id_password1" aria-label="Show password" aria-pressed="false">
+                        Show
+                    </button>
+                </div>
                 {% if signup_form.password1.errors %}
                     <p class="form-error form-error-msg">{{ signup_form.password1.errors.0 }}</p>
                 {% endif %}
 
                 <label class="sr-only" for="id_password2">Confirm Password</label>
-                <input id="id_password2" class="auth-input" type="password" name="password2" placeholder="Confirm Password" required>
+                <div class="auth-password-field">
+                    <input id="id_password2" class="auth-input" type="password" name="password2" placeholder="Confirm Password" maxlength="50" required>
+                    <button class="auth-password-toggle" type="button" data-password-toggle="id_password2" aria-controls="id_password2" aria-label="Show password" aria-pressed="false">
+                        Show
+                    </button>
+                </div>
                 {% if signup_form.password2.errors %}
                     <p class="form-error form-error-msg">{{ signup_form.password2.errors.0 }}</p>
                 {% endif %}

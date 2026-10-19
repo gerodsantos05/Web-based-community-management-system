@@ -9,7 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/index.css' %}?v=20261008-order-modal-motion">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}?v=20261015-auth-password-reset-email">
+    <link rel="stylesheet" href="{% static 'css/application-tracker.css' %}?v=20261017-single-form-final">
 </head>
 <body {% if open_modal %}class="modal-open"{% endif %}>
     {% include 'partials/_public_navbar.html' with nav_active='home' %}
@@ -26,12 +27,12 @@
                        What started as a simple desire to help has grown into a movement of care, compassion, and community. And we are just getting started.
                     </p>
 
-                    <div class="actions">
+                    {% if not request.user.is_authenticated %}<div class="actions">
                         <button class="btn btn-primary" id="openSignUpModal" type="button">
                             Join Us
                             <i data-lucide="arrow-right" class="icon-sm"></i>
                         </button>
-                    </div>
+                    </div>{% endif %}
 
                 </div>
 
@@ -94,7 +95,7 @@
             </div>
         </section>
 
-        <section class="features" id="applications">
+        {% if not request.user.is_authenticated or user_role == 'regular' %}<section class="features" id="applications">
             <div class="container">
                 <div class="section-title">
                     <h2>Start Your Journey With Us</h2>
@@ -157,8 +158,9 @@
                             <label for="b_track">Program</label>
                             <select id="b_track" name="track" required>
                                 <option value="" disabled selected>Select a program</option>
-                                <option value="happy_nanas">Happy Nanay's</option>
+                                <option value="happy_nanas">Happy Nanays</option>
                                 <option value="happy_kids">Happy Kid's</option>
+                                <option value="happy_hearts">Happy Hearts</option>
                             </select>
 
                             <label class="sr-only" for="b_email">Email</label>
@@ -308,6 +310,7 @@
                 </section>
             </div>
         </section>
+        {% endif %}
 
         <style>
         /* Apply cards - reuse feature-card visuals, only grid and helpers here */
@@ -673,11 +676,42 @@
 
     {% include 'partials/_public_footer.html' %}
 
+    {% if request.user.is_authenticated and application_tracker_items %}
+        {{ application_tracker_items|json_script:"application-tracker-data" }}
+        <button class="application-tracker-trigger" id="applicationTrackerTrigger" type="button" aria-label="Track your applications" aria-haspopup="dialog" aria-controls="applicationTrackerModal">
+            <i data-lucide="heart-handshake" aria-hidden="true"></i>
+            <span class="application-tracker-dot" {% if not has_application_details_to_complete %}hidden{% endif %} aria-label="Application details can be completed"></span>
+        </button>
+        <div class="application-tracker-overlay" id="applicationTrackerModal" hidden aria-hidden="true" data-complete-url-template="{% url 'complete_role_application_profile' application_id=0 %}">
+            <section class="application-tracker-dialog" role="dialog" aria-modal="true" aria-labelledby="applicationTrackerTitle" aria-describedby="applicationTrackerDescription">
+                <header class="application-tracker-header">
+                    <div>
+                        <p class="application-tracker-kicker">Your applications</p>
+                        <h2 id="applicationTrackerTitle">Application tracker</h2>
+                        <p id="applicationTrackerDescription">Check the status of your volunteer and beneficiary applications.</p>
+                    </div>
+                    <button class="application-tracker-close" id="applicationTrackerClose" type="button" aria-label="Close application tracker">
+                        <i data-lucide="x" aria-hidden="true"></i>
+                    </button>
+                </header>
+                <div class="application-tracker-filters" role="group" aria-label="Filter applications">
+                    <button type="button" data-application-filter="all" class="active" aria-pressed="true">All</button>
+                    <button type="button" data-application-filter="pending" aria-pressed="false">Pending</button>
+                    <button type="button" data-application-filter="approved" aria-pressed="false">Approved</button>
+                    <button type="button" data-application-filter="attention" aria-pressed="false">Needs attention</button>
+                </div>
+                <p class="application-tracker-message" id="applicationTrackerMessage" role="status" aria-live="polite"></p>
+                <div class="application-tracker-list" id="applicationTrackerList"></div>
+            </section>
+        </div>
+    {% endif %}
+
     {% include 'partials/_auth_modals.html' %}
 
     <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="{% static 'js/index.js' %}?v=20261008-order-tabs"></script>
+    <script src="{% static 'js/index.js' %}?v=20261015-auth-password-reset-email"></script>
+    <script src="{% static 'js/application-completion-wizard.js' %}?v=20261017-single-form"></script>
     <script>
     (function(){
         if (typeof lottie === 'undefined') return;

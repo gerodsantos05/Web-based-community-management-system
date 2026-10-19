@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -52,6 +53,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'webapp.middleware.NoCacheAuthenticatedPagesMiddleware',
     'webapp.middleware.TwoFactorChallengeMiddleware',
     'webapp.middleware.AdminAuditContextMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -151,6 +153,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+PRIVATE_APPLICATIONS_ROOT = BASE_DIR / 'private_application_documents'
 
 # TODO: Replace these donation placeholders with the organization's approved details.
 DONATION_CONFIG = {
@@ -249,14 +252,15 @@ DONATION_FALLBACK_PROGRAMS = [
 ]
 
 
-# --- Email configuration (Gmail SMTP) ---
-# Replace EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, and DEFAULT_FROM_EMAIL with real
-# credentials before deploying. For Gmail, generate an App Password at:
-# https://myaccount.google.com/apppasswords (requires 2-Step Verification).
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'rodgearuta05@gmail.com'
-EMAIL_HOST_PASSWORD = 'qvzmhycmlehrszdl'
-DEFAULT_FROM_EMAIL = 'HappYness Project <rodgearuta05@gmail.com>'
+# --- Email configuration ---
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'true').lower() in {'1', 'true', 'yes'}
+EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '10'))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'galliumgar2010@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get(
+    'DEFAULT_FROM_EMAIL',
+    f"HappYness Project <{EMAIL_HOST_USER}>",
+)

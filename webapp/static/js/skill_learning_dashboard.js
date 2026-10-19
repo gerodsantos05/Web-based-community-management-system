@@ -7,6 +7,7 @@
         return;
     }
     root.dataset.slHubBound = "true";
+    root.setAttribute("tabindex", "-1");
 
     var searchInput = document.getElementById("sl-topic-search");
     var searchWrapper = document.getElementById("sl-search");
@@ -39,13 +40,18 @@
     var materialDescInput = document.getElementById("sl-material-desc-input");
     var materialUploadInput = document.getElementById("sl-material-upload-input");
     var materialLinkInput = document.getElementById("sl-material-link-input");
+    var materialSourceHint = document.getElementById("sl-material-source-hint");
     var deleteModal = document.getElementById("sl-delete-confirm-modal");
     var deleteTitle = document.getElementById("sl-delete-confirm-title");
     var deleteMessage = document.getElementById("sl-delete-confirm-message");
     var deleteConfirmBtn = document.getElementById("sl-delete-confirm-btn");
+    var undoModal = document.getElementById("sl-undo-confirm-modal");
+    var undoConfirmBtn = document.getElementById("sl-undo-confirm-btn");
+    var modalOpeners = new WeakMap();
     var apiBase = (root.dataset.apiBase || "").replace(/\/$/, "");
     var userRole = root.dataset.userRole || "user";
     var payload = {};
+    var engagementMessageTimer = null;
 
     try {
         payload = JSON.parse(payloadNode.textContent || "{}");
@@ -61,7 +67,7 @@
         recentlyViewed: [],
         topics: Array.isArray(payload.topics) ? payload.topics.slice() : [],
         pendingDelete: null,
-        uploadPreviewUrl: ""
+        pendingUndo: null,
     };
 
     function escapeHtml(value) {
@@ -141,7 +147,7 @@
         }
 
         return [
-            '<div class="sl-progress-track"><span class="sl-progress-value" style="width: ' + escapeHtml(String(Math.max(0, Math.min(100, percentComplete)))) + '%"></span></div>',
+            '<div class="sl-progress-track" role="progressbar" aria-label="Topic completion" aria-valuemin="0" aria-valuemax="' + escapeHtml(String(totalMaterials)) + '" aria-valuenow="' + escapeHtml(String(completedMaterials)) + '" aria-valuetext="' + escapeHtml(String(completedMaterials)) + ' of ' + escapeHtml(String(totalMaterials)) + ' materials completed"><span class="sl-progress-value" style="width: ' + escapeHtml(String(Math.max(0, Math.min(100, percentComplete)))) + '%"></span></div>',
             '<span>' + escapeHtml(String(completedMaterials)) + ' of ' + escapeHtml(String(totalMaterials)) + ' completed</span>'
         ].join("");
     }
@@ -163,7 +169,126 @@
         previewFrame.innerHTML = "";
     }
 
-    function renderMaterialPreview(material, topic) {
+    function getPreview(material) {
+        var uploadedUrl = String(material.fileUrl || "");
+        var originalUrl = uploadedUrl || String(material.externalUrl || material.sourceUrl || "");
+        if (!originalUrl) {
+            return { type: "link", src: "" };
+        }
+
+        var videoPattern = /\.(mp4|webm|ogg)(?:$|[?#])/i;
+        var pdfPattern = /\.pdf(?:$|[?#])/i;
+        var imagePattern = /\.(png|jpe?g|gif|webp|svg)$/i;
+        if (uploadedUrl) {
+            if (material.mimeType === "application/pdf" || pdfPattern.test(uploadedUrl)) {
+                return { type: "iframe", src: uploadedUrl };
+            }
+            if (
+                String(material.mimeType || "").indexOf("image/") === 0 ||
+                imagePattern.test(String(material.fileName || uploadedUrl).split(/[?#]/)[0])
+            ) {
+                return { type: "image", src: uploadedUrl };
+            }
+            if (
+                String(material.mimeType || "").indexOf("video/") === 0 ||
+                videoPattern.test(material.fileName || uploadedUrl)
+            ) {
+                return { type: "video", src: uploadedUrl };
+            }
+            return { type: "link", src: uploadedUrl };
+        }
+
+        var parsedUrl;
+        try {
+            parsedUrl = new URL(originalUrl);
+        } catch (error) {
+            return { type: "link", src: originalUrl };
+        }
+        var hostname = parsedUrl.hostname.toLowerCase().replace(/^www\./, "");
+        var path = parsedUrl.pathname;
+        var match;
+
+        if (hostname === "drive.google.com") {
+            match = path.match(/^\/file\/d\/([^/]+)/);
+            var driveFileId = match ? match[1] : "";
+            if (!driveFileId && /^\/(?:open|uc)\/?$/.test(path)) {
+                driveFileId = parsedUrl.searchParams.get("id") || "";
+            }
+            if (driveFileId) {
+                return {
+                    type: "iframe",
+                    src: "https://drive.google.com/file/d/" + encodeURIComponent(driveFileId) + "/preview"
+                };
+            }
+        }
+
+        if (hostname === "youtu.be") {
+            match = path.match(/^\/([A-Za-z0-9_-]+)/);
+            if (match) {
+                return { type: "iframe", src: "https://www.youtube.com/embed/" + match[1] };
+            }
+        } else if (hostname === "youtube.com" || hostname.endsWith(".youtube.com")) {
+            match = parsedUrl.searchParams.get("v");
+            if (path === "/watch" && match) {
+                return { type: "iframe", src: "https://www.youtube.com/embed/" + encodeURIComponent(match) };
+            }
+            match = path.match(/^\/(?:embed|shorts)\/([A-Za-z0-9_-]+)/);
+            if (match) {
+                return { type: "iframe", src: "https://www.youtube.com/embed/" + match[1] };
+            }
+        }
+
+        if (hostname === "vimeo.com" || hostname.endsWith(".vimeo.com")) {
+            match = path.match(/\/(\d+)(?:\/|$)/);
+            if (match) {
+                return { type: "iframe", src: "https://player.vimeo.com/video/" + match[1] };
+            }
+        }
+
+        if (hostname === "docs.google.com" || hostname.endsWith(".docs.google.com")) {
+            if (/^\/(?:document|presentation|spreadsheets)\/d\/[^/]+\/(?:edit|view)\/?$/.test(path)) {
+                return {
+                    type: "iframe",
+                    src: parsedUrl.origin + path.replace(/\/(?:edit|view)\/?$/, "/preview")
+                };
+            }
+        }
+
+        if (videoPattern.test(parsedUrl.pathname)) {
+            return { type: "video", src: originalUrl };
+        }
+        if (pdfPattern.test(parsedUrl.pathname)) {
+            return { type: "iframe", src: originalUrl };
+        }
+        if (imagePattern.test(parsedUrl.pathname)) {
+            return { type: "image", src: originalUrl };
+        }
+        return { type: "link", src: originalUrl };
+    }
+
+    function renderMaterialFallback(material, sourceUrl) {
+        var title = material.title || "Learning material";
+        return [
+            '<div class="sl-preview-fallback">',
+            '<strong class="sl-preview-fallback-title">' + escapeHtml(title) + '</strong>',
+            sourceUrl
+                ? '<a class="sl-preview-fallback-link" href="' + escapeHtml(sourceUrl) + '" target="_blank" rel="noopener noreferrer">Open link</a>'
+                : '<span class="sl-preview-fallback-empty">No file or link is available.</span>',
+            '</div>'
+        ].join("");
+    }
+
+    function renderMaterialCompletion(material) {
+        if (userRole === "volunteer") {
+            return "";
+        }
+        if (material.completed) {
+            return '<div class="sl-preview-completion-actions"><span class="sl-preview-completion-status" role="status">Completed</span><button type="button" class="sl-material-undo" data-sl-material-undo="' + escapeHtml(material.id) + '" aria-label="Undo completion for ' + escapeHtml(material.title || "material") + '">Undo</button></div>';
+        }
+        return '<button type="button" class="sl-material-complete" data-sl-material-complete="' + escapeHtml(material.id) + '" aria-label="Mark ' + escapeHtml(material.title || "material") + ' as complete">Mark complete</button>';
+    }
+
+    function renderMaterialPreview(material) {
         if (!previewFrame) {
             return;
         }
@@ -172,52 +297,74 @@
             return;
         }
 
-        var sourceUrl = material.sourceUrl || material.externalUrl || material.fileUrl || "";
-        var previewKind = material.materialType === "video" ? "video" : "document";
-        var frameClass = "sl-preview-frame " + (previewKind === "video" ? "is-video" : "is-document");
-        var markup = "";
+        var preview = getPreview(material);
+        var sourceUrl = material.fileUrl || material.externalUrl || material.sourceUrl || "";
+        var isEmbeddedVideo = preview.type === "iframe" &&
+            /(?:youtube\.com\/embed|player\.vimeo\.com\/video)/i.test(preview.src);
+        var frameClass = "sl-preview-frame " +
+            (preview.type === "video" || isEmbeddedVideo ? "is-video" : "is-document");
+        var previewMarkup;
 
-        if (previewKind === "video") {
-            if (sourceUrl && !/drive\.google\.com/i.test(sourceUrl)) {
-                markup = '<video class="sl-preview-media" controls playsinline src="' + escapeHtml(sourceUrl) + '"></video>';
-            } else if (sourceUrl) {
-                markup = '<iframe src="' + escapeHtml(sourceUrl) + '" title="' + escapeHtml(material.title || "Video") + ' preview" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>';
-            } else {
-                markup = '<div class="sl-preview-doc" aria-hidden="true"><i data-lucide="play-circle"></i></div>';
-            }
-        } else if (sourceUrl) {
-            if (/\.pdf($|\?)/i.test(sourceUrl) || /drive\.google\.com/i.test(sourceUrl) || /preview/i.test(sourceUrl)) {
-                markup = '<iframe src="' + escapeHtml(sourceUrl) + '" title="' + escapeHtml(material.title || "Document") + ' preview" frameborder="0" allowfullscreen></iframe>';
-            } else {
-                markup = '<div class="sl-preview-doc"><a href="' + escapeHtml(sourceUrl) + '" target="_blank" rel="noopener">Open material</a></div>';
-            }
-        } else if (topic && topic.coverImageUrl) {
-            markup = '<img class="sl-preview-media" src="' + escapeHtml(topic.coverImageUrl) + '" alt="' + escapeHtml((material.title || "Material") + ' preview') + '" loading="lazy" />';
+        if (preview.type === "iframe") {
+            previewMarkup = [
+                '<div class="sl-preview-embed' + (isEmbeddedVideo ? ' is-video' : '') + '">',
+                '<iframe src="' + escapeHtml(preview.src) + '" title="' + escapeHtml(material.title || "Learning material") + ' preview" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture; web-share" allowfullscreen></iframe>',
+                '</div>'
+            ].join("");
+        } else if (preview.type === "image") {
+            previewMarkup = '<img class="sl-preview-image" src="' + escapeHtml(preview.src) + '" alt="' + escapeHtml(material.title || "Learning material") + '" />';
+        } else if (preview.type === "video") {
+            previewMarkup = '<video class="sl-preview-media" controls playsinline webkit-playsinline preload="metadata" src="' + escapeHtml(preview.src) + '"></video>';
         } else {
-            markup = '<div class="sl-preview-doc" aria-hidden="true"><i data-lucide="file-text"></i></div>';
+            previewMarkup = renderMaterialFallback(material, sourceUrl);
         }
 
+        var isFallback = preview.type === "link";
+        var openLink = sourceUrl && !isFallback
+            ? '<a class="sl-preview-open-link" href="' + escapeHtml(sourceUrl) + '" target="_blank" rel="noopener noreferrer">Open or download this material</a>'
+            : "";
+        var completionAction = renderMaterialCompletion(material);
         previewFrame.className = frameClass;
-        previewFrame.innerHTML = markup;
+        previewFrame.innerHTML = previewMarkup + openLink + completionAction;
+
+        var iframe = previewFrame.querySelector("iframe");
+        if (iframe) {
+            iframe.addEventListener("error", function () {
+                if (!previewFrame.contains(iframe)) {
+                    return;
+                }
+                previewFrame.innerHTML = renderMaterialFallback(material, sourceUrl);
+            }, { once: true });
+        }
+
+        var image = previewFrame.querySelector(".sl-preview-image");
+        if (image) {
+            image.addEventListener("error", function () {
+                if (!previewFrame.contains(image)) {
+                    return;
+                }
+                previewFrame.innerHTML = renderMaterialFallback(material, sourceUrl);
+            }, { once: true });
+        }
 
         var video = previewFrame.querySelector("video");
-        if (video && userRole !== "volunteer") {
-            video.addEventListener("ended", function () {
-                recordEngagement("complete", material.id);
+        if (video) {
+            if (userRole !== "volunteer") {
+                video.addEventListener("ended", function () {
+                    recordEngagement("complete", material.id);
+                }, { once: true });
+            }
+            video.addEventListener("error", function () {
+                if (!previewFrame.contains(video)) {
+                    return;
+                }
+                previewFrame.innerHTML = renderMaterialFallback(material, sourceUrl);
             }, { once: true });
         }
 
         if (window.lucide && typeof window.lucide.createIcons === "function") {
             window.lucide.createIcons();
         }
-    }
-
-    function getSelectedFilterTags(form) {
-        var hiddenInput = form.querySelector('#sl-topic-filter-tags-hidden');
-        if (hiddenInput && hiddenInput.value) {
-            return hiddenInput.value.split(',').filter(function(tag) { return tag.trim(); });
-        }
-        return [];
     }
 
     function applyTopicFormValues(topic) {
@@ -262,20 +409,101 @@
         materialTypeInput.value = material ? (material.materialType || "document") : "document";
         materialTitleInput.value = material ? (material.title || "") : "";
         materialDescInput.value = material ? (material.description || "") : "";
-        materialLinkInput.value = material ? (material.externalUrl || material.sourceUrl || "") : "";
+        materialLinkInput.value = material ? (material.externalUrl || "") : "";
         materialUploadInput.value = "";
+        syncMaterialSourceFields();
     }
 
-    function openModal(modal) {
-        if (!modal) return;
+    function syncMaterialSourceFields() {
+        if (!materialUploadInput || !materialLinkInput) {
+            return;
+        }
+        var hasUploadedFile = !!(materialUploadInput.files && materialUploadInput.files.length);
+        materialLinkInput.disabled = hasUploadedFile;
+        materialLinkInput.setCustomValidity("");
+        if (materialSourceHint) {
+            materialSourceHint.textContent = hasUploadedFile
+                ? "The uploaded file will be used instead of a link."
+                : "Add a file or a valid http(s) link.";
+        }
+    }
+
+    function validateMaterialSource() {
+        syncMaterialSourceFields();
+        var hasUploadedFile = !!(materialUploadInput.files && materialUploadInput.files.length);
+        if (hasUploadedFile) {
+            return true;
+        }
+
+        var existingMaterial = materialIdInput.value
+            ? getMaterialById(getCurrentTopic(), materialIdInput.value)
+            : null;
+        if (
+            !materialLinkInput.value.trim() &&
+            existingMaterial &&
+            existingMaterial.fileUrl &&
+            !existingMaterial.externalUrl
+        ) {
+            return true;
+        }
+        if (!materialLinkInput.value.trim()) {
+            materialLinkInput.setCustomValidity("Upload a file or enter a link.");
+            materialLinkInput.reportValidity();
+            return false;
+        }
+
+        var parsedLink;
+        try {
+            parsedLink = new URL(materialLinkInput.value);
+        } catch (error) {
+            materialLinkInput.setCustomValidity("Enter a valid http(s) URL.");
+            materialLinkInput.reportValidity();
+            return false;
+        }
+        if ((parsedLink.protocol !== "http:" && parsedLink.protocol !== "https:") || !parsedLink.hostname) {
+            materialLinkInput.setCustomValidity("Enter a valid http(s) URL.");
+            materialLinkInput.reportValidity();
+            return false;
+        }
+        return true;
+    }
+
+    function openModal(modal, opener) {
+        if (!modal) {
+            return;
+        }
+        var activeElement = document.activeElement;
+        var focusOrigin = opener || (activeElement && !modal.contains(activeElement) ? activeElement : null);
+        if (focusOrigin) {
+            modalOpeners.set(modal, focusOrigin);
+        }
         modal.classList.add("is-open");
         modal.setAttribute("aria-hidden", "false");
+        window.requestAnimationFrame(function () {
+            if (!modal.classList.contains("is-open")) {
+                return;
+            }
+            var initialFocus = modal.querySelector("[data-sl-close-modal], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])");
+            if (initialFocus) {
+                initialFocus.focus();
+            }
+        });
     }
 
     function closeModal(modal) {
-        if (!modal) return;
+        if (!modal || !modal.classList.contains("is-open")) {
+            return;
+        }
+        var opener = modalOpeners.get(modal);
+        if (opener && opener.isConnected && !modal.contains(opener) && !opener.disabled) {
+            opener.focus();
+        }
+        if (!document.activeElement || modal.contains(document.activeElement)) {
+            root.focus();
+        }
         modal.classList.remove("is-open");
         modal.setAttribute("aria-hidden", "true");
+        modalOpeners.delete(modal);
     }
 
     function setDetailMode(isDetail) {
@@ -466,14 +694,37 @@
         renderTopicView(topic);
     }
 
-    function showTopicList() {
+    function getTopicFromUrl() {
+        var params = new URLSearchParams(window.location.search || "");
+        return String(params.get("topic") || params.get("course") || "").trim();
+    }
+
+    function updateTopicUrl(topicId, replace) {
+        var url = new URL(window.location.href);
+        url.searchParams.delete("course");
+        url.searchParams.set("topic", topicId);
+        var method = replace ? "replaceState" : "pushState";
+        window.history[method]({ skillLearningTopicId: topicId }, "", url);
+    }
+
+    function clearTopicUrl() {
+        var url = new URL(window.location.href);
+        url.searchParams.delete("topic");
+        url.searchParams.delete("course");
+        window.history.replaceState(null, "", url);
+    }
+
+    function showTopicList(updateUrl) {
         state.currentTopicId = null;
         state.currentMaterialId = null;
         setDetailMode(false);
         clearMaterialPreview();
+        if (updateUrl !== false && getTopicFromUrl()) {
+            clearTopicUrl();
+        }
     }
 
-    function openTopic(topicId) {
+    function openTopic(topicId, updateUrl) {
         var topic = getTopicById(topicId);
         if (!topic) {
             return;
@@ -481,6 +732,9 @@
         state.currentTopicId = topicId;
         state.currentMaterialId = null;
         setDetailMode(true);
+        if (updateUrl !== false && getTopicFromUrl() !== topicId) {
+            updateTopicUrl(topicId, !!getTopicFromUrl());
+        }
         renderTopicView(topic);
         updateRecentlyViewed(topicId);
         renderSidebar();
@@ -500,8 +754,7 @@
     }
 
     function openDeepLink() {
-        var params = new URLSearchParams(window.location.search || "");
-        var topicParam = String(params.get("course") || params.get("topic") || "").trim();
+        var topicParam = getTopicFromUrl();
         if (!topicParam) {
             return;
         }
@@ -510,9 +763,27 @@
             return normalizeToken(topic.id) === normalizedParam || normalizeToken(topic.title).indexOf(normalizedParam) >= 0;
         });
         if (match) {
-            openTopic(match.id);
+            openTopic(match.id, false);
         }
     }
+
+    window.addEventListener("popstate", function () {
+        var topicParam = getTopicFromUrl();
+        if (!topicParam) {
+            showTopicList(false);
+            return;
+        }
+
+        var normalizedParam = normalizeToken(topicParam);
+        var match = state.topics.find(function (topic) {
+            return normalizeToken(topic.id) === normalizedParam || normalizeToken(topic.title).indexOf(normalizedParam) >= 0;
+        });
+        if (match) {
+            openTopic(match.id, false);
+        } else {
+            showTopicList(false);
+        }
+    });
 
     function rerenderAfterMutation(nextTopic) {
         state.topics = state.topics.map(function (topic) {
@@ -544,7 +815,16 @@
         fetchOptions.headers = fetchOptions.headers || {};
         fetchOptions.headers["X-CSRFToken"] = getCookie("csrftoken") || "";
         return fetch(url, fetchOptions).then(function (response) {
-            return response.json().then(function (body) {
+            return response.text().then(function (responseText) {
+                var body;
+                try {
+                    body = JSON.parse(responseText);
+                } catch (error) {
+                    var responseMessage = response.redirected
+                        ? "Your session may have expired. Please sign in again."
+                        : "The server returned an unexpected response. Please try again.";
+                    throw new Error(responseMessage);
+                }
                 if (!response.ok) {
                     var message = (body && (body.error || body.message)) || "Request failed.";
                     var error = new Error(message);
@@ -556,9 +836,34 @@
         });
     }
 
+    function setEngagementMessage(message, stateName) {
+        var messageNode = document.getElementById("sl-engagement-message");
+        if (!messageNode) {
+            return;
+        }
+        if (engagementMessageTimer) {
+            window.clearTimeout(engagementMessageTimer);
+            engagementMessageTimer = null;
+        }
+        messageNode.textContent = message || "";
+        if (stateName) {
+            messageNode.dataset.state = stateName;
+        } else {
+            delete messageNode.dataset.state;
+        }
+        messageNode.hidden = !message;
+        if (message && stateName === "success") {
+            engagementMessageTimer = window.setTimeout(function () {
+                setEngagementMessage("", "");
+            }, 2500);
+        }
+    }
+
     function refreshActivity() {
         return fetchJson(apiUrl("/data/")).then(function (result) {
-            if (!result || !Array.isArray(result.topics)) return;
+            if (!result || !Array.isArray(result.topics)) {
+                throw new Error("The learning progress response was invalid.");
+            }
             state.topics = result.topics;
             renderTopicCards();
             renderSidebar();
@@ -567,15 +872,36 @@
         });
     }
 
-    function recordEngagement(action, itemId) {
+    function recordEngagement(action, itemId, trigger) {
         var endpoint = action === "topic-open"
             ? apiUrl("/topics/" + encodeURIComponent(itemId) + "/open/")
             : apiUrl("/materials/" + encodeURIComponent(itemId) + "/engagement/");
         var body = new FormData();
         if (action !== "topic-open") body.append("action", action);
-        fetchJson(endpoint, { method: "POST", body: body }).then(function () {
+        var isCompletionAction = action === "complete" || action === "uncomplete";
+        if (isCompletionAction) {
+            if (trigger) {
+                trigger.disabled = true;
+            }
+            setEngagementMessage("Saving learning progress…", "pending");
+        }
+        return fetchJson(endpoint, { method: "POST", body: body }).then(function () {
             return refreshActivity();
-        }).catch(function () {});
+        }).then(function () {
+            if (isCompletionAction) {
+                setEngagementMessage("Progress saved.", "success");
+            }
+        }).catch(function (error) {
+            setEngagementMessage(
+                isCompletionAction
+                    ? "Unable to save learning progress: " + error.message
+                    : "Unable to record learning activity: " + error.message,
+                "error"
+            );
+            if (trigger) {
+                trigger.disabled = false;
+            }
+        });
     }
 
     function submitTopicForm(event) {
@@ -593,13 +919,12 @@
         }
         
         // Update hidden input with selected tags
-        var hiddenInput = topicForm.querySelector('#sl-topic-filter-tags-hidden');
-        if (hiddenInput) {
-            hiddenInput.value = selectedTags.join(',');
-        }
-        
         var endpoint = topicId ? apiUrl("/topics/" + encodeURIComponent(topicId) + "/update/") : apiUrl("/topics/create/");
         var formData = new FormData(topicForm);
+        formData.delete("filter_tags");
+        selectedTags.forEach(function (tag) {
+            formData.append("filter_tags", tag);
+        });
         fetchJson(endpoint, {
             method: "POST",
             body: formData
@@ -615,6 +940,9 @@
 
     function submitMaterialForm(event) {
         event.preventDefault();
+        if (!validateMaterialSource()) {
+            return;
+        }
         var topicId = materialTopicIdInput.value || state.currentTopicId;
         if (!topicId) {
             alert("Open a topic before adding a material.");
@@ -636,7 +964,7 @@
         });
     }
 
-    function requestDelete(kind, item, onConfirm) {
+    function requestDelete(kind, item, onConfirm, opener) {
         if (!deleteModal) {
             return;
         }
@@ -652,10 +980,20 @@
         if (deleteConfirmBtn) {
             deleteConfirmBtn.textContent = "Delete";
         }
-        openModal(deleteModal);
+        openModal(deleteModal, opener);
     }
 
-    function deleteTopic(topicId) {
+    function requestUndoCompletion(materialId, opener) {
+        if (!undoModal) {
+            return;
+        }
+        state.pendingUndo = function () {
+            recordEngagement("uncomplete", materialId, opener);
+        };
+        openModal(undoModal, opener);
+    }
+
+    function deleteTopic(topicId, opener) {
         requestDelete("topic", topicId, function () {
             fetchJson(apiUrl("/topics/" + encodeURIComponent(topicId) + "/delete/"), { method: "POST", body: new FormData() }).then(function () {
                 removeTopicFromState(topicId);
@@ -663,10 +1001,10 @@
             }).catch(function (error) {
                 alert(error.message || "Unable to delete topic.");
             });
-        });
+        }, opener);
     }
 
-    function deleteMaterial(materialId) {
+    function deleteMaterial(materialId, opener) {
         var topic = getCurrentTopic();
         if (!topic) {
             return;
@@ -680,20 +1018,21 @@
             }).catch(function (error) {
                 alert(error.message || "Unable to delete material.");
             });
-        });
+        }, opener);
     }
 
-    function openTopicCreateModal() {
+    function openTopicCreateModal(opener) {
         if (!topicModal || !topicForm) {
             return;
         }
         if (topicModalTitle) topicModalTitle.textContent = "Create new topic";
         if (topicSubmitBtn) topicSubmitBtn.textContent = "Create topic";
         applyTopicFormValues(null);
-        openModal(topicModal);
+        if (topicCoverInput) topicCoverInput.value = "";
+        openModal(topicModal, opener);
     }
 
-    function openTopicEditModal(topicId) {
+    function openTopicEditModal(topicId, opener) {
         if (!topicModal || !topicForm) {
             return;
         }
@@ -704,10 +1043,10 @@
         if (topicModalTitle) topicModalTitle.textContent = "Edit topic";
         if (topicSubmitBtn) topicSubmitBtn.textContent = "Save changes";
         applyTopicFormValues(topic);
-        openModal(topicModal);
+        openModal(topicModal, opener);
     }
 
-    function openMaterialCreateModal(topicId) {
+    function openMaterialCreateModal(topicId, opener) {
         var topic = getTopicById(topicId || state.currentTopicId);
         if (!topic) {
             return;
@@ -715,10 +1054,11 @@
         if (materialModalTitle) materialModalTitle.textContent = "Create new material";
         if (materialSubmitBtn) materialSubmitBtn.textContent = "Create material";
         applyMaterialFormValues(topic, null);
-        openModal(materialModal);
+        syncMaterialSourceFields();
+        openModal(materialModal, opener);
     }
 
-    function openMaterialEditModal(materialId) {
+    function openMaterialEditModal(materialId, opener) {
         var topic = getCurrentTopic();
         if (!topic) {
             return;
@@ -730,7 +1070,7 @@
         if (materialModalTitle) materialModalTitle.textContent = "Edit material";
         if (materialSubmitBtn) materialSubmitBtn.textContent = "Save changes";
         applyMaterialFormValues(topic, material);
-        openModal(materialModal);
+        openModal(materialModal, opener);
     }
 
     if (searchInput) {
@@ -741,31 +1081,56 @@
     }
 
     if (searchWrapper && searchToggle && searchInput) {
+        function isMobileSearchLayout() {
+            return window.matchMedia("(max-width: 600px)").matches;
+        }
+
         function expandSearch() {
             searchWrapper.classList.add("expanded");
             searchToggle.setAttribute("aria-expanded", "true");
-            try { searchInput.focus(); } catch (error) {}
+        }
+        function syncSearchLayout() {
+            if (isMobileSearchLayout()) {
+                expandSearch();
+            } else if (document.activeElement !== searchInput) {
+                searchWrapper.classList.remove("expanded");
+                searchToggle.setAttribute("aria-expanded", "false");
+            }
         }
         function collapseSearch() {
+            if (isMobileSearchLayout()) {
+                return;
+            }
             searchWrapper.classList.remove("expanded");
             searchToggle.setAttribute("aria-expanded", "false");
         }
         searchToggle.addEventListener("click", function (event) {
             event.stopPropagation();
+            if (isMobileSearchLayout()) {
+                searchInput.focus();
+                return;
+            }
             if (searchWrapper.classList.contains("expanded")) {
                 collapseSearch();
                 searchToggle.focus();
             } else {
                 expandSearch();
+                try { searchInput.focus(); } catch (error) {}
             }
         });
         searchInput.addEventListener("focus", expandSearch);
         searchInput.addEventListener("keydown", function (event) {
             if (event.key === "Escape") {
+                if (isMobileSearchLayout()) {
+                    searchInput.blur();
+                    return;
+                }
                 collapseSearch();
                 searchToggle.focus();
             }
         });
+        syncSearchLayout();
+        window.addEventListener("resize", syncSearchLayout);
         document.addEventListener("click", function (event) {
             if (!searchWrapper.contains(event.target)) {
                 collapseSearch();
@@ -798,14 +1163,6 @@
                     pill.classList.toggle("is-active");
                     pill.setAttribute("aria-pressed", pill.classList.contains("is-active") ? "true" : "false");
                     
-                    // Update preview/form display
-                    applyTopicFormValues({
-                        title: topicTitleInput.value,
-                        description: topicDescInput.value,
-                        badgeLabel: topicBadgeInput.value,
-                        coverImageUrl: state.uploadPreviewUrl || topicCoverUrlInput.value,
-                        filterTags: getSelectedFilterTags(topicForm)
-                    });
                 });
             });
         }
@@ -813,15 +1170,12 @@
     if (materialForm) {
         materialForm.addEventListener("submit", submitMaterialForm);
     }
-
-    if (topicCoverInput) {
-        topicCoverInput.addEventListener("change", function () {
-            var file = topicCoverInput.files && topicCoverInput.files[0];
-            if (!file) {
-                state.uploadPreviewUrl = "";
-                return;
-            }
-            state.uploadPreviewUrl = URL.createObjectURL(file);
+    if (materialUploadInput) {
+        materialUploadInput.addEventListener("change", syncMaterialSourceFields);
+    }
+    if (materialLinkInput) {
+        materialLinkInput.addEventListener("input", function () {
+            materialLinkInput.setCustomValidity("");
         });
     }
 
@@ -846,7 +1200,7 @@
         if (topicEdit) {
             event.preventDefault();
             event.stopPropagation();
-            openTopicEditModal(topicEdit.getAttribute("data-sl-topic-edit"));
+            openTopicEditModal(topicEdit.getAttribute("data-sl-topic-edit"), topicEdit);
             return;
         }
 
@@ -855,7 +1209,7 @@
         if (topicDelete) {
             event.preventDefault();
             event.stopPropagation();
-            deleteTopic(topicDelete.getAttribute("data-sl-topic-delete"));
+            deleteTopic(topicDelete.getAttribute("data-sl-topic-delete"), topicDelete);
             return;
         }
 
@@ -864,7 +1218,7 @@
         if (materialEdit) {
             event.preventDefault();
             event.stopPropagation();
-            openMaterialEditModal(materialEdit.getAttribute("data-sl-material-edit"));
+            openMaterialEditModal(materialEdit.getAttribute("data-sl-material-edit"), materialEdit);
             return;
         }
 
@@ -873,17 +1227,21 @@
         if (materialDelete) {
             event.preventDefault();
             event.stopPropagation();
-            deleteMaterial(materialDelete.getAttribute("data-sl-material-delete"));
+            deleteMaterial(materialDelete.getAttribute("data-sl-material-delete"), materialDelete);
             return;
         }
 
-        var materialToggle = event.target.closest("[data-sl-material-toggle], [data-sl-material-complete]");
+        var materialToggle = event.target.closest("[data-sl-material-toggle], [data-sl-material-complete], [data-sl-material-undo]");
         if (materialToggle) {
             event.preventDefault();
             event.stopPropagation();
-            var materialId = materialToggle.getAttribute("data-sl-material-toggle") || materialToggle.getAttribute("data-sl-material-complete");
-            var isCompleted = materialToggle.getAttribute("aria-pressed") === "true";
-            recordEngagement(isCompleted ? "uncomplete" : "complete", materialId);
+            var materialId = materialToggle.getAttribute("data-sl-material-undo") || materialToggle.getAttribute("data-sl-material-toggle") || materialToggle.getAttribute("data-sl-material-complete");
+            var isUndo = materialToggle.hasAttribute("data-sl-material-undo");
+            if (isUndo) {
+                requestUndoCompletion(materialId, materialToggle);
+            } else {
+                recordEngagement("complete", materialId, materialToggle);
+            }
             return;
         }
 
@@ -924,23 +1282,24 @@
         var createTopicBtn = event.target.closest("#sl-open-create-topic");
         if (createTopicBtn) {
             event.preventDefault();
-            openTopicCreateModal();
+            openTopicCreateModal(createTopicBtn);
             return;
         }
 
         var createMaterialBtn = event.target.closest("#sl-open-create-material");
         if (createMaterialBtn) {
             event.preventDefault();
-            openMaterialCreateModal(state.currentTopicId);
+            openMaterialCreateModal(state.currentTopicId, createMaterialBtn);
             return;
         }
 
         var closeBtn = event.target.closest("[data-sl-close-modal]");
         if (closeBtn) {
             event.preventDefault();
-            closeModal(topicModal);
-            closeModal(materialModal);
-            closeModal(deleteModal);
+            if (closeBtn.getAttribute("data-sl-close-modal") === "undo") {
+                state.pendingUndo = null;
+            }
+            closeModal(closeBtn.closest(".sl-modal"));
         }
     });
 
@@ -950,6 +1309,17 @@
                 state.pendingDelete();
             }
             state.pendingDelete = null;
+        });
+    }
+
+    if (undoConfirmBtn) {
+        undoConfirmBtn.addEventListener("click", function () {
+            var confirmUndo = state.pendingUndo;
+            state.pendingUndo = null;
+            closeModal(undoModal);
+            if (typeof confirmUndo === "function") {
+                confirmUndo();
+            }
         });
     }
 
@@ -974,10 +1344,18 @@
             }
         });
     }
+    if (undoModal) {
+        undoModal.addEventListener("click", function (event) {
+            if (event.target === undoModal) {
+                state.pendingUndo = null;
+                closeModal(undoModal);
+            }
+        });
+    }
 
     renderTopicCards();
     renderSidebar();
-    showTopicList();
+    showTopicList(false);
     openDeepLink();
 
     if (userRole !== "volunteer") {

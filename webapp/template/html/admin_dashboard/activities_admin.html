@@ -850,6 +850,14 @@
 
     .act-preview-field.is-wide { grid-column: 1 / -1; }
 
+    .act-preview-photo-groups { display:grid; gap:.65rem; }
+    .act-preview-photo-group { display:grid; gap:.45rem; padding:.65rem; border:1px solid #e2f1eb; border-radius:10px; background:#fff; }
+    .act-preview-photo-volunteer { color:#1a4f43; font-size:.82rem; font-weight:800; }
+    .act-preview-photo-list { display:flex; flex-wrap:wrap; gap:.55rem; }
+    .act-preview-photo-item { display:grid; width:5.5rem; gap:.2rem; color:#56766c; font-size:.67rem; text-decoration:none; }
+    .act-preview-photo-item img { display:block; width:5.5rem; height:4.25rem; object-fit:cover; border:1px solid #d8e6e0; border-radius:7px; background:#f3f8f5; }
+    .act-preview-photo-item span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
     .act-preview-label {
         display: block;
         margin: 0;
@@ -1732,6 +1740,7 @@
     var activityPreviewClose = document.getElementById('activityPreviewClose');
     var activityPreviewSubtitle = document.getElementById('activityPreviewSubtitle');
     var activityPreviewContent = document.getElementById('activityPreviewContent');
+    var volunteerActivityPhotosUrl = "{% url 'volunteer_activity_photos_api' %}";
     var lastActivityPreviewTrigger = null;
 
     function addActivityPreviewField(label, value, isWide) {
@@ -1745,6 +1754,78 @@
         valueElement.textContent = value === null || value === undefined || value === '' ? '—' : String(value);
         field.append(labelElement, valueElement);
         activityPreviewContent.appendChild(field);
+    }
+
+    function appendActivityPhotosPreview(activityId) {
+        var field = document.createElement('div');
+        field.className = 'act-preview-field is-wide';
+        var label = document.createElement('strong');
+        label.className = 'act-preview-label';
+        label.textContent = 'Volunteer photos';
+        var content = document.createElement('div');
+        content.className = 'act-preview-photo-groups';
+        var loading = document.createElement('p');
+        loading.className = 'act-preview-value';
+        loading.textContent = 'Loading photos…';
+        content.appendChild(loading);
+        field.append(label, content);
+        activityPreviewContent.appendChild(field);
+
+        fetch(volunteerActivityPhotosUrl + '?activity_id=' + encodeURIComponent(activityId), { credentials: 'same-origin' })
+            .then(function(response) {
+                return response.json().then(function(payload) {
+                    if (!response.ok) throw new Error(payload.error || 'Photos could not be loaded.');
+                    return payload;
+                });
+            })
+            .then(function(payload) {
+                content.replaceChildren();
+                var groups = Array.isArray(payload.groups) ? payload.groups : [];
+                if (!groups.length) {
+                    var empty = document.createElement('p');
+                    empty.className = 'act-preview-value';
+                    empty.textContent = 'No photos have been uploaded for this activity.';
+                    content.appendChild(empty);
+                    return;
+                }
+                groups.forEach(function(group) {
+                    var groupElement = document.createElement('section');
+                    groupElement.className = 'act-preview-photo-group';
+                    var volunteer = document.createElement('strong');
+                    volunteer.className = 'act-preview-photo-volunteer';
+                    volunteer.textContent = group.volunteerName + ' · ' + group.photos.length + (group.photos.length === 1 ? ' photo' : ' photos');
+                    var photoList = document.createElement('div');
+                    photoList.className = 'act-preview-photo-list';
+                    group.photos.forEach(function(photo) {
+                        var link = document.createElement('a');
+                        link.className = 'act-preview-photo-item';
+                        link.href = photo.url;
+                        link.target = '_blank';
+                        link.rel = 'noopener';
+                        link.title = photo.caption || photo.activityName || 'Activity photo';
+                        var image = document.createElement('img');
+                        image.src = photo.url;
+                        image.alt = photo.caption || 'Activity photo uploaded by ' + group.volunteerName;
+                        image.loading = 'lazy';
+                        link.appendChild(image);
+                        if (photo.caption) {
+                            var caption = document.createElement('span');
+                            caption.textContent = photo.caption;
+                            link.appendChild(caption);
+                        }
+                        photoList.appendChild(link);
+                    });
+                    groupElement.append(volunteer, photoList);
+                    content.appendChild(groupElement);
+                });
+            })
+            .catch(function(error) {
+                content.replaceChildren();
+                var message = document.createElement('p');
+                message.className = 'act-preview-value';
+                message.textContent = error.message || 'Photos could not be loaded.';
+                content.appendChild(message);
+            });
     }
 
     function openActivityPreview(trigger) {
@@ -1786,6 +1867,7 @@
         var feedbackAverage = trigger.dataset.feedbackAverage || '—';
         addActivityPreviewField('Average feedback', feedbackAverage + (feedbackAverage === '—' ? '' : ' out of 5'));
         addActivityPreviewField('Description', data.description || 'No description provided.', true);
+        appendActivityPhotosPreview(data.activityId);
 
         lastActivityPreviewTrigger = trigger;
         activityPreviewOverlay.classList.add('open');

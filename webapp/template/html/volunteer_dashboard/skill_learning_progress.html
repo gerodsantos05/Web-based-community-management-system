@@ -1,0 +1,1202 @@
+{% extends "volunteer_dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Learner Progress | HappYness{% endblock %}
+
+{% block extra_head %}
+{{ block.super }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    #learning-progress {
+        --lp-primary: #0f6b5c;
+        --lp-success: #0f8a63;
+        --lp-amber: #b9770e;
+        --lp-text: #0d2b26;
+        --lp-muted: #5b6b67;
+        --lp-border: #dfe8e5;
+        --lp-page: #f6faf9;
+        --lp-card: #ffffff;
+        --lp-expanded: #f1f8f6;
+        --lp-track: #e3ebe8;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 1.5rem 1.5rem 2rem;
+        background: var(--lp-page);
+        color: var(--lp-text);
+        font-family: "Poppins", sans-serif;
+    }
+
+    #learning-progress *,
+    #learning-progress-dialog * {
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+    }
+
+    #learning-progress button,
+    #learning-progress input,
+    #learning-progress-dialog button {
+        font: inherit;
+    }
+
+    #learning-progress button:focus-visible,
+    #learning-progress input:focus-visible,
+    #learning-progress a:focus-visible,
+    #learning-progress-dialog button:focus-visible {
+        outline: 2px solid var(--lp-primary);
+        outline-offset: 3px;
+    }
+
+    #learning-progress .lp-page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.35rem;
+    }
+
+    #learning-progress .lp-page-header[hidden] {
+        display: none;
+    }
+
+    #learning-progress .lp-page-title {
+        margin: 0;
+        font-size: clamp(1.55rem, 2.4vw, 2rem);
+        line-height: 1.25;
+        font-weight: 700;
+        color: var(--lp-text);
+    }
+
+    #learning-progress .lp-page-subtitle {
+        margin: .35rem 0 0;
+        color: var(--lp-muted);
+        font-size: .92rem;
+    }
+
+    #learning-progress .lp-link,
+    #learning-progress .lp-back-button {
+        min-height: 44px;
+        border: 0;
+        background: transparent;
+        color: var(--lp-primary);
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    #learning-progress .lp-summary,
+    #learning-progress .lp-person-summary,
+    #learning-progress .lp-beneficiary-card,
+    #learning-progress .lp-topic-list {
+        border: 1px solid var(--lp-border);
+        border-radius: 16px;
+        background: var(--lp-card);
+    }
+
+    #learning-progress .lp-summary {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+        gap: .75rem 1.5rem;
+        padding: 1.25rem 1.4rem;
+        margin-bottom: 1.25rem;
+    }
+
+    #learning-progress .lp-summary-kicker {
+        margin: 0 0 .2rem;
+        color: var(--lp-muted);
+        font-size: .8rem;
+        font-weight: 500;
+    }
+
+    #learning-progress .lp-summary-main {
+        margin: 0;
+        font-size: 1.3rem;
+        line-height: 1.35;
+        font-weight: 700;
+    }
+
+    #learning-progress .lp-summary-caption {
+        margin: .2rem 0 0;
+        color: var(--lp-muted);
+        font-size: .83rem;
+    }
+
+    #learning-progress .lp-summary-percent {
+        color: var(--lp-primary);
+        font-size: 1.9rem;
+        line-height: 1;
+        font-weight: 700;
+    }
+
+    #learning-progress .lp-progress-track {
+        width: 100%;
+        height: 7px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--lp-track);
+    }
+
+    #learning-progress .lp-summary .lp-progress-track {
+        grid-column: 1 / -1;
+    }
+
+    #learning-progress .lp-progress-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: var(--lp-primary);
+        transition: width .2s ease, background-color .2s ease;
+    }
+
+    #learning-progress .lp-progress-fill[data-status="in_progress"] {
+        background: var(--lp-amber);
+    }
+
+    #learning-progress .lp-progress-fill[data-status="completed"] {
+        background: var(--lp-success);
+    }
+
+    #learning-progress .lp-progress-fill[data-status="not_started"] {
+        width: 0 !important;
+        background: var(--lp-track);
+    }
+
+    #learning-progress .lp-toolbar {
+        display: flex;
+        align-items: center;
+        gap: .65rem;
+        flex-wrap: wrap;
+        margin: 0 0 1.1rem;
+    }
+
+    #learning-progress .lp-search {
+        flex: 1 1 250px;
+        min-width: 0;
+        min-height: 44px;
+        padding: .65rem .9rem;
+        border: 1px solid var(--lp-border);
+        border-radius: 12px;
+        background: var(--lp-card);
+        color: var(--lp-text);
+    }
+
+    #learning-progress .lp-search::placeholder {
+        color: var(--lp-muted);
+        opacity: 1;
+    }
+
+    #learning-progress .lp-filters {
+        display: flex;
+        gap: .5rem;
+        flex-wrap: wrap;
+    }
+
+    #learning-progress .lp-filter {
+        min-height: 44px;
+        padding: .55rem .9rem;
+        border: 1px solid var(--lp-border);
+        border-radius: 999px;
+        background: var(--lp-card);
+        color: var(--lp-text);
+        font-size: .83rem;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    #learning-progress .lp-filter[aria-pressed="true"] {
+        border-color: var(--lp-primary);
+        background: var(--lp-primary);
+        color: #ffffff;
+    }
+
+    #learning-progress .lp-beneficiary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+        gap: 16px;
+    }
+
+    #learning-progress .lp-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: .75rem;
+        margin-top: 1rem;
+    }
+
+    #learning-progress .lp-pagination[hidden] {
+        display: none;
+    }
+
+    #learning-progress .lp-page-button {
+        min-height: 44px;
+        padding: .4rem .85rem;
+        border: 1px solid var(--lp-border);
+        border-radius: 999px;
+        background: var(--lp-card);
+        color: var(--lp-primary);
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    #learning-progress .lp-page-button:disabled {
+        color: #7b8783;
+        cursor: default;
+        opacity: .6;
+    }
+
+    #learning-progress .lp-page-indicator {
+        color: var(--lp-muted);
+        font-size: .82rem;
+    }
+
+    #learning-progress .lp-beneficiary-card {
+        display: block;
+        width: 100%;
+        min-height: 168px;
+        padding: 1rem 1.15rem;
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    #learning-progress .lp-beneficiary-card:hover {
+        border-color: #a7c7be;
+        box-shadow: 0 5px 18px rgba(13, 43, 38, .06);
+        transform: translateY(-1px);
+    }
+
+    #learning-progress .lp-beneficiary-heading,
+    #learning-progress .lp-person-heading,
+    #learning-progress .lp-topic-heading {
+        display: flex;
+        align-items: center;
+        gap: .7rem;
+    }
+
+    #learning-progress .lp-avatar {
+        display: inline-grid;
+        flex: 0 0 40px;
+        width: 40px;
+        height: 40px;
+        place-items: center;
+        border-radius: 50%;
+        background: #d8f1e9;
+        color: var(--lp-primary);
+        font-size: .88rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    #learning-progress .lp-beneficiary-name {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+        font-size: .95rem;
+        font-weight: 600;
+    }
+
+    #learning-progress .lp-chevron {
+        flex: 0 0 auto;
+        color: var(--lp-primary);
+        font-size: 1.2rem;
+        line-height: 1;
+    }
+
+    #learning-progress .lp-card-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .5rem;
+        margin: .72rem 0 .55rem;
+    }
+
+    #learning-progress .lp-status-badge {
+        display: inline-flex;
+        min-height: 24px;
+        align-items: center;
+        padding: .18rem .65rem;
+        border-radius: 999px;
+        background: #edf1f0;
+        color: #45534f;
+        font-size: .72rem;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    #learning-progress .lp-status-badge[data-status="in_progress"] {
+        background: #fff1d5;
+        color: #795000;
+    }
+
+    #learning-progress .lp-status-badge[data-status="completed"] {
+        background: #d9f4e9;
+        color: #075b40;
+    }
+
+    #learning-progress .lp-topic-count,
+    #learning-progress .lp-completion-count {
+        color: var(--lp-muted);
+        font-size: .8rem;
+    }
+
+    #learning-progress .lp-beneficiary-card .lp-progress-track {
+        height: 7px;
+        margin-bottom: .55rem;
+    }
+
+    #learning-progress .lp-completion-count {
+        display: block;
+    }
+
+    #learning-progress .lp-empty {
+        padding: 2.5rem 1rem;
+        border: 1px dashed var(--lp-border);
+        border-radius: 16px;
+        background: var(--lp-card);
+        color: var(--lp-muted);
+        text-align: center;
+    }
+
+    #learning-progress .lp-person-summary {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.1rem 1.4rem;
+        margin-bottom: 1.1rem;
+    }
+
+    #learning-progress .lp-person-heading {
+        min-width: 0;
+    }
+
+    #learning-progress .lp-person-meta {
+        display: contents;
+    }
+
+    #learning-progress .lp-person-meta .lp-completion-count {
+        grid-column: 2;
+        grid-row: 2;
+        margin-top: .25rem;
+        text-align: right;
+    }
+
+    #learning-progress .lp-person-meta-separator {
+        display: none;
+    }
+
+    #learning-progress .lp-person-topic-meta {
+        display: contents;
+    }
+
+    #learning-progress .lp-topic-finished {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    #learning-progress .lp-person-heading .lp-avatar {
+        flex-basis: 48px;
+        width: 48px;
+        height: 48px;
+        font-size: 1rem;
+    }
+
+    #learning-progress .lp-person-name {
+        margin: 0;
+        overflow-wrap: anywhere;
+        font-size: 1.08rem;
+        font-weight: 600;
+    }
+
+    #learning-progress .lp-topic-finished {
+        margin: .12rem 0 0;
+        color: var(--lp-muted);
+        font-size: .8rem;
+    }
+
+    #learning-progress .lp-person-progress {
+        display: contents;
+    }
+
+    #learning-progress .lp-person-percent {
+        grid-column: 2;
+        grid-row: 1;
+        text-align: right;
+        display: block;
+        color: var(--lp-primary);
+        font-size: 1.8rem;
+        line-height: 1;
+        font-weight: 700;
+    }
+
+    #learning-progress .lp-person-summary .lp-progress-track {
+        grid-row: 3;
+        grid-column: 1 / -1;
+        height: 8px;
+    }
+
+    #learning-progress .lp-topic-filter-toolbar {
+        margin-bottom: .8rem;
+    }
+
+    #learning-progress .lp-topic-list {
+        overflow: hidden;
+    }
+
+    #learning-progress .lp-topic-item + .lp-topic-item {
+        border-top: 1px solid var(--lp-border);
+    }
+
+    #learning-progress .lp-topic-item.is-open {
+        background: var(--lp-expanded);
+    }
+
+    #learning-progress .lp-topic-toggle {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(90px, 160px) auto auto;
+        align-items: center;
+        gap: .85rem;
+        width: 100%;
+        min-height: 46px;
+        padding: .45rem 1.1rem;
+        border: 0;
+        background: transparent;
+        color: var(--lp-text);
+        text-align: left;
+        cursor: pointer;
+    }
+
+    #learning-progress .lp-topic-toggle:hover {
+        background: rgba(15, 107, 92, .035);
+    }
+
+    #learning-progress .lp-topic-heading {
+        min-width: 0;
+        font-size: .9rem;
+        font-weight: 600;
+    }
+
+    #learning-progress .lp-topic-progress-row {
+        display: contents;
+    }
+
+    #learning-progress .lp-topic-heading .lp-chevron {
+        width: .8rem;
+        font-size: 1rem;
+        transition: transform .15s ease;
+    }
+
+    #learning-progress .lp-topic-item.is-open .lp-topic-heading .lp-chevron {
+        transform: rotate(90deg);
+    }
+
+    #learning-progress .lp-topic-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    #learning-progress .lp-topic-toggle .lp-progress-track {
+        height: 6px;
+    }
+
+    #learning-progress .lp-topic-count-label {
+        min-width: 3.2rem;
+        color: var(--lp-muted);
+        font-size: .78rem;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    #learning-progress .lp-topic-toggle .lp-status-badge {
+        min-width: 5.5rem;
+        justify-content: center;
+    }
+
+    #learning-progress .lp-topic-body {
+        padding: 0 1.1rem 1rem 2.8rem;
+    }
+
+    #learning-progress .lp-topic-tools {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        min-height: 44px;
+        margin-bottom: .55rem;
+    }
+
+    #learning-progress .lp-materials-label {
+        color: var(--lp-muted);
+        font-size: .78rem;
+        font-weight: 500;
+    }
+
+    #learning-progress .lp-mark-all {
+        min-height: 40px;
+        padding: .45rem .85rem;
+        border: 1px solid #9bc8bb;
+        border-radius: 999px;
+        background: #ffffff;
+        color: var(--lp-primary);
+        font-size: .78rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    #learning-progress .lp-mark-all:hover:not(:disabled) {
+        background: #e7f4ef;
+    }
+
+    #learning-progress .lp-mark-all:disabled {
+        cursor: default;
+        opacity: .55;
+    }
+
+    #learning-progress .lp-material-list {
+        display: grid;
+        gap: .45rem;
+    }
+
+    #learning-progress .lp-material-row {
+        display: flex;
+        min-height: 46px;
+        align-items: center;
+        gap: .65rem;
+        padding: .45rem .7rem;
+        border: 1px solid var(--lp-border);
+        border-radius: 12px;
+        background: var(--lp-card);
+        color: var(--lp-text);
+    }
+
+    #learning-progress .lp-material-checkbox {
+        flex: 0 0 22px;
+        width: 22px;
+        height: 22px;
+        margin: 0;
+        accent-color: var(--lp-success);
+        cursor: pointer;
+    }
+
+    #learning-progress .lp-material-checkbox:disabled {
+        cursor: wait;
+    }
+
+    #learning-progress .lp-material-name {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+        font-size: .82rem;
+        font-weight: 500;
+    }
+
+    #learning-progress .lp-material-row.is-completed .lp-material-name {
+        color: var(--lp-muted);
+        text-decoration: line-through;
+    }
+
+    #learning-progress .lp-done-label {
+        color: #075b40;
+        font-size: .7rem;
+        font-weight: 600;
+    }
+
+    #learning-progress .lp-error {
+        margin: 0 0 1rem;
+        padding: .7rem .9rem;
+        border: 1px solid #efc2be;
+        border-radius: 10px;
+        background: #fff4f2;
+        color: #8f2118;
+        font-size: .85rem;
+    }
+
+    #learning-progress .lp-sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    #learning-progress-source[hidden],
+    #learning-progress .lp-view[hidden],
+    #learning-progress [hidden] {
+        display: none !important;
+    }
+
+    @media (max-width: 700px) {
+        #learning-progress {
+            padding: 1rem .85rem 1.5rem;
+        }
+
+        #learning-progress .lp-page-header {
+            align-items: flex-start;
+        }
+
+        #learning-progress .lp-page-subtitle {
+            max-width: 48ch;
+        }
+
+        #learning-progress .lp-summary {
+            padding: 1rem;
+        }
+
+        #learning-progress .lp-toolbar {
+            align-items: stretch;
+        }
+
+        #learning-progress .lp-filters {
+            width: 100%;
+        }
+
+        #learning-progress .lp-filter {
+            flex: 1 1 auto;
+            padding-inline: .65rem;
+        }
+
+        #learning-progress .lp-topic-toggle {
+            grid-template-columns: minmax(0, 1fr) minmax(56px, 90px) auto auto;
+            gap: .55rem;
+            padding: .65rem .75rem;
+        }
+
+        #learning-progress .lp-topic-body {
+            padding: 0 .75rem .8rem;
+        }
+    }
+
+    @media (max-width: 420px) {
+        #learning-progress .lp-page-header {
+            flex-direction: column;
+            gap: .45rem;
+        }
+
+        #learning-progress .lp-summary {
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: .5rem;
+        }
+
+        #learning-progress .lp-summary-main {
+            font-size: 1.08rem;
+        }
+
+        #learning-progress .lp-summary-percent {
+            font-size: 1.55rem;
+        }
+
+        #learning-progress .lp-person-summary {
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: .65rem;
+            padding: .9rem;
+        }
+
+        #learning-progress .lp-person-progress {
+            display: contents;
+        }
+
+        #learning-progress .lp-topic-toggle {
+            grid-template-columns: minmax(0, 1fr) minmax(55px, 72px) auto;
+        }
+
+        #learning-progress .lp-topic-toggle .lp-topic-count-label {
+            grid-column: 1;
+            grid-row: 2;
+            margin-left: 1.8rem;
+            text-align: left;
+        }
+
+        #learning-progress .lp-topic-toggle .lp-status-badge {
+            grid-column: 3;
+            grid-row: 1 / span 2;
+        }
+    }
+
+    @media (max-width: 640px) {
+        #learning-progress {
+            padding-bottom: 88px;
+        }
+
+        #learning-progress .lp-page-header {
+            flex-direction: column;
+            gap: .15rem;
+            margin-bottom: 1rem;
+        }
+
+        #learning-progress .lp-page-header > div {
+            order: 0;
+        }
+
+        #learning-progress .lp-page-header > .lp-link {
+            order: -1;
+            display: inline-flex;
+            align-items: center;
+            align-self: flex-start;
+            min-height: 44px;
+            padding: 0;
+            text-align: left;
+        }
+
+        #learning-progress .lp-toolbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 8px;
+        }
+
+        #learning-progress .lp-search {
+            width: 100%;
+            min-width: 0;
+        }
+
+        #learning-progress .lp-filters {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            width: 100%;
+        }
+
+        #learning-progress .lp-filter {
+            width: 100%;
+            min-width: 0;
+            min-height: 44px;
+            padding: .45rem .35rem;
+            text-align: center;
+        }
+
+        #learning-progress .lp-filter [data-filter-count] {
+            font-weight: 400;
+            opacity: .82;
+        }
+
+        #learning-progress .lp-person-summary {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            align-items: start;
+            gap: .55rem;
+            padding: .9rem;
+        }
+
+        #learning-progress .lp-person-heading {
+            display: flex;
+            grid-row: 1;
+            min-width: 0;
+        }
+
+        #learning-progress .lp-person-heading > div {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        #learning-progress .lp-person-meta {
+            display: flex;
+        }
+
+        #learning-progress .lp-person-meta .lp-completion-count,
+        #learning-progress .lp-topic-finished {
+            grid-column: auto;
+            grid-row: auto;
+            margin: 0;
+            text-align: left;
+        }
+
+        #learning-progress .lp-person-meta-separator {
+            display: inline;
+        }
+
+        #learning-progress .lp-person-topic-meta {
+            display: inline-flex;
+            align-items: baseline;
+            gap: .35rem;
+            white-space: nowrap;
+        }
+
+        #learning-progress .lp-person-name {
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+
+        #learning-progress .lp-person-meta {
+            display: flex;
+            grid-row: 2;
+            flex-wrap: wrap;
+            align-items: baseline;
+            column-gap: .35rem;
+            color: var(--lp-muted);
+            font-size: .78rem;
+            line-height: 1.4;
+        }
+
+        #learning-progress .lp-person-meta .lp-completion-count {
+            margin: 0;
+            color: inherit;
+            font-size: inherit;
+        }
+
+        #learning-progress .lp-person-meta-separator {
+            flex: 0 0 auto;
+        }
+
+        #learning-progress .lp-person-progress {
+            display: flex;
+            grid-row: 3;
+            align-items: center;
+            gap: .65rem;
+            width: 100%;
+        }
+
+        #learning-progress .lp-person-progress .lp-progress-track {
+            flex: 1 1 auto;
+            min-width: 0;
+            grid-column: auto;
+        }
+
+        #learning-progress .lp-person-progress .lp-person-percent {
+            flex: 0 0 auto;
+            font-size: 1rem;
+        }
+
+        #learning-progress .lp-topic-toggle {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: auto auto;
+            gap: .55rem;
+            min-height: 64px;
+            padding: 14px 16px;
+        }
+
+        #learning-progress .lp-topic-toggle .lp-topic-heading {
+            grid-column: 1;
+            grid-row: 1;
+            align-items: flex-start;
+        }
+
+        #learning-progress .lp-topic-name {
+            display: -webkit-box;
+            min-width: 0;
+            overflow: hidden;
+            overflow-wrap: break-word;
+            word-break: normal;
+            text-overflow: clip;
+            white-space: normal;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+
+        #learning-progress .lp-topic-progress-row {
+            display: flex;
+            grid-column: 1;
+            grid-row: 2;
+            align-items: center;
+            gap: .55rem;
+            min-width: 0;
+        }
+
+        #learning-progress .lp-topic-progress-row .lp-progress-track {
+            flex: 1 1 auto;
+            min-width: 80px;
+        }
+
+        #learning-progress .lp-topic-toggle .lp-topic-count-label {
+            min-width: auto;
+            text-align: left;
+        }
+
+        #learning-progress .lp-topic-toggle .lp-status-badge {
+            min-width: 5.5rem;
+        }
+
+        #learning-progress .lp-topic-body {
+            padding: 0 1rem .8rem;
+        }
+
+        #learning-progress .lp-topic-tools {
+            flex-wrap: wrap;
+            min-height: 44px;
+            row-gap: .35rem;
+        }
+
+        #learning-progress .lp-material-row {
+            min-height: 48px;
+            align-items: flex-start;
+            padding: .65rem .7rem;
+        }
+
+        #learning-progress .lp-material-checkbox-target {
+            display: flex;
+            flex: 0 0 44px;
+            width: 44px;
+            min-height: 44px;
+            align-items: flex-start;
+            justify-content: center;
+            margin: -4px 0 0 -4px;
+            padding-top: 4px;
+        }
+
+        #learning-progress .lp-material-checkbox {
+            flex-basis: 24px;
+            width: 24px;
+            height: 24px;
+            align-self: flex-start;
+            margin: 0;
+        }
+
+        #learning-progress .lp-material-name {
+            overflow-wrap: break-word;
+            word-break: normal;
+            display: -webkit-box;
+            overflow: hidden;
+            white-space: normal;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+
+        #learning-progress .lp-mark-all {
+            min-height: 44px;
+        }
+    }
+
+    #learning-progress-dialog {
+        width: min(92vw, 56rem);
+        max-height: min(90vh, 36rem);
+        overflow: auto;
+        border: 1px solid rgba(15, 107, 92, .25);
+        border-radius: 20px;
+        padding: 0;
+        color: var(--lp-text);
+        box-shadow: 0 24px 60px rgba(13, 43, 38, .22);
+    }
+
+    #learning-progress-dialog::backdrop {
+        background: rgba(26, 47, 43, .48);
+    }
+
+    #learning-progress-dialog .lp-dialog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1.35rem;
+        border-bottom: 1px solid #c9ddd6;
+    }
+
+    #learning-progress-dialog h2 {
+        margin: 0;
+        color: #173b32;
+        font-size: 1.25rem;
+        font-weight: 700;
+    }
+
+    #learning-progress-dialog button.lp-dialog-close {
+        display: grid;
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        place-items: center;
+        border: 1px solid var(--lp-border);
+        border-radius: 50%;
+        background: #ffffff;
+        color: var(--lp-muted);
+        font-size: 1.35rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    #learning-progress-dialog .lp-dialog-body {
+        padding: 1.25rem 1.35rem;
+    }
+
+    #learning-progress-dialog .lp-dialog-confirmation {
+        padding: 1rem 1.15rem;
+        border: 1px solid var(--lp-border);
+        border-radius: 14px;
+        color: #55746b;
+        font-size: 1rem;
+        font-weight: 600;
+        line-height: 1.6;
+    }
+
+    #learning-progress-dialog .lp-dialog-confirmation strong {
+        display: block;
+        margin-bottom: .2rem;
+        color: #45685f;
+        font-size: 1.02rem;
+    }
+
+    #learning-progress-dialog .lp-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: .75rem;
+        padding: .9rem 1.35rem;
+        border-top: 1px solid #c9ddd6;
+    }
+
+    #learning-progress-dialog button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        min-width: 96px;
+        padding: .6rem 1.05rem;
+        border: 1px solid var(--lp-border);
+        border-radius: 10px;
+        background: #ffffff;
+        color: #173b32;
+        font-size: .95rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    #learning-progress-dialog #lp-confirm {
+        border-color: var(--lp-primary);
+        background: var(--lp-primary);
+        color: #ffffff;
+    }
+
+    #learning-progress-dialog #lp-confirm[data-destructive="true"] {
+        border-color: #b42318;
+        background: #b42318;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section id="learning-progress"
+         data-bulk-update-url="{% url 'volunteer_skill_learning_progress_bulk_update' %}"
+         aria-labelledby="lp-page-title">
+    <header id="lp-page-header" class="lp-page-header">
+        <div>
+            <h1 class="lp-page-title" id="lp-page-title">Learner Progress</h1>
+            <p class="lp-page-subtitle">Monitor beneficiary completion across learning topics. Volunteer changes are recorded.</p>
+        </div>
+        <a class="lp-link" href="{% url 'volunteer_dashboard_skill_learning' %}">‹&nbsp; Back to topics</a>
+    </header>
+
+    <p id="lp-error" class="lp-error" role="alert" hidden></p>
+
+    <section id="lp-beneficiary-view" class="lp-view" aria-label="Beneficiary learning progress">
+        <div class="lp-summary" aria-live="polite">
+            <div>
+                <p class="lp-summary-kicker">All beneficiaries</p>
+                <p class="lp-summary-main" id="lp-summary-count">0 of 0 materials completed</p>
+                <p class="lp-summary-caption" id="lp-summary-caption">0 beneficiaries · 0 finished</p>
+            </div>
+            <strong class="lp-summary-percent" id="lp-summary-percent">0%</strong>
+            <div class="lp-progress-track" role="progressbar" aria-label="All beneficiary learning progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="lp-progress-fill" id="lp-summary-bar"></div>
+            </div>
+        </div>
+
+        <div class="lp-toolbar">
+            <label class="lp-sr-only" for="lp-beneficiary-search">Search beneficiaries</label>
+            <input id="lp-beneficiary-search" class="lp-search" type="search" placeholder="Search beneficiaries">
+            <div class="lp-filters" id="lp-beneficiary-filters" aria-label="Filter beneficiaries by progress">
+                <button class="lp-filter" type="button" data-status-filter="all" aria-pressed="true">All <span data-filter-count="all">0</span></button>
+                <button class="lp-filter" type="button" data-status-filter="not_started" aria-pressed="false">Not started <span data-filter-count="not_started">0</span></button>
+                <button class="lp-filter" type="button" data-status-filter="in_progress" aria-pressed="false">In progress <span data-filter-count="in_progress">0</span></button>
+                <button class="lp-filter" type="button" data-status-filter="completed" aria-pressed="false">Completed <span data-filter-count="completed">0</span></button>
+            </div>
+        </div>
+        <div id="lp-beneficiary-grid" class="lp-beneficiary-grid" aria-live="polite"></div>
+        <p id="lp-beneficiary-empty" class="lp-empty" hidden>No beneficiaries match this search or filter.</p>
+        <nav id="lp-pagination" class="lp-pagination" aria-label="Beneficiary pages" hidden>
+            <button id="lp-page-previous" class="lp-page-button" type="button">Previous</button>
+            <span id="lp-page-indicator" class="lp-page-indicator" aria-live="polite"></span>
+            <button id="lp-page-next" class="lp-page-button" type="button">Next</button>
+        </nav>
+    </section>
+
+    <section id="lp-detail-view" class="lp-view" aria-label="Selected beneficiary learning progress" hidden>
+        <button id="lp-back-to-beneficiaries" class="lp-back-button" type="button">‹&nbsp; Back to beneficiaries</button>
+        <div class="lp-person-summary" aria-live="polite">
+            <div class="lp-person-heading">
+                <span class="lp-avatar" id="lp-person-avatar" aria-hidden="true"></span>
+                <div>
+                    <h2 class="lp-person-name" id="lp-person-name"></h2>
+                </div>
+            </div>
+            <div class="lp-person-meta">
+                <span class="lp-completion-count" id="lp-person-count"></span>
+                <span class="lp-person-topic-meta">
+                    <span class="lp-person-meta-separator" aria-hidden="true">·</span>
+                    <span class="lp-topic-finished" id="lp-topic-finished"></span>
+                </span>
+            </div>
+            <div class="lp-person-progress">
+                <div class="lp-progress-track" id="lp-person-track" role="progressbar" aria-label="Selected beneficiary learning progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                    <div class="lp-progress-fill" id="lp-person-bar"></div>
+                </div>
+                <strong class="lp-person-percent" id="lp-person-percent">0%</strong>
+            </div>
+        </div>
+
+        <div class="lp-toolbar lp-topic-filter-toolbar">
+            <div class="lp-filters" id="lp-topic-filters" aria-label="Filter topics by progress">
+                <button class="lp-filter" type="button" data-status-filter="all" aria-pressed="true">All <span data-filter-count="all">0</span></button>
+                <button class="lp-filter" type="button" data-status-filter="not_started" aria-pressed="false">Not started <span data-filter-count="not_started">0</span></button>
+                <button class="lp-filter" type="button" data-status-filter="in_progress" aria-pressed="false">In progress <span data-filter-count="in_progress">0</span></button>
+                <button class="lp-filter" type="button" data-status-filter="completed" aria-pressed="false">Completed <span data-filter-count="completed">0</span></button>
+            </div>
+        </div>
+        <div id="lp-topic-list" class="lp-topic-list" aria-live="polite"></div>
+        <p id="lp-topic-empty" class="lp-empty" hidden>No topics match this filter.</p>
+    </section>
+
+    <div id="learning-progress-source" hidden aria-hidden="true">
+        {% regroup progress_rows by beneficiary_id as beneficiary_groups %}
+        {% for group in beneficiary_groups %}
+            {% with first_row=group.list.0 %}
+                <div class="lp-source-beneficiary" data-beneficiary-id="{{ first_row.beneficiary_id }}" data-beneficiary-name="{{ first_row.beneficiary_name }}">
+                    {% for row in group.list %}
+                        <div class="lp-source-topic"
+                             data-topic-id="{{ row.topic_id }}"
+                             data-topic-title="{{ row.topic_title }}"
+                             data-completed-count="{{ row.completed_count }}"
+                             data-total-count="{{ row.total_count }}">
+                            {% for material in row.materials %}
+                                <div class="lp-source-material" data-material-id="{{ material.id }}" data-material-title="{{ material.title }}" data-completed="{{ material.completed|yesno:'true,false' }}">
+                                    <form method="post" action="{% url 'volunteer_skill_learning_progress_update' %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="beneficiary_id" value="{{ row.beneficiary_id }}">
+                                        <input type="hidden" name="material_id" value="{{ material.id }}">
+                                        <input type="hidden" name="action" value="{% if material.completed %}uncomplete{% else %}complete{% endif %}">
+                                    </form>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endwith %}
+        {% endfor %}
+    </div>
+</section>
+
+<dialog id="learning-progress-dialog" aria-labelledby="lp-dialog-title" aria-describedby="lp-dialog-message">
+    <header class="lp-dialog-header">
+        <h2 id="lp-dialog-title">Update learner progress?</h2>
+        <button class="lp-dialog-close" id="lp-dialog-close" type="button" aria-label="Close confirmation">×</button>
+    </header>
+    <div class="lp-dialog-body">
+        <div class="lp-dialog-confirmation">
+            <strong>Confirmation</strong>
+            <span id="lp-dialog-message"></span>
+        </div>
+    </div>
+    <div class="lp-dialog-actions">
+        <button id="lp-cancel" type="button">Cancel</button>
+        <button id="lp-confirm" type="button">Save</button>
+    </div>
+</dialog>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ block.super }}
+<script src="{% static 'js/skill_learning_progress.js' %}?v=two-level-progress-12"></script>
+{% endblock %}

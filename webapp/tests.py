@@ -1,4 +1,5 @@
 import json
+import io
 import re
 import tempfile
 from datetime import datetime, timedelta, time
@@ -11,8 +12,10 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+from PIL import Image
 
 from . import views
+from .forms import SignInForm, SignUpForm
 from .audit import reset_admin_actor, set_admin_actor
 from .avatar_utils import avatar_url_for_user, default_avatar_url
 from .context_processors import dashboard_profile_context
@@ -43,6 +46,7 @@ from .models import (
     SkillLearningTopicEngagement,
     UserProfile,
     VolunteerActivityAssignment,
+    VolunteerActivityPhoto,
     VolunteerOjtSchedule,
     VolunteerAdminMessage,
     VolunteerAdminMessageAttachment,
@@ -171,6 +175,7 @@ class DirectoryAccountCreationTests(TestCase):
                 "address": "Barangay 123",
                 "status": "Active",
                 "username": "test-beneficiary",
+                "beneficiary_type": UserProfile.BENEFICIARY_TYPE_HAPPY_NANAYS,
             },
         )
 
@@ -214,6 +219,8 @@ class DirectoryAccountCreationTests(TestCase):
                 "full_name": "Test Volunteer",
                 "email": "volunteer-login@example.com",
                 "phone": "09181234567",
+                "gender": "female",
+                "address_line": "123 Sampaguita St, Bacoor",
                 "availability": "Weekends",
                 "username": "test-volunteer",
                 "status": "active",
@@ -224,6 +231,8 @@ class DirectoryAccountCreationTests(TestCase):
         payload = response.json()
         user = User.objects.get(email="volunteer-login@example.com")
         self.assertEqual(user.userprofile.account_role, UserProfile.ROLE_VOLUNTEER)
+        self.assertEqual(user.userprofile.gender, "female")
+        self.assertEqual(user.userprofile.address_line, "123 Sampaguita St, Bacoor")
         self.assertEqual(user.role_applications.get(role=RoleApplication.ROLE_VOLUNTEER).user_id, user.id)
         temp_password = payload["credentials"]["password"]
         self.assertTrue(user.check_password(temp_password))
@@ -1292,6 +1301,8 @@ class AdminAuditRequestCoalescingTests(TestCase):
                 "full_name": "Audit Volunteer",
                 "email": "audit-volunteer@example.com",
                 "phone": "09170000000",
+                "gender": "male",
+                "address_line": "456 Mabini St, Bacoor",
                 "availability": "Weekends",
                 "skills": "Teaching",
                 "areas_of_interest": "Bacoor",
@@ -2265,6 +2276,324 @@ class VolunteerAttendanceWorkflowTests(TestCase):
             location="Barangay Hall",
             status=VolunteerActivityAssignment.STATUS_UPCOMING,
         )
+
+    @staticmethod
+    def _photo_upload(name="moment.png", image_format="PNG", color=(22, 145, 128)):
+        image_bytes = io.BytesIO()
+        Image.new("RGB", (8, 8), color).save(image_bytes, format=image_format)
+        content_type = {"PNG": "image/png", "JPEG": "image/jpeg", "BMP": "image/bmp"}.get(image_format, "application/octet-stream")
+        return SimpleUploadedFile(name, image_bytes.getvalue(), content_type=content_type)
+
+    def test_community_volunteer_can_upload_list_and_delete_own_activity_photos(self):
+        profile = UserProfile.objects.get(user=self.volunteer)
+        profile.volunteer_type = UserProfile.VOLUNTEER_TYPE_COMMUNITY
+        profile.save(update_fields=["volunteer_type", "updated_at"])
+        activity = Activity.objects.create(title="Community Outreach", date=timezone.localdate())
+        self.assignment.activity = activity
+        self.assignment.save(update_fields=["activity"])
+        self.client.force_login(self.volunteer)
+        url = reverse("volunteer_activity_photos_api")
+
+        with tempfile.TemporaryDirectory() as temp_media_root:
+            with override_settings(MEDIA_ROOT=temp_media_root):
+                uploaded = self.client.post(url, {
+                    "activity_id": self.assignment.id,
+                    "photos": [self._photo_upload(), self._photo_upload("another.jpg", "JPEG"), self._photo_upload("another.bmp", "BMP")],
+                    "caption": "A day with the community",
+                })
+
+                self.assertEqual(uploaded.status_code, 201)
+                self.assertEqual(len(uploaded.json()["photos"]), 3)
+                self.assertTrue(all(photo["caption"] == "A day with the community" for photo in uploaded.json()["photos"]))
+                photo = VolunteerActivityPhoto.objects.order_by("id").first()
+                self.assertEqual(photo.assignment, self.assignment)
+                listed = self.client.get(url)
+                self.assertEqual(len(listed.json()["photos"]), 3)
+                self.assertEqual(listed.json()["activities"][0]["name"], "Community Outreach")
+                self.assertTrue(listed.json()["activities"][0]["isEventDay"])
+                self.assertEqual(listed.json()["photos"][0]["assignmentId"], self.assignment.id)
+                self.assertEqual(listed.json()["photos"][0]["activityDate"], self.assignment.scheduled_date.isoformat())
+                admin_payload = next(item for item in views._build_volunteers_payload() if item["id"] == self.volunteer.id)
+                self.assertEqual(admin_payload["activityPhotos"][0]["activityName"], "Community Outreach")
+                self.assertEqual(admin_payload["activityPhotos"][0]["activityDate"], self.assignment.scheduled_date.isoformat())
+
+                second_assignment = VolunteerActivityAssignment.objects.create(
+                    volunteer=self.volunteer_two,
+                    activity=activity,
+                    activity_name="Community Outreach",
+                    scheduled_date=timezone.localdate(),
+                )
+                self.client.force_login(self.volunteer_two)
+                second_upload = self.client.post(url, {
+                    "activity_id": second_assignment.id,
+                    "photos": [self._photo_upload("second-volunteer.png")],
+                })
+                self.assertEqual(second_upload.status_code, 201)
+
+                self.client.force_login(self.admin)
+                grouped_photos = self.client.get(url, {"activity_id": activity.id})
+                self.assertEqual(grouped_photos.status_code, 200)
+                self.assertEqual(len(grouped_photos.json()["groups"]), 2)
+                self.assertEqual(sum(len(group["photos"]) for group in grouped_photos.json()["groups"]), 4)
+
+                self.client.force_login(self.volunteer)
+                deleted = self.client.delete(reverse("volunteer_activity_photo_delete", args=[photo.id]))
+                self.assertEqual(deleted.status_code, 200)
+                self.assertFalse(VolunteerActivityPhoto.objects.filter(pk=photo.id).exists())
+
+    def test_photo_upload_rejects_oversized_files_and_unjoined_activities(self):
+        profile = UserProfile.objects.get(user=self.volunteer)
+        profile.volunteer_type = UserProfile.VOLUNTEER_TYPE_COMMUNITY
+        profile.save(update_fields=["volunteer_type", "updated_at"])
+        self.client.force_login(self.volunteer)
+        url = reverse("volunteer_activity_photos_api")
+
+        oversized = SimpleUploadedFile("large.png", b"x" * (5 * 1024 * 1024 + 1), content_type="image/png")
+        too_large = self.client.post(url, {"photos": [oversized]})
+        self.assertEqual(too_large.status_code, 400)
+
+        other_assignment = VolunteerActivityAssignment.objects.create(
+            volunteer=self.volunteer_two,
+            activity_name="Another volunteer's activity",
+            scheduled_date=timezone.localdate(),
+        )
+        unjoined = self.client.post(url, {
+            "activity_id": other_assignment.id,
+            "photos": [self._photo_upload()],
+        })
+        self.assertEqual(unjoined.status_code, 400)
+
+        future_assignment = VolunteerActivityAssignment.objects.create(
+            volunteer=self.volunteer,
+            activity_name="Future Community Day",
+            scheduled_date=timezone.localdate() + timedelta(days=1),
+        )
+        activity_list = self.client.get(url).json()["activities"]
+        future_activity = next(item for item in activity_list if item["id"] == future_assignment.id)
+        self.assertFalse(future_activity["isEventDay"])
+        future_upload = self.client.post(url, {
+            "activity_id": future_assignment.id,
+            "photos": [self._photo_upload()],
+        })
+        self.assertEqual(future_upload.status_code, 400)
+
+        past_assignment = VolunteerActivityAssignment.objects.create(
+            volunteer=self.volunteer,
+            activity_name="Past Community Day",
+            scheduled_date=timezone.localdate() - timedelta(days=1),
+        )
+        past_upload = self.client.post(url, {
+            "activity_id": past_assignment.id,
+            "photos": [self._photo_upload()],
+        })
+        self.assertEqual(past_upload.status_code, 400)
+        self.assertEqual(VolunteerActivityPhoto.objects.count(), 0)
+
+    def test_ojt_volunteers_can_upload_activity_photos(self):
+        self.client.force_login(self.volunteer)
+        url = reverse("volunteer_activity_photos_api")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        uploaded = self.client.post(url, {
+            "activity_id": self.assignment.id,
+            "photos": [self._photo_upload()],
+        })
+        self.assertEqual(uploaded.status_code, 201)
+
+    def test_approved_community_application_sets_type_and_dashboard(self):
+        application = RoleApplication.objects.create(
+            user=self.volunteer,
+            role=RoleApplication.ROLE_VOLUNTEER,
+            status=RoleApplication.STATUS_PENDING,
+            full_name="Community Volunteer",
+            contact_details="volunteer@example.com",
+            track="community_volunteer",
+        )
+        views._review_role_application(
+            application,
+            status=RoleApplication.STATUS_APPROVED,
+            reviewer=self.admin,
+        )
+
+        profile = UserProfile.objects.get(user=self.volunteer)
+        self.assertEqual(profile.volunteer_type, UserProfile.VOLUNTEER_TYPE_COMMUNITY)
+        self.client.force_login(self.volunteer)
+        dashboard = self.client.get(reverse("volunteer_dashboard"))
+        self.assertContains(dashboard, "Total Hours Volunteered")
+        self.assertContains(dashboard, "Activities Joined")
+        self.assertContains(dashboard, "My Impact")
+        self.assertContains(dashboard, "Badges")
+        self.assertNotContains(dashboard, "OJT Progress")
+        self.assertNotContains(dashboard, "Supervisor")
+
+        activities = self.client.get(reverse("volunteer_dashboard_tasks_ojt"))
+        self.assertContains(activities, "My Activities")
+        self.assertNotContains(activities, "Regular OJT Days")
+        self.assertNotContains(activities, "OJT duty day")
+        self.assertNotContains(activities, "Evaluations")
+
+    def test_existing_volunteer_defaults_to_ojt_dashboard(self):
+        self.assertEqual(
+            UserProfile.objects.get(user=self.volunteer).volunteer_type,
+            UserProfile.VOLUNTEER_TYPE_OJT,
+        )
+        RoleApplication.objects.create(
+            user=self.volunteer,
+            role=RoleApplication.ROLE_VOLUNTEER,
+            status=RoleApplication.STATUS_APPROVED,
+            full_name="OJT Volunteer",
+            contact_details="volunteer@example.com",
+            track="intern",
+        )
+        self.client.force_login(self.volunteer)
+
+        dashboard = self.client.get(reverse("volunteer_dashboard"))
+        self.assertContains(dashboard, "OJT Hours Logged")
+        self.assertContains(dashboard, "OJT Progress")
+        self.assertNotContains(dashboard, "Total Hours Volunteered")
+
+        activities = self.client.get(reverse("volunteer_dashboard_tasks_ojt"))
+        self.assertContains(activities, "Tasks &amp; OJT")
+        self.assertContains(activities, "Regular OJT Days")
+        self.assertContains(activities, "OJT duty day")
+        self.assertContains(activities, "Evaluations")
+
+    def test_admin_type_edit_updates_profile_and_application_track(self):
+        application = RoleApplication.objects.create(
+            user=self.volunteer,
+            role=RoleApplication.ROLE_VOLUNTEER,
+            status=RoleApplication.STATUS_APPROVED,
+            full_name="OJT Volunteer",
+            contact_details="volunteer@example.com",
+            track="intern",
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.post(reverse("update_volunteer_profile"), {
+            "volunteer_user_id": self.volunteer.id,
+            "full_name": "OJT Volunteer",
+            "email": "volunteer@example.com",
+            "phone": "09170000000",
+            "availability": "Weekends",
+            "status": "Active",
+            "volunteer_type": "community",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["volunteer"]["volunteerType"], "community")
+        profile = UserProfile.objects.get(user=self.volunteer)
+        application.refresh_from_db()
+        self.assertEqual(profile.volunteer_type, UserProfile.VOLUNTEER_TYPE_COMMUNITY)
+        self.assertEqual(application.track, "community_volunteer")
+        type_logs = AdminActivityLog.objects.filter(
+            section="Volunteers",
+            record_id=str(self.volunteer.id),
+            details__startswith="Type:",
+        )
+        self.assertEqual(type_logs.count(), 1)
+        self.assertEqual(type_logs.get().details, "Type: OJT -> Community")
+
+    def test_type_transition_preserves_hours_and_sets_ojt_hours_days(self):
+        profile = UserProfile.objects.get(user=self.volunteer)
+        profile.ojt_hours = 12.5
+        profile.save(update_fields=["ojt_hours", "updated_at"])
+        self.client.force_login(self.admin)
+
+        community_response = self.client.post(reverse("update_volunteer_type"), {
+            "volunteer_user_id": self.volunteer.id,
+            "volunteer_type": "community",
+        })
+        self.assertEqual(community_response.status_code, 200)
+        profile.refresh_from_db()
+        self.assertEqual(float(profile.ojt_hours), 12.5)
+        self.assertEqual(profile.volunteer_type, UserProfile.VOLUNTEER_TYPE_COMMUNITY)
+
+        ojt_response = self.client.post(reverse("update_volunteer_type"), {
+            "volunteer_user_id": self.volunteer.id,
+            "volunteer_type": "ojt",
+            "required_ojt_hours": "75",
+            "schedule_days": "[1,3]",
+        })
+        self.assertEqual(ojt_response.status_code, 200)
+        profile.refresh_from_db()
+        self.assertEqual(float(profile.ojt_hours), 12.5)
+        self.assertEqual(profile.volunteer_type, UserProfile.VOLUNTEER_TYPE_OJT)
+        self.assertEqual(float(profile.required_ojt_hours), 75)
+        schedule = VolunteerOjtSchedule.objects.get(volunteer=self.volunteer)
+        self.assertEqual(schedule.weekdays, [1, 3])
+
+        type_logs = AdminActivityLog.objects.filter(
+            section="Volunteers",
+            record_id=str(self.volunteer.id),
+            details__startswith="Type:",
+        )
+        self.assertEqual(type_logs.count(), 2)
+        self.assertEqual(
+            list(type_logs.order_by("created_at").values_list("details", flat=True)),
+            ["Type: OJT -> Community", "Type: Community -> OJT"],
+        )
+
+    def test_community_activity_time_in_out_credits_total_hours(self):
+        profile = UserProfile.objects.get(user=self.volunteer)
+        profile.volunteer_type = UserProfile.VOLUNTEER_TYPE_COMMUNITY
+        profile.save(update_fields=["volunteer_type", "updated_at"])
+        today = timezone.localdate()
+        VolunteerOjtSchedule.objects.create(
+            volunteer=self.volunteer,
+            effective_from=today,
+            weekdays=[today.weekday()],
+            daily_times={str(today.weekday()): {"start": "10:00", "end": "17:00"}},
+        )
+        local_timezone = timezone.get_current_timezone()
+        time_in_at = timezone.make_aware(datetime.combine(today, time(8, 0)), local_timezone)
+        time_out_at = timezone.make_aware(datetime.combine(today, time(9, 30)), local_timezone)
+        self.client.force_login(self.volunteer)
+
+        with patch("webapp.views.timezone.now", return_value=time_in_at):
+            time_in_response = self.client.post(reverse("volunteer_activity_attendance"), {
+                "action": "time_in",
+                "assignment_id": self.assignment.id,
+            })
+        self.assertEqual(time_in_response.status_code, 200)
+
+        with patch("webapp.views.timezone.now", return_value=time_out_at):
+            time_out_response = self.client.post(reverse("volunteer_activity_attendance"), {
+                "action": "time_out",
+                "assignment_id": self.assignment.id,
+            })
+        self.assertEqual(time_out_response.status_code, 200)
+        attendance = VolunteerAttendanceRecord.objects.get(assignment=self.assignment)
+        self.assertEqual(attendance.duration_minutes, 90)
+        self.assertEqual(attendance.status, VolunteerAttendanceRecord.STATUS_PENDING)
+
+        self.client.force_login(self.admin)
+        review_response = self.client.post(reverse("review_volunteer_attendance"), {
+            "attendance_id": attendance.id,
+            "action": "confirm",
+        })
+        self.assertEqual(review_response.status_code, 200)
+        profile.refresh_from_db()
+        self.assertEqual(float(profile.ojt_hours), 1.5)
+
+    def test_community_calendar_omits_ojt_duty_schedule(self):
+        profile = UserProfile.objects.get(user=self.volunteer)
+        profile.volunteer_type = UserProfile.VOLUNTEER_TYPE_COMMUNITY
+        profile.save(update_fields=["volunteer_type", "updated_at"])
+        today = timezone.localdate()
+        VolunteerOjtSchedule.objects.create(
+            volunteer=self.volunteer,
+            effective_from=today,
+            weekdays=[today.weekday()],
+        )
+        self.client.force_login(self.volunteer)
+
+        response = self.client.get(reverse("volunteer_activity_calendar_api"), {
+            "month": today.strftime("%Y-%m"),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()["has_schedule"])
+        self.assertEqual(response.json()["duty_days"], [])
 
     def test_standard_nine_hour_shift_excludes_one_hour_lunch(self):
         local_timezone = timezone.get_current_timezone()
@@ -3599,6 +3928,32 @@ class CommunityCommentManageTests(TestCase):
 
 
 class RoleFlowTests(TestCase):
+    def test_sign_in_and_sign_up_reject_fields_over_50_characters(self):
+        long_value = "a" * 51
+        cases = (
+            (SignInForm, {"username_or_email": long_value, "password": "password123"}, "username_or_email"),
+            (SignInForm, {"username_or_email": "regular-user", "password": long_value}, "password"),
+            (SignUpForm, {"username": long_value, "email": "regular@example.com", "password1": "password123", "password2": "password123"}, "username"),
+            (SignUpForm, {"username": "regular-user", "email": "a" * 39 + "@example.com", "password1": "password123", "password2": "password123"}, "email"),
+            (SignUpForm, {"username": "regular-user", "email": "regular@example.com", "password1": long_value, "password2": long_value}, "password1"),
+            (SignUpForm, {"username": "regular-user", "email": "regular@example.com", "password1": "password123", "password2": long_value}, "password2"),
+        )
+
+        for form_class, data, field in cases:
+            with self.subTest(form=form_class.__name__, field=field):
+                form = form_class(data)
+    def test_sign_in_modal_posts_reset_requests_to_reset_endpoint(self):
+        response = self.client.get(reverse("home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            f'action="{reverse("password_reset_request")}"',
+        )
+
+                self.assertFalse(form.is_valid())
+                self.assertIn(field, form.errors)
+
     def test_signup_creates_regular_profile(self):
         response = self.client.post(
             reverse("signup"),
@@ -3621,14 +3976,14 @@ class RoleFlowTests(TestCase):
         user = User.objects.create_user(username="dashboard-user", email="dashboard@example.com", password="password123")
 
         response = self.client.post(
-            reverse("signin"),
-            data={
-                "username_or_email": "dashboard-user",
-                "password": "password123",
+                "new_password1": "CedarRiver!4827Moon",
+                "new_password2": "CedarRiver!4827Moon",
             },
-            follow=True,
         )
 
+        self.assertRedirects(response, reverse("password_reset_complete"))
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("CedarRiver!4827Moon"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Apply as Beneficiary")
         self.assertContains(response, "Apply as Volunteer")
@@ -3857,6 +4212,8 @@ class RegularUsersBulkActionTests(TestCase):
         self.assertContains(response, "data-user-select")
         self.assertContains(response, 'id="regular-users-delete-selected"')
         self.assertContains(response, user.username)
+        self.assertContains(response, 'name="gender"')
+        self.assertContains(response, 'name="address_line"')
 
     def test_admin_can_bulk_delete_regular_users(self):
         users = [
@@ -3988,6 +4345,8 @@ class AdminDirectoryTests(TestCase):
         self.assertContains(response, "Deactivate Admin")
         self.assertContains(response, "Remove Admin")
         self.assertContains(response, reverse("update_admin_status"))
+        self.assertContains(response, 'name="gender"')
+        self.assertContains(response, 'name="address_line"')
 
     def test_admin_activity_log_filters_and_paginates_read_only_entries(self):
         for index in range(51):
@@ -4077,6 +4436,8 @@ class AdminDirectoryTests(TestCase):
                 "full_name": "New Administrator",
                 "username": "audit-directory-admin",
                 "email": "audit-directory-admin@example.com",
+                "gender": "male",
+                "address_line": "12 Admin Ave, Bacoor",
                 "password": "T#6-vrgP9E-L3x!Wqk4-2026",
                 "confirm_password": "T#6-vrgP9E-L3x!Wqk4-2026",
             },
@@ -4416,6 +4777,8 @@ class AdminDirectoryTests(TestCase):
                 "full_name": "New Administrator",
                 "username": "new-directory-admin",
                 "email": "new-directory-admin@example.com",
+                "gender": "male",
+                "address_line": "12 Admin Ave, Bacoor",
                 "password": "T#6-vrgP9E-L3x!Wqk4-2026",
                 "confirm_password": "T#6-vrgP9E-L3x!Wqk4-2026",
             },
@@ -4426,6 +4789,8 @@ class AdminDirectoryTests(TestCase):
         self.assertTrue(created_admin.is_staff)
         self.assertTrue(created_admin.is_superuser)
         self.assertTrue(created_admin.is_active)
+        self.assertEqual(created_admin.userprofile.gender, "male")
+        self.assertEqual(created_admin.userprofile.address_line, "12 Admin Ave, Bacoor")
         self.assertEqual(response.json()["admin"]["full_name"], "New Administrator")
 
     def test_superuser_can_create_inactive_admin_account(self):
@@ -4435,6 +4800,8 @@ class AdminDirectoryTests(TestCase):
                 "full_name": "Inactive Administrator",
                 "username": "inactive-directory-admin",
                 "email": "inactive-directory-admin@example.com",
+                "gender": "female",
+                "address_line": "12 Admin Ave, Bacoor",
                 "password": "T#6-vrgP9E-L3x!Wqk4-2026",
                 "confirm_password": "T#6-vrgP9E-L3x!Wqk4-2026",
                 "status": "inactive",
@@ -4454,6 +4821,8 @@ class AdminDirectoryTests(TestCase):
                 "full_name": "Invalid Status Admin",
                 "username": "invalid-status-admin",
                 "email": "invalid-status-admin@example.com",
+                "gender": "other",
+                "address_line": "12 Admin Ave, Bacoor",
                 "password": "T#6-vrgP9E-L3x!Wqk4-2026",
                 "confirm_password": "T#6-vrgP9E-L3x!Wqk4-2026",
                 "status": "pending",
@@ -4478,6 +4847,8 @@ class AdminDirectoryTests(TestCase):
                 "full_name": "Should Not Be Admin",
                 "username": "not-authorized-admin",
                 "email": "not-authorized-admin@example.com",
+                "gender": "male",
+                "address_line": "12 Admin Ave, Bacoor",
                 "password": "T#6-vrgP9E-L3x!Wqk4-2026",
                 "confirm_password": "T#6-vrgP9E-L3x!Wqk4-2026",
             },
@@ -4493,6 +4864,8 @@ class AdminDirectoryTests(TestCase):
                 "full_name": "Mismatched Admin",
                 "username": "mismatched-admin",
                 "email": "mismatched-admin@example.com",
+                "gender": "male",
+                "address_line": "12 Admin Ave, Bacoor",
                 "password": "T#6-vrgP9E-L3x!Wqk4-2026",
                 "confirm_password": "Different-Password-2026!",
             },
@@ -4555,6 +4928,78 @@ class VolunteerBulkRemovalTests(TestCase):
         self.assertContains(response, 'id="vol-select-all"')
         self.assertContains(response, 'id="vol-bulk-bar"')
         self.assertContains(response, 'id="vol-bulk-clear"')
+        self.assertContains(response, "Clear selection")
+        self.assertContains(response, 'id="vol-bulk-remove"')
+        self.assertContains(response, "Remove Selected")
+        self.assertContains(response, "return to regular user accounts")
+        self.assertContains(response, reverse("deactivate_volunteers_bulk"))
+
+    def test_superuser_can_remove_multiple_volunteers_without_deleting_accounts(self):
+        volunteers = [
+            self.create_volunteer("bulk-volunteer-one"),
+            self.create_volunteer("bulk-volunteer-two"),
+        ]
+        applications = [
+            RoleApplication.objects.create(
+                user=volunteer,
+                role=RoleApplication.ROLE_VOLUNTEER,
+                status=RoleApplication.STATUS_APPROVED,
+                full_name=volunteer.username,
+                contact_details="555-0100",
+            )
+            for volunteer in volunteers
+        ]
+
+        response = self.client.post(
+            reverse("deactivate_volunteers_bulk"),
+            {"volunteer_user_ids": [str(volunteer.id) for volunteer in volunteers]},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["removed_count"], 2)
+        for volunteer in volunteers:
+            volunteer.refresh_from_db()
+            self.assertTrue(volunteer.is_active)
+            self.assertEqual(volunteer.userprofile.account_role, UserProfile.ROLE_REGULAR)
+        for application in applications:
+            application.refresh_from_db()
+            self.assertEqual(application.status, RoleApplication.STATUS_INACTIVE)
+            self.assertEqual(application.reviewed_by, self.admin)
+
+    def test_bulk_volunteer_removal_rejects_mixed_non_volunteer_selection_atomically(self):
+        volunteer = self.create_volunteer("valid-bulk-volunteer")
+        regular_user = User.objects.create_user(
+            username="not-a-bulk-volunteer",
+            email="not-a-bulk-volunteer@example.com",
+            password="test-password",
+        )
+
+        response = self.client.post(
+            reverse("deactivate_volunteers_bulk"),
+            {"volunteer_user_ids": [str(volunteer.id), str(regular_user.id)]},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        volunteer.refresh_from_db()
+        self.assertEqual(volunteer.userprofile.account_role, UserProfile.ROLE_VOLUNTEER)
+
+    def test_non_superuser_cannot_bulk_remove_volunteers(self):
+        volunteer = self.create_volunteer("protected-bulk-volunteer")
+        regular_user = User.objects.create_user(
+            username="volunteer-bulk-non-admin",
+            email="volunteer-bulk-non-admin@example.com",
+            password="test-password",
+        )
+        self.client.force_login(regular_user)
+
+        response = self.client.post(
+            reverse("deactivate_volunteers_bulk"),
+            {"volunteer_user_ids": [str(volunteer.id)]},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        volunteer.refresh_from_db()
+        self.assertEqual(volunteer.userprofile.account_role, UserProfile.ROLE_VOLUNTEER)
         self.assertContains(response, "Clear selection")
         self.assertContains(response, 'id="vol-bulk-remove"')
         self.assertContains(response, "Remove Selected")

@@ -483,7 +483,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/></svg>
                         {% endif %}
                     </span>
-                    <span class="sidebar-label">{% if dashboard_scope == "volunteer" %}Tasks &amp; OJT{% elif dashboard_scope == "admin" %}Community Posts{% else %}Distribution &amp; Outreach{% endif %}</span>
+                    <span class="sidebar-label">{% if dashboard_scope == "volunteer" and request.user.userprofile.volunteer_type == "community" %}My Activities{% elif dashboard_scope == "volunteer" %}Tasks &amp; OJT{% elif dashboard_scope == "admin" %}Community Posts{% else %}Distribution &amp; Outreach{% endif %}</span>
                 </a>
             </li>
             <li>
