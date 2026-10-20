@@ -4496,23 +4496,26 @@ class AdminDirectoryTests(TestCase):
         self.assertIn("Approved", approval_log.details)
         self.assertEqual(deletion_log.section, "Inventory")
 
-    def test_people_directories_load_custom_status_dropdowns(self):
+    def test_people_directories_use_native_status_dropdowns(self):
         directory_routes = {
-            "admins": "status-filter-select--admins-status-filter",
-            "regular_users": "status-filter-select--regular-users-status",
-            "volunteers": "status-filter-select--vol-status-filter",
-            "beneficiaries": "status-filter-select--ben-status-filter",
+            "admins": ("admins-status-filter", "status-filter-select--admins-status-filter"),
+            "regular_users": ("regular-users-status", "status-filter-select--regular-users-status"),
+            "volunteers": ("vol-status-filter", "status-filter-select--vol-status-filter"),
+            "beneficiaries": ("ben-status-filter", "status-filter-select--ben-status-filter"),
         }
 
-        for route_name, wrapper_class in directory_routes.items():
+        for route_name, (filter_id, wrapper_class) in directory_routes.items():
             with self.subTest(directory=route_name):
                 response = self.client.get(reverse(route_name))
 
                 self.assertEqual(response.status_code, 200)
-                self.assertContains(response, "data-status-filter-custom")
+                self.assertContains(response, 'id="{}"'.format(filter_id))
                 self.assertContains(response, wrapper_class)
                 self.assertContains(response, "css/status-filter-select.css")
-                self.assertContains(response, "js/status-filter-select.js")
+                self.assertNotContains(response, "data-status-filter-custom")
+                self.assertNotContains(response, "js/status-filter-select.js")
+                if route_name == "volunteers":
+                    self.assertContains(response, 'id="vol-type-filter"')
 
     def test_admin_directory_renders_bulk_selection_controls(self):
         response = self.client.get(reverse("admins"))

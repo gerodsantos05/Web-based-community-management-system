@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account unavailable | HappYness Project</title>
+    <link rel="icon" type="image/jpeg" href="{% static 'media/Happyness Project.jpg' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { font-family: Poppins, sans-serif; color: #173a31; background: #f4f8f5; }
+        * { box-sizing: border-box; }
+        body { display: grid; min-height: 100vh; place-items: center; margin: 0; padding: 1.25rem; }
+        main { width: min(100%, 460px); padding: 2rem; border: 1px solid #dcebe3; border-radius: 1.25rem; background: #fff; box-shadow: 0 18px 45px rgba(20, 53, 45, .1); }
+        .brand { margin: 0 0 1.5rem; color: #3f8056; font-size: .82rem; font-weight: 700; letter-spacing: .04em; }
+        h1 { margin: 0; color: #14352d; font-size: 1.55rem; line-height: 1.25; }
+        p { color: #56766c; font-size: .9rem; line-height: 1.6; }
+        a { display: inline-flex; align-items: center; justify-content: center; min-height: 2.8rem; margin-top: .7rem; padding: .65rem 1rem; border-radius: 999px; background: #397b52; color: #fff; font-size: .84rem; font-weight: 700; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <main>
+        <p class="brand">HappYness Project</p>
+        <h1>Account unavailable</h1>
+        <p>This account is inactive. If you just signed up, check your email for a verification link. Otherwise, contact an administrator for help with account access.</p>
+        <a href="{% url 'email_verification' %}">Resend verification link</a>
+        <a href="{% url 'home' %}">Return home</a>
+    </main>
+</body>
+</html>

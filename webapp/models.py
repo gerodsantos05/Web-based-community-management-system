@@ -488,6 +488,7 @@ class UserProfile(models.Model):
 
 	user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="userprofile")
 	account_role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_REGULAR)
+	email_verification_pending = models.BooleanField(default=False)
 	volunteer_type = models.CharField(max_length=16, choices=VOLUNTEER_TYPE_CHOICES, default=VOLUNTEER_TYPE_OJT)
 	beneficiary_type = models.CharField(max_length=20, choices=BENEFICIARY_TYPE_CHOICES, blank=True, default="")
 	linked_parent = models.ForeignKey("self", on_delete=models.SET_NULL, blank=True, null=True, related_name="linked_beneficiaries")

@@ -503,31 +503,6 @@
         border-color: rgba(163, 45, 45, 0.14);
     }
 
-    .act-modal {
-        position: fixed;
-        border-color: rgba(163, 45, 45, 0.14);
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: min(92vw, 520px);
-    .act-table td:nth-child(2) { width: 215px; }
-        border: 1px solid rgba(15, 118, 110, 0.22);
-    .act-table td:nth-child(3) { width: 105px; }
-        box-shadow: 0 28px 52px rgba(15, 118, 110, 0.18);
-    .act-table td:nth-child(4) { width: 125px; }
-        background: #fff;
-    .act-table td:nth-child(5) { width: 130px; }
-        border-radius: 18px;
-    .act-table td:nth-child(6) { width: 140px; }
-        z-index: 999;
-    .act-table td:nth-child(7) { width: 95px; }
-        flex-direction: column;
-    .act-table td:nth-child(8) { width: 150px; }
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 1.1rem 1.2rem 0.8rem;
-        border-bottom: 1px solid #deefe8;
-    }
-
     .act-modal-close-btn {
         background: none;
         border: 1px solid #e0e0e0;
@@ -949,11 +924,29 @@
     }
 
     .act-modal > .act-form-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.7rem;
         flex: 0 0 auto;
         margin-top: 0;
         padding: 1rem 1.2rem 1.2rem;
         border-top: 1px solid #deefe8;
         background: #ffffff;
+    }
+
+    .act-modal > .act-form-actions .act-chip-btn {
+        border: 1px solid #d4e9e1;
+        border-radius: 999px;
+        padding: 0.75rem 1rem;
+        background: #f4faf7;
+        color: #1b4f43;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .act-modal > .act-form-actions .act-chip-btn:hover {
+        background: #e8f5ef;
     }
 
     @media (max-width: 760px) {

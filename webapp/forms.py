@@ -121,6 +121,7 @@ class SignUpForm(forms.ModelForm):
         # Ensure frontend signup cannot create staff/superuser accounts
         user.is_staff = False
         user.is_superuser = False
+        user.is_active = False
         if commit:
             user.save()
         return user

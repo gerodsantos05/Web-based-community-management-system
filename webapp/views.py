@@ -24,6 +24,7 @@ from django.views.decorators.http import require_GET, require_POST, require_http
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.utils import timezone
 import secrets
+import smtplib
 from django.db import IntegrityError, connection, transaction
 from django.db.models import Count, Sum, Avg, F, OuterRef, Subquery, Q
 import uuid
@@ -34,10 +35,11 @@ import re
 import csv
 import io
 import hashlib
-import smtplib
 from pathlib import Path
 from datetime import datetime, timedelta, date, time
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from allauth.account.internal.flows.email_verification import send_verification_email_to_address
+from allauth.account.models import EmailAddress
 
 from .forms import (
     AccountPasswordResetForm,
@@ -4571,16 +4573,30 @@ def signup(request):
 
     form = SignUpForm(request.POST)
     if form.is_valid():
-        user = form.save()
-        _get_or_create_user_profile(user)
-        authenticated_user = authenticate(request, username=user.username, password=form.cleaned_data.get("password1"), backend='django.contrib.auth.backends.ModelBackend')
-        if authenticated_user is not None:
-            login(request, authenticated_user, backend='django.contrib.auth.backends.ModelBackend')
-            return redirect("home")
-        # Fallback: log in the saved user directly by assigning a backend if authentication did not return one
-        user.backend = 'django.contrib.auth.backends.ModelBackend'
-        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-        return redirect("home")
+        try:
+            with transaction.atomic():
+                user = form.save()
+                profile = _get_or_create_user_profile(user)
+                profile.email_verification_pending = True
+                profile.save(update_fields=["email_verification_pending", "updated_at"])
+                email_address = EmailAddress.objects.create(
+                    user=user,
+                    email=user.email,
+                    primary=True,
+                    verified=False,
+                )
+                send_verification_email_to_address(request, email_address, signup=True)
+        except (smtplib.SMTPException, OSError, TimeoutError):
+            logger.exception("Failed to send signup verification email")
+            form.add_error(None, "We could not send a verification email. Please try signing up again later.")
+            return render(request, "index.html", {
+                "signup_form": form,
+                "signin_form": SignInForm(),
+                "open_modal": "signup",
+            })
+
+        request.session["pending_email_verification"] = user.email
+        return redirect("email_verification")
 
     return render(request, "index.html", {
         "signup_form": form,
@@ -4588,6 +4604,34 @@ def signup(request):
         "open_modal": "signup",
     })
 
+
+@require_http_methods(["GET", "POST"])
+def email_verification(request):
+    email = str(request.session.get("pending_email_verification", "") or "")
+    resend_message = ""
+    if request.method == "POST":
+        requested_email = str(request.POST.get("email", "") or "").strip()
+        if requested_email:
+            address = EmailAddress.objects.filter(
+                email__iexact=requested_email,
+                verified=False,
+                user__is_active=False,
+                user__is_staff=False,
+                user__is_superuser=False,
+                user__userprofile__email_verification_pending=True,
+            ).first()
+            if address:
+                send_verification_email_to_address(request, address, signup=True)
+        resend_message = (
+            "If that address belongs to an account awaiting verification, "
+            "a new link has been sent."
+        )
+        email = requested_email or email
+
+    return render(request, "auth/email_verification.html", {
+        "email": email,
+        "resend_message": resend_message,
+    })
 
 @login_required(login_url="signin")
 def user_dashboard(request):
@@ -9113,7 +9157,14 @@ def update_regular_user_profile(request):
         profile.phone = phone
         profile.gender = gender
         profile.address_line = address_line
-        profile.save(update_fields=["phone", "gender", "address_line", "updated_at"])
+        profile.email_verification_pending = False
+        profile.save(update_fields=[
+            "phone",
+            "gender",
+            "address_line",
+            "email_verification_pending",
+            "updated_at",
+        ])
 
     return JsonResponse({
         "message": f"{_display_name_for_user(regular_user)}'s profile was updated.",

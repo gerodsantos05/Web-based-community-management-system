@@ -1273,7 +1273,7 @@
                     <input id="admins-search" class="admins-search" type="search" placeholder="Search by name, username, email..." aria-label="Search admins by name, username, or email">
                 </label>
                 <div class="status-filter-select status-filter-select--admins-status-filter">
-                    <select id="admins-status-filter" class="admins-status-filter" data-status-filter-custom aria-label="Filter admins by status">
+                    <select id="admins-status-filter" class="admins-status-filter" aria-label="Filter admins by status">
                         <option value="">All Statuses</option>
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
@@ -1599,7 +1599,6 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{% static 'js/status-filter-select.js' %}"></script>
 <script>
 (function () {
     "use strict";

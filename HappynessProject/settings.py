@@ -73,6 +73,7 @@ SOCIALACCOUNT_PROVIDERS = {
         'AUTH_PARAMS': {'access_type': 'online'},
     }
 }
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
 
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
@@ -80,6 +81,10 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 ACCOUNT_ADAPTER = 'webapp.adapters.RoleBasedAccountAdapter'
 SOCIALACCOUNT_ADAPTER = 'webapp.adapters.RoleBasedSocialAccountAdapter'
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = '/'
 
 ROOT_URLCONF = 'HappynessProject.urls'
 

@@ -17,6 +17,7 @@ urlpatterns = [
 	path("products/inquiry/", views.submit_product_inquiry, name="submit_product_inquiry"),
 	path("signin/", views.signin, name="signin"),
 	path("signup/", views.signup, name="signup"),
+	path("email-verification/", views.email_verification, name="email_verification"),
 	path("password-reset/request/", views.password_reset_request, name="password_reset_request"),
 	path(
 		"password-reset/<uidb64>/<token>/",

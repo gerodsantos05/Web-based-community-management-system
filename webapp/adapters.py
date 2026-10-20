@@ -1,13 +1,36 @@
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.contrib.auth import logout
+from django.contrib.auth.models import User
+from django.db import transaction
+from django.template.loader import render_to_string
 from django.urls import reverse
 
+from .email_utils import attach_happyness_logo
 from .models import UserProfile
 from .two_factor import is_two_factor_confirmed, is_two_factor_enabled, start_two_factor_challenge
 
 
 class RoleBasedAccountAdapter(DefaultAccountAdapter):
+    def render_mail(self, template_prefix, email, context):
+        message = super().render_mail(template_prefix, email, context)
+        if not template_prefix.startswith("account/email/email_confirmation"):
+            return message
+
+        if message.content_subtype != "html" and not any(
+            content_type == "text/html"
+            for _content, content_type in message.alternatives
+        ):
+            html_body = render_to_string(
+                f"{template_prefix}_message.html",
+                context,
+                request=context.get("request"),
+            ).strip()
+            message.attach_alternative(html_body, "text/html")
+
+        attach_happyness_logo(message)
+        return message
+
     def get_login_redirect_url(self, request):
         user = request.user
         if user.is_authenticated and user.is_superuser:
@@ -39,10 +62,61 @@ class RoleBasedAccountAdapter(DefaultAccountAdapter):
 
 
 class RoleBasedSocialAccountAdapter(DefaultSocialAccountAdapter):
+    def _has_verified_google_email(self, sociallogin):
+        if any(address.verified for address in sociallogin.email_addresses):
+            return True
+
+        account = getattr(sociallogin, "account", None)
+        if getattr(account, "provider", None) != "google":
+            return False
+
+        provider_data = getattr(account, "extra_data", {}) or {}
+        return bool(
+            provider_data.get("email_verified")
+            or provider_data.get("verified_email")
+        )
+
+    def pre_social_login(self, request, sociallogin):
+        user = sociallogin.user
+        account = getattr(sociallogin, "account", None)
+        if (
+            user
+            and user.pk
+            and getattr(account, "provider", None) == "google"
+            and getattr(account, "user_id", None) == user.pk
+            and self._has_verified_google_email(sociallogin)
+        ):
+            with transaction.atomic():
+                locked_user = User.objects.select_for_update().get(pk=user.pk)
+                profile = UserProfile.objects.select_for_update().filter(
+                    user_id=locked_user.pk,
+                    email_verification_pending=True,
+                ).first()
+                if (
+                    profile
+                    and not locked_user.is_staff
+                    and not locked_user.is_superuser
+                ):
+                    profile.email_verification_pending = False
+                    profile.save(
+                        update_fields=["email_verification_pending", "updated_at"]
+                    )
+                    if not locked_user.is_active:
+                        locked_user.is_active = True
+                        locked_user.save(update_fields=["is_active"])
+
+        return super().pre_social_login(request, sociallogin)
+
     def save_user(self, request, sociallogin, form=None):
+        email_verified = self._has_verified_google_email(sociallogin)
         user = super().save_user(request, sociallogin, form)
         profile, _created = UserProfile.objects.get_or_create(user=user)
         if profile.account_role is None:
             profile.account_role = UserProfile.ROLE_REGULAR
-            profile.save(update_fields=["account_role"])
+        profile.email_verification_pending = not email_verified
+        profile.save(update_fields=["account_role", "email_verification_pending"])
+        user.is_active = email_verified
+        user.save(update_fields=["is_active"])
+        if not email_verified and user.email:
+            request.session["pending_email_verification"] = user.email
         return user

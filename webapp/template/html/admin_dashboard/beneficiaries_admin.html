@@ -15,6 +15,7 @@
         --ben-sub: #56766c;
         --ben-accent: #0f766e;
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
         gap: 0.95rem;
         width: 100%;
         max-width: 100%;
@@ -24,6 +25,7 @@
     }
 
     .ben-card {
+        min-width: 0;
         background: var(--ben-surface);
         border: 1px solid var(--ben-stroke);
         border-radius: 16px;
@@ -93,6 +95,22 @@
         gap: 0.6rem;
     }
 
+    .ben-directory-head {
+        display: grid;
+        grid-template-columns: minmax(220px, 0.85fr) minmax(0, 2fr);
+        align-items: center;
+        gap: 0.65rem;
+    }
+
+    .ben-directory-head > div:first-child {
+        min-width: 0;
+    }
+
+    .ben-directory-head > div:last-child {
+        width: 100%;
+        min-width: 0;
+    }
+
     .ben-title {
         margin: 0;
         font-size: 0.94rem;
@@ -120,6 +138,7 @@
         max-height: 34rem;
         width: 100%;
         max-width: 100%;
+        min-width: 0;
     }
 
     .ben-table {
@@ -1411,6 +1430,73 @@
         justify-content: flex-end;
     }
 
+    .ben-directory-head .ben-filter-bar {
+        display: grid;
+        grid-template-columns: minmax(260px, 1fr) minmax(270px, 1.15fr) auto auto;
+        grid-template-areas: "search filters add more";
+        align-items: center;
+        width: 100%;
+        min-width: 0;
+        margin-left: 0;
+        gap: 0.75rem;
+    }
+
+    .ben-directory-head .ben-search-wrapper {
+        grid-area: search;
+        width: 100%;
+        min-width: 0;
+        flex: none;
+    }
+
+    .ben-directory-head .ben-search-input {
+        box-sizing: border-box;
+        min-width: 0;
+    }
+
+    .ben-directory-filter-pair {
+        grid-area: filters;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .ben-directory-filter-pair > .status-filter-select {
+        align-self: stretch;
+        height: 2.55rem;
+        min-height: 2.55rem;
+    }
+
+    .ben-directory-head .status-filter-select--ben-status-filter {
+        width: 100%;
+        min-width: 0;
+        flex: none;
+    }
+
+    .ben-directory-head .ben-type-filter-wrapper {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .ben-directory-filter-pair .ben-status-filter {
+        width: 100%;
+        height: 100%;
+        min-height: 2.55rem;
+        box-sizing: border-box;
+    }
+
+    #ben-add-btn {
+        grid-area: add;
+        white-space: nowrap;
+    }
+
+    #ben-toggle-columns {
+        grid-area: more;
+        justify-self: end;
+        white-space: nowrap;
+    }
+
     .ben-bulk-bar {
         display: none;
         align-items: center;
@@ -1609,6 +1695,24 @@
         }
     }
 
+    @media (max-width: 1119px) {
+        .ben-directory-head {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .ben-directory-head .ben-filter-bar {
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            grid-template-areas:
+                "search search search"
+                "filters filters filters"
+                "add more more";
+        }
+
+        .ben-directory-filter-pair {
+            gap: 0.6rem;
+        }
+    }
+
     @media (max-width: 767px) {
         .ben-page {
             gap: 0.7rem;
@@ -1662,13 +1766,12 @@
             grid-column: auto;
         }
 
-        .ben-filter-bar {
-            display: grid !important;
+        .ben-directory-head .ben-filter-bar {
             grid-template-columns: repeat(2, minmax(0, 1fr));
             grid-template-areas:
                 "search search"
-                "status add"
-                "more more";
+                "filters filters"
+                "add more";
             align-items: stretch;
             width: 100%;
             margin-left: 0;
@@ -1687,21 +1790,11 @@
             white-space: nowrap;
         }
 
-        .ben-search-wrapper {
-            grid-area: search;
-            width: 100%;
-            flex: 1 1 100%;
-        }
-
-        .ben-filter-bar .status-filter-select--ben-status-filter {
-            grid-area: status;
+        .ben-directory-filter-pair .status-filter-select--ben-status-filter,
+        .ben-directory-filter-pair .ben-type-filter-wrapper {
             width: 100%;
             min-width: 0;
             flex: none;
-        }
-
-        #ben-add-btn {
-            grid-area: add;
         }
 
         .ben-status-filter,
@@ -1710,10 +1803,6 @@
             width: 100% !important;
             flex: 1 1 auto;
             min-width: 0;
-        }
-
-        .ben-toggle-columns-btn {
-            grid-area: more;
         }
 
         .ben-bulk-bar {
@@ -1768,9 +1857,9 @@
             max-height: calc(100vh - 120px) !important;
         }
     }
-    .ben-pending-applications-table {
+    #dashboard-shell.admin-page .ben-table.ben-pending-applications-table {
         width: 100%;
-        min-width: 1400px;
+        min-width: 1400px !important;
         table-layout: fixed;
         border-collapse: collapse;
     }
@@ -1786,20 +1875,27 @@
     .ben-pending-applications-table th:nth-child(3), .ben-pending-applications-table td:nth-child(3) { width: 170px; }
     .ben-pending-applications-table th:nth-child(4), .ben-pending-applications-table td:nth-child(4) { width: 260px; white-space: nowrap; }
     .ben-pending-applications-table th:nth-child(5), .ben-pending-applications-table td:nth-child(5) { width: 160px; white-space: nowrap; }
-    .ben-pending-applications-table th:nth-child(6), .ben-pending-applications-table td:nth-child(6) { width: 240px; }
-    .ben-pending-applications-table th:nth-child(7), .ben-pending-applications-table td:nth-child(7) { width: 150px; white-space: nowrap; }
+    .ben-pending-applications-table th:nth-child(6),
+    .ben-pending-applications-table td:nth-child(6) {
+        width: 240px !important;
+        min-width: 240px !important;
+        max-width: 240px !important;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+    .ben-pending-applications-table th:nth-child(7),
+    .ben-pending-applications-table td:nth-child(7) {
+        width: 150px;
+        white-space: nowrap;
+        border-left: 1px solid #dbece5;
+        padding-left: 1rem;
+    }
     #dashboard-shell.admin-page .ben-table.ben-pending-applications-table th:last-child,
     #dashboard-shell.admin-page .ben-table.ben-pending-applications-table td:last-child {
-        position: sticky;
-        right: 0;
-        z-index: 2;
         width: 150px !important;
         min-width: 150px !important;
         text-align: center !important;
-        background: #fff;
     }
-    .ben-pending-applications-table thead th:last-child { z-index: 4; background: rgba(236, 253, 245, 0.96); }
-    .ben-pending-applications-table tbody tr:hover td:last-child { background: #f5fcf9; }
     .ben-pending-applications-table .ben-table-action-group { display: flex; justify-content: space-evenly; gap: 0.5rem; min-width: 116px; }
     .ben-pending-applications-table .ben-row-action-btn { flex: 0 0 2.1rem; border: 0; background: transparent; }
     .ben-pending-applications-table .ben-row-action-btn:hover { background: #edf7f2; }
@@ -1817,6 +1913,28 @@
     }
     .ben-pending-type-pill.is-complete { background: #dcfce7; color: #14532d; }
     .ben-pending-type-pill.is-incomplete { background: #fef3c7; color: #92400e; }
+    #role-application-review-dialog h2,
+    #role-application-review-dialog dl > div > dd,
+    #role-application-review-dialog .role-application-review-documents h3 {
+        color: #173a31;
+    }
+    #role-application-review-dialog > header p {
+        color: #173a31;
+    }
+    #role-application-review-dialog > header h2 {
+        color: #14352d;
+        font-weight: 700;
+    }
+    #role-application-review-dialog dt {
+        color: #1a4f43;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+    #role-application-review-dialog dl > div > dd {
+        font-weight: 500;
+    }
 </style>
 {% endblock %}
 
@@ -1861,7 +1979,7 @@
     </section>
 
     <section class="ben-card" aria-label="Beneficiary directory and monitoring">
-        <header class="ben-head">
+        <header class="ben-head ben-directory-head">
             <div>
                 <h2 class="ben-title">Beneficiary Directory</h2>
                 <p id="ben-count" class="ben-sub" aria-live="polite">0 beneficiaries shown</p>
@@ -1871,22 +1989,24 @@
                     <svg class="ben-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
                     <input type="text" id="ben-search-input" class="ben-search-input" placeholder="Search by name, location, contact..." aria-label="Search beneficiaries">
                 </div>
-                <div class="status-filter-select status-filter-select--ben-status-filter">
-                    <select id="ben-status-filter" class="ben-status-filter" data-status-filter-custom aria-label="Filter by status">
-                        <option value="">All Statuses</option>
-                        <option value="Active">Active</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Inactive">Inactive</option>
-                    </select>
-                </div>
-                <div class="status-filter-select">
-                    <select id="ben-type-filter" class="ben-status-filter" aria-label="Filter by beneficiary type">
-                        <option value="">All Types</option>
-                        <option value="happy_nanays">Happy Nanays</option>
-                        <option value="happy_kids">Happy Kids</option>
-                        <option value="happy_hearts">Happy Hearts</option>
-                        <option value="unassigned">Unassigned</option>
-                    </select>
+                <div class="ben-directory-filter-pair">
+                    <div class="status-filter-select status-filter-select--ben-status-filter">
+                        <select id="ben-status-filter" class="ben-status-filter" aria-label="Filter by status">
+                            <option value="">All Statuses</option>
+                            <option value="Active">Active</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="status-filter-select ben-type-filter-wrapper">
+                        <select id="ben-type-filter" class="ben-status-filter" aria-label="Filter by beneficiary type">
+                            <option value="">All Types</option>
+                            <option value="happy_nanays">Happy Nanays</option>
+                            <option value="happy_kids">Happy Kids</option>
+                            <option value="happy_hearts">Happy Hearts</option>
+                            <option value="unassigned">Unassigned</option>
+                        </select>
+                    </div>
                 </div>
                 <button type="button" id="ben-add-btn" class="ben-action-btn" aria-label="Add new beneficiary"><i data-lucide="user-plus"></i><span>Add Beneficiary</span></button>
                 <button type="button" id="ben-toggle-columns" class="ben-toggle-columns-btn" aria-label="Show more columns">Show More</button>
@@ -1988,7 +2108,7 @@
 
 <dialog id="role-application-review-dialog" class="role-application-review-dialog" aria-labelledby="role-application-review-title">
     <header>
-        <div><p>Application review</p><h2 id="role-application-review-title">Applicant-added details</h2></div>
+        <div><h2 id="role-application-review-title">Applicant-added details</h2></div>
         <button type="button" data-close-application-review aria-label="Close application details">×</button>
     </header>
     <div id="role-application-review-body"></div>

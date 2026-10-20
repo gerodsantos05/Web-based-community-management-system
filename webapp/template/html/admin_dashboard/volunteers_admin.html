@@ -20,6 +20,7 @@
         --vol-green-deep: #0f766e;
         --vol-soft: #ecfdf5;
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
         gap: 0.95rem;
         width: 100%;
         max-width: 100%;
@@ -29,6 +30,7 @@
     }
 
     .vol-card {
+        min-width: 0;
         background: var(--vol-surface);
         border: 1px solid var(--vol-stroke);
         border-radius: 16px;
@@ -677,7 +679,21 @@
         color: var(--vol-green-deep);
     }
 
-    .vol-directory-tab-count { margin-left:.28rem; color:#0f766e; font-size:.7rem; font-weight:800; }
+    .vol-directory-tab-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.15rem;
+        height: 1.15rem;
+        margin-left: 0.28rem;
+        padding: 0 0.28rem;
+        border-radius: 999px;
+        background: #dc2626;
+        color: #fff;
+        font-size: 0.65rem;
+        font-weight: 800;
+        line-height: 1;
+    }
 
     .vol-directory-tab[aria-selected="true"]::after {
         background: var(--vol-green-deep);
@@ -687,26 +703,63 @@
         display: none;
     }
 
-    .vol-certifications-table-wrap { overflow-x: auto; }
-    .vol-certifications-table { width: 100%; border-collapse: collapse; }
+    .vol-certifications-table-wrap {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .vol-certifications-table {
+        width: 100%;
+        min-width: 900px;
+        table-layout: fixed;
+        border-collapse: collapse;
+    }
+    .vol-certifications-table th:nth-child(1), .vol-certifications-table td:nth-child(1) { width: 220px; }
+    .vol-certifications-table th:nth-child(2), .vol-certifications-table td:nth-child(2) { width: 250px; }
+    .vol-certifications-table th:nth-child(3), .vol-certifications-table td:nth-child(3) { width: 220px; }
+    .vol-certifications-table th:nth-child(4), .vol-certifications-table td:nth-child(4) { width: 210px; }
     .vol-certifications-table th, .vol-certifications-table td { padding: .8rem .9rem; border-bottom: 1px solid rgba(15, 118, 110, .1); text-align: left; }
+    .vol-certifications-table td { white-space: nowrap; overflow-wrap: normal; word-break: normal; }
     .vol-certifications-table th { color: #48665d; font-size: .72rem; text-transform: none; letter-spacing: 0; background: #ecfdf5; }
-    .vol-certification-actions { display: flex; gap: .45rem; }
+    .vol-certification-actions { display: flex; gap: .45rem; flex-wrap: nowrap; white-space: nowrap; }
     .vol-certification-actions a, .vol-certification-actions button { border: 1px solid #cfe8df; border-radius: .45rem; padding: .38rem .62rem; background: #fff; color: #0f766e; font-weight: 700; cursor: pointer; text-decoration: none; }
-    .vol-certification-actions button { color: #b42318; }
+    .vol-certification-actions [data-delete-certificate] { color: #b42318; }
 
-    .vol-milestones-table-wrap { overflow-x: auto; }
-    .vol-milestones-table { width: 100%; min-width: 760px; border-collapse: collapse; table-layout: fixed; }
-    .vol-milestones-table th, .vol-milestones-table td { padding: .72rem .7rem; text-align: left; vertical-align: top; border: 0; overflow-wrap: anywhere; }
+    .vol-milestones-table-wrap {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .vol-milestones-table { width: 100%; min-width: 1150px; border-collapse: collapse; table-layout: fixed; }
+    .vol-milestones-table th, .vol-milestones-table td { padding: .72rem .7rem; text-align: left; vertical-align: middle; border: 0; }
     .vol-milestones-table thead th { color: #2f6659; font-size: .72rem; background: rgba(236, 253, 245, 0.86); }
     .vol-milestones-table tbody tr { background: transparent; }
     .vol-milestones-table tbody tr:hover { background: rgba(236, 253, 245, 0.42); }
-    .vol-milestones-table th:nth-child(1), .vol-milestones-table td:nth-child(1) { width: 18%; }
-    .vol-milestones-table th:nth-child(2), .vol-milestones-table td:nth-child(2) { width: 12%; }
-    .vol-milestones-table th:nth-child(3), .vol-milestones-table td:nth-child(3) { width: 12%; }
-    .vol-milestones-table th:nth-child(4), .vol-milestones-table td:nth-child(4) { width: 20%; }
-    .vol-milestones-table th:nth-child(5), .vol-milestones-table td:nth-child(5) { width: 22%; }
-    .vol-milestones-table th:nth-child(6), .vol-milestones-table td:nth-child(6) { width: 16%; }
+    .vol-milestones-table th:nth-child(1), .vol-milestones-table td:nth-child(1) { width: 220px; }
+    .vol-milestones-table th:nth-child(2), .vol-milestones-table td:nth-child(2) { width: 130px; }
+    .vol-milestones-table th:nth-child(3), .vol-milestones-table td:nth-child(3) { width: 140px; }
+    .vol-milestones-table th:nth-child(4), .vol-milestones-table td:nth-child(4) { width: 220px; }
+    .vol-milestones-table th:nth-child(5), .vol-milestones-table td:nth-child(5) { width: 240px; }
+    .vol-milestones-table th:nth-child(6), .vol-milestones-table td:nth-child(6) { width: 200px; }
+    .vol-milestones-table th { white-space: nowrap; }
+    .vol-milestones-table td:nth-child(2),
+    .vol-milestones-table td:nth-child(3) { white-space: nowrap; }
+    .vol-milestones-table td:first-child .vol-profile-link {
+        display: flex;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+    .vol-milestones-table td:first-child .vol-profile-link > span:last-child { min-width: 0; }
+    .vol-milestones-table td:first-child .vol-name {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.35;
+    }
     .vol-milestone-cell { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
     .vol-milestone-cell strong { font-size: .82rem; color: #173a31; }
     .vol-milestone-cell small { color: #5f7d73; font-size: .7rem; }
@@ -2134,39 +2187,39 @@
     }
 
     .vol-attendance-records-table {
-        min-width: 900px;
+        min-width: 1240px;
         width: 100%;
         table-layout: fixed;
     }
 
     .vol-attendance-records-table th:nth-child(1),
-    .vol-attendance-records-table td:nth-child(1) { width: 18%; }
+    .vol-attendance-records-table td:nth-child(1) { width: 180px; }
     .vol-attendance-records-table th:nth-child(2),
-    .vol-attendance-records-table td:nth-child(2) { width: 16%; }
+    .vol-attendance-records-table td:nth-child(2) { width: 180px; }
     .vol-attendance-records-table th:nth-child(3),
-    .vol-attendance-records-table td:nth-child(3) { width: 11%; }
+    .vol-attendance-records-table td:nth-child(3) { width: 160px; }
     .vol-attendance-records-table th:nth-child(4),
-    .vol-attendance-records-table td:nth-child(4) { width: 8%; }
+    .vol-attendance-records-table td:nth-child(4) { width: 110px; }
     .vol-attendance-records-table th:nth-child(5),
-    .vol-attendance-records-table td:nth-child(5) { width: 9%; }
+    .vol-attendance-records-table td:nth-child(5) { width: 130px; }
     .vol-attendance-records-table th:nth-child(6),
-    .vol-attendance-records-table td:nth-child(6) { width: 14%; }
+    .vol-attendance-records-table td:nth-child(6) { width: 180px; }
     .vol-attendance-records-table th:nth-child(7),
-    .vol-attendance-records-table td:nth-child(7) { width: 12%; }
+    .vol-attendance-records-table td:nth-child(7) { width: 120px; }
     .vol-attendance-records-table th:nth-child(8),
-    .vol-attendance-records-table td:nth-child(8) { width: 12%; }
+    .vol-attendance-records-table td:nth-child(8) { width: 180px; }
 
     .vol-attendance-records-table .vol-attendance-actions {
         justify-content: flex-start;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         margin-left: 0;
     }
 
     .vol-attendance-records-table .vol-attendance-actions .vol-form-btn {
-        flex: 1 1 4.2rem;
-        min-width: 0;
-        white-space: normal;
-        overflow-wrap: anywhere;
+        flex: 0 0 auto;
+        min-width: 4.2rem;
+        white-space: nowrap;
+        overflow-wrap: normal;
         text-align: center;
     }
 
@@ -2221,16 +2274,27 @@
     .vol-attendance-photo-viewer-caption { margin:0; padding:.65rem 1rem; color:#fff; font-size:.82rem; }
 
     .vol-ojt-progress-table-wrap {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
     }
 
     .vol-ojt-progress-table {
         width: 100%;
-        min-width: 900px;
+        min-width: 1280px;
+        table-layout: fixed;
         border-collapse: separate;
         border-spacing: 0;
     }
+
+    .vol-ojt-progress-table th:nth-child(1), .vol-ojt-progress-table td:nth-child(1) { width: 17%; }
+    .vol-ojt-progress-table th:nth-child(2), .vol-ojt-progress-table td:nth-child(2) { width: 17%; }
+    .vol-ojt-progress-table th:nth-child(3), .vol-ojt-progress-table td:nth-child(3) { width: 13%; }
+    .vol-ojt-progress-table th:nth-child(4), .vol-ojt-progress-table td:nth-child(4) { width: 15%; }
+    .vol-ojt-progress-table th:nth-child(5), .vol-ojt-progress-table td:nth-child(5) { width: 13%; }
+    .vol-ojt-progress-table th:nth-child(6), .vol-ojt-progress-table td:nth-child(6) { width: 25%; }
 
     .vol-ojt-progress-table th,
     .vol-ojt-progress-table td {
@@ -2240,6 +2304,8 @@
         vertical-align: middle;
         border: 1px solid #dceee7;
         border-width: 0 0 1px;
+        overflow-wrap: normal;
+        word-break: normal;
     }
 
     .vol-ojt-progress-table th {
@@ -2248,6 +2314,30 @@
         font-weight: 700;
         background: rgba(236, 253, 245, 0.86);
         border-bottom: 1px solid rgba(15, 118, 110, 0.16);
+    }
+
+    .vol-ojt-progress-table td:nth-child(3),
+    .vol-ojt-progress-table td:nth-child(4),
+    .vol-ojt-progress-table td:nth-child(5),
+    .vol-ojt-progress-table td:nth-child(6) {
+        white-space: nowrap;
+    }
+
+    .vol-ojt-progress-table td:first-child .vol-profile-link {
+        display: flex;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .vol-ojt-progress-table td:first-child .vol-profile-link > span:last-child {
+        min-width: 0;
+    }
+
+    .vol-ojt-progress-table td:first-child .vol-name {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.35;
     }
 
     .vol-ojt-progress-table tbody tr:hover {
@@ -2339,7 +2429,8 @@
         display: flex;
         align-items: center;
         gap: 0.35rem;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        white-space: nowrap;
     }
 
     .vol-ojt-edit-btn {
@@ -2576,6 +2667,45 @@
         right: 0.9rem;
     }
 
+    #vol-certificate-view-modal > .vol-certificate-view-close {
+        position: absolute;
+        top: 0.8rem;
+        right: 0.9rem;
+        z-index: 2;
+    }
+
+    #vol-certificate-delete-modal > .vol-certificate-delete-close {
+        position: absolute;
+        top: 0.8rem;
+        right: 0.9rem;
+        z-index: 2;
+    }
+
+    #vol-certificate-delete-modal > .vol-head {
+        position: static;
+        padding-right: 3.5rem;
+    }
+
+    #vol-certificate-view-modal {
+        width: min(92vw, 560px) !important;
+        max-width: min(92vw, 560px) !important;
+        box-sizing: border-box;
+    }
+
+    #vol-certificate-view-modal > .vol-head {
+        padding-right: 3.5rem;
+    }
+
+    #vol-certificate-view-download {
+        display: inline-flex;
+        flex: 0 0 auto;
+        width: auto;
+        min-width: 0;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+    }
+
     #vol-deactivate-modal #vol-deactivate-message,
     #vol-deactivate-modal .vol-history-note {
         color: #56766C;
@@ -2802,6 +2932,45 @@
     }
 
     @media (max-width: 767px) {
+        #vol-certificate-view-modal {
+            top: 100px;
+            bottom: 16px;
+            height: auto;
+            max-height: none;
+            box-sizing: border-box;
+            overflow: hidden;
+            transform: translateX(-50%);
+        }
+
+        #vol-certificate-view-modal[data-open="true"] {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #vol-certificate-view-modal > .vol-head {
+            flex: 0 0 auto;
+            padding-right: 3.5rem;
+        }
+
+        #vol-certificate-view-modal > .vol-profile-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #vol-certificate-view-modal > .vol-form-actions {
+            position: sticky;
+            bottom: 0;
+            z-index: 1;
+            flex: 0 0 auto;
+            margin: 0;
+            padding: 0.8rem 1rem 1rem;
+            border-top: 1px solid #e4f0eb;
+            background: rgba(255, 255, 255, 0.98);
+        }
+
         .vol-page {
             gap: 0.7rem;
         }
@@ -2993,10 +3162,6 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        .vol-ojt-progress-table {
-            min-width: 900px;
-        }
-
         .vol-ojt-actions {
             display: flex;
             align-items: center;
@@ -3035,22 +3200,36 @@
     #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:nth-child(6), #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:nth-child(6) { width: 150px; white-space: nowrap; }
     #dashboard-shell.admin-page .vol-table.vol-pending-applications-table th:last-child,
     #dashboard-shell.admin-page .vol-table.vol-pending-applications-table td:last-child {
-        position: sticky;
-        right: 0;
-        z-index: 3;
         width: 160px !important;
         min-width: 160px !important;
-        text-align: center;
-        background: #fff;
+        text-align: center !important;
     }
-    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table thead th:last-child { z-index: 4; background: rgba(236, 253, 245, 0.96); }
-    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table tbody tr:hover td:last-child { background: #f5fcf9; }
+    #dashboard-shell.admin-page .vol-table.vol-pending-applications-table tbody tr:hover td:last-child { background: rgba(236, 253, 245, 0.44); }
     #dashboard-shell.admin-page .vol-table.vol-pending-applications-table .vol-inline-actions { display: flex; justify-content: space-evenly; gap: 0.5rem; min-width: 120px; }
     #dashboard-shell.admin-page .vol-table.vol-pending-applications-table .vol-chip-btn { flex: 0 0 2.1rem; border: 0; background: transparent; }
     #dashboard-shell.admin-page .vol-table.vol-pending-applications-table .vol-chip-btn:hover { background: #edf7f2; }
     .vol-pending-type-pill { max-width: 100%; min-height: 0; padding: 0.32rem 0.6rem; border: 0; font-size: 0.72rem; font-weight: 700; line-height: 1.2; white-space: normal; }
     .vol-pending-type-pill.is-complete { background: #dcfce7; color: #14532d; }
     .vol-pending-type-pill.is-incomplete { background: #fef3c7; color: #92400e; }
+    #role-application-review-dialog h2,
+    #role-application-review-dialog dl > div > dd,
+    #role-application-review-dialog .role-application-review-documents h3 {
+        color: #173a31;
+    }
+    #role-application-review-dialog > header h2 {
+        color: #14352d;
+        font-weight: 700;
+    }
+    #role-application-review-dialog dt {
+        color: #1a4f43;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+    #role-application-review-dialog dl > div > dd {
+        font-weight: 500;
+    }
 </style>
 {% endblock %}
 
@@ -3106,7 +3285,7 @@
                     <input type="text" id="vol-search-input" class="vol-search-input" placeholder="Search by name, contact, email..." aria-label="Search volunteers">
                 </div>
                 <div class="status-filter-select status-filter-select--vol-status-filter">
-                    <select id="vol-status-filter" class="vol-status-filter" data-status-filter-custom aria-label="Filter by status">
+                    <select id="vol-status-filter" class="vol-status-filter" aria-label="Filter by status">
                         <option value="">All Statuses</option>
                         <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
@@ -3300,7 +3479,7 @@
 
 <dialog id="role-application-review-dialog" class="role-application-review-dialog" aria-labelledby="role-application-review-title">
     <header>
-        <div><p>Application review</p><h2 id="role-application-review-title">Applicant-added details</h2></div>
+        <div><h2 id="role-application-review-title">Applicant-added details</h2></div>
         <button type="button" data-close-application-review aria-label="Close application details">×</button>
     </header>
     <div id="role-application-review-body"></div>
@@ -3605,12 +3784,10 @@
 </div>
 
 <div id="vol-certificate-delete-modal" class="vol-modal vol-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="vol-certificate-delete-title" data-open="false">
+    <button type="button" class="vol-modal-close-icon vol-certificate-delete-close" data-close-certificate-delete="true" aria-label="Close certificate removal confirmation" title="Close">×</button>
     <header class="vol-head">
         <div>
             <h3 id="vol-certificate-delete-title" class="vol-title">Remove Certificate</h3>
-        </div>
-        <div class="vol-modal-header-actions">
-            <button type="button" class="vol-modal-close-icon" data-close-certificate-delete="true" aria-label="Close certificate removal confirmation" title="Close">×</button>
         </div>
     </header>
     <div class="vol-profile-body">
@@ -3626,12 +3803,10 @@
 </div>
 
 <div id="vol-certificate-view-modal" class="vol-modal vol-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="vol-certificate-view-title" data-open="false">
+    <button type="button" class="vol-modal-close-icon vol-certificate-view-close" data-close-certificate-view="true" aria-label="Close certificate details" title="Close">×</button>
     <header class="vol-head">
         <div>
             <h3 id="vol-certificate-view-title" class="vol-title">Certificate details</h3>
-        </div>
-        <div class="vol-modal-header-actions">
-            <button type="button" class="vol-modal-close-icon" data-close-certificate-view="true" aria-label="Close certificate details" title="Close">×</button>
         </div>
     </header>
     <div class="vol-profile-body">
@@ -3702,7 +3877,6 @@
 {{ pending_attendance|json_script:"pending-attendance-data" }}
 {{ pending_beneficiary_attendance|json_script:"pending-beneficiary-attendance-data" }}
 {{ volunteer_certificates|json_script:"volunteer-certificates-data" }}
-<script src="{% static 'js/status-filter-select.js' %}"></script>
 <script>
 (function () {
     "use strict";
@@ -3795,6 +3969,7 @@
     var volunteerTypeFilter = byId("vol-type-filter");
     var directoryFilterValue = "";
     var volunteerTypeFilterValue = "";
+    var pendingStatusFilterValue = "";
     var attendanceFilterValue = "all";
     var selectAllCheckbox = byId("vol-select-all");
     var selectedVolunteers = new Set();
@@ -5583,7 +5758,7 @@
         var applications = Array.isArray(pendingApplications) ? pendingApplications : [];
         var count = byId("vol-pending-applications-count");
         var body = byId("vol-pending-applications-body");
-        if (count) count.textContent = applications.length ? "(" + applications.length + ")" : "";
+        if (count) count.textContent = applications.length ? String(applications.length) : "";
         if (!body) return;
         if (!applications.length) {
             body.innerHTML = "<tr><td colspan=\"7\" class=\"vol-table-empty\">No pending volunteer applications.</td></tr>";
@@ -5597,7 +5772,11 @@
         var query = searchInput ? searchInput.value.trim().toLowerCase() : "";
         var visibleApplications = applications.filter(function (application) {
             var searchable = [application.name, application.track, application.contactDetails, application.skills, application.areasOfInterest, application.availability].join(" ").toLowerCase();
-            return !query || searchable.indexOf(query) !== -1;
+            var applicationType = application.track === "community_volunteer" ? "community" : "ojt";
+            var matchesSearch = !query || searchable.indexOf(query) !== -1;
+            var matchesStatus = !pendingStatusFilterValue || pendingStatusFilterValue === "Pending";
+            var matchesType = !volunteerTypeFilterValue || applicationType === volunteerTypeFilterValue;
+            return matchesSearch && matchesStatus && matchesType;
         }).slice().sort(function (left, right) {
             var leftDate = Date.parse(String(left.submittedAt || "").slice(0, 10) + "T00:00:00") || 0;
             var rightDate = Date.parse(String(right.submittedAt || "").slice(0, 10) + "T00:00:00") || 0;
@@ -5801,13 +5980,11 @@
         ojtProgressPanel.hidden = !ojtProgressSelected;
         milestonesPanel.hidden = !milestonesSelected;
         certificationsPanel.hidden = !certificationsSelected;
-        [statusFilter && statusFilter.closest(".status-filter-select"), volunteerTypeFilter && volunteerTypeFilter.closest(".status-filter-select")].forEach(function (element) {
-            if (element) element.hidden = pendingApplicationsSelected;
-        });
         if (statusFilter) {
             if (pendingApplicationsSelected) {
-                statusFilter.innerHTML = "<option value=\"all\">All applications</option>";
-                statusFilter.setAttribute("aria-label", "Pending volunteer applications");
+                statusFilter.innerHTML = "<option value=\"\">All Statuses</option><option value=\"Pending\">Pending</option>";
+                statusFilter.value = pendingStatusFilterValue;
+                statusFilter.setAttribute("aria-label", "Filter pending applications by status");
                 renderPendingApplications();
             } else if (attendanceSelected) {
                 statusFilter.innerHTML = "<option value=\"all\">All</option><option value=\"active\">In progress (" + (attendanceMonitor.in_progress || []).length + ")</option><option value=\"awaiting\">Awaiting confirmation (" + (attendanceMonitor.awaiting_confirmation || []).length + ")</option><option value=\"completed\">Recently completed (" + (attendanceMonitor.recently_completed || []).length + ")</option>";
@@ -6001,7 +6178,9 @@
             volunteerTypeFilter.addEventListener("change", function () {
                 selectedVolunteers.clear();
                 volunteerTypeFilterValue = volunteerTypeFilter.value || "";
-                if (byId("vol-milestones-tab").getAttribute("aria-selected") === "true") {
+                if (byId("vol-pending-applications-tab").getAttribute("aria-selected") === "true") {
+                    renderPendingApplications();
+                } else if (byId("vol-milestones-tab").getAttribute("aria-selected") === "true") {
                     renderMilestones();
                 } else {
                     renderTable();
@@ -6442,7 +6621,10 @@
         if (statusFilter) {
             statusFilter.addEventListener("change", function () {
                 selectedVolunteers.clear();
-                if (byId("vol-attendance-tab").getAttribute("aria-selected") === "true") {
+                if (byId("vol-pending-applications-tab").getAttribute("aria-selected") === "true") {
+                    pendingStatusFilterValue = statusFilter.value || "";
+                    renderPendingApplications();
+                } else if (byId("vol-attendance-tab").getAttribute("aria-selected") === "true") {
                     attendanceFilterValue = statusFilter.value || "all";
                     renderPendingAttendance();
                 } else if (byId("vol-milestones-tab").getAttribute("aria-selected") === "true") {
