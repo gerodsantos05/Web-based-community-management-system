@@ -298,6 +298,20 @@
         font-weight: 600;
     }
 
+    #learning-progress .lp-beneficiary-name-group {
+        display: grid;
+        flex: 1 1 auto;
+        min-width: 0;
+        gap: .08rem;
+    }
+
+    #learning-progress .lp-beneficiary-type {
+        color: var(--lp-muted);
+        font-size: .59375rem;
+        font-weight: 500;
+        line-height: 1.3;
+    }
+
     #learning-progress .lp-chevron {
         flex: 0 0 auto;
         color: var(--lp-primary);
@@ -1120,6 +1134,7 @@
                 <span class="lp-avatar" id="lp-person-avatar" aria-hidden="true"></span>
                 <div>
                     <h2 class="lp-person-name" id="lp-person-name"></h2>
+                    <p class="lp-beneficiary-type" id="lp-person-type"></p>
                 </div>
             </div>
             <div class="lp-person-meta">
@@ -1153,7 +1168,7 @@
         {% regroup progress_rows by beneficiary_id as beneficiary_groups %}
         {% for group in beneficiary_groups %}
             {% with first_row=group.list.0 %}
-                <div class="lp-source-beneficiary" data-beneficiary-id="{{ first_row.beneficiary_id }}" data-beneficiary-name="{{ first_row.beneficiary_name }}">
+                <div class="lp-source-beneficiary" data-beneficiary-id="{{ first_row.beneficiary_id }}" data-beneficiary-name="{{ first_row.beneficiary_name }}" data-beneficiary-type="{{ first_row.beneficiary_type_label }}">
                     {% for row in group.list %}
                         <div class="lp-source-topic"
                              data-topic-id="{{ row.topic_id }}"

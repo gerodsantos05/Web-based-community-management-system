@@ -6,6 +6,117 @@
 {% block extra_head %}
 <script type="module" src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js"></script>
 <style>
+    #dashboard-overview .udc-overview-skeleton {
+        display: none;
+        gap: 0.85rem;
+    }
+
+    #dashboard-overview.is-loading .udc-shell > :not(.udc-overview-skeleton) {
+        display: none !important;
+    }
+
+    #dashboard-overview.is-loading .udc-overview-skeleton {
+        display: grid;
+    }
+
+    #dashboard-overview .udc-skeleton-block {
+        border-radius: 0.75rem;
+        background: linear-gradient(90deg, #edf1f3 25%, #f7f9fa 50%, #edf1f3 75%);
+        background-size: 200% 100%;
+        animation: udc-skeleton-shimmer 1.35s ease-in-out infinite;
+    }
+
+    #dashboard-overview .udc-skeleton-heading {
+        width: min(18rem, 60%);
+        height: 1.7rem;
+    }
+
+    #dashboard-overview .udc-skeleton-subheading {
+        width: min(12rem, 45%);
+        height: 0.85rem;
+        margin-top: 0.45rem;
+    }
+
+    #dashboard-overview .udc-skeleton-metrics,
+    #dashboard-overview .udc-skeleton-panels {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    #dashboard-overview .udc-skeleton-card {
+        min-height: 6rem;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.9rem;
+        background: #ffffff;
+    }
+
+    #dashboard-overview .udc-skeleton-card .udc-skeleton-block + .udc-skeleton-block {
+        margin-top: 0.8rem;
+    }
+
+    #dashboard-overview .udc-skeleton-card .udc-skeleton-block:first-child {
+        width: 48%;
+        height: 0.7rem;
+    }
+
+    #dashboard-overview .udc-skeleton-card .udc-skeleton-block:last-child {
+        width: 76%;
+        height: 1.35rem;
+    }
+
+    #dashboard-overview .udc-skeleton-panels {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #dashboard-overview .udc-skeleton-panels .udc-skeleton-card {
+        min-height: 9rem;
+    }
+
+    #dashboard-overview .udc-skeleton-panels .udc-skeleton-block:first-child {
+        width: 52%;
+    }
+
+    #dashboard-overview .udc-skeleton-panels .udc-skeleton-block:last-child {
+        width: 90%;
+        height: 0.8rem;
+        box-shadow: 0 1.3rem 0 #edf1f3, 0 2.6rem 0 #edf1f3;
+    }
+
+    html.dark-mode #dashboard-overview .udc-skeleton-card {
+        border-color: #374151;
+        background: #1f2937;
+    }
+
+    html.dark-mode #dashboard-overview .udc-skeleton-block {
+        background-image: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+    }
+
+    html.dark-mode #dashboard-overview .udc-skeleton-panels .udc-skeleton-block:last-child {
+        box-shadow: 0 1.3rem 0 #374151, 0 2.6rem 0 #374151;
+    }
+
+    @keyframes udc-skeleton-shimmer {
+        to { background-position: -200% 0; }
+    }
+
+    @media (max-width: 640px) {
+        #dashboard-overview .udc-skeleton-metrics {
+            grid-template-columns: 1fr;
+        }
+
+        #dashboard-overview .udc-skeleton-panels {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        #dashboard-overview .udc-skeleton-block {
+            animation: none;
+        }
+    }
+
     .ud-panel {
         --ud-card-pad: 0.9rem;
     }
@@ -5728,6 +5839,23 @@ if (document.readyState === "loading") {
     data-skill-learning-url="{% url 'user_dashboard_skill_learning' %}"
 >
     <div class="udc-shell">
+        <div class="udc-overview-skeleton" aria-hidden="true">
+            <div>
+                <div class="udc-skeleton-block udc-skeleton-heading"></div>
+                <div class="udc-skeleton-block udc-skeleton-subheading"></div>
+            </div>
+            <div class="udc-skeleton-metrics">
+                <div class="udc-skeleton-card"><div class="udc-skeleton-block"></div><div class="udc-skeleton-block"></div></div>
+                <div class="udc-skeleton-card"><div class="udc-skeleton-block"></div><div class="udc-skeleton-block"></div></div>
+                <div class="udc-skeleton-card"><div class="udc-skeleton-block"></div><div class="udc-skeleton-block"></div></div>
+            </div>
+            <div class="udc-skeleton-panels">
+                <div class="udc-skeleton-card"><div class="udc-skeleton-block"></div><div class="udc-skeleton-block"></div></div>
+                <div class="udc-skeleton-card"><div class="udc-skeleton-block"></div><div class="udc-skeleton-block"></div></div>
+                <div class="udc-skeleton-card"><div class="udc-skeleton-block"></div><div class="udc-skeleton-block"></div></div>
+                <div class="udc-skeleton-card"><div class="udc-skeleton-block"></div><div class="udc-skeleton-block"></div></div>
+            </div>
+        </div>
         <header class="udc-greeting-head">
             <h1 class="udc-dashboard-heading">{{ beneficiary_type_label|default:"Beneficiary" }} Dashboard</h1>
             <p class="udc-subtitle"><span id="udc-today-date">today</span></p>
@@ -6907,6 +7035,10 @@ if (document.readyState === "loading") {
     root.dataset.bound = "true";
 
     var apiUrl = root.getAttribute("data-overview-api") || "";
+    if (apiUrl) {
+        root.classList.add("is-loading");
+        root.setAttribute("aria-busy", "true");
+    }
     var attendanceStorageKey = "beneficiary_confirmed_attendance";
     var readConfirmedAttendance = function () {
         try { return JSON.parse(localStorage.getItem(attendanceStorageKey) || "{}"); } catch (error) { return {}; }
@@ -7134,6 +7266,8 @@ if (document.readyState === "loading") {
             if (window.lucide && typeof window.lucide.createIcons === "function") {
                 window.lucide.createIcons();
             }
+            root.classList.remove("is-loading");
+            root.setAttribute("aria-busy", "false");
         }
 
         if (historyMore && historyMore.dataset.bound !== "true") {

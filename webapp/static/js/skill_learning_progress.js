@@ -105,9 +105,10 @@
                 var beneficiary = {
                     id: beneficiaryElement.dataset.beneficiaryId,
                     name: beneficiaryElement.dataset.beneficiaryName || "",
+                    typeLabel: beneficiaryElement.dataset.beneficiaryType || "Beneficiary type not set",
                     topics: topics
                 };
-                beneficiary.searchText = beneficiary.name;
+                beneficiary.searchText = beneficiary.name + " " + beneficiary.typeLabel;
                 return beneficiary;
             }
         );
@@ -289,8 +290,15 @@
                 heading.className = "lp-beneficiary-heading";
                 heading.appendChild(makeAvatar(beneficiary.name));
                 var name = document.createElement("span");
-                name.className = "lp-beneficiary-name";
-                name.textContent = beneficiary.name;
+                name.className = "lp-beneficiary-name-group";
+                var nameLabel = document.createElement("span");
+                nameLabel.className = "lp-beneficiary-name";
+                nameLabel.textContent = beneficiary.name;
+                var typeLabel = document.createElement("span");
+                typeLabel.className = "lp-beneficiary-type";
+                typeLabel.textContent = beneficiary.typeLabel;
+                name.appendChild(nameLabel);
+                name.appendChild(typeLabel);
                 heading.appendChild(name);
                 var chevron = document.createElement("span");
                 chevron.className = "lp-chevron";
@@ -330,6 +338,7 @@
             document.getElementById("lp-person-avatar").textContent =
                 String(beneficiary.name || "").trim().charAt(0).toUpperCase();
             document.getElementById("lp-person-name").textContent = beneficiary.name;
+            document.getElementById("lp-person-type").textContent = beneficiary.typeLabel;
             document.getElementById("lp-topic-finished").textContent =
                 topicCount + " of " + beneficiary.topics.length + " topics finished";
             document.getElementById("lp-person-percent").textContent = value + "%";

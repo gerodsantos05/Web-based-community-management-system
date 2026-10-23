@@ -826,6 +826,10 @@
     .act-preview-field.is-wide { grid-column: 1 / -1; }
 
     .act-preview-photo-groups { display:grid; gap:.65rem; }
+    .act-preview-photo-skeleton { display:grid; grid-template-columns:repeat(auto-fill,minmax(5.5rem,5.5rem)); gap:.55rem; }
+    .act-preview-photo-skeleton span { display:block; height:4.25rem; border-radius:7px; background:linear-gradient(90deg,#edf1f3 25%,#f7f9fa 50%,#edf1f3 75%); background-size:200% 100%; animation:act-preview-photo-shimmer 1.35s ease-in-out infinite; }
+    @keyframes act-preview-photo-shimmer { to { background-position:-200% 0; } }
+    @media (prefers-reduced-motion:reduce) { .act-preview-photo-skeleton span { animation:none; } }
     .act-preview-photo-group { display:grid; gap:.45rem; padding:.65rem; border:1px solid #e2f1eb; border-radius:10px; background:#fff; }
     .act-preview-photo-volunteer { color:#1a4f43; font-size:.82rem; font-weight:800; }
     .act-preview-photo-list { display:flex; flex-wrap:wrap; gap:.55rem; }
@@ -1757,10 +1761,17 @@
         label.textContent = 'Volunteer photos';
         var content = document.createElement('div');
         content.className = 'act-preview-photo-groups';
-        var loading = document.createElement('p');
-        loading.className = 'act-preview-value';
-        loading.textContent = 'Loading photos…';
-        content.appendChild(loading);
+        content.setAttribute('aria-busy', 'true');
+        var loading = document.createElement('div');
+        loading.className = 'act-preview-photo-skeleton';
+        loading.setAttribute('aria-hidden', 'true');
+        for (var skeletonIndex = 0; skeletonIndex < 4; skeletonIndex += 1) {
+            loading.appendChild(document.createElement('span'));
+        }
+        var loadingLabel = document.createElement('span');
+        loadingLabel.className = 'sr-only';
+        loadingLabel.textContent = 'Loading volunteer photos';
+        content.append(loading, loadingLabel);
         field.append(label, content);
         activityPreviewContent.appendChild(field);
 
@@ -1773,6 +1784,7 @@
             })
             .then(function(payload) {
                 content.replaceChildren();
+                content.setAttribute('aria-busy', 'false');
                 var groups = Array.isArray(payload.groups) ? payload.groups : [];
                 if (!groups.length) {
                     var empty = document.createElement('p');
@@ -1814,6 +1826,7 @@
             })
             .catch(function(error) {
                 content.replaceChildren();
+                content.setAttribute('aria-busy', 'false');
                 var message = document.createElement('p');
                 message.className = 'act-preview-value';
                 message.textContent = error.message || 'Photos could not be loaded.';

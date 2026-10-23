@@ -24,6 +24,8 @@
         button, .link { display: inline-flex; align-items: center; justify-content: center; min-height: 2.8rem; margin-top: .8rem; padding: .65rem 1rem; border: 0; border-radius: 999px; background: #397b52; color: #fff; font: inherit; font-size: .84rem; font-weight: 700; text-decoration: none; cursor: pointer; }
         button { width: 100%; }
         .resend-message { margin: .85rem 0 0; padding: .7rem; border-radius: .65rem; background: #edf7f0; color: #315f51; font-size: .8rem; }
+        .resend-message.error { background: #fff0ee; color: #a52d22; }
+        .verification-notice { margin: .85rem 0 0; padding: .7rem; border-radius: .65rem; background: #edf7f0; color: #315f51; font-size: .8rem; }
         .back { display: block; margin-top: 1rem; color: #397b52; font-size: .82rem; font-weight: 600; text-align: center; text-decoration: none; }
     </style>
 </head>
@@ -34,14 +36,15 @@
             <span>HappYness Project</span>
         </div>
         <h1>Verify your email</h1>
-        <p>We sent a verification link{% if email %} to <span class="email">{{ email }}</span>{% endif %}. Open it to verify your address and activate your account. Check your spam folder if you don’t see it.</p>
+        <p>Verify your email address to activate your account{% if email %} for <span class="email">{{ email }}</span>{% endif %}. If you don’t see a message, check your spam folder or request another link below.</p>
+        {% if verification_notice %}<p class="verification-notice" role="status">{{ verification_notice }}</p>{% endif %}
         <form method="post">
             {% csrf_token %}
             <label for="verification-email">Email address</label>
             <input id="verification-email" name="email" type="email" value="{{ email }}" autocomplete="email" required>
             <button type="submit">Resend verification link</button>
         </form>
-        {% if resend_message %}<p class="resend-message" role="status">{{ resend_message }}</p>{% endif %}
+        {% if resend_message %}<p class="resend-message{% if resend_message_type == 'error' %} error{% endif %}" role="{% if resend_message_type == 'error' %}alert{% else %}status{% endif %}">{{ resend_message }}</p>{% endif %}
         <a class="back" href="{% url 'home' %}">Return to HappYness Project</a>
     </main>
 </body>

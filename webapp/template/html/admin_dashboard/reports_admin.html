@@ -226,6 +226,93 @@
         height: 265px;
     }
 
+    #analytics-page.is-loading > .ra-kpi-grid,
+    #analytics-page.is-loading > .ra-charts-grid,
+    #analytics-page.is-loading > .ra-insights-grid,
+    #analytics-page.is-loading > .ra-table-card {
+        display: none;
+    }
+
+    .ra-skeleton[hidden] {
+        display: none;
+    }
+
+    .ra-skeleton {
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .ra-skeleton-kpis,
+    .ra-skeleton-charts {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .ra-skeleton-charts {
+        grid-template-columns: 2fr 1fr;
+    }
+
+    .ra-skeleton-card {
+        min-height: 6rem;
+        padding: 0.9rem;
+        border: 1px solid var(--ra-border);
+        border-radius: 1rem;
+        background: #fff;
+    }
+
+    .ra-skeleton-chart {
+        min-height: 13rem;
+    }
+
+    .ra-skeleton-table {
+        min-height: 10rem;
+    }
+
+    .ra-skeleton-block {
+        height: 0.75rem;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #edf1f3 25%, #f7f9fa 50%, #edf1f3 75%);
+        background-size: 200% 100%;
+        animation: ra-skeleton-shimmer 1.35s ease-in-out infinite;
+    }
+
+    .ra-skeleton-block + .ra-skeleton-block {
+        margin-top: 0.85rem;
+    }
+
+    .ra-skeleton-block.is-value {
+        width: 58%;
+        height: 1.4rem;
+    }
+
+    .ra-skeleton-block.is-medium {
+        width: 78%;
+    }
+
+    .ra-skeleton-block.is-short {
+        width: 45%;
+    }
+
+    @keyframes ra-skeleton-shimmer {
+        to { background-position: -200% 0; }
+    }
+
+    html.dark-mode .ra-skeleton-card {
+        border-color: #374151;
+        background: #1f2937;
+    }
+
+    html.dark-mode .ra-skeleton-block {
+        background-image: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .ra-skeleton-block {
+            animation: none;
+        }
+    }
+
     @media (max-width: 520px) {
         .ra-chart-head {
             align-items: flex-start;
@@ -234,6 +321,11 @@
 
         .ra-chart-sub {
             text-align: left;
+        }
+
+        .ra-skeleton-kpis,
+        .ra-skeleton-charts {
+            grid-template-columns: 1fr;
         }
     }
 
@@ -465,6 +557,25 @@
             <button type="button" id="analytics-export-pdf" class="ra-btn ra-focus">Export PDF</button>
         </div>
     </section>
+
+    <div id="analytics-skeleton" class="ra-skeleton" aria-hidden="true" hidden>
+        <div class="ra-skeleton-kpis">
+            <div class="ra-skeleton-card"><div class="ra-skeleton-block is-short"></div><div class="ra-skeleton-block is-value"></div><div class="ra-skeleton-block is-medium"></div></div>
+            <div class="ra-skeleton-card"><div class="ra-skeleton-block is-short"></div><div class="ra-skeleton-block is-value"></div><div class="ra-skeleton-block is-medium"></div></div>
+            <div class="ra-skeleton-card"><div class="ra-skeleton-block is-short"></div><div class="ra-skeleton-block is-value"></div><div class="ra-skeleton-block is-medium"></div></div>
+            <div class="ra-skeleton-card"><div class="ra-skeleton-block is-short"></div><div class="ra-skeleton-block is-value"></div><div class="ra-skeleton-block is-medium"></div></div>
+        </div>
+        <div class="ra-skeleton-charts">
+            <div class="ra-skeleton-card ra-skeleton-chart"><div class="ra-skeleton-block is-medium"></div></div>
+            <div class="ra-skeleton-card ra-skeleton-chart"><div class="ra-skeleton-block is-medium"></div></div>
+        </div>
+        <div class="ra-skeleton-card ra-skeleton-table">
+            <div class="ra-skeleton-block is-medium"></div>
+            <div class="ra-skeleton-block"></div>
+            <div class="ra-skeleton-block"></div>
+            <div class="ra-skeleton-block"></div>
+        </div>
+    </div>
 
     <section class="ra-charts-grid" aria-label="Main analytics charts">
         <article class="ra-card ra-chart-card is-wide">
@@ -981,7 +1092,16 @@
         });
     }
 
-    function loadAnalytics() {
+    function loadAnalytics(showSkeleton) {
+        var page = document.getElementById("analytics-page");
+        var skeleton = document.getElementById("analytics-skeleton");
+        var shouldShowSkeleton = showSkeleton !== false;
+        if (shouldShowSkeleton) {
+            page.classList.add("is-loading");
+            skeleton.hidden = false;
+        }
+        page.setAttribute("aria-busy", "true");
+
         var endpoint = window.REPORTS_ANALYTICS_ENDPOINT || "/admin-dashboard/reports/data/";
         var url = new URL(endpoint, window.location.origin);
         url.searchParams.set("range", state.range);
@@ -1000,9 +1120,15 @@
                 document.getElementById("analytics-error").hidden = true;
                 populateFilterOptions();
                 refreshAnalytics();
+                skeleton.hidden = true;
+                page.classList.remove("is-loading");
+                page.setAttribute("aria-busy", "false");
             })
             .catch(function(error) {
                 console.error(error);
+                skeleton.hidden = true;
+                page.classList.remove("is-loading");
+                page.setAttribute("aria-busy", "false");
                 var status = document.getElementById("analytics-error");
                 status.textContent = "Analytics could not be loaded. Check your connection and try applying the filters again.";
                 status.hidden = false;
@@ -1026,7 +1152,7 @@
 
         setInterval(function() {
             if (!document.hidden) {
-                loadAnalytics();
+                loadAnalytics(false);
             }
         }, 60000);
     }

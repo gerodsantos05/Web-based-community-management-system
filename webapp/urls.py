@@ -45,6 +45,7 @@ urlpatterns = [
 	path("admin-dashboard/beneficiaries/assistance/delete-bulk/", views.delete_beneficiary_assistance_bulk, name="delete_beneficiary_assistance_bulk"),
 	path("admin-dashboard/beneficiaries/create/", views.create_beneficiary, name="create_beneficiary"),
 	path("admin-dashboard/beneficiaries/profile/update/", views.update_beneficiary_profile, name="update_beneficiary_profile"),
+	path("admin-dashboard/beneficiaries/type/update/", views.update_beneficiary_type, name="update_beneficiary_type"),
 	path("admin-dashboard/beneficiaries/deactivate/", views.deactivate_beneficiary, name="deactivate_beneficiary"),
 	path("admin-dashboard/volunteers/create/", views.create_volunteer, name="create_volunteer"),
 	path("admin-dashboard/volunteers/profile/update/", views.update_volunteer_profile, name="update_volunteer_profile"),

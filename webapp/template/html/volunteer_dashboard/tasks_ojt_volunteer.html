@@ -179,6 +179,12 @@
     .pill.active { background:#69c1b5; border-color:#69c1b5; color:#fff }
 
     .task-list { display:flex; flex-direction:column; gap:0.7rem }
+    .toj-task-skeleton-card { display:grid; gap:.65rem; padding:.9rem 1rem; border:1px solid #ddd8cd; border-radius:.9rem; background:#fbfaf6; }
+    .toj-task-skeleton-line { height:.7rem; border-radius:999px; background:linear-gradient(90deg,#edf1f3 25%,#f7f9fa 50%,#edf1f3 75%); background-size:200% 100%; animation:toj-task-skeleton-shimmer 1.35s ease-in-out infinite; }
+    .toj-task-skeleton-line.is-medium { width:72%; }
+    .toj-task-skeleton-line.is-short { width:44%; height:.55rem; }
+    @keyframes toj-task-skeleton-shimmer { to { background-position:-200% 0; } }
+    @media (prefers-reduced-motion:reduce) { .toj-task-skeleton-line { animation:none; } }
     .task-card { background:#fbfaf6; border:1px solid #ddd8cd; padding:0.85rem 0.95rem; border-radius:0.9rem; display:flex; flex-direction:column; gap:0.55rem; cursor:default; box-shadow:0 1px 0 rgba(15,23,42,0.03) }
     .task-card:hover { background:#fffdf8 }
     .task-card.today { box-shadow: inset 4px 0 0 0 #69c1b5, 0 1px 0 rgba(15,23,42,0.03) }
@@ -1443,9 +1449,23 @@ function formatRange(startIso, endIso){ try{
 }catch(ex){ return fmtDateTime(startIso) + ' — ' + fmtDateTime(endIso) }}
 
 function renderTasks(){
+    if(!assignedTasksLoaded){
+        const skeleton = '<article class="toj-task-skeleton-card" aria-hidden="true"><span class="toj-task-skeleton-line is-medium"></span><span class="toj-task-skeleton-line"></span><span class="toj-task-skeleton-line is-short"></span></article>'
+            + '<article class="toj-task-skeleton-card" aria-hidden="true"><span class="toj-task-skeleton-line is-medium"></span><span class="toj-task-skeleton-line"></span><span class="toj-task-skeleton-line is-short"></span></article>';
+        ['today-list','upcoming-list'].forEach(function(id){
+            const list = $(id);
+            if(list){
+                list.innerHTML = skeleton;
+                list.setAttribute('aria-busy','true');
+            }
+        });
+        return;
+    }
     const filter = document.querySelector('.pill.active').textContent;
     const todayList = $('today-list'); const upcomingList = $('upcoming-list');
     todayList.innerHTML=''; upcomingList.innerHTML='';
+    todayList.setAttribute('aria-busy','false');
+    upcomingList.setAttribute('aria-busy','false');
     const timeInButtonDays = new Set();
     const currentDateKey = calendarDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
     tasks.forEach(t=>{

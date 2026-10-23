@@ -528,6 +528,16 @@
         });
     }
 
+    function topicPublisherLabel(topic) {
+        var creator = topic.createdBy || "Publisher not recorded";
+        if (!topic.createdBy) {
+            return creator;
+        }
+        return topic.createdByType
+            ? creator + " (" + topic.createdByType + " Volunteer)"
+            : creator + " (volunteer type not recorded)";
+    }
+
     function renderTopicCards() {
         if (!grid) {
             return;
@@ -551,6 +561,7 @@
             var description = topic.description || "No description provided.";
             var badge = topic.badgeLabel || topic.primaryFilterTag || "Topic";
             var categoryTag = Array.isArray(topic.filterTags) ? (topic.filterTags[0] || "Community") : (topic.primaryFilterTag || "Community");
+            var creator = topicPublisherLabel(topic);
             var materialCount = Array.isArray(topic.materials) ? topic.materials.length : 0;
             var progressMarkup = renderCompletionSummary(topic);
             return [
@@ -564,6 +575,7 @@
                 '<div class="sl-topic-body">',
                 '<h3 class="sl-topic-title">' + escapeHtml(title) + '</h3>',
                 '<p class="sl-topic-desc">' + escapeHtml(description) + '</p>',
+                '<p class="sl-topic-creator">Published by ' + escapeHtml(creator) + '</p>',
                 '<div class="sl-progress" aria-label="' + escapeHtml(String(materialCount)) + (isVolunteerView() ? ' materials"' : ' topic progress"') + '>',
                 progressMarkup,
                 '</div>',
@@ -624,6 +636,7 @@
     function renderTopicView(topic) {
         var titleNode = document.getElementById("sl-topic-name");
         var descNode = document.getElementById("sl-topic-description");
+        var creatorNode = document.getElementById("sl-topic-creator");
         var host = document.getElementById("sl-materials-sections");
         var materials = Array.isArray(topic.materials) ? topic.materials : [];
 
@@ -632,6 +645,9 @@
         }
         if (descNode) {
             descNode.textContent = topic.description || "No description provided.";
+        }
+        if (creatorNode) {
+            creatorNode.textContent = "Published by " + topicPublisherLabel(topic);
         }
         var progressNode = document.getElementById("sl-topic-progress");
         if (progressNode) {

@@ -1389,7 +1389,7 @@
                 '</article>'
             ].join("");
         }).join("") : (post.commentsLoading
-            ? '<div class="ch-comment-loading" aria-live="polite"><span class="ch-comment-spinner" aria-hidden="true"></span><span>Loading comments...</span></div>'
+            ? '<div class="ch-comment-skeleton" aria-hidden="true"><article class="ch-comment-skeleton-row"><span class="ch-comment-skeleton-avatar"></span><span class="ch-comment-skeleton-lines"><span></span><span></span></span></article><article class="ch-comment-skeleton-row"><span class="ch-comment-skeleton-avatar"></span><span class="ch-comment-skeleton-lines"><span></span><span></span></span></article></div><span class="sr-only" role="status">Loading comments...</span>'
             : '<p class="ch-comment-empty">No comments yet. Start the conversation.</p>');
 
         var loadingMoreMarkup = post.commentsLoading && comments.length
@@ -1484,10 +1484,14 @@
         var posts = filteredPosts();
 
         feedCount.textContent = posts.length + (posts.length === 1 ? " post" : " posts");
+        feedHost.setAttribute("aria-busy", state.postsLoading ? "true" : "false");
 
         if (!posts.length) {
             feedHost.innerHTML = state.postsLoading
-                ? '<p class="cm-empty">Loading posts...</p>'
+                ? '<div class="ch-feed-skeleton" aria-hidden="true">'
+                    + '<article class="ch-feed-skeleton-card"><div class="ch-feed-skeleton-author"><span class="ch-feed-skeleton-avatar"></span><span class="ch-feed-skeleton-lines"><span></span><span></span></span></div><span class="ch-feed-skeleton-line"></span><span class="ch-feed-skeleton-line is-short"></span><div class="ch-feed-skeleton-actions"><span></span><span></span></div></article>'
+                    + '<article class="ch-feed-skeleton-card"><div class="ch-feed-skeleton-author"><span class="ch-feed-skeleton-avatar"></span><span class="ch-feed-skeleton-lines"><span></span><span></span></span></div><span class="ch-feed-skeleton-line"></span><span class="ch-feed-skeleton-line is-medium"></span><div class="ch-feed-skeleton-actions"><span></span><span></span></div></article>'
+                    + '</div>'
                 : '<p class="cm-empty">No posts in this filter yet.</p>';
             disconnectCommentLoadObserver();
             refreshIcons();

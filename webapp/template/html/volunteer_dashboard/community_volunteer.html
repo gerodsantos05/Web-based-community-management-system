@@ -158,6 +158,117 @@
 		gap: 0.72rem;
 	}
 
+	#community .ch-feed-skeleton {
+		display: grid;
+		gap: 0.72rem;
+	}
+
+	#community .ch-feed-skeleton-card {
+		display: grid;
+		gap: 0.85rem;
+		padding: 0.95rem 1.1rem;
+		border: 1px solid #e7ecf1;
+		border-radius: 14px;
+		background: #ffffff;
+	}
+
+	#community .ch-feed-skeleton-author {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+	}
+
+	#community .ch-feed-skeleton-avatar,
+	#community .ch-feed-skeleton-lines span,
+	#community .ch-feed-skeleton-line,
+	#community .ch-feed-skeleton-actions span {
+		display: block;
+		background: linear-gradient(90deg, #edf1f3 25%, #f7f9fa 50%, #edf1f3 75%);
+		background-size: 200% 100%;
+		animation: ch-feed-skeleton-shimmer 1.35s ease-in-out infinite;
+	}
+
+	#community .ch-feed-skeleton-avatar {
+		width: 2.5rem;
+		height: 2.5rem;
+		flex: 0 0 auto;
+		border-radius: 50%;
+	}
+
+	#community .ch-feed-skeleton-lines {
+		display: grid;
+		width: min(13rem, 65%);
+		gap: 0.4rem;
+	}
+
+	#community .ch-feed-skeleton-lines span {
+		height: 0.65rem;
+		border-radius: 999px;
+	}
+
+	#community .ch-feed-skeleton-lines span:last-child {
+		width: 55%;
+		height: 0.5rem;
+	}
+
+	#community .ch-feed-skeleton-line {
+		width: 100%;
+		height: 0.65rem;
+		border-radius: 999px;
+	}
+
+	#community .ch-feed-skeleton-line.is-short {
+		width: 72%;
+	}
+
+	#community .ch-feed-skeleton-line.is-medium {
+		width: 84%;
+	}
+
+	#community .ch-feed-skeleton-actions {
+		display: flex;
+		gap: 1rem;
+		padding-top: 0.3rem;
+	}
+
+	#community .ch-feed-skeleton-actions span {
+		width: 3.8rem;
+		height: 0.55rem;
+		border-radius: 999px;
+	}
+
+	html.dark-mode body #community .ch-feed-skeleton-card,
+	body.dark-mode #community .ch-feed-skeleton-card {
+		background: #1f2937;
+		border-color: #374151;
+	}
+
+	html.dark-mode body #community .ch-feed-skeleton-avatar,
+	html.dark-mode body #community .ch-feed-skeleton-lines span,
+	html.dark-mode body #community .ch-feed-skeleton-line,
+	html.dark-mode body #community .ch-feed-skeleton-actions span,
+	body.dark-mode #community .ch-feed-skeleton-avatar,
+	body.dark-mode #community .ch-feed-skeleton-lines span,
+	body.dark-mode #community .ch-feed-skeleton-line,
+	body.dark-mode #community .ch-feed-skeleton-actions span {
+		background-image: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+	}
+
+	@keyframes ch-feed-skeleton-shimmer {
+		to { background-position: -200% 0; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		#community .ch-feed-skeleton-avatar,
+		#community .ch-feed-skeleton-lines span,
+		#community .ch-feed-skeleton-line,
+		#community .ch-feed-skeleton-actions span,
+		#community .ch-comment-skeleton-avatar,
+		#community .ch-comment-skeleton-lines span {
+			animation: none;
+		}
+	}
+
 	#community .ch-feed-card {
 		display: flex;
 		flex-direction: column;
@@ -1215,6 +1326,55 @@
 		font-size: 0.76rem;
 		font-weight: 600;
 		color: #667085;
+	}
+
+	#community .ch-comment-skeleton {
+		display: grid;
+		gap: 0.65rem;
+		padding: 0.2rem 0;
+	}
+
+	#community .ch-comment-skeleton-row {
+		display: flex;
+		align-items: center;
+		gap: 0.55rem;
+	}
+
+	#community .ch-comment-skeleton-avatar,
+	#community .ch-comment-skeleton-lines span {
+		display: block;
+		background: linear-gradient(90deg, #edf1f3 25%, #f7f9fa 50%, #edf1f3 75%);
+		background-size: 200% 100%;
+		animation: ch-feed-skeleton-shimmer 1.35s ease-in-out infinite;
+	}
+
+	#community .ch-comment-skeleton-avatar {
+		width: 1.8rem;
+		height: 1.8rem;
+		flex: 0 0 auto;
+		border-radius: 50%;
+	}
+
+	#community .ch-comment-skeleton-lines {
+		display: grid;
+		width: min(17rem, 80%);
+		gap: 0.35rem;
+	}
+
+	#community .ch-comment-skeleton-lines span {
+		height: 0.55rem;
+		border-radius: 999px;
+	}
+
+	#community .ch-comment-skeleton-lines span:last-child {
+		width: 70%;
+	}
+
+	html.dark-mode body #community .ch-comment-skeleton-avatar,
+	html.dark-mode body #community .ch-comment-skeleton-lines span,
+	body.dark-mode #community .ch-comment-skeleton-avatar,
+	body.dark-mode #community .ch-comment-skeleton-lines span {
+		background-image: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
 	}
 
 	#community .ch-comment-sentinel {

@@ -396,8 +396,18 @@ def _skill_learning_topic_payload(topic, material_engagements=None, recommended_
     recommended_ids = recommended_ids or set()
     materials = list(topic.materials.all())
     completed_count = sum(1 for material in materials if material_engagements.get(material.id) and material_engagements[material.id].completed_at)
+    creator_type = ""
+    if topic.created_by_id:
+        try:
+            creator_profile = topic.created_by.userprofile
+        except UserProfile.DoesNotExist:
+            creator_profile = None
+        if creator_profile and creator_profile.account_role == UserProfile.ROLE_VOLUNTEER:
+            creator_type = dict(UserProfile.VOLUNTEER_TYPE_CHOICES).get(creator_profile.volunteer_type, "")
     return {
         "id": str(topic.id),
+        "createdBy": _display_name_for_user(topic.created_by) if topic.created_by_id else "",
+        "createdByType": creator_type,
         "title": topic.title,
         "description": topic.description,
         "badgeLabel": topic.badge_label,
@@ -490,7 +500,7 @@ def _skill_learning_recommended_ids(topics, popularity_scores, user):
 
 def _skill_learning_payload(user=None):
     _ensure_skill_learning_content()
-    topics = SkillLearningTopic.objects.prefetch_related("materials").all()
+    topics = SkillLearningTopic.objects.select_related("created_by", "created_by__userprofile").prefetch_related("materials").all()
     popularity_scores = _skill_learning_activity_summary()
     for topic in topics:
         topic.live_popularity_score = popularity_scores.get(topic.id, 0)
@@ -4573,30 +4583,58 @@ def signup(request):
 
     form = SignUpForm(request.POST)
     if form.is_valid():
-        try:
-            with transaction.atomic():
-                user = form.save()
-                profile = _get_or_create_user_profile(user)
-                profile.email_verification_pending = True
-                profile.save(update_fields=["email_verification_pending", "updated_at"])
-                email_address = EmailAddress.objects.create(
-                    user=user,
-                    email=user.email,
-                    primary=True,
-                    verified=False,
-                )
-                send_verification_email_to_address(request, email_address, signup=True)
-        except (smtplib.SMTPException, OSError, TimeoutError):
-            logger.exception("Failed to send signup verification email")
-            form.add_error(None, "We could not send a verification email. Please try signing up again later.")
-            return render(request, "index.html", {
-                "signup_form": form,
-                "signin_form": SignInForm(),
-                "open_modal": "signup",
-            })
+        with transaction.atomic():
+            user = form.save()
+            profile = _get_or_create_user_profile(user)
+            profile.email_verification_pending = True
+            profile.save(update_fields=["email_verification_pending", "updated_at"])
+            email_address = EmailAddress.objects.create(
+                user=user,
+                email=user.email,
+                primary=True,
+                verified=False,
+            )
 
         request.session["pending_email_verification"] = user.email
+        try:
+            email_sent = send_verification_email_to_address(
+                request,
+                email_address,
+                signup=True,
+            )
+        except (smtplib.SMTPException, OSError, TimeoutError):
+            logger.exception("Failed to send signup verification email for user %s", user.pk)
+            email_sent = False
+
+        if email_sent:
+            request.session["pending_email_verification_notice"] = (
+                "We sent a verification link. Check your inbox and spam folder."
+            )
+        else:
+            request.session["pending_email_verification_notice"] = (
+                "Your account was created, but we could not send a verification email "
+                "right now. Use the form below to try again shortly."
+            )
+
         return redirect("email_verification")
+
+    requested_email = str(request.POST.get("email", "") or "").strip()
+    if requested_email:
+        pending_address = EmailAddress.objects.filter(
+            email__iexact=requested_email,
+            verified=False,
+            user__is_active=False,
+            user__is_staff=False,
+            user__is_superuser=False,
+            user__userprofile__email_verification_pending=True,
+        ).first()
+        if pending_address:
+            request.session["pending_email_verification"] = pending_address.email
+            request.session["pending_email_verification_notice"] = (
+                "An account for this email is already awaiting verification. "
+                "Use the form below to request a new link."
+            )
+            return redirect("email_verification")
 
     return render(request, "index.html", {
         "signup_form": form,
@@ -4609,6 +4647,7 @@ def signup(request):
 def email_verification(request):
     email = str(request.session.get("pending_email_verification", "") or "")
     resend_message = ""
+    resend_message_type = "status"
     if request.method == "POST":
         requested_email = str(request.POST.get("email", "") or "").strip()
         if requested_email:
@@ -4621,16 +4660,48 @@ def email_verification(request):
                 user__userprofile__email_verification_pending=True,
             ).first()
             if address:
-                send_verification_email_to_address(request, address, signup=True)
-        resend_message = (
-            "If that address belongs to an account awaiting verification, "
-            "a new link has been sent."
-        )
+                try:
+                    email_sent = send_verification_email_to_address(
+                        request,
+                        address,
+                        signup=True,
+                    )
+                except (smtplib.SMTPException, OSError, TimeoutError):
+                    logger.exception(
+                        "Failed to resend verification email for user %s",
+                        address.user_id,
+                    )
+                    email_sent = False
+
+                if email_sent:
+                    resend_message = (
+                        "A verification email was sent. Check your inbox and spam folder."
+                    )
+                    resend_message_type = "success"
+                else:
+                    resend_message = (
+                        "We could not send another verification email right now. "
+                        "Please wait a little and try again."
+                    )
+                    resend_message_type = "error"
+            else:
+                resend_message = (
+                    "If that address belongs to an account awaiting verification, "
+                    "a new link will be sent."
+                )
         email = requested_email or email
+
+    verification_notice = ""
+    if request.method == "GET":
+        verification_notice = str(
+            request.session.pop("pending_email_verification_notice", "") or ""
+        )
 
     return render(request, "auth/email_verification.html", {
         "email": email,
         "resend_message": resend_message,
+        "resend_message_type": resend_message_type,
+        "verification_notice": verification_notice,
     })
 
 @login_required(login_url="signin")
@@ -8096,9 +8167,12 @@ def volunteer_skill_learning_progress(request):
             and getattr(user, "userprofile", None)
             and user.userprofile.account_role == UserProfile.ROLE_BENEFICIARY
         ):
+            beneficiary_type = user.userprofile.beneficiary_type
+            beneficiary_type_label = dict(UserProfile.BENEFICIARY_TYPE_CHOICES).get(beneficiary_type, "")
             latest_beneficiary_applications[user.id] = {
                 "id": user.id,
                 "name": _display_name_for_user(user),
+                "type_label": f"{beneficiary_type_label} Beneficiary" if beneficiary_type_label else "Beneficiary type not set",
             }
 
     beneficiaries = list(latest_beneficiary_applications.values())
@@ -8151,6 +8225,7 @@ def volunteer_skill_learning_progress(request):
             progress_rows.append({
                 "beneficiary_id": beneficiary["id"],
                 "beneficiary_name": beneficiary["name"],
+                "beneficiary_type_label": beneficiary["type_label"],
                 "topic_id": topic.id,
                 "topic_title": topic.title,
                 "completed_count": completed_count,
@@ -8352,6 +8427,7 @@ def skill_learning_topic_create(request):
         return JsonResponse({"error": "Please fix the highlighted topic fields.", "fields": form.errors}, status=400)
 
     topic = form.save(commit=False)
+    topic.created_by = request.user
     topic.filter_tags = form.cleaned_data.get("filter_tags") or []
     topic.is_recommended = False
     topic.popularity_score = 0
@@ -10027,6 +10103,82 @@ def update_beneficiary_profile(request):
 
     payload = _build_beneficiaries_dashboard_payload()
     payload["message"] = "Beneficiary profile updated successfully."
+    return JsonResponse(payload)
+
+
+@login_required(login_url="signin")
+@require_POST
+def update_beneficiary_type(request):
+    if not request.user.is_superuser:
+        return JsonResponse({"error": "Only administrators can change beneficiary types."}, status=403)
+
+    application_id = str(request.POST.get("beneficiary_application_id", "") or "").strip()
+    beneficiary_type = str(request.POST.get("beneficiary_type", "") or "").strip()
+    linked_parent_id = str(request.POST.get("linked_parent_id", "") or "").strip()
+    valid_types = {value for value, _label in UserProfile.BENEFICIARY_TYPE_CHOICES}
+    if beneficiary_type and beneficiary_type not in valid_types:
+        return JsonResponse({"error": "Please choose a valid beneficiary type."}, status=400)
+    if not application_id:
+        return JsonResponse({"error": "beneficiary_application_id is required."}, status=400)
+
+    beneficiary = get_object_or_404(
+        RoleApplication.objects.select_related("user"),
+        id=application_id,
+        role=RoleApplication.ROLE_BENEFICIARY,
+        status__in=[RoleApplication.STATUS_APPROVED, RoleApplication.STATUS_INACTIVE],
+    )
+    if not beneficiary.user_id:
+        return JsonResponse({"error": "This beneficiary does not have a linked account."}, status=400)
+
+    profile = UserProfile.objects.filter(
+        user_id=beneficiary.user_id,
+        account_role=UserProfile.ROLE_BENEFICIARY,
+    ).first()
+    if not profile:
+        return JsonResponse({"error": "This beneficiary does not have a beneficiary profile."}, status=400)
+
+    parent_profile = None
+    if linked_parent_id:
+        if beneficiary_type != UserProfile.BENEFICIARY_TYPE_HAPPY_KIDS:
+            return JsonResponse({"error": "Only Happy Kids can be linked to a parent."}, status=400)
+        parent_profile = UserProfile.objects.filter(
+            user_id=linked_parent_id,
+            account_role=UserProfile.ROLE_BENEFICIARY,
+            beneficiary_type=UserProfile.BENEFICIARY_TYPE_HAPPY_NANAYS,
+            user__is_active=True,
+        ).select_related("user").first()
+        if not parent_profile:
+            return JsonResponse({"error": "Choose a valid Happy Nanays parent."}, status=400)
+        if beneficiary.user_id == parent_profile.user_id:
+            return JsonResponse({"error": "A beneficiary cannot be linked as their own parent."}, status=400)
+
+    with transaction.atomic():
+        profile = UserProfile.objects.select_for_update().get(pk=profile.pk)
+        previous_type = profile.beneficiary_type
+        previous_parent_id = profile.linked_parent_id
+        next_parent = parent_profile if beneficiary_type == UserProfile.BENEFICIARY_TYPE_HAPPY_KIDS else None
+        profile.beneficiary_type = beneficiary_type
+        profile.linked_parent = next_parent
+        profile.save(update_fields=["beneficiary_type", "linked_parent", "updated_at"])
+
+        if previous_type != beneficiary_type or previous_parent_id != profile.linked_parent_id:
+            type_labels = dict(UserProfile.BENEFICIARY_TYPE_CHOICES)
+            AdminActivityLog.objects.create(
+                admin=request.user,
+                admin_name=request.user.get_full_name().strip() or request.user.get_username(),
+                action=AdminActivityLog.ACTION_EDIT,
+                section="Beneficiaries",
+                record_type="Beneficiary",
+                record_id=str(beneficiary.user_id),
+                record_label=_display_name_for_user(beneficiary.user),
+                details=(
+                    f"Type: {type_labels.get(previous_type, 'Not set')} -> "
+                    f"{type_labels.get(beneficiary_type, 'Not set')}"
+                ),
+            )
+
+    payload = _build_beneficiaries_dashboard_payload()
+    payload["message"] = "Beneficiary type updated successfully."
     return JsonResponse(payload)
 
 

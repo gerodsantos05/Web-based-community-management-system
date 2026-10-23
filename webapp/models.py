@@ -217,6 +217,13 @@ class MaterialSubmissionFile(models.Model):
 
 class SkillLearningTopic(models.Model):
 	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+	created_by = models.ForeignKey(
+		User,
+		on_delete=models.SET_NULL,
+		blank=True,
+		null=True,
+		related_name="created_skill_learning_topics",
+	)
 	title = models.CharField(max_length=255)
 	description = models.TextField()
 	badge_label = models.CharField(max_length=120)

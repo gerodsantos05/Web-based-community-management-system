@@ -292,3 +292,94 @@ class AdminCreatedProfileFieldsTests(TestCase):
         profile.refresh_from_db()
         self.assertEqual(profile.gender, "female")
         self.assertEqual(profile.address_line, "444 Updated St, Bacoor")
+
+    def test_update_beneficiary_type_changes_only_type_and_parent(self):
+        beneficiary = User.objects.create_user(
+            username="profile-fields-type-beneficiary",
+            email="type-beneficiary@example.com",
+            password="test-pass-2026!",
+        )
+        profile = UserProfile.objects.create(
+            user=beneficiary,
+            account_role=UserProfile.ROLE_BENEFICIARY,
+            beneficiary_type=UserProfile.BENEFICIARY_TYPE_HAPPY_NANAYS,
+            phone="09181234567",
+            gender="female",
+            address_line="555 Existing St, Bacoor",
+        )
+        application = RoleApplication.objects.create(
+            user=beneficiary,
+            role=RoleApplication.ROLE_BENEFICIARY,
+            status=RoleApplication.STATUS_APPROVED,
+            full_name="Type Change Beneficiary",
+            contact_details="type-beneficiary@example.com / 09181234567",
+        )
+        parent = User.objects.create_user(
+            username="profile-fields-type-parent",
+            email="type-parent@example.com",
+            password="test-pass-2026!",
+        )
+        UserProfile.objects.create(
+            user=parent,
+            account_role=UserProfile.ROLE_BENEFICIARY,
+            beneficiary_type=UserProfile.BENEFICIARY_TYPE_HAPPY_NANAYS,
+        )
+
+        response = self.client.post(
+            reverse("update_beneficiary_type"),
+            {
+                "beneficiary_application_id": application.pk,
+                "beneficiary_type": UserProfile.BENEFICIARY_TYPE_HAPPY_KIDS,
+                "linked_parent_id": parent.pk,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200, response.content)
+        profile.refresh_from_db()
+        self.assertEqual(profile.beneficiary_type, UserProfile.BENEFICIARY_TYPE_HAPPY_KIDS)
+        self.assertEqual(profile.linked_parent_id, parent.userprofile.pk)
+        self.assertEqual(profile.phone, "09181234567")
+        self.assertEqual(profile.gender, "female")
+        self.assertEqual(profile.address_line, "555 Existing St, Bacoor")
+        self.assertEqual(
+            AdminActivityLog.objects.filter(section="Beneficiaries", record_id=str(beneficiary.pk)).count(),
+            1,
+        )
+        updated_beneficiary = next(
+            item for item in response.json()["beneficiaries"]
+            if item["applicationId"] == application.pk
+        )
+        self.assertEqual(updated_beneficiary["beneficiaryTypeValue"], UserProfile.BENEFICIARY_TYPE_HAPPY_KIDS)
+        self.assertEqual(updated_beneficiary["linkedParentId"], parent.pk)
+
+    def test_update_beneficiary_type_rejects_invalid_type(self):
+        beneficiary = User.objects.create_user(
+            username="profile-fields-invalid-type",
+            email="invalid-type@example.com",
+            password="test-pass-2026!",
+        )
+        UserProfile.objects.create(
+            user=beneficiary,
+            account_role=UserProfile.ROLE_BENEFICIARY,
+        )
+        application = RoleApplication.objects.create(
+            user=beneficiary,
+            role=RoleApplication.ROLE_BENEFICIARY,
+            status=RoleApplication.STATUS_APPROVED,
+            full_name="Invalid Type Beneficiary",
+            contact_details="invalid-type@example.com",
+        )
+
+        response = self.client.post(
+            reverse("update_beneficiary_type"),
+            {
+                "beneficiary_application_id": application.pk,
+                "beneficiary_type": "invalid",
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            UserProfile.objects.get(user=beneficiary).beneficiary_type,
+            "",
+        )

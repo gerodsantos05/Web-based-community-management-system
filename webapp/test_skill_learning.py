@@ -222,7 +222,11 @@ class SkillLearningMaterialUploadTests(TestCase):
             last_name="Beneficiary",
             password="test-password",
         )
-        UserProfile.objects.create(user=beneficiary, account_role=UserProfile.ROLE_BENEFICIARY)
+        UserProfile.objects.create(
+            user=beneficiary,
+            account_role=UserProfile.ROLE_BENEFICIARY,
+            beneficiary_type=UserProfile.BENEFICIARY_TYPE_HAPPY_HEARTS,
+        )
         RoleApplication.objects.create(
             user=beneficiary,
             role=RoleApplication.ROLE_BENEFICIARY,
@@ -255,6 +259,7 @@ class SkillLearningMaterialUploadTests(TestCase):
         self.assertContains(response, 'data-completed-count="1"')
         self.assertContains(response, 'data-total-count="1"')
         self.assertEqual(response.content.count(b'data-beneficiary-name="Progress Beneficiary"'), 1)
+        self.assertContains(response, 'data-beneficiary-type="Happy Hearts Beneficiary"')
         self.assertContains(response, "Confirmation")
         self.assertContains(response, 'id="lp-dialog-close"')
         self.assertContains(response, '<button id="lp-cancel" type="button">Cancel</button>')
@@ -524,6 +529,11 @@ class SkillLearningTopicFormTests(TestCase):
     def test_topic_create_accepts_uploaded_cover_and_multiple_tags(self, _is_volunteer):
         user = User.objects.create_user(username="topic-creator", password="test-password")
         self.client.force_login(user)
+        UserProfile.objects.create(
+            user=user,
+            account_role=UserProfile.ROLE_VOLUNTEER,
+            volunteer_type=UserProfile.VOLUNTEER_TYPE_OJT,
+        )
         image_buffer = BytesIO()
         Image.new("RGB", (2, 2), color="green").save(image_buffer, format="PNG")
         image_upload = SimpleUploadedFile(
@@ -548,6 +558,9 @@ class SkillLearningTopicFormTests(TestCase):
         topic = SkillLearningTopic.objects.get(title="Reading practice")
         self.assertTrue(topic.cover_image)
         self.assertEqual(topic.filter_tags, ["Community", "Popular"])
+        self.assertEqual(topic.created_by, user)
+        self.assertEqual(response.json()["topic"]["createdBy"], "topic-creator")
+        self.assertEqual(response.json()["topic"]["createdByType"], "OJT")
 
 
 class SkillLearningMaterialFormTests(TestCase):

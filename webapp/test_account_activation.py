@@ -1,4 +1,5 @@
 import re
+import smtplib
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -85,6 +86,63 @@ class AccountActivationTests(TestCase):
         self.assertTrue(address.verified)
         self.assertTrue(user.is_active)
         self.assertFalse(profile.email_verification_pending)
+
+    def test_signup_keeps_pending_account_when_verification_email_fails(self):
+        with patch(
+            "webapp.views.send_verification_email_to_address",
+            side_effect=smtplib.SMTPException("SMTP unavailable"),
+        ):
+            response = self.client.post(
+                reverse("signup"),
+                {
+                    "username": "verify-user",
+                    "email": "verify@example.com",
+                    "password1": "ValidPassword123!",
+                    "password2": "ValidPassword123!",
+                },
+                follow=True,
+            )
+
+        user = User.objects.get(username="verify-user")
+        self.assertEqual(response.redirect_chain, [(reverse("email_verification"), 302)])
+        self.assertFalse(user.is_active)
+        self.assertTrue(user.userprofile.email_verification_pending)
+        self.assertFalse(EmailAddress.objects.get(user=user).verified)
+        self.assertContains(response, "Your account was created")
+        self.assertContains(response, "request another link")
+
+    def test_signup_retry_for_pending_email_redirects_to_verification_recovery(self):
+        self.signup()
+
+        response = self.client.post(
+            reverse("signup"),
+            {
+                "username": "verify-user-retry",
+                "email": "verify@example.com",
+                "password1": "ValidPassword123!",
+                "password2": "ValidPassword123!",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.redirect_chain, [(reverse("email_verification"), 302)])
+        self.assertEqual(User.objects.filter(email__iexact="verify@example.com").count(), 1)
+        self.assertContains(response, "already awaiting verification")
+
+    def test_resend_reports_when_email_helper_does_not_send(self):
+        self.signup()
+
+        with patch(
+            "webapp.views.send_verification_email_to_address",
+            return_value=False,
+        ):
+            response = self.client.post(
+                reverse("email_verification"),
+                {"email": "verify@example.com"},
+            )
+
+        self.assertContains(response, "We could not send another verification email")
+        self.assertContains(response, 'role="alert"')
 
     def test_invalid_email_confirmation_shows_branded_recovery_link(self):
         response = self.client.get(reverse("account_confirm_email", args=["invalid-key"]))
