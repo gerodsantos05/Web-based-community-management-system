@@ -126,22 +126,31 @@
         }
 
         .don-management-actions {
-            justify-content: space-between;
-            align-items: flex-start;
+            justify-content: flex-start;
+            align-items: center;
             width: 100%;
+        }
+
+        .don-table-head > .don-management-actions {
+            justify-content: flex-start;
+            align-items: center;
+            gap: 0.6rem;
         }
 
         .don-export-actions {
-            flex-direction: column;
-            width: 100%;
+            flex-direction: row;
+            width: auto;
         }
 
         .don-export-actions .don-chip-btn {
-            width: 100%;
+            width: auto;
+            border-radius: 10px;
+            padding: 0.7rem 1rem;
+            font-size: 0.82rem;
         }
 
         .don-management-actions > #don-open-form {
-            margin-left: auto;
+            margin-left: 0;
         }
     }
 
@@ -178,6 +187,18 @@
             overflow-x: auto;
             overflow-y: hidden;
             padding: 2.5rem;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .don-summary {
+            grid-template-columns: minmax(0, 1fr);
+            min-width: 0;
+        }
+
+        .don-summary-scroll {
+            overflow: visible;
+            padding: 0;
         }
     }
 
