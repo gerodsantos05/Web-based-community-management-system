@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/index.css' %}?v=20261015-auth-password-reset-email">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}?v=20261024-what-we-do-card-images">
     <link rel="stylesheet" href="{% static 'css/application-tracker.css' %}?v=20261017-single-form-final">
 </head>
 <body {% if open_modal %}class="modal-open"{% endif %}>
@@ -56,40 +56,52 @@
                 </div>
 
                 <div class="feature-grid">
-                    <article class="feature-card feature-emerald-500">
-                        <span class="feature-icon"><i data-lucide="book-open"></i></span>
-                        <h3>Academic Support</h3>
-                        <p>Helping children catch up to their grade level through guided learning and personalized attention.</p>
+                    <article class="feature-card feature-card--image feature-emerald-500">
+                        <img class="feature-card-image" src="{% static 'media/Children studying.png' %}" alt="Children studying together" loading="lazy" decoding="async">
+                        <div class="feature-card-content">
+                            <h3>Academic Support</h3>
+                            <p>Helping children catch up to their grade level through guided learning and personalized attention.</p>
+                        </div>
                     </article>
 
-                    <article class="feature-card feature-teal-500">
-                        <span class="feature-icon"><i data-lucide="briefcase"></i></span>
-                        <h3>Livelihood Training</h3>
-                        <p>Empowering mothers with practical skills and knowledge to build a sustainable source of income.</p>
+                    <article class="feature-card feature-card--image feature-teal-500">
+                        <img class="feature-card-image" src="{% static 'media/Mothers Community Skills Workshop.png' %}" alt="Mothers taking part in a community skills workshop" loading="lazy" decoding="async">
+                        <div class="feature-card-content">
+                            <h3>Livelihood Training</h3>
+                            <p>Empowering mothers with practical skills and knowledge to build a sustainable source of income.</p>
+                        </div>
                     </article>
 
-                    <article class="feature-card feature-emerald-600">
-                        <span class="feature-icon"><i data-lucide="heart-handshake"></i></span>
-                        <h3>Community Outreach</h3>
-                        <p>Conducting close to 1,000 outreach activities reaching families and communities all over the Philippines.</p>
+                    <article class="feature-card feature-card--image feature-emerald-600">
+                        <img class="feature-card-image feature-card-image--outreach" src="{% static 'media/volunteers with families.png' %}" alt="Volunteers spending time with families during community outreach" loading="lazy" decoding="async">
+                        <div class="feature-card-content">
+                            <h3>Community Outreach</h3>
+                            <p>Conducting close to 1,000 outreach activities reaching families and communities all over the Philippines.</p>
+                        </div>
                     </article>
 
-                    <article class="feature-card feature-teal-600">
-                        <span class="feature-icon"><i data-lucide="building-2"></i></span>
-                        <h3>Institutional Support</h3>
-                        <p>Extending help to hospitals, orphanages, public schools, elderly homes, and fire protection stations.</p>
+                    <article class="feature-card feature-card--image feature-teal-600">
+                        <img class="feature-card-image" src="{% static 'media/Donation Turnover.png' %}" alt="Donation turnover supporting a community institution" loading="lazy" decoding="async">
+                        <div class="feature-card-content">
+                            <h3>Institutional Support</h3>
+                            <p>Extending help to hospitals, orphanages, public schools, elderly homes, and fire protection stations.</p>
+                        </div>
                     </article>
 
-                    <article class="feature-card feature-emerald-400">
-                        <span class="feature-icon"><i data-lucide="shopping-bag"></i></span>
-                        <h3>Essential Assistance</h3>
-                        <p>Providing meals, groceries, shoes, slippers, school supplies, and other basic necessities to those in need.</p>
+                    <article class="feature-card feature-card--image feature-emerald-400">
+                        <img class="feature-card-image" src="{% static 'media/Relief Distribution.png' %}" alt="Volunteers distributing relief supplies" loading="lazy" decoding="async">
+                        <div class="feature-card-content">
+                            <h3>Essential Assistance</h3>
+                            <p>Providing meals, groceries, shoes, slippers, school supplies, and other basic necessities to those in need.</p>
+                        </div>
                     </article>
 
-                    <article class="feature-card feature-teal-400">
-                        <span class="feature-icon"><i data-lucide="users"></i></span>
-                        <h3>Communities Served</h3>
-                        <p>Making a real and lasting difference across indigent communities nationwide.</p>
+                    <article class="feature-card feature-card--image feature-teal-400">
+                        <img class="feature-card-image" src="{% static 'media/group photo with community.png' %}" alt="Group photo with community members" loading="lazy" decoding="async">
+                        <div class="feature-card-content">
+                            <h3>Communities Served</h3>
+                            <p>Making a real and lasting difference across indigent communities nationwide.</p>
+                        </div>
                     </article>
                 </div>
             </div>
@@ -324,9 +336,7 @@
         .apply-card-split:focus-within .apply-card-visual { opacity: 1; transform: translateY(-50%) scale(1); }
         @media (max-width: 920px) {
             .apply-card-split { padding-right: 0; }
-            .apply-card-visual { position:static; width: 150px; height: 150px; padding: 0; transform:scale(0.72); opacity:0; margin: 0.25rem auto 0; }
-            .apply-card-split:hover .apply-card-visual,
-            .apply-card-split:focus-within .apply-card-visual { transform:scale(1); opacity:1; }
+            .apply-card-visual { position:static; width: 150px; height: 150px; padding: 0; transform:scale(1); opacity:1; margin: 0.25rem auto 0; }
             .apply-lottie { width: 100%; height: 100%; }
         }
         .modal-side-animation { width: min(100%, 400px); aspect-ratio: 1 / 1; margin-top: -0.5rem; align-self: center; }

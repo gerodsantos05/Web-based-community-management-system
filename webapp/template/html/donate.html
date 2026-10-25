@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="{% static 'css/index.css' %}?v=20261008-order-modal-motion">
     <style>
         .donate-page { --donate-green: #3d6b47; --donate-dark: #2e3d30; --donate-mint: #e8f2e9; --donate-soft: #f5faf5; --donate-border: #d0dbd2; background: linear-gradient(180deg, #f8fcf8 0%, #fff 30%); }
-        .donate-page section { padding: 4rem 0; }
+        .donate-page section { padding: 2.5rem 0; }
         .donate-page .container { width: min(1120px, calc(100% - 2rem)); margin: 0 auto; }
         .donate-kicker { color: var(--donate-green); font-size: .75rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; margin: 0 0 .75rem; }
         .donate-title { color: var(--donate-dark); font-size: clamp(2.25rem, 7vw, 4.8rem); line-height: 1.04; margin: 0 0 1rem; max-width: 680px; }
@@ -155,7 +155,7 @@
         .donate-thankyou-note { margin: 1.25rem 0 0; color: var(--donate-green); font-size: .82rem; font-weight: 700; line-height: 1.5; }
         .donate-photo-impact { display: none; }
         .donate-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-        @media (min-width: 720px) { .donate-page section { padding: 6rem 0; } .donate-program-grid { grid-template-columns: repeat(3, 1fr); } .donate-steps { grid-template-columns: repeat(4, 1fr); } .donate-form-card { padding: 1.5rem; } }
+        @media (min-width: 720px) { .donate-page section { padding: 4rem 0; } .donate-program-grid { grid-template-columns: repeat(3, 1fr); } .donate-steps { grid-template-columns: repeat(4, 1fr); } .donate-form-card { padding: 1.5rem; } }
         @media (min-width: 860px) { .donate-hero-grid, .donate-trust-grid, .donate-give-grid, .donate-legitimacy-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .donate-hero-grid { gap: 64px; } .donate-hero-grid > :first-child { order: 1; } .donate-hero-grid > :last-child { order: 2; } .donate-trust-grid, .donate-legitimacy-grid { gap: 4rem; } .donate-legitimacy-grid > :first-child { order: 2; } .donate-legitimacy-grid > :last-child { order: 1; } .donate-give-grid > .donate-form-card { margin-top: 9.5rem; } }
         @media (max-width: 859px) { .donate-hero-grid > :first-child { order: 2; } .donate-hero-grid > :last-child { order: 1; } }
         .donate-mode-switch { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: 1.1rem; }

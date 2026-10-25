@@ -10,7 +10,7 @@ from django.urls import reverse
 
 @override_settings(
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
-    DEFAULT_FROM_EMAIL="HappYness Project <no-reply@example.com>",
+    DEFAULT_FROM_EMAIL="HappYness Project <gerodsantos05@gmail.com>",
     CACHES={
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
@@ -40,6 +40,10 @@ class PasswordResetFlowTests(TestCase):
             "If an account exists for that email, we've sent a reset link.",
         )
         self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(
+            mail.outbox[0].from_email,
+            "HappYness Project <gerodsantos05@gmail.com>",
+        )
         self.assertIn(user.email, mail.outbox[0].to)
         self.assertEqual(len(mail.outbox[0].alternatives), 1)
         html_email = mail.outbox[0].alternatives[0][0]

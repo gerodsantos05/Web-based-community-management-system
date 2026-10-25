@@ -3825,6 +3825,14 @@ def about(request):
     })
 
 
+def privacy_policy(request):
+    return render(request, "privacy_policy.html")
+
+
+def faq(request):
+    return render(request, "faq.html")
+
+
 def _donation_tracker_token(request):
     token = request.COOKIES.get("donation_tracker_id", "")
     if token and re.fullmatch(r"[A-Za-z0-9_-]{43}", token):

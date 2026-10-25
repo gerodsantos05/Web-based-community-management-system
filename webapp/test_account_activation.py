@@ -18,7 +18,7 @@ from .models import UserProfile
 @override_settings(
     ACCOUNT_EMAIL_VERIFICATION="mandatory",
     ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION=True,
-    DEFAULT_FROM_EMAIL="HappYness Project <no-reply@example.com>",
+    DEFAULT_FROM_EMAIL="HappYness Project <gerodsantos05@gmail.com>",
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
 )
 class AccountActivationTests(TestCase):
@@ -53,6 +53,10 @@ class AccountActivationTests(TestCase):
         self.assertFalse(address.verified)
         self.assertEqual(len(mail.outbox), 1)
         verification_email = mail.outbox[0]
+        self.assertEqual(
+            verification_email.from_email,
+            "HappYness Project <gerodsantos05@gmail.com>",
+        )
         self.assertTrue(
             verification_email.subject.endswith(
                 "Verify your HappYness Project email address"

@@ -3020,77 +3020,6 @@ function initAboutCorePrograms() {
     });
 }
 
-function initFooterFaqModal() {
-    var openFaqBtn = document.getElementById("openFaqModal");
-    var faqModal = document.getElementById("faqModal");
-    var closeFaqBtn = document.getElementById("closeFaqModal");
-
-    if (!openFaqBtn || !faqModal || !closeFaqBtn) {
-        return;
-    }
-
-    var programModal = document.getElementById("programModal");
-    var questionButtons = faqModal.querySelectorAll("[data-faq-question]");
-
-    function syncBodyModalState() {
-        var authModalOpen =
-            (signInModal && signInModal.classList.contains("open")) ||
-            (signUpModal && signUpModal.classList.contains("open"));
-        var programModalOpen = programModal && !programModal.hidden;
-        var faqModalOpen = !faqModal.hidden;
-
-        if (authModalOpen || programModalOpen || faqModalOpen) {
-            document.body.classList.add("modal-open");
-            return;
-        }
-
-        document.body.classList.remove("modal-open");
-    }
-
-    function closeFaqModal() {
-        faqModal.hidden = true;
-        faqModal.setAttribute("aria-hidden", "true");
-        syncBodyModalState();
-    }
-
-    function openFaqModal() {
-        faqModal.hidden = false;
-        faqModal.setAttribute("aria-hidden", "false");
-        document.body.classList.add("modal-open");
-    }
-
-    openFaqBtn.addEventListener("click", openFaqModal);
-    closeFaqBtn.addEventListener("click", closeFaqModal);
-
-    faqModal.addEventListener("click", function (event) {
-        if (event.target === faqModal) {
-            closeFaqModal();
-        }
-    });
-
-    questionButtons.forEach(function (button) {
-        button.addEventListener("click", function () {
-            var item = button.closest(".faq-item");
-            var answer = item ? item.querySelector(".faq-answer") : null;
-
-            if (!item || !answer) {
-                return;
-            }
-
-            var isOpen = item.classList.contains("is-open");
-            item.classList.toggle("is-open", !isOpen);
-            button.setAttribute("aria-expanded", String(!isOpen));
-            answer.hidden = isOpen;
-        });
-    });
-
-    document.addEventListener("keydown", function (event) {
-        if (event.key === "Escape" && !faqModal.hidden) {
-            closeFaqModal();
-        }
-    });
-}
-
 function initContactPhoneInput() {
     const contactPhoneInput = document.getElementById("contactPhone");
 
@@ -3326,7 +3255,6 @@ function initProductInquiryModal() {
     function syncBodyModalState() {
         const isAnyModalOpen = Boolean(
             document.querySelector(".modal-overlay.open") ||
-            document.querySelector(".faq-modal-overlay:not([hidden])") ||
             document.querySelector(".product-inquiry-overlay:not([hidden])")
         );
 
@@ -3970,7 +3898,6 @@ if (document.readyState === "loading") {
         initOrderTracker();
         initContactHub();
         initAboutCorePrograms();
-        initFooterFaqModal();
         initContactPhoneInput();
         initContactCountryPicker();
         initProductPhoneInput();
@@ -3983,7 +3910,6 @@ if (document.readyState === "loading") {
     initOrderTracker();
     initContactHub();
     initAboutCorePrograms();
-    initFooterFaqModal();
     initContactPhoneInput();
     initContactCountryPicker();
     initProductPhoneInput();

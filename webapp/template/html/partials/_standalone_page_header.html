@@ -1,0 +1,10 @@
+{% load static %}
+<header class="standalone-page-header">
+    <div class="standalone-page-header-inner">
+        <a class="standalone-page-brand" href="{% url 'home' %}" aria-label="HappYness Project home">
+            <img src="{% static 'media/Happyness Project.jpg' %}" alt="">
+            <span>HappYness Project</span>
+        </a>
+        <a class="standalone-page-home" href="{% url 'home' %}">← Back to home</a>
+    </div>
+</header>

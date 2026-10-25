@@ -1,0 +1,118 @@
+:root {
+    color-scheme: light;
+    font-family: "Poppins", Arial, sans-serif;
+    color: #26352b;
+    background: #f5f8f5;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    line-height: 1.7;
+}
+
+.faq-page-main {
+    width: min(1000px, calc(100% - 2rem));
+    margin: 3rem auto;
+    padding: clamp(1.5rem, 5vw, 3.5rem);
+    background: #fff;
+    border: 1px solid #e0e9e1;
+    border-radius: 1rem;
+    box-shadow: 0 12px 36px rgb(20 50 30 / 6%);
+}
+
+.faq-page-heading h1 {
+    margin: 0;
+    color: #234d32;
+    font-size: clamp(1.8rem, 5vw, 2.5rem);
+    line-height: 1.3;
+}
+
+.faq-page-heading p {
+    margin: 0.4rem 0 0;
+    color: #52645a;
+    font-size: 1.1rem;
+}
+
+.faq-page-content {
+    margin-top: 2rem;
+}
+
+.faq-category {
+    margin-bottom: 1.8rem;
+}
+
+.faq-category:last-child {
+    margin-bottom: 0;
+}
+
+.faq-category h2 {
+    margin: 0 0 0.8rem;
+    color: #15803d;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.faq-item {
+    margin-bottom: 0.65rem;
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 14px;
+    background: #fff;
+}
+
+.faq-item:last-child {
+    margin-bottom: 0;
+}
+
+.faq-question {
+    position: relative;
+    width: 100%;
+    padding: 0.9rem 2.8rem 0.9rem 1rem;
+    border: 0;
+    background: transparent;
+    color: #0f172a;
+    font: inherit;
+    font-weight: 600;
+    line-height: 1.5;
+    text-align: left;
+    cursor: pointer;
+}
+
+.faq-question::after {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    color: #64748b;
+    content: "v";
+    transform: translateY(-50%);
+    transition: transform 180ms ease;
+}
+
+.faq-item.is-open .faq-question {
+    background: rgba(15, 118, 110, 0.08);
+}
+
+.faq-item.is-open .faq-question::after {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+.faq-answer {
+    padding: 0 1rem 1rem;
+}
+
+.faq-answer p {
+    margin: 0;
+    color: #475569;
+    line-height: 1.68;
+}
+
+@media (max-width: 600px) {
+    .faq-page-main {
+        margin: 1.25rem auto;
+    }
+}

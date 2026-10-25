@@ -207,7 +207,7 @@ DONATION_CONFIG = {
             'who': 'Partner communities and families receiving practical support.',
             'items': [
                 {'name': 'Community activity', 'icon': 'heart-handshake'},
-                {'name': 'Care package', 'icon': 'package-heart'},
+                {'name': 'Care package', 'icon': 'package'},
             ],
         },
     ],
@@ -251,7 +251,7 @@ DONATION_FALLBACK_PROGRAMS = [
         'who': 'Partner communities and families receiving practical support.',
         'items': [
             {'name': 'Community activity', 'icon': 'heart-handshake'},
-            {'name': 'Care package', 'icon': 'package-heart'},
+            {'name': 'Care package', 'icon': 'package'},
         ],
     },
 ]
@@ -263,7 +263,7 @@ EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'true').lower() in {'1', 'true', 'yes'}
 EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '10'))
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'galliumgar2010@gmail.com')
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'gerodsantos05@gmail.com')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get(
     'DEFAULT_FROM_EMAIL',
