@@ -1128,7 +1128,6 @@
             </div>
             <div class="don-management-actions">
                 <div class="don-export-actions">
-                    <button id="don-export-csv" type="button" class="don-chip-btn">Export CSV</button>
                     <button id="don-export-pdf" type="button" class="don-chip-btn">Export PDF</button>
                 </div>
                 <button id="don-open-form" class="don-action-btn" type="button"><i data-lucide="plus"></i> Add Donation</button>
@@ -1983,17 +1982,12 @@
         }
     }
 
-    function exportCSV() {
-        window.location.href = "/donations/export/csv/";
-    }
-
     function exportPDF() {
         window.location.href = "/donations/export/pdf/";
     }
 
     function bindEvents() {
         document.getElementById("don-open-form").addEventListener("click", openFormModal);
-        document.getElementById("don-export-csv").addEventListener("click", exportCSV);
         document.getElementById("don-export-pdf").addEventListener("click", exportPDF);
 
         document.querySelectorAll(".don-range-tab").forEach(function (button) {

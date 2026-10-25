@@ -1,1166 +1,1012 @@
 {% extends "base.html" %}
-{% load static %}
 
-{% block title %}Reports - Analytics | HappYness{% endblock %}
+{% block title %}Reports | HappYness{% endblock %}
 
 {% block extra_head %}
 <style data-admin-panel-style="admin-reports">
     .ra-page {
-        --ra-border: rgba(15, 118, 110, 0.15);
-        --ra-shadow: 0 10px 24px rgba(2, 44, 34, 0.06);
-        --ra-green: #16a34a;
-        --ra-red: #dc2626;
+        --ra-border: #d6ebe1;
+        --ra-shadow: 0 8px 20px rgba(8, 83, 76, 0.08);
         display: grid;
         gap: 0.95rem;
     }
 
+    .ra-page [hidden] {
+        display: none !important;
+    }
+
     .ra-card {
-        background: #ffffff;
+        min-width: 0;
         border: 1px solid var(--ra-border);
         border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.96);
         box-shadow: var(--ra-shadow);
     }
 
-    .ra-focus:focus-visible {
-        outline: 2px solid #14b8a6;
-        outline-offset: 2px;
-    }
-
-    .ra-header {
-        padding: 0.95rem 1rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 0.7rem;
-    }
-
-    .ra-title {
-        margin: 0;
-        color: var(--ink-900);
-        font-size: 1.06rem;
-        font-weight: 800;
-    }
-
-    .ra-subtitle {
-        margin: 0.25rem 0 0;
-        color: var(--ink-500);
-        font-size: 0.8rem;
-    }
-
-    .ra-meta {
-        color: var(--ink-500);
-        font-size: 0.75rem;
-        white-space: nowrap;
-    }
-
-    .ra-kpi-source {
-        margin: 0;
-        color: var(--ink-500);
-        font-size: 0.7rem;
-        line-height: 1.4;
-    }
-
-    .ra-chart-empty {
-        height: 100%;
-        margin: 0;
-        display: grid;
-        place-items: center;
-        color: var(--ink-500);
-        font-size: 0.8rem;
-        text-align: center;
-    }
-
-    .ra-chart-empty[hidden] {
-        display: none;
-    }
-
-    .ra-kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(1, minmax(0, 1fr));
-        gap: 0.75rem;
-    }
-
-    .ra-kpi {
-        padding: 0.8rem;
-        display: grid;
-        gap: 0.45rem;
-        border: 1px solid rgba(15, 118, 110, 0.1);
-        border-radius: 0.85rem;
-        background: #ffffff;
-    }
-
-    .ra-kpi-head {
+    .ra-header,
+    .ra-card-head,
+    .ra-toolbar,
+    .ra-pagination {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 0.4rem;
+        gap: 0.75rem;
     }
 
-    .ra-kpi-label {
+    .ra-header {
+        align-items: flex-start;
+        padding: 0.95rem 1rem;
+    }
+
+    .ra-title,
+    .ra-card-title {
         margin: 0;
+        color: var(--ink-900);
+        font-weight: 800;
+    }
+
+    .ra-title { font-size: 1.1rem; }
+    .ra-card-title { font-size: 0.9rem; }
+
+    .ra-subtitle,
+    .ra-meta,
+    .ra-card-note {
         color: var(--ink-500);
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        font-size: 0.67rem;
+        font-size: 0.78rem;
+    }
+
+    .ra-subtitle,
+    .ra-card-note { margin: 0.25rem 0 0; }
+
+    .ra-message {
+        color: var(--ink-600);
+        font-size: 0.82rem;
+    }
+
+    .ra-message.is-error { color: #b91c1c; }
+
+    .ra-card-grid,
+    .ra-stat-grid,
+    .ra-chart-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.75rem;
+    }
+
+    .ra-overview-link {
+        display: grid;
+        grid-template-rows: auto auto auto 1fr auto;
+        align-content: start;
+        min-height: 9rem;
+        padding: 1rem;
+        color: inherit;
+        text-decoration: none;
+        transition: border-color 220ms ease, box-shadow 220ms ease;
+    }
+
+    .ra-overview-link:hover {
+        border-color: rgba(16, 185, 129, 0.35);
+        box-shadow: 0 14px 28px rgba(8, 83, 76, 0.13), inset 0 0 0 1px rgba(16, 185, 129, 0.22);
+    }
+
+    .ra-overview-link.is-all-records {
+        grid-column: 1 / -1;
+        min-height: 0;
+        grid-template-rows: auto auto auto;
+        gap: 0.35rem;
+        padding: 1rem;
+    }
+
+    .ra-overview-link.is-all-records .ra-card-note {
+        margin-top: 0;
+    }
+
+    .ra-card-action {
+        justify-self: start;
+        margin-top: 0.55rem;
+        color: #0f766e;
+        font-size: 0.75rem;
         font-weight: 700;
     }
 
-    .ra-kpi-icon {
-        width: 1.7rem;
-        height: 1.7rem;
-        border-radius: 999px;
-        display: grid;
-        place-items: center;
-        color: #0f766e;
-        background: rgba(16, 185, 129, 0.1);
+    .ra-overview-link:hover .ra-card-action {
+        color: #0b7f62;
+        text-decoration: underline;
+        text-underline-offset: 0.16em;
     }
 
-    .ra-kpi-value {
+    .ra-overview-link:focus-visible,
+    .ra-button:focus-visible,
+    .ra-filter-choice:focus-visible,
+    .ra-select:focus-visible,
+    .ra-date:focus-visible,
+    .ra-back:focus-visible {
+        outline: 2px solid #14b8a6;
+        outline-offset: 3px;
+    }
+
+    .ra-card-label {
         margin: 0;
-        color: var(--ink-900);
-        font-size: 1.65rem;
+        color: #5f7f75;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+    }
+
+    .ra-card-value {
+        margin: 0.65rem 0 0;
+        overflow-wrap: anywhere;
+        color: #16372e;
+        font-size: clamp(1.3rem, 1.8vw, 1.6rem);
         font-weight: 800;
-        line-height: 1.05;
+        line-height: 1.1;
+        letter-spacing: -0.01em;
+    }
+
+    .ra-card-note {
+        line-height: 1.45;
+    }
+
+    .ra-detail-header {
+        padding: 0.1rem 0;
+    }
+
+    #reports-detail {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .ra-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .ra-toolbar-actions,
+    .ra-period-buttons,
+    .ra-filter-options,
+    .ra-custom-range {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.45rem;
+    }
+
+    .ra-period-label {
+        margin-right: 0.1rem;
+        color: var(--ink-500);
+        font-size: 0.75rem;
+    }
+
+    .ra-back {
+        color: #0f766e;
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .ra-button,
+    .ra-filter-choice,
+    .ra-select,
+    .ra-date {
+        min-height: 2.25rem;
+        border: 1px solid rgba(15, 118, 110, 0.22);
+        border-radius: 0.68rem;
+        background: #fff;
+        color: var(--ink-700);
+        font-size: 0.78rem;
+        padding: 0.45rem 0.65rem;
+    }
+
+    .ra-button,
+    .ra-filter-choice {
+        cursor: pointer;
+        font-weight: 650;
+    }
+
+    .ra-button:hover,
+    .ra-filter-choice:hover:not(:disabled) { background: #f4fcf8; }
+
+    .ra-button.is-active,
+    .ra-button-primary,
+    .ra-filter-choice.is-active {
+        border-color: transparent;
+        background: linear-gradient(135deg, #22c55e, #14b8a6);
+        color: #fff;
+    }
+
+    .ra-button-primary:hover {
+        border-color: transparent;
+        background: linear-gradient(135deg, #22c55e, #14b8a6);
+        color: #fff;
+    }
+
+    .ra-filter-choice.is-active:hover {
+        border-color: transparent;
+        background: linear-gradient(135deg, #22c55e, #14b8a6);
+        color: #fff;
+    }
+
+    .ra-period-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.7rem 0.8rem;
+    }
+
+    .ra-custom-range {
+        align-items: flex-end;
+        gap: 0.55rem;
+    }
+
+    .ra-custom-range .ra-filter-field {
+        display: grid;
+        flex: 1 1 10rem;
+        min-width: min(100%, 10rem);
+        gap: 0.3rem;
+    }
+
+    .ra-custom-range .ra-date {
+        width: 100%;
+    }
+
+    .ra-custom-range .ra-button {
+        flex: 0 0 auto;
     }
 
     .ra-filters {
-        padding: 0.8rem 0.95rem;
-        display: grid;
-        grid-template-columns: repeat(1, minmax(0, 1fr));
-        gap: 0.55rem;
-        align-items: end;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.7rem 1.25rem;
+        padding: 0.75rem 0.85rem;
     }
 
     .ra-filter-field {
-        display: grid;
-        gap: 0.24rem;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        min-width: 0;
+        gap: 0.45rem;
     }
 
     .ra-filter-label {
         margin: 0;
         color: var(--ink-500);
-        font-size: 0.68rem;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-    }
-
-    .ra-filter-input {
-        width: 100%;
-        border: 1px solid rgba(15, 118, 110, 0.2);
-        border-radius: 0.68rem;
-        background: #ffffff;
-        color: var(--ink-800);
-        padding: 0.47rem 0.55rem;
-        font-size: 0.79rem;
-    }
-
-    .ra-filter-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.4rem;
-    }
-
-    .ra-btn {
-        border-radius: 0.68rem;
-        border: 1px solid rgba(15, 118, 110, 0.22);
-        background: #ffffff;
-        color: var(--ink-700);
-        font-size: 0.76rem;
+        font-size: 0.75rem;
         font-weight: 600;
-        padding: 0.4rem 0.62rem;
-        cursor: pointer;
+        white-space: nowrap;
     }
 
-    .ra-btn:hover {
-        background: #f8fffb;
+    .ra-select,
+    .ra-date { width: 100%; }
+
+    .ra-filter-choice:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
     }
 
-    .ra-btn-primary {
-        border: 0;
-        background: linear-gradient(135deg, #22c55e, #14b8a6);
-        color: #ffffff;
-        font-weight: 700;
-    }
-
-    .ra-btn-primary:hover {
-        box-shadow: 0 8px 16px rgba(34, 197, 94, 0.28);
-    }
-
-    .ra-charts-grid {
+    .ra-stat {
         display: grid;
-        grid-template-columns: 1fr;
-        gap: 0.85rem;
+        align-content: start;
+        gap: 0.75rem;
+        min-height: 5.25rem;
+        padding: 0.95rem 1rem;
     }
 
-    .ra-chart-card {
-        padding: 0.85rem;
-        display: grid;
-        gap: 0.65rem;
+    .ra-stat-value {
+        margin: 0;
+        overflow-wrap: anywhere;
+        color: var(--ink-900);
+        font-size: clamp(1.25rem, 1.8vw, 1.5rem);
+        font-weight: 800;
+        line-height: 1.15;
+    }
+
+    .ra-chart {
+        min-width: 0;
+        padding: 1rem 1rem 0.85rem;
     }
 
     .ra-chart-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+        display: grid;
+        align-items: start;
+        justify-content: start;
         gap: 0.4rem;
     }
 
-    .ra-chart-card.is-side .ra-chart-head {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
     .ra-chart-title {
-        margin: 0;
-        color: var(--ink-900);
-        font-size: 0.9rem;
-        font-weight: 700;
+        font-size: 0.96rem;
     }
 
-    .ra-chart-sub {
+    .ra-chart-note {
+        display: -webkit-box;
+        overflow: hidden;
+        margin: 0;
         color: var(--ink-500);
-        font-size: 0.73rem;
+        font-size: 0.72rem;
+        line-height: 1.4;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
     }
 
     .ra-chart-wrap {
-        height: 265px;
+        position: relative;
+        height: 150px;
+        margin-top: 0.95rem;
     }
 
-    #analytics-page.is-loading > .ra-kpi-grid,
-    #analytics-page.is-loading > .ra-charts-grid,
-    #analytics-page.is-loading > .ra-insights-grid,
-    #analytics-page.is-loading > .ra-table-card {
-        display: none;
-    }
-
-    .ra-skeleton[hidden] {
-        display: none;
-    }
-
-    .ra-skeleton {
-        display: grid;
-        gap: 0.85rem;
-    }
-
-    .ra-skeleton-kpis,
-    .ra-skeleton-charts {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 0.75rem;
-    }
-
-    .ra-skeleton-charts {
-        grid-template-columns: 2fr 1fr;
-    }
-
-    .ra-skeleton-card {
-        min-height: 6rem;
-        padding: 0.9rem;
-        border: 1px solid var(--ra-border);
-        border-radius: 1rem;
-        background: #fff;
-    }
-
-    .ra-skeleton-chart {
-        min-height: 13rem;
-    }
-
-    .ra-skeleton-table {
-        min-height: 10rem;
-    }
-
-    .ra-skeleton-block {
-        height: 0.75rem;
-        border-radius: 999px;
-        background: linear-gradient(90deg, #edf1f3 25%, #f7f9fa 50%, #edf1f3 75%);
-        background-size: 200% 100%;
-        animation: ra-skeleton-shimmer 1.35s ease-in-out infinite;
-    }
-
-    .ra-skeleton-block + .ra-skeleton-block {
-        margin-top: 0.85rem;
-    }
-
-    .ra-skeleton-block.is-value {
-        width: 58%;
-        height: 1.4rem;
-    }
-
-    .ra-skeleton-block.is-medium {
-        width: 78%;
-    }
-
-    .ra-skeleton-block.is-short {
-        width: 45%;
-    }
-
-    @keyframes ra-skeleton-shimmer {
-        to { background-position: -200% 0; }
-    }
-
-    html.dark-mode .ra-skeleton-card {
-        border-color: #374151;
-        background: #1f2937;
-    }
-
-    html.dark-mode .ra-skeleton-block {
-        background-image: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .ra-skeleton-block {
-            animation: none;
-        }
-    }
-
-    @media (max-width: 520px) {
-        .ra-chart-head {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .ra-chart-sub {
-            text-align: left;
-        }
-
-        .ra-skeleton-kpis,
-        .ra-skeleton-charts {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    .ra-insights-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 0.85rem;
-    }
-
-    .ra-insight {
-        padding: 0.85rem;
-        display: grid;
-        gap: 0.45rem;
-    }
-
-    .ra-insight-label {
-        margin: 0;
-        color: var(--ink-500);
-        font-size: 0.69rem;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-    }
-
-    .ra-insight-main {
-        margin: 0;
-        color: var(--ink-900);
-        font-size: 0.95rem;
-        font-weight: 800;
-    }
-
-    .ra-insight-sub {
-        margin: 0;
-        color: var(--ink-600);
-        font-size: 0.78rem;
-    }
+    .ra-chart canvas { max-width: 100%; }
 
     .ra-table-card {
-        padding: 0.85rem;
-        display: grid;
-        gap: 0.65rem;
+        min-width: 0;
     }
 
-    .ra-table-wrap {
-        border: 1px solid rgba(15, 118, 110, 0.12);
-        border-radius: 0.82rem;
-        overflow: auto;
+    .ra-table-scroll {
+        overflow-x: auto;
     }
 
     .ra-table {
         width: 100%;
+        min-width: 620px;
         border-collapse: collapse;
-        min-width: 640px;
         font-size: 0.79rem;
     }
 
     .ra-table th,
     .ra-table td {
-        padding: 0.55rem 0.65rem;
+        padding: 0.6rem 0.7rem;
         border-bottom: 1px solid rgba(15, 118, 110, 0.1);
         text-align: left;
+        vertical-align: top;
     }
 
     .ra-table th {
-        color: var(--ink-500);
-        text-transform: uppercase;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #f3fbf7;
+        color: var(--ink-600);
+        font-size: 0.67rem;
+        font-weight: 750;
         letter-spacing: 0.06em;
-        font-size: 0.66rem;
-        font-weight: 700;
-        background: #f8fffb;
+        text-transform: uppercase;
     }
 
-    .ra-table tbody tr:last-child td {
-        border-bottom: 0;
+    .ra-table tbody tr:last-child td { border-bottom: 0; }
+
+    .ra-table-empty {
+        padding: 1.5rem !important;
+        color: var(--ink-500);
+        text-align: center !important;
     }
 
-    .ra-chip {
-        display: inline-flex;
-        align-items: center;
-        border-radius: 999px;
-        border: 1px solid transparent;
-        padding: 0.14rem 0.45rem;
-        font-size: 0.68rem;
-        font-weight: 700;
+    .ra-pagination {
+        justify-content: flex-end;
+        margin: 0;
+        padding: 0.75rem 0.9rem;
+        color: var(--ink-500);
+        font-size: 0.75rem;
     }
 
-    .ra-chip-donation {
-        background: rgba(34, 197, 94, 0.12);
-        color: #166534;
-        border-color: rgba(34, 197, 94, 0.24);
+    .ra-table-card > .ra-card-head {
+        padding: 0.85rem 0.9rem;
+        border-bottom: 1px solid rgba(15, 118, 110, 0.08);
     }
 
-    .ra-chip-volunteer {
-        background: rgba(6, 182, 212, 0.12);
-        color: #155e75;
-        border-color: rgba(6, 182, 212, 0.24);
+    @media (min-width: 700px) {
+        .ra-card-grid,
+        .ra-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
-    .ra-chip-activity {
-        background: rgba(245, 158, 11, 0.14);
-        color: #92400e;
-        border-color: rgba(245, 158, 11, 0.3);
+    @media (min-width: 1050px) {
+        .ra-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .ra-stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .ra-chart-grid { grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr); }
     }
 
-    .ra-chip-beneficiary {
-        background: rgba(168, 85, 247, 0.12);
-        color: #6d28d9;
-        border-color: rgba(168, 85, 247, 0.24);
+    @media (max-width: 560px) {
+        .ra-header,
+        .ra-card-head { align-items: flex-start; flex-direction: column; }
+        .ra-chart-wrap { height: 150px; }
+        .ra-custom-range { width: 100%; }
+        .ra-custom-range .ra-filter-field { flex: 1 1 9rem; }
+        .ra-custom-range .ra-button { width: 100%; }
     }
 
-    .ra-chip-assistance {
-        background: rgba(20, 130, 165, 0.1);
-        color: #155e75;
-        border-color: rgba(20, 130, 165, 0.22);
+    @media (prefers-reduced-motion: reduce) {
+        .ra-overview-link { transition: none; }
     }
-
-    @media (min-width: 720px) {
-        .ra-kpi-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .ra-filters {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-    }
-
-    @media (min-width: 1080px) {
-        .ra-kpi-grid {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
-
-        .ra-filters {
-            grid-template-columns: 1.1fr 1fr 1fr auto;
-        }
-
-        .ra-charts-grid {
-            grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
-        }
-
-        .ra-chart-card.is-wide {
-            grid-column: 1 / 2;
-        }
-
-        .ra-chart-card.is-side {
-            grid-column: 2 / 3;
-        }
-
-        .ra-chart-card.is-full {
-            grid-column: 1 / -1;
-        }
-
-        .ra-insights-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-    }
-
 </style>
 {% endblock %}
 
 {% block content %}
-<div id="analytics-page" class="ra-page">
-    <p id="analytics-error" class="ra-meta" role="status" hidden></p>
+<main id="reports-app" class="ra-page" data-report="{{ report_slug }}">
+    <p id="reports-status" class="ra-message" role="status" aria-live="polite" hidden></p>
 
-    <section class="ra-kpi-grid" aria-label="Key performance indicators">
-        <article class="ra-card ra-kpi">
-            <div class="ra-kpi-head">
-                <p class="ra-kpi-label">Finalized donations</p>
-                <span class="ra-kpi-icon" aria-hidden="true"><i data-lucide="hand-coins"></i></span>
-            </div>
-            <p class="ra-kpi-value" id="kpi-total-donations">₱0</p>
-            <p class="ra-kpi-source" id="kpi-total-donations-source">Completed donation records</p>
-        </article>
-
-        <article class="ra-card ra-kpi">
-            <div class="ra-kpi-head">
-                <p class="ra-kpi-label">Volunteer hours</p>
-                <span class="ra-kpi-icon" aria-hidden="true"><i data-lucide="users"></i></span>
-            </div>
-            <p class="ra-kpi-value" id="kpi-volunteer-hours">0.0h</p>
-            <p class="ra-kpi-source" id="kpi-volunteer-hours-source">0 volunteers with confirmed attendance</p>
-        </article>
-
-        <article class="ra-card ra-kpi">
-            <div class="ra-kpi-head">
-                <p class="ra-kpi-label">Completed activities</p>
-                <span class="ra-kpi-icon" aria-hidden="true"><i data-lucide="calendar-check-2"></i></span>
-            </div>
-            <p class="ra-kpi-value" id="kpi-total-activities">0</p>
-            <p class="ra-kpi-source">Completed in selected period</p>
-        </article>
-
-        <article class="ra-card ra-kpi">
-            <div class="ra-kpi-head">
-                <p class="ra-kpi-label">Assistance records</p>
-                <span class="ra-kpi-icon" aria-hidden="true"><i data-lucide="heart-handshake"></i></span>
-            </div>
-            <p class="ra-kpi-value" id="kpi-beneficiaries-assisted">0</p>
-            <p class="ra-kpi-source">Recorded in selected period</p>
-        </article>
-    </section>
-
-    <section class="ra-card ra-filters" aria-label="Analytics filters">
-        <div class="ra-filter-field">
-                <label class="ra-filter-label" for="analytics-date-range">Reporting period</label>
-            <select id="analytics-date-range" class="ra-filter-input ra-focus">
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 90 days</option>
-                <option value="12m">Last 12 months</option>
-            </select>
-        </div>
-
-        <div class="ra-filter-field">
-                <label class="ra-filter-label" for="analytics-campaign">Donation campaign</label>
-            <select id="analytics-campaign" class="ra-filter-input ra-focus">
-                <option value="">All campaigns</option>
-            </select>
-        </div>
-
-        <div class="ra-filter-field">
-                <label class="ra-filter-label" for="analytics-category">Record type</label>
-            <select id="analytics-category" class="ra-filter-input ra-focus">
-                <option value="all">Loading categories...</option>
-            </select>
-        </div>
-
-        <div class="ra-filter-actions">
-            <button type="button" id="analytics-apply" class="ra-btn ra-btn-primary ra-focus">Apply filters</button>
-            <button type="button" id="analytics-reset" class="ra-btn ra-focus">Reset</button>
-            <button type="button" id="analytics-export-csv" class="ra-btn ra-focus">Export CSV</button>
-            <button type="button" id="analytics-export-pdf" class="ra-btn ra-focus">Export PDF</button>
+    <section id="reports-overview"{% if report_slug != "overview" %} hidden{% endif %}>
+        <div class="ra-card-grid" aria-label="Available reports">
+            {% for card in overview_cards %}
+            <a class="ra-card ra-overview-link{% if card.is_all_records %} is-all-records{% endif %}" href="{{ card.url }}" aria-label="{{ card.title }}: {% if card.value %}{{ card.value }}. {% endif %}{{ card.note }} {{ card.action }}">
+                <p class="ra-card-label">{{ card.title }}</p>
+                {% if card.value %}<p class="ra-card-value">{{ card.value }}</p>{% endif %}
+                <p class="ra-card-note">{{ card.note }}</p>
+                <span class="ra-card-action">{{ card.action }}</span>
+            </a>
+            {% endfor %}
         </div>
     </section>
 
-    <div id="analytics-skeleton" class="ra-skeleton" aria-hidden="true" hidden>
-        <div class="ra-skeleton-kpis">
-            <div class="ra-skeleton-card"><div class="ra-skeleton-block is-short"></div><div class="ra-skeleton-block is-value"></div><div class="ra-skeleton-block is-medium"></div></div>
-            <div class="ra-skeleton-card"><div class="ra-skeleton-block is-short"></div><div class="ra-skeleton-block is-value"></div><div class="ra-skeleton-block is-medium"></div></div>
-            <div class="ra-skeleton-card"><div class="ra-skeleton-block is-short"></div><div class="ra-skeleton-block is-value"></div><div class="ra-skeleton-block is-medium"></div></div>
-            <div class="ra-skeleton-card"><div class="ra-skeleton-block is-short"></div><div class="ra-skeleton-block is-value"></div><div class="ra-skeleton-block is-medium"></div></div>
-        </div>
-        <div class="ra-skeleton-charts">
-            <div class="ra-skeleton-card ra-skeleton-chart"><div class="ra-skeleton-block is-medium"></div></div>
-            <div class="ra-skeleton-card ra-skeleton-chart"><div class="ra-skeleton-block is-medium"></div></div>
-        </div>
-        <div class="ra-skeleton-card ra-skeleton-table">
-            <div class="ra-skeleton-block is-medium"></div>
-            <div class="ra-skeleton-block"></div>
-            <div class="ra-skeleton-block"></div>
-            <div class="ra-skeleton-block"></div>
-        </div>
-    </div>
+    <section id="reports-detail"{% if report_slug == "overview" %} hidden{% endif %}>
+        <header class="ra-detail-header">
+            <h1 id="report-title" class="ra-title"></h1>
+            <p id="report-subtitle" class="ra-subtitle"></p>
+        </header>
 
-    <section class="ra-charts-grid" aria-label="Main analytics charts">
-        <article class="ra-card ra-chart-card is-wide">
-            <div class="ra-chart-head">
-                <h2 class="ra-chart-title">Donations and logged records</h2>
-                <span class="ra-chart-sub">Finalized donation value and entered service records</span>
+        <div class="ra-toolbar">
+            <a id="reports-back" class="ra-back" href="/reports/">← Back to Reports</a>
+            <div class="ra-toolbar-actions">
+                <button id="reports-export-pdf" class="ra-button" type="button">Export PDF</button>
             </div>
-            <div class="ra-chart-wrap"><canvas id="trend-line-chart" role="img" aria-label="Trend over time line chart"></canvas></div>
-        </article>
+        </div>
 
-        <article class="ra-card ra-chart-card is-side">
-            <div class="ra-chart-head">
-                <h2 class="ra-chart-title">Donation payment methods</h2>
-                <span class="ra-chart-sub">Finalized GCash and Bank Transfer donations only</span>
-            </div>
-            <div class="ra-chart-wrap">
-                <canvas id="distribution-donut-chart" role="img" aria-label="Donation payment methods donut chart"></canvas>
-                <p class="ra-chart-empty" id="distribution-empty" hidden>No finalized donations for this selection.</p>
-            </div>
-        </article>
+        <p id="reports-note" class="ra-meta" hidden></p>
 
-        <article class="ra-card ra-chart-card is-full">
-            <div class="ra-chart-head">
-                <h2 class="ra-chart-title">Active accounts by role</h2>
-                <span class="ra-chart-sub">Current active accounts, independent of date filters; staff excluded</span>
+        <section id="reports-period-bar" class="ra-card ra-period-bar" aria-label="Reporting period">
+            <div class="ra-period-buttons" role="group" aria-label="Choose reporting period">
+                <span class="ra-period-label">Period:</span>
+                <button class="ra-button" type="button" data-range="all">All time</button>
+                <button class="ra-button" type="button" data-range="7d">Last 7 days</button>
+                <button class="ra-button" type="button" data-range="30d">Last 30 days</button>
+                <button class="ra-button" type="button" data-range="90d">Last 90 days</button>
+                <button class="ra-button" type="button" data-range="custom">Custom range</button>
             </div>
-            <div class="ra-chart-wrap"><canvas id="accounts-by-role-chart" role="img" aria-label="Active account counts for regular users, beneficiaries, and volunteers"></canvas></div>
-            <p class="ra-chart-empty" id="accounts-empty" hidden>No active member accounts found.</p>
-        </article>
+            <div id="reports-custom-range" class="ra-custom-range" hidden>
+                <div class="ra-filter-field">
+                    <label class="ra-filter-label" for="reports-start-date">From</label>
+                    <input id="reports-start-date" class="ra-date" type="date">
+                </div>
+                <div class="ra-filter-field">
+                    <label class="ra-filter-label" for="reports-end-date">To</label>
+                    <input id="reports-end-date" class="ra-date" type="date">
+                </div>
+                <button id="reports-apply-range" class="ra-button ra-button-primary" type="button">Apply range</button>
+            </div>
+        </section>
+
+        <section id="reports-filters" class="ra-card ra-filters" aria-label="Report filters"></section>
+        <section id="reports-stats" class="ra-stat-grid" aria-label="Report summary"></section>
+
+        <section class="ra-chart-grid" aria-label="Report charts">
+            <article class="ra-card ra-chart">
+                <div class="ra-card-head ra-chart-head">
+                    <h2 id="reports-trend-title" class="ra-card-title ra-chart-title"></h2>
+                    <p id="reports-trend-note" class="ra-chart-note"></p>
+                </div>
+                <div class="ra-chart-wrap">
+                    <canvas id="reports-trend-chart" role="img" aria-label="Report trend chart"></canvas>
+                </div>
+            </article>
+            <article class="ra-card ra-chart">
+                <div class="ra-card-head ra-chart-head">
+                    <h2 id="reports-distribution-title" class="ra-card-title ra-chart-title"></h2>
+                    <p id="reports-distribution-note" class="ra-chart-note"></p>
+                </div>
+                <div class="ra-chart-wrap">
+                    <canvas id="reports-distribution-chart" role="img" aria-label="Report distribution chart"></canvas>
+                </div>
+            </article>
+        </section>
+
+        <section class="ra-card ra-table-card">
+            <div class="ra-card-head">
+                <h2 id="reports-table-title" class="ra-card-title">Records</h2>
+            </div>
+            <div class="ra-table-scroll">
+                <table class="ra-table">
+                    <thead><tr id="reports-table-head"></tr></thead>
+                    <tbody id="reports-table-body"></tbody>
+                </table>
+            </div>
+            <nav id="reports-pagination" class="ra-pagination" aria-label="Report pages">
+                <button id="reports-previous" class="ra-button" type="button">Previous</button>
+                <span id="reports-page-label"></span>
+                <button id="reports-next" class="ra-button" type="button">Next</button>
+            </nav>
+        </section>
     </section>
+</main>
 
-    <section class="ra-insights-grid" aria-label="Secondary insights">
-        <article class="ra-card ra-insight">
-            <p class="ra-insight-label">Largest donor total</p>
-            <p class="ra-insight-main" id="insight-top-donor">--</p>
-            <p class="ra-insight-sub" id="insight-top-donor-meta">--</p>
-        </article>
-
-        <article class="ra-card ra-insight">
-            <p class="ra-insight-label">Closest to OJT target</p>
-            <p class="ra-insight-main" id="insight-top-ojt-volunteer">--</p>
-            <p class="ra-insight-sub" id="insight-top-ojt-volunteer-meta">--</p>
-        </article>
-    </section>
-
-    <section class="ra-card ra-table-card" aria-label="Detailed records">
-        <div class="ra-chart-head">
-            <h2 class="ra-chart-title">Recent managed records</h2>
-            <span class="ra-chart-sub" id="records-count">Loading records…</span>
-        </div>
-        <div class="ra-table-wrap">
-            <table class="ra-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Record type</th>
-                        <th>Record</th>
-                        <th>Details</th>
-                        <th>Value</th>
-                    </tr>
-                </thead>
-                <tbody id="records-table-body"></tbody>
-            </table>
-        </div>
-    </section>
-</div>
-
-{% endblock %}
-
-{% block extra_scripts %}
 <script>
-(function initAnalyticsDashboard() {
+(function() {
     "use strict";
 
-    var state = {
+    var app = document.getElementById("reports-app");
+    var report = app.getAttribute("data-report");
+    var overview = report === "overview";
+    var status = document.getElementById("reports-status");
+    var pageState = {
         range: "30d",
-        category: "all",
+        start: "",
+        end: "",
+        donation_type: "all",
+        volunteer_type: "all",
         campaign: "",
-        data: null,
-        charts: {
-            trend: null,
-            accounts: null,
-            distribution: null
-        }
+        category: "all",
+        role: "all",
+        gender: "all",
+        age_group: "all",
+        record_type: "all",
+        page: 1
     };
+    var trendChart = null;
+    var distributionChart = null;
+    var reportData = null;
 
-    function formatNumber(value) {
-        return new Intl.NumberFormat("en-US").format(value || 0);
-    }
-
-    function formatCurrency(value) {
-        return "₱" + formatNumber(value || 0);
-    }
-
-    function formatHours(value) {
-        return Number(value || 0).toFixed(1) + "h";
-    }
-
-    function updateKpis(series) {
-        var donations = series.kpis.totalDonations;
-        var volunteers = series.kpis.volunteerHours;
-        var activities = series.kpis.completedActivities;
-        var assistance = series.kpis.assistanceRecords;
-
-        document.getElementById("kpi-total-donations").textContent = formatCurrency(donations.value);
-        document.getElementById("kpi-total-donations-source").textContent = formatNumber(donations.count) + (donations.count === 1 ? " finalized donation" : " finalized donations");
-        document.getElementById("kpi-volunteer-hours").textContent = formatHours(volunteers.value);
-        document.getElementById("kpi-volunteer-hours-source").textContent = formatNumber(volunteers.volunteers) + (volunteers.volunteers === 1 ? " volunteer" : " volunteers");
-        document.getElementById("kpi-total-activities").textContent = formatNumber(activities.value);
-        document.getElementById("kpi-beneficiaries-assisted").textContent = formatNumber(assistance.value);
-
-        document.getElementById("insight-top-donor").textContent = series.insights.topDonor.name;
-        document.getElementById("insight-top-donor-meta").textContent = series.insights.topDonor.meta;
-        document.getElementById("insight-top-ojt-volunteer").textContent = series.insights.topOjtVolunteer.name;
-        document.getElementById("insight-top-ojt-volunteer-meta").textContent = series.insights.topOjtVolunteer.meta;
-    }
-
-    function createTrendChart(series) {
-        var canvas = document.getElementById("trend-line-chart");
-        if (!canvas || typeof Chart !== "function") {
-            return;
+    function queryState() {
+        var params = new URLSearchParams(window.location.search);
+        var stored = sessionStorage.getItem("adminReportsPeriod");
+        var saved = stored ? JSON.parse(stored) : {};
+        ["range", "start", "end"].forEach(function(key) {
+            var value = params.get(key);
+            if (value !== null) {
+                pageState[key] = value;
+            } else if (saved[key]) {
+                pageState[key] = saved[key];
+            }
+        });
+        if (!["all", "7d", "30d", "90d", "custom"].includes(pageState.range)) {
+            pageState.range = "30d";
         }
-
-        if (state.charts.trend) {
-            state.charts.trend.destroy();
-        }
-
-        state.charts.trend = new Chart(canvas, {
-            type: "line",
-            data: {
-                labels: series.labels,
-                datasets: [
-                    {
-                        label: "Donations",
-                        data: series.donations,
-                        borderColor: "#16a34a",
-                        backgroundColor: "rgba(22, 163, 74, 0.12)",
-                        borderWidth: 2.2,
-                        pointRadius: 3,
-                        tension: 0.35,
-                        fill: true,
-                        yAxisID: "y"
-                    },
-                    {
-                        label: "Managed service records",
-                        data: series.operationalRecords,
-                        borderColor: "#0ea5e9",
-                        backgroundColor: "rgba(14, 165, 233, 0.08)",
-                        borderWidth: 2,
-                        pointRadius: 2.8,
-                        tension: 0.35,
-                        fill: false,
-                        yAxisID: "y1"
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: "index", intersect: false },
-                plugins: {
-                    legend: { position: "top", labels: { usePointStyle: true, boxWidth: 8 } }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: { display: true, text: "Donation amount (₱)" },
-                        grid: { color: "rgba(15, 118, 110, 0.09)" },
-                        ticks: { color: "#51706b" }
-                    },
-                    y1: {
-                        beginAtZero: true,
-                        position: "right",
-                        title: { display: true, text: "Record count" },
-                        grid: { drawOnChartArea: false },
-                        ticks: { color: "#51706b" }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: "#51706b" }
-                    }
-                }
+        ["donation_type", "volunteer_type", "campaign", "category", "role", "gender", "age_group", "record_type"].forEach(function(key) {
+            if (params.has(key)) {
+                pageState[key] = params.get(key);
             }
         });
     }
 
-    function createAccountsChart(accounts) {
-        var canvas = document.getElementById("accounts-by-role-chart");
-        if (!canvas || typeof Chart !== "function") {
-            return;
-        }
+    function paramsForRequest() {
+        var params = new URLSearchParams({ report: report });
+        Object.keys(pageState).forEach(function(key) {
+            if (key === "page" || key === "range" || key === "start" || key === "end" || pageState[key]) {
+                params.set(key, pageState[key]);
+            }
+        });
+        return params;
+    }
 
-        if (state.charts.accounts) {
-            state.charts.accounts.destroy();
-        }
+    function updateLocation() {
+        sessionStorage.setItem("adminReportsPeriod", JSON.stringify({
+            range: pageState.range,
+            start: pageState.start,
+            end: pageState.end
+        }));
+        var params = new URLSearchParams();
+        ["range", "start", "end", "donation_type", "volunteer_type", "campaign", "category", "role", "gender", "age_group", "record_type", "page"].forEach(function(key) {
+            if (pageState[key]) {
+                params.set(key, pageState[key]);
+            }
+        });
+        var suffix = params.toString();
+        window.history.replaceState({}, "", window.location.pathname + (suffix ? "?" + suffix : ""));
+    }
 
-        var values = accounts.values || [];
-        var total = values.reduce(function(sum, value) { return sum + Number(value || 0); }, 0);
-        var hasAccounts = total > 0;
-        document.getElementById("accounts-empty").hidden = hasAccounts;
-        canvas.hidden = !hasAccounts;
-        if (!hasAccounts) {
-            state.charts.accounts = null;
-            return;
-        }
+    function setStatus(message, isError) {
+        status.textContent = message;
+        status.hidden = !message;
+        status.classList.toggle("is-error", Boolean(isError));
+    }
 
-        var maxValue = Math.max.apply(Math, values);
-        state.charts.accounts = new Chart(canvas, {
-            type: "bar",
+    function textCell(row, value) {
+        var cell = document.createElement("td");
+        cell.textContent = value == null ? "" : String(value);
+        row.appendChild(cell);
+        return cell;
+    }
+
+    function renderFilters(payload) {
+        var container = document.getElementById("reports-filters");
+        container.replaceChildren();
+        var definitions = {
+            donations: [
+                ["donation_type", "Donation type", payload.options.donation_types],
+                ["campaign", "Campaign", [{ value: "", label: "All campaigns" }].concat(payload.options.campaigns || [])]
+            ],
+            "volunteer-hours": [
+                ["volunteer_type", "Volunteer type", payload.options.volunteer_types]
+            ],
+            "product-sales": [
+                ["category", "Category", payload.options.categories]
+            ],
+            accounts: [
+                ["role", "Role", payload.options.roles],
+                ["gender", "Gender", payload.options.genders],
+                ["age_group", "Age group", payload.options.age_groups]
+            ],
+            "all-records": [
+                ["record_type", "Record type", payload.options.record_types]
+            ]
+        };
+        (definitions[report] || []).forEach(function(definition) {
+            var field = document.createElement("div");
+            field.className = "ra-filter-field";
+            var label = document.createElement("span");
+            label.className = "ra-filter-label";
+            label.textContent = definition[1];
+            var options = document.createElement("div");
+            options.className = "ra-filter-options";
+            options.setAttribute("role", "group");
+            options.setAttribute("aria-label", definition[1]);
+            (definition[2] || []).forEach(function(optionData) {
+                var choice = document.createElement("button");
+                choice.type = "button";
+                choice.className = "ra-filter-choice";
+                choice.textContent = optionData.label;
+                choice.setAttribute("aria-pressed", optionData.value === pageState[definition[0]] ? "true" : "false");
+                if (optionData.value === pageState[definition[0]]) {
+                    choice.classList.add("is-active");
+                }
+                if (report === "donations" && definition[0] === "campaign"
+                    && !["all", "cash", "gcash", "bank"].includes(pageState.donation_type)) {
+                    choice.disabled = true;
+                }
+                choice.addEventListener("click", function() {
+                    pageState[definition[0]] = optionData.value;
+                    if (report === "donations" && definition[0] === "donation_type"
+                        && !["all", "cash", "gcash", "bank"].includes(optionData.value)) {
+                        pageState.campaign = "";
+                    }
+                    pageState.page = 1;
+                    loadDetail();
+                });
+                options.appendChild(choice);
+            });
+            field.append(label, options);
+            container.appendChild(field);
+        });
+        container.hidden = container.children.length === 0;
+    }
+
+    function renderStats(stats) {
+        var container = document.getElementById("reports-stats");
+        container.replaceChildren();
+        stats.forEach(function(item) {
+            var card = document.createElement("article");
+            card.className = "ra-card ra-stat";
+            var label = document.createElement("p");
+            label.className = "ra-card-label";
+            label.textContent = item.label;
+            var value = document.createElement("p");
+            value.className = "ra-stat-value";
+            value.textContent = item.value;
+            card.append(label, value);
+            container.appendChild(card);
+        });
+    }
+
+    function chartColors(count) {
+        var palette = ["#16856b", "#d18a27", "#1482a5", "#9461a8", "#d05c56", "#65a54e", "#64748b"];
+        return Array.from({ length: count }, function(_item, index) {
+            return palette[index % palette.length];
+        });
+    }
+
+    function renderCharts(payload) {
+        var trendCanvas = document.getElementById("reports-trend-chart");
+        var distributionCanvas = document.getElementById("reports-distribution-chart");
+        var trend = payload.trend;
+        var distribution = payload.distribution;
+        document.getElementById("reports-trend-title").textContent = trend.title;
+        document.getElementById("reports-trend-note").textContent = trend.note;
+        document.getElementById("reports-distribution-title").textContent = distribution.title;
+        document.getElementById("reports-distribution-note").textContent = distribution.note;
+        trendCanvas.setAttribute("aria-label", trend.title + ": " + trend.labels.map(function(label, index) {
+            return label + " " + trend.values[index];
+        }).join(", "));
+        distributionCanvas.setAttribute("aria-label", distribution.title + ": " + distribution.labels.map(function(label, index) {
+            return label + " " + distribution.values[index];
+        }).join(", "));
+        var trendConfig = {
+            type: "line",
             data: {
-                labels: accounts.labels,
+                labels: trend.labels,
                 datasets: [{
-                    label: "Active accounts",
-                    data: values,
-                    borderRadius: 5,
-                    backgroundColor: ["#16856b", "#d18a27", "#1682a5"],
-                    barThickness: 30
+                    label: trend.series_label,
+                    data: trend.values,
+                    borderColor: "#16856b",
+                    backgroundColor: "rgba(22, 133, 107, 0.14)",
+                    borderWidth: 2.5,
+                    pointRadius: 3,
+                    tension: 0.3,
+                    fill: true
                 }]
             },
-            plugins: [{
-                id: "account-count-labels",
-                afterDatasetsDraw: function(chart) {
-                    var context = chart.ctx;
-                    var bars = chart.getDatasetMeta(0).data;
-                    context.save();
-                    context.fillStyle = "#14352d";
-                    context.font = "600 12px Arial, sans-serif";
-                    context.textBaseline = "middle";
-                    bars.forEach(function(bar, index) {
-                        context.fillText(formatNumber(values[index]), bar.x + 8, bar.y);
-                    });
-                    context.restore();
-                }
-            }],
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                indexAxis: "y",
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return formatNumber(context.parsed.x) + " active accounts";
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } },
+                    x: { grid: { display: false } }
+                }
+            }
+        };
+        if (trendChart) {
+            trendChart.data = trendConfig.data;
+            trendChart.options = trendConfig.options;
+            trendChart.update();
+        } else if (typeof Chart === "function") {
+            trendChart = new Chart(trendCanvas, trendConfig);
+        }
+
+        var distributionConfig;
+        if (distribution.type === "bar") {
+            var distributionWrap = distributionCanvas.parentElement;
+            distributionWrap.style.height = Math.max(170, distribution.labels.length * 28) + "px";
+            distributionConfig = {
+                type: "bar",
+                data: {
+                    labels: distribution.labels.length ? distribution.labels : ["No volunteer hours"],
+                    datasets: [{
+                        label: "Hours",
+                        data: distribution.labels.length ? distribution.values : [0],
+                        backgroundColor: chartColors(distribution.labels.length || 1),
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    indexAxis: "y",
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { precision: 1 } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            };
+        } else {
+            distributionCanvas.parentElement.style.height = "";
+            var hasDistribution = distribution.values.some(function(value) { return Number(value) > 0; });
+            var emptyLegend = !hasDistribution && report === "all-records" ? distribution.labels : [];
+            var labels = hasDistribution ? distribution.labels : ["No records"].concat(emptyLegend);
+            var values = hasDistribution ? distribution.values : [1].concat(emptyLegend.map(function() { return 0; }));
+            var colors = hasDistribution
+                ? chartColors(labels.length)
+                : ["#d1d5db"].concat(chartColors(emptyLegend.length));
+            distributionConfig = {
+                type: "doughnut",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: "#fff",
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: "58%",
+                    plugins: {
+                        legend: {
+                            position: "bottom",
+                            labels: {
+                                usePointStyle: true,
+                                generateLabels: function(chart) {
+                                    return chart.data.labels.map(function(label, index) {
+                                        var value = hasDistribution ? distribution.values[index] : 0;
+                                        return {
+                                            text: label + " (" + value + ")",
+                                            fillStyle: colors[index],
+                                            strokeStyle: colors[index],
+                                            pointStyle: "circle",
+                                            hidden: false,
+                                            index: index
+                                        };
+                                    });
+                                }
                             }
                         }
                     }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        max: Math.max(5, Math.ceil(maxValue * 1.2 / 5) * 5),
-                        ticks: { precision: 0, maxTicksLimit: 6, color: "#51706b" },
-                        grid: { color: "rgba(15, 118, 110, 0.09)" }
-                    },
-                    y: {
-                        grid: { display: false },
-                        ticks: { color: "#51706b" }
-                    }
                 }
-            }
-        });
+            };
+        }
+        if (distributionChart) {
+            distributionChart.config.type = distributionConfig.type;
+            distributionChart.data = distributionConfig.data;
+            distributionChart.options = distributionConfig.options;
+            distributionChart.update();
+        } else if (typeof Chart === "function") {
+            distributionChart = new Chart(distributionCanvas, distributionConfig);
+        }
     }
 
-    function createDistributionChart(distribution) {
-        var canvas = document.getElementById("distribution-donut-chart");
-        if (!canvas || typeof Chart !== "function") {
-            return;
-        }
-
-        if (state.charts.distribution) {
-            state.charts.distribution.destroy();
-        }
-
-        var hasPaymentData = (distribution.values || []).some(function(value) { return value > 0; });
-        document.getElementById("distribution-empty").hidden = hasPaymentData;
-        canvas.hidden = !hasPaymentData;
-        if (!hasPaymentData) {
-            state.charts.distribution = null;
-            return;
-        }
-
-        state.charts.distribution = new Chart(canvas, {
-            type: "doughnut",
-            data: {
-                labels: distribution.labels,
-                datasets: [
-                    {
-                        data: distribution.values,
-                        borderWidth: 0,
-                        backgroundColor: ["#16856b", "#1682a5", "#d18a27", "#bd5a4a", "#6184a5"]
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: "62%",
-                plugins: {
-                    legend: {
-                        position: "bottom",
-                        labels: { usePointStyle: true, boxWidth: 8 }
-                    }
-                }
-            }
+    function renderTable(payload) {
+        var head = document.getElementById("reports-table-head");
+        var body = document.getElementById("reports-table-body");
+        head.replaceChildren();
+        body.replaceChildren();
+        payload.columns.forEach(function(column) {
+            var cell = document.createElement("th");
+            cell.scope = "col";
+            cell.textContent = column;
+            head.appendChild(cell);
         });
-    }
-
-    function renderRecords() {
-        var tbody = document.getElementById("records-table-body");
-        var count = document.getElementById("records-count");
-        var rows = state.data && state.data.records || [];
-
-        tbody.innerHTML = "";
-
-        if (!rows.length) {
+        if (!payload.rows.length) {
             var emptyRow = document.createElement("tr");
             var emptyCell = document.createElement("td");
-            emptyCell.colSpan = 5;
-            emptyCell.textContent = "No managed records for this period and filter.";
-            emptyCell.style.textAlign = "center";
-            emptyCell.style.color = "#6b7280";
+            emptyCell.className = "ra-table-empty";
+            emptyCell.colSpan = payload.columns.length;
+            emptyCell.textContent = payload.empty_message;
             emptyRow.appendChild(emptyCell);
-            tbody.appendChild(emptyRow);
-            count.textContent = "No records";
-            return;
-        }
-
-        rows.forEach(function(row) {
-            var tr = document.createElement("tr");
-            [row.date, toLabel(row.category), row.metric, row.detail, row.value].forEach(function(value, index) {
-                var td = document.createElement("td");
-                if (index === 1) {
-                    var chip = document.createElement("span");
-                    chip.className = "ra-chip ra-chip-" + row.category;
-                    chip.textContent = value;
-                    td.appendChild(chip);
-                } else {
-                    td.textContent = value || "—";
-                }
-                tr.appendChild(td);
-            });
-            tbody.appendChild(tr);
-        });
-
-        count.textContent = "Showing " + rows.length + " of " + formatNumber(state.data.recordCount || 0) + " records";
-    }
-
-    function toLabel(value) {
-        var labels = {
-            donation: "Donation",
-            volunteer: "Volunteer attendance",
-            activity: "Activity",
-            assistance: "Beneficiary assistance"
-        };
-        if (labels[value]) {
-            return labels[value];
-        }
-        return String(value || "")
-            .split("-")
-            .map(function(part) {
-                return part.charAt(0).toUpperCase() + part.slice(1);
-            })
-            .join(" ");
-    }
-
-    function refreshAnalytics() {
-        if (!state.data) {
-            return;
-        }
-
-        var series = state.data.series[state.range];
-        if (!series) {
-            return;
-        }
-
-        updateKpis(series);
-        createTrendChart(series);
-        createAccountsChart(state.data.accounts);
-        createDistributionChart(state.data.distribution);
-        renderRecords();
-
-        var lastUpdated = document.getElementById("analytics-last-updated");
-        if (lastUpdated) {
-            lastUpdated.textContent = "Updated: " + new Date().toLocaleString("en-US", {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit"
-            });
-        }
-    }
-
-    function populateFilterOptions() {
-        var campaignSelect = document.getElementById("analytics-campaign");
-        var categorySelect = document.getElementById("analytics-category");
-
-        if (!campaignSelect || !categorySelect || !state.data) {
-            return;
-        }
-
-        var campaigns = [{ value: "", label: "All campaigns" }].concat(state.data.campaigns || []);
-        var categories = state.data.categories || [];
-        campaignSelect.replaceChildren();
-        categorySelect.replaceChildren();
-        campaigns.forEach(function(item) {
-            var option = document.createElement("option");
-            option.value = item.value;
-            option.textContent = item.label;
-            campaignSelect.appendChild(option);
-        });
-        categories.forEach(function(item) {
-            var option = document.createElement("option");
-            option.value = item.value;
-            option.textContent = item.label;
-            categorySelect.appendChild(option);
-        });
-
-        if (campaigns.some(function(item) { return item.value === state.campaign; })) {
-            campaignSelect.value = state.campaign;
+            body.appendChild(emptyRow);
         } else {
-            state.campaign = "";
-            campaignSelect.value = "";
-        }
-        categorySelect.value = state.category;
-        campaignSelect.disabled = state.category !== "all" && state.category !== "donation";
-    }
-
-    function bindFilters() {
-        var dateRange = document.getElementById("analytics-date-range");
-        var campaign = document.getElementById("analytics-campaign");
-        var category = document.getElementById("analytics-category");
-
-        category.addEventListener("change", function() {
-            campaign.disabled = category.value !== "all" && category.value !== "donation";
-        });
-
-        document.getElementById("analytics-apply").addEventListener("click", function() {
-            state.range = dateRange.value;
-            state.campaign = campaign.value;
-            state.category = category.value;
-            loadAnalytics();
-        });
-
-        document.getElementById("analytics-reset").addEventListener("click", function() {
-            dateRange.value = "30d";
-            campaign.value = "";
-            category.value = "all";
-            state.range = "30d";
-            state.campaign = "";
-            state.category = "all";
-            loadAnalytics();
-        });
-    }
-
-    function bindAnalyticsExports() {
-        [
-            { id: "analytics-export-csv", format: "csv" },
-            { id: "analytics-export-pdf", format: "pdf" }
-        ].forEach(function(item) {
-            var button = document.getElementById(item.id);
-            button.addEventListener("click", function() {
-                button.disabled = true;
-                var status = document.getElementById("analytics-error");
-                status.hidden = false;
-                status.classList.remove("is-error");
-                status.textContent = "Preparing analytics report…";
-
-                var body = new URLSearchParams({
-                    range: state.range,
-                    category: state.category,
-                    campaign: state.category === "all" || state.category === "donation" ? state.campaign : "",
-                    format: item.format
-                });
-                var csrfMatch = document.cookie.match(/(?:^|; )csrftoken=([^;]*)/);
-                var csrfToken = csrfMatch ? decodeURIComponent(csrfMatch[1]) : "";
-
-                fetch(window.REPORTS_EXPORT_ENDPOINT, {
-                    method: "POST",
-                    credentials: "same-origin",
-                    headers: {
-                        "X-CSRFToken": csrfToken,
-                        "Content-Type": "application/x-www-form-urlencoded",
-                        "X-Requested-With": "XMLHttpRequest"
-                    },
-                    body: body.toString()
-                }).then(function(response) {
-                    if (!response.ok) {
-                        return response.json().then(function(payload) {
-                            throw new Error(payload.error || "Unable to generate the report.");
-                        });
-                    }
-                    var disposition = response.headers.get("Content-Disposition") || "";
-                    var filenameMatch = disposition.match(/filename="?([^";]+)"?/i);
-                    var filename = filenameMatch ? filenameMatch[1] : "analytics-report." + item.format;
-                    return response.blob().then(function(blob) {
-                        var downloadUrl = URL.createObjectURL(blob);
-                        var link = document.createElement("a");
-                        link.href = downloadUrl;
-                        link.download = filename;
-                        document.body.appendChild(link);
-                        link.click();
-                        link.remove();
-                        window.setTimeout(function() { URL.revokeObjectURL(downloadUrl); }, 1000);
-                        status.textContent = "Downloaded " + filename;
-                    });
-                }).catch(function(error) {
-                    status.classList.add("is-error");
-                    status.textContent = error.message || "Unable to generate the report.";
-                }).finally(function() {
-                    button.disabled = false;
-                });
+            payload.rows.forEach(function(values) {
+                var row = document.createElement("tr");
+                values.forEach(function(value) { textCell(row, value); });
+                body.appendChild(row);
             });
-        });
+        }
+
+        document.getElementById("reports-table-title").textContent = report === "accounts"
+            ? "Accounts (showing " + payload.rows.length + " of " + payload.row_count + ")"
+            : (report === "product-sales" ? "Product sales ranking" : "Records");
+        document.getElementById("reports-page-label").textContent =
+            "Page " + payload.page + " of " + payload.pages;
+        document.getElementById("reports-previous").disabled = payload.page <= 1;
+        document.getElementById("reports-next").disabled = payload.page >= payload.pages;
+        document.getElementById("reports-pagination").hidden = payload.row_count <= payload.page_size;
     }
 
-    function loadAnalytics(showSkeleton) {
-        var page = document.getElementById("analytics-page");
-        var skeleton = document.getElementById("analytics-skeleton");
-        var shouldShowSkeleton = showSkeleton !== false;
-        if (shouldShowSkeleton) {
-            page.classList.add("is-loading");
-            skeleton.hidden = false;
-        }
-        page.setAttribute("aria-busy", "true");
+    function renderDetail(payload) {
+        reportData = payload;
+        document.getElementById("reports-overview").hidden = true;
+        document.getElementById("reports-detail").hidden = false;
+        document.getElementById("report-title").textContent = payload.title;
+        document.getElementById("report-subtitle").textContent = payload.subtitle;
+        document.getElementById("reports-note").textContent =
+            report === "accounts" ? "Not affected by the reporting period." : "";
+        document.getElementById("reports-note").hidden = report !== "accounts";
+        document.getElementById("reports-period-bar").hidden = report === "accounts";
+        document.getElementById("reports-custom-range").hidden = pageState.range !== "custom";
+        document.getElementById("reports-start-date").value = pageState.start;
+        document.getElementById("reports-end-date").value = pageState.end;
+        document.querySelectorAll("[data-range]").forEach(function(button) {
+            button.classList.toggle("is-active", button.getAttribute("data-range") === pageState.range);
+            button.setAttribute("aria-pressed", button.getAttribute("data-range") === pageState.range ? "true" : "false");
+        });
+        renderFilters(payload);
+        renderStats(payload.stats);
+        renderCharts(payload);
+        renderTable(payload);
+    }
 
-        var endpoint = window.REPORTS_ANALYTICS_ENDPOINT || "/admin-dashboard/reports/data/";
-        var url = new URL(endpoint, window.location.origin);
-        url.searchParams.set("range", state.range);
-        url.searchParams.set("category", state.category);
-        url.searchParams.set("campaign", state.campaign);
-
-        return fetch(url.toString(), { headers: { "X-Requested-With": "XMLHttpRequest" } })
+    function loadDetail() {
+        updateLocation();
+        document.getElementById("reports-detail").setAttribute("aria-busy", "true");
+        var url = "/admin-dashboard/reports/data/?" + paramsForRequest().toString();
+        fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } })
             .then(function(response) {
-                if (!response.ok) {
-                    throw new Error("Analytics request failed.");
-                }
-                return response.json();
-            })
-            .then(function(payload) {
-                state.data = payload;
-                document.getElementById("analytics-error").hidden = true;
-                populateFilterOptions();
-                refreshAnalytics();
-                skeleton.hidden = true;
-                page.classList.remove("is-loading");
-                page.setAttribute("aria-busy", "false");
-            })
-            .catch(function(error) {
-                console.error(error);
-                skeleton.hidden = true;
-                page.classList.remove("is-loading");
-                page.setAttribute("aria-busy", "false");
-                var status = document.getElementById("analytics-error");
-                status.textContent = "Analytics could not be loaded. Check your connection and try applying the filters again.";
-                status.hidden = false;
+                return response.json().then(function(payload) {
+                    if (!response.ok) {
+                        throw new Error(payload.error || "Unable to load report data.");
+                    }
+                    return payload;
+                });
+            }).then(function(payload) {
+                renderDetail(payload);
+                setStatus("", false);
+                document.getElementById("reports-detail").setAttribute("aria-busy", "false");
+            }).catch(function(error) {
+                setStatus(error.message || "Unable to load report data.", true);
+                document.getElementById("reports-detail").setAttribute("aria-busy", "false");
             });
     }
 
-    function init() {
-        window.REPORTS_ANALYTICS_ENDPOINT = "/admin-dashboard/reports/data/";
-        window.REPORTS_EXPORT_ENDPOINT = "/admin-dashboard/reports/export/";
-        bindFilters();
-        bindAnalyticsExports();
-        loadAnalytics();
-
-        if (window.lucide && typeof window.lucide.createIcons === "function") {
-            window.lucide.createIcons();
-        }
-
-        if (window.AdminPanelAnimations && typeof window.AdminPanelAnimations.animateAll === "function") {
-            window.AdminPanelAnimations.animateAll(document);
-        }
-
-        setInterval(function() {
-            if (!document.hidden) {
-                loadAnalytics(false);
+    function exportReport(format, button) {
+        button.disabled = true;
+        setStatus("", false);
+        var body = paramsForRequest();
+        body.set("format", format);
+        var csrfMatch = document.cookie.match(/(?:^|; )csrftoken=([^;]*)/);
+        var csrfToken = csrfMatch ? decodeURIComponent(csrfMatch[1]) : "";
+        fetch("/admin-dashboard/reports/export/", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+                "X-CSRFToken": csrfToken,
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            body: body.toString()
+        }).then(function(response) {
+            if (!response.ok) {
+                return response.json().then(function(payload) {
+                    throw new Error(payload.error || "Unable to export this report.");
+                });
             }
-        }, 60000);
+            var disposition = response.headers.get("Content-Disposition") || "";
+            var match = disposition.match(/filename="?([^";]+)"?/i);
+            var filename = match ? match[1] : report + "." + format;
+            return response.blob().then(function(blob) {
+                var downloadUrl = URL.createObjectURL(blob);
+                var link = document.createElement("a");
+                link.href = downloadUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.setTimeout(function() { URL.revokeObjectURL(downloadUrl); }, 1000);
+            });
+        }).catch(function(error) {
+            setStatus(error.message || "Unable to export this report.", true);
+        }).finally(function() {
+            button.disabled = false;
+        });
+    }
+
+    function bind() {
+        queryState();
+        if (overview) {
+            document.querySelectorAll(".ra-overview-link").forEach(function(link) {
+                link.addEventListener("click", function(event) {
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                        return;
+                    }
+                    sessionStorage.setItem("adminReportsPeriod", JSON.stringify({
+                        range: pageState.range,
+                        start: pageState.start,
+                        end: pageState.end
+                    }));
+                });
+            });
+            return;
+        }
+        document.querySelectorAll("[data-range]").forEach(function(button) {
+            button.addEventListener("click", function() {
+                pageState.range = button.getAttribute("data-range");
+                pageState.page = 1;
+                if (pageState.range !== "custom") {
+                    pageState.start = "";
+                    pageState.end = "";
+                    loadDetail();
+                } else {
+                    document.getElementById("reports-custom-range").hidden = false;
+                    document.querySelectorAll("[data-range]").forEach(function(periodButton) {
+                        var active = periodButton === button;
+                        periodButton.classList.toggle("is-active", active);
+                        periodButton.setAttribute("aria-pressed", active ? "true" : "false");
+                    });
+                }
+            });
+        });
+        document.getElementById("reports-apply-range").addEventListener("click", function() {
+            pageState.range = "custom";
+            pageState.start = document.getElementById("reports-start-date").value;
+            pageState.end = document.getElementById("reports-end-date").value;
+            pageState.page = 1;
+            loadDetail();
+        });
+        document.getElementById("reports-previous").addEventListener("click", function() {
+            pageState.page = Math.max(1, pageState.page - 1);
+            loadDetail();
+        });
+        document.getElementById("reports-next").addEventListener("click", function() {
+            pageState.page += 1;
+            loadDetail();
+        });
+        document.getElementById("reports-export-pdf").addEventListener("click", function() {
+            exportReport("pdf", this);
+        });
+        loadDetail();
     }
 
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", init);
+        document.addEventListener("DOMContentLoaded", bind);
     } else {
-        init();
+        bind();
     }
 })();
 </script>

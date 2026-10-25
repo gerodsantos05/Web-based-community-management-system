@@ -108,6 +108,7 @@ from .two_factor import (
     start_two_factor_challenge,
     touch_two_factor_challenge_attempt,
 )
+from .reporting import REPORTS, reports_payload
 
 
 PROFILE_AVATAR_MAX_SIZE = 5 * 1024 * 1024
@@ -10887,102 +10888,175 @@ def update_item_pledge_status(request, pledge_id):
 
 
 @login_required(login_url="signin")
-def export_donations_csv(request):
-        if not request.user.is_superuser:
-                return redirect("user_dashboard")
-
-        donations = Donation.objects.all().order_by("-created_at")
-        buffer = io.StringIO()
-        writer = csv.writer(buffer)
-        writer.writerow(["Date", "Donor", "Amount", "Method", "Status", "Reference Number", "Receipt", "Campaign", "Notes"])
-
-        for donation in donations:
-                writer.writerow([
-                        timezone.localtime(donation.created_at).strftime("%Y-%m-%d"),
-                        (donation.donor_name or "Anonymous").strip() or "Anonymous",
-                        donation.amount,
-                        _donation_payment_method_label(donation.payment_method),
-                        _donation_status_label(donation.status),
-                        donation.reference_number,
-                        donation.receipt.url if donation.receipt else "",
-                        donation.campaign or "General Donation",
-                        donation.donor_message or donation.review_notes or "",
-                ])
-
-        response = HttpResponse(buffer.getvalue(), content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="donations.csv"'
-        return response
-
-
-@login_required(login_url="signin")
 def export_donations_pdf(request):
     if not request.user.is_superuser:
         return redirect("user_dashboard")
 
-    from reportlab.lib.pagesizes import letter
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import inch
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-    from reportlab.lib import colors
-    from reportlab.lib.enums import TA_CENTER, TA_LEFT
-
-    donations = Donation.objects.all().order_by("-created_at")
-    
-    # Prepare table data
-    data = [["Date", "Donor", "Amount", "Method", "Status", "Reference #", "Campaign"]]
+    donations = list(Donation.objects.all().order_by("-created_at"))
+    pledges = list(ItemPledge.objects.select_related("user").all().order_by("-created_at"))
+    today = timezone.localdate()
+    month_keys = []
+    for offset in range(5, -1, -1):
+        month_index = today.year * 12 + today.month - 1 - offset
+        month_keys.append((month_index // 12, month_index % 12 + 1))
+    month_labels = [date(year, month, 1).strftime("%b %Y") for year, month in month_keys]
+    donation_months = {key: 0 for key in month_keys}
+    pledge_months = {key: 0 for key in month_keys}
+    payment_methods = {}
     for donation in donations:
-        data.append([
-            timezone.localtime(donation.created_at).strftime('%Y-%m-%d'),
-            (donation.donor_name or 'Anonymous').strip() or 'Anonymous',
-            f"PHP {donation.amount:,.2f}",
-            _donation_payment_method_label(donation.payment_method),
-            _donation_status_label(donation.status),
-            donation.reference_number,
-            donation.campaign or 'General Donation',
-        ])
+        created = timezone.localtime(donation.created_at)
+        key = (created.year, created.month)
+        if key in donation_months:
+            donation_months[key] += donation.amount
+        method = _donation_payment_method_label(donation.payment_method)
+        payment_methods[method] = payment_methods.get(method, 0) + 1
+    pledge_categories = {}
+    for pledge in pledges:
+        created = timezone.localtime(pledge.created_at)
+        key = (created.year, created.month)
+        if key in pledge_months:
+            pledge_months[key] += pledge.quantity
+        category = pledge.get_category_display()
+        pledge_categories[category] = pledge_categories.get(category, 0) + pledge.quantity
 
-    # Create PDF in memory
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
-    
-    # Build elements
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=16,
-        textColor=colors.HexColor('#14352d'),
-        spaceAfter=12,
-        alignment=TA_CENTER,
+    donation_rows = [[
+        timezone.localtime(donation.created_at).strftime("%Y-%m-%d"),
+        (donation.donor_name or "Anonymous").strip() or "Anonymous",
+        f"PHP {donation.amount:,.2f}",
+        _donation_payment_method_label(donation.payment_method),
+        _donation_status_label(donation.status),
+        donation.reference_number,
+        donation.campaign or "General Donation",
+    ] for donation in donations]
+    pledge_rows = [[
+        timezone.localtime(pledge.created_at).strftime("%Y-%m-%d"),
+        "Anonymous" if pledge.is_anonymous else (pledge.donor_name or "Name not provided"),
+        pledge.item_name,
+        pledge.get_category_display(),
+        pledge.quantity,
+        pledge.get_status_display(),
+    ] for pledge in pledges]
+    completed_donation_total = sum(
+        donation.amount
+        for donation in donations
+        if donation.status == Donation.STATUS_COMPLETED
     )
-    
-    elements = [
-        Paragraph("Donation Report", title_style),
-        Spacer(1, 0.3*inch),
+    sections = [
+        ("Summary", ["Metric", "Value", "Notes"], [
+            ["Donation transactions", len(donations), "All statuses"],
+            ["Donation amount", f"PHP {sum(donation.amount for donation in donations):,.2f}", "All transactions"],
+            ["Completed donations", sum(donation.status == Donation.STATUS_COMPLETED for donation in donations), "Verified payments"],
+            ["In-kind pledges", len(pledges), "All statuses"],
+            ["In-kind units", sum(pledge.quantity for pledge in pledges), "Total pledged quantity"],
+        ]),
+        ("Cash donations", ["Date", "Donor", "Amount", "Method", "Status", "Reference #", "Campaign"], donation_rows),
+        ("In-kind pledges", ["Date", "Donor", "Item", "Category", "Quantity", "Status"], pledge_rows),
+        ("Total amount", ["Metric", "Amount", "Notes"], [
+            ["Completed financial donations", f"PHP {completed_donation_total:,.2f}", "In-kind gifts are listed separately and excluded from this amount."],
+            ["Received in-kind units", sum(pledge.quantity for pledge in pledges if pledge.status == ItemPledge.STATUS_RECEIVED), "Units only; not included in the financial total."],
+        ]),
     ]
-    
-    # Create and style table
-    table = Table(data, colWidths=[1*inch, 1.3*inch, 0.8*inch, 1*inch, 0.8*inch, 1.2*inch, 1.2*inch])
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#edf8f3')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#14352d')),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#c9ddd6')),
-        ('FONTSIZE', (0, 1), (-1, -1), 9),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9fdfb')]),
-    ]))
-    elements.append(table)
-    
-    # Build PDF
-    doc.build(elements)
-    buffer.seek(0)
-    
-    response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
+    charts = [
+        {"kind": "line", "title": "Donation amount by month", "note": "All donation statuses; last six months", "labels": month_labels, "values": [donation_months[key] for key in month_keys]},
+        {"kind": "doughnut", "title": "Payment methods", "note": "Donation transaction count", "labels": list(payment_methods), "values": list(payment_methods.values())},
+        {"kind": "line", "title": "In-kind units pledged", "note": "Last six months", "labels": month_labels, "values": [pledge_months[key] for key in month_keys]},
+        {"kind": "doughnut", "title": "Pledged units by category", "note": "All pledge statuses", "labels": list(pledge_categories), "values": list(pledge_categories.values())},
+    ]
+    organization_name, logo_path = _admin_pdf_branding()
+    response = HttpResponse(
+        _export_reports_pdf(
+            "Donations Operations Report",
+            "All time",
+            "All donation and in-kind pledge statuses",
+            sections,
+            charts,
+            organization_name,
+            logo_path,
+        ),
+        content_type="application/pdf",
+    )
     response["Content-Disposition"] = 'attachment; filename="donations.pdf"'
+    return response
+
+
+def _admin_pdf_branding():
+    from django.contrib.staticfiles.finders import find
+
+    logo_path = find("media/Happyness Project.jpg")
+    if not logo_path:
+        raise FileNotFoundError("The organization logo could not be found in static files.")
+    settings_record = AdminSystemSettings.objects.filter(pk="global").only("settings").first()
+    saved_settings = settings_record.settings if settings_record and isinstance(settings_record.settings, dict) else {}
+    organization_name = str(saved_settings.get("system_name") or ADMIN_SYSTEM_SETTINGS_DEFAULTS["system_name"]).strip()
+    return organization_name, logo_path
+
+
+@login_required(login_url="signin")
+def inventory_export_pdf(request):
+    if not request.user.is_superuser:
+        return redirect("user_dashboard")
+
+    items = list(InventoryItem.objects.all().order_by("-updated_at", "-id"))
+    movements = list(StockMovement.objects.select_related("item").order_by("-created_at")[:50])
+    status_counts = {
+        "In stock": sum(item.status == "in_stock" for item in items),
+        "Low stock": sum(item.status == "low_stock" for item in items),
+        "Out of stock": sum(item.status == "out_of_stock" for item in items),
+    }
+    movement_totals = {}
+    for movement in movements:
+        movement_date = timezone.localtime(movement.created_at).strftime("%Y-%m-%d")
+        totals = movement_totals.setdefault(movement_date, {"stock_in": 0, "stock_out": 0})
+        key = "stock_in" if movement.action == StockMovement.ACTION_RESTOCK else "stock_out"
+        totals[key] += movement.quantity
+    movement_labels = sorted(movement_totals)
+    rows = [[
+        f"INV-{item.id:04d}",
+        item.name,
+        item.get_category_display(),
+        item.stock,
+        item.unit,
+        item.status.replace("_", " ").title(),
+        item.low_stock_threshold,
+        timezone.localtime(item.updated_at).strftime("%Y-%m-%d"),
+    ] for item in items]
+    sections = [
+        ("Summary", ["Metric", "Value", "Notes"], [
+            ["Inventory items", len(items), "Current catalog"],
+            ["Total units", sum(item.stock for item in items), "Current stock"],
+            ["Low-stock items", status_counts["Low stock"], "At or below reorder level"],
+            ["Out-of-stock items", status_counts["Out of stock"], "Immediate replenishment needed"],
+            ["Inventory value", f"PHP {sum((item.price or 0) * item.stock for item in items):,.2f}", "Based on item prices when available"],
+        ]),
+        ("Inventory records", ["SKU", "Item", "Category", "Quantity", "Unit", "Status", "Reorder level", "Updated"], rows),
+    ]
+    charts = [
+        {"kind": "doughnut", "title": "Stock status", "note": "Current inventory items", "labels": list(status_counts), "values": list(status_counts.values())},
+        {
+            "kind": "bar",
+            "title": "Recent stock movement",
+            "note": "Last 50 movements grouped by date",
+            "labels": movement_labels,
+            "datasets": [
+                {"label": "Stock in", "values": [movement_totals[label]["stock_in"] for label in movement_labels]},
+                {"label": "Stock out", "values": [movement_totals[label]["stock_out"] for label in movement_labels]},
+            ],
+        },
+    ]
+    organization_name, logo_path = _admin_pdf_branding()
+    response = HttpResponse(
+        _export_reports_pdf(
+            "Inventory Operations Report",
+            "All inventory",
+            "All inventory items; latest 50 stock movements",
+            sections,
+            charts,
+            organization_name,
+            logo_path,
+        ),
+        content_type="application/pdf",
+    )
+    response["Content-Disposition"] = 'attachment; filename="inventory.pdf"'
     return response
 
 def _generate_official_donation_receipt(donation):
@@ -11512,6 +11586,97 @@ def payment(request):
 
 
 @login_required(login_url="signin")
+def export_payments_pdf(request):
+    if not request.user.is_superuser:
+        return redirect("user_dashboard")
+
+    inquiries = list(ProductInquiry.objects.all().order_by("-created_at", "-id"))
+    method_labels = dict(ProductInquiry.PAYMENT_METHOD_CHOICES)
+    status_labels = dict(ProductInquiry.STATUS_CHOICES)
+    processed_statuses = {
+        ProductInquiry.STATUS_VERIFIED,
+        ProductInquiry.STATUS_COMPLETED,
+    }
+    processed = [inquiry for inquiry in inquiries if inquiry.status in processed_statuses]
+    today = timezone.localdate()
+    month_keys = []
+    for offset in range(5, -1, -1):
+        month_index = today.year * 12 + today.month - 1 - offset
+        month_keys.append((month_index // 12, month_index % 12 + 1))
+    month_labels = [date(year, month, 1).strftime("%b %Y") for year, month in month_keys]
+    monthly_revenue = {key: 0 for key in month_keys}
+    method_counts = {}
+    for inquiry in processed:
+        created = timezone.localtime(inquiry.created_at)
+        month_key = (created.year, created.month)
+        if month_key in monthly_revenue:
+            monthly_revenue[month_key] += inquiry.order_total
+        method = method_labels.get(inquiry.payment_method, inquiry.payment_method)
+        method_counts[method] = method_counts.get(method, 0) + 1
+
+    transaction_rows = []
+    for inquiry in inquiries:
+        product_summary = ", ".join(
+            f"{str(item.get('name', 'Product')).strip() or 'Product'} x{item.get('quantity', 0)}"
+            for item in (inquiry.order_items if isinstance(inquiry.order_items, list) else [])
+            if isinstance(item, dict)
+        ) or "No item details"
+        transaction_rows.append([
+            timezone.localtime(inquiry.created_at).strftime("%Y-%m-%d"),
+            f"ORD-{inquiry.id:04d}",
+            inquiry.full_name,
+            product_summary,
+            f"PHP {inquiry.order_total:,.2f}",
+            method_labels.get(inquiry.payment_method, inquiry.payment_method),
+            status_labels.get(inquiry.status, inquiry.status.replace("_", " ").title()),
+        ])
+
+    total_revenue = sum(inquiry.order_total for inquiry in processed)
+    sections = [
+        ("Summary", ["Metric", "Value", "Notes"], [
+            ["Transactions", len(inquiries), "All statuses"],
+            ["Processed payments", len(processed), "Verified or completed"],
+            ["Gross processed amount", f"PHP {total_revenue:,.2f}", "Verified or completed payments only"],
+        ]),
+        ("Payment transactions", ["Date", "Order ID", "Customer", "Products", "Amount", "Method", "Status"], transaction_rows),
+        ("Total amount", ["Metric", "Amount", "Notes"], [
+            ["Gross processed amount", f"PHP {total_revenue:,.2f}", "Verified and completed payments; excludes pending, failed, refunded, and cancelled transactions."],
+        ]),
+    ]
+    charts = [
+        {
+            "kind": "line",
+            "title": "Processed payments over time",
+            "note": "Verified and completed amounts; last six months",
+            "labels": month_labels,
+            "values": [monthly_revenue[key] for key in month_keys],
+        },
+        {
+            "kind": "doughnut",
+            "title": "Processed payments by method",
+            "note": "Verified and completed transaction count",
+            "labels": list(method_counts),
+            "values": list(method_counts.values()),
+        },
+    ]
+    organization_name, logo_path = _admin_pdf_branding()
+    response = HttpResponse(
+        _export_reports_pdf(
+            "Payments Operations Report",
+            "All time",
+            "All payment statuses; processed total includes verified and completed payments",
+            sections,
+            charts,
+            organization_name,
+            logo_path,
+        ),
+        content_type="application/pdf",
+    )
+    response["Content-Disposition"] = 'attachment; filename="payments.pdf"'
+    return response
+
+
+@login_required(login_url="signin")
 @require_POST
 def payment_verify(request, inquiry_id):
     if not request.user.is_superuser:
@@ -11974,427 +12139,132 @@ def moderation(request):
     })
 
 
-def _analytics_range_window(range_key):
-    today = timezone.now().date()
-    if range_key == "90d":
-        start = today - timedelta(days=89)
-    elif range_key == "12m":
-        month_index = today.year * 12 + today.month - 12
-        start_year, start_month = divmod(month_index, 12)
-        start = date(start_year, start_month + 1, 1)
-    else:
-        start = today - timedelta(days=29)
-    return start, today
-
-
-def _reports_account_role_rows():
-    active_members = User.objects.filter(is_active=True, is_staff=False, is_superuser=False)
-    regular_users = active_members.filter(
-        Q(userprofile__account_role=UserProfile.ROLE_REGULAR)
-        | Q(userprofile__account_role__isnull=True)
-        | Q(userprofile__account_role="")
-    ).count()
-    beneficiaries = active_members.filter(userprofile__account_role=UserProfile.ROLE_BENEFICIARY).count()
-    volunteers = active_members.filter(userprofile__account_role=UserProfile.ROLE_VOLUNTEER).count()
-    return [
-        ("Regular users", regular_users),
-        ("Beneficiaries", beneficiaries),
-        ("Volunteers", volunteers),
-    ]
-
-
-def _analytics_previous_window(range_key):
-    start, end = _analytics_range_window(range_key)
-    duration = (end - start).days + 1
-    previous_end = start - timedelta(days=1)
-    previous_start = previous_end - timedelta(days=duration - 1)
-    return previous_start, previous_end
-
-
-def _analytics_bucket_labels(range_key):
-    start, end = _analytics_range_window(range_key)
-    if range_key == "12m":
-        return [
-            f"{calendar.month_abbr[(start.month - 1 + offset) % 12 + 1]} {str(start.year + (start.month - 1 + offset) // 12)[-2:]}"
-            for offset in range(12)
-        ]
-
-    bucket_days = 30 if range_key == "90d" else 7
-    bucket_count = 3 if range_key == "90d" else 5
-    labels = []
-    for index in range(bucket_count):
-        bucket_start = start + timedelta(days=index * bucket_days)
-        bucket_end = min(bucket_start + timedelta(days=bucket_days - 1), end)
-        labels.append(f"{bucket_start:%b %d}–{bucket_end:%b %d}")
-    return labels
-
-
-def _analytics_bucket_index(range_key, bucket_date):
-    start, end = _analytics_range_window(range_key)
-    delta = (bucket_date - start).days
-    if range_key == "90d":
-        return min(max(delta // 30, 0), 2)
-    if range_key == "12m":
-        return min(max((bucket_date.year - start.year) * 12 + bucket_date.month - start.month, 0), 11)
-    return min(max(delta // 7, 0), 4)
-
-
-def _serialize_reports_record(date_obj, category, metric, detail, value):
-    return {
-        "date": date_obj.isoformat() if hasattr(date_obj, "isoformat") else str(date_obj),
-        "category": category,
-        "metric": metric,
-        "detail": detail,
-        "value": value,
-    }
-
-
-def _reports_category_metadata():
-    return {
-        "all": "All record types",
-        "donation": "Donations",
-        "volunteer": "Volunteer attendance",
-        "activity": "Activities",
-        "assistance": "Beneficiary assistance",
-    }
-
-
-def _reports_analytics_payload(range_key="30d", category="all", campaign="", record_limit=25):
-    if range_key not in {"30d", "90d", "12m"}:
-        range_key = "30d"
-    if category not in {"all", "donation", "volunteer", "activity", "assistance"}:
-        category = "all"
-
-    start, end = _analytics_range_window(range_key)
-    labels = _analytics_bucket_labels(range_key)
-    records = []
-
-    all_donations = Donation.objects.filter(
-        created_at__date__gte=start,
-        created_at__date__lte=end,
-        status=Donation.STATUS_COMPLETED,
-    )
-    campaign_options = all_donations.values_list("campaign", flat=True).distinct().order_by("campaign")
-    donations = all_donations
-    if category not in {"all", "donation"}:
-        donations = donations.none()
-    if campaign:
-        donations = donations.filter(campaign=campaign)
-
-    volunteer_attendance = VolunteerAttendanceRecord.objects.filter(
-        status=VolunteerAttendanceRecord.STATUS_CONFIRMED,
-        time_out__isnull=False,
-        time_out__date__gte=start,
-        time_out__date__lte=end,
-    )
-    if category not in {"all", "volunteer"}:
-        volunteer_attendance = volunteer_attendance.none()
-
-    activities = Activity.objects.filter(
-        date__gte=start,
-        date__lte=end,
-        status=Activity.STATUS_COMPLETED,
-    )
-    if category not in {"all", "activity"}:
-        activities = activities.none()
-
-    assistance_records = BeneficiaryAssistanceRecord.objects.filter(
-        assistance_date__gte=start,
-        assistance_date__lte=end,
-    )
-    if category not in {"all", "assistance"}:
-        assistance_records = assistance_records.none()
-
-    for donation in donations.select_related("user").order_by("-created_at"):
-        payment_label = dict(Donation.PAYMENT_METHOD_CHOICES).get(donation.payment_method, donation.payment_method)
-        status_label = dict(Donation.STATUS_CHOICES).get(donation.status, donation.status)
-        records.append(_serialize_reports_record(
-            donation.created_at.date(),
-            "donation",
-            donation.campaign.strip() or "No campaign recorded",
-            f"{payment_label} · {status_label}",
-            f"₱{donation.amount:,.0f}",
-        ))
-
-    for attendance in volunteer_attendance.select_related("volunteer", "assignment").order_by("-time_out"):
-        volunteer_name = (
-            f"{attendance.volunteer.first_name} {attendance.volunteer.last_name}".strip()
-            or attendance.volunteer.username
-        )
-        records.append(_serialize_reports_record(
-            attendance.time_out.date(),
-            "volunteer",
-            attendance.assignment.activity_name or "Volunteer assignment",
-            volunteer_name,
-            f"{(attendance.duration_minutes or 0) / 60:.1f} hours",
-        ))
-
-    activity_categories = dict(Activity.CATEGORY_CHOICES)
-    for activity in activities.order_by("-date", "title"):
-        category_label = activity_categories.get(activity.category, activity.category or "Uncategorized")
-        records.append(_serialize_reports_record(
-            activity.date,
-            "activity",
-            activity.title,
-            f"{category_label} · Completed",
-            f"{activity.volunteer_count} {'volunteer' if activity.volunteer_count == 1 else 'volunteers'}",
-        ))
-
-    for record in assistance_records.select_related("beneficiary").order_by("-assistance_date", "-created_at"):
-        records.append(_serialize_reports_record(
-            record.assistance_date,
-            "assistance",
-            record.aid_type,
-            record.beneficiary.full_name or "Beneficiary",
-            record.quantity_or_amount,
-        ))
-
-    records.sort(key=lambda item: item["date"], reverse=True)
-    donations_per_bucket = {label: 0 for label in labels}
-    volunteer_minutes_per_bucket = {label: 0 for label in labels}
-    volunteer_records_per_bucket = {label: 0 for label in labels}
-    activities_per_bucket = {label: 0 for label in labels}
-    assistance_per_bucket = {label: 0 for label in labels}
-
-    for donation in donations:
-        label = labels[_analytics_bucket_index(range_key, donation.created_at.date())]
-        donations_per_bucket[label] += donation.amount
-    for attendance in volunteer_attendance:
-        label = labels[_analytics_bucket_index(range_key, attendance.time_out.date())]
-        volunteer_minutes_per_bucket[label] += attendance.duration_minutes or 0
-        volunteer_records_per_bucket[label] += 1
-    for activity in activities:
-        label = labels[_analytics_bucket_index(range_key, activity.date)]
-        activities_per_bucket[label] += 1
-    for record in assistance_records:
-        label = labels[_analytics_bucket_index(range_key, record.assistance_date)]
-        assistance_per_bucket[label] += 1
-
-    donation_total = donations.aggregate(total=Sum("amount"))["total"] or 0
-    volunteer_minutes = volunteer_attendance.aggregate(total=Sum("duration_minutes"))["total"] or 0
-    volunteer_count = volunteer_attendance.values("volunteer_id").distinct().count()
-    activity_count = activities.count()
-    assistance_count = assistance_records.count()
-    account_role_rows = _reports_account_role_rows()
-
-    previous_start, previous_end = _analytics_previous_window(range_key)
-    previous_donations = Donation.objects.filter(
-        created_at__date__gte=previous_start,
-        created_at__date__lte=previous_end,
-        status=Donation.STATUS_COMPLETED,
-    )
-    previous_volunteers = VolunteerAttendanceRecord.objects.filter(
-        status=VolunteerAttendanceRecord.STATUS_CONFIRMED,
-        time_out__isnull=False,
-        time_out__date__gte=previous_start,
-        time_out__date__lte=previous_end,
-    )
-    previous_activities = Activity.objects.filter(
-        date__gte=previous_start,
-        date__lte=previous_end,
-        status=Activity.STATUS_COMPLETED,
-    )
-    previous_assistance = BeneficiaryAssistanceRecord.objects.filter(
-        assistance_date__gte=previous_start,
-        assistance_date__lte=previous_end,
-    )
-
-    if category not in {"all", "donation"}:
-        previous_donations = previous_donations.none()
-    if category not in {"all", "volunteer"}:
-        previous_volunteers = previous_volunteers.none()
-    if category not in {"all", "activity"}:
-        previous_activities = previous_activities.none()
-    if category not in {"all", "assistance"}:
-        previous_assistance = previous_assistance.none()
-    if campaign:
-        previous_donations = previous_donations.filter(campaign=campaign)
-
-    def percent_change(current, previous):
-        if not previous:
-            return None
-        return round(((current - previous) / previous) * 100, 1)
-
-    donor_summary = donations.values("donor_name", "user__username").annotate(
-        total=Sum("amount")
-    ).order_by("-total").first()
-    top_donor = {"name": "No completed donations", "meta": "No finalized donation records in this period"}
-    if donor_summary:
-        donor_name = donor_summary["donor_name"] or donor_summary["user__username"] or "Anonymous donor"
-        top_donor = {"name": donor_name, "meta": f"₱{donor_summary['total']:,.0f} in finalized donations"}
-
-    top_ojt_volunteer = {
-        "name": "No OJT progress recorded",
-        "meta": "No active volunteer has logged OJT hours",
-    }
-    top_ojt_progress = 0
-    active_volunteer_profiles = UserProfile.objects.filter(
-        account_role=UserProfile.ROLE_VOLUNTEER,
-        user__is_active=True,
-        user__is_staff=False,
-        user__is_superuser=False,
-    ).select_related("user")
-    for profile in active_volunteer_profiles:
-        if profile.volunteer_type == UserProfile.VOLUNTEER_TYPE_COMMUNITY:
-            continue
-        ojt_hours = float(profile.ojt_hours or 0)
-        required_hours = float(profile.required_ojt_hours or 80)
-        if ojt_hours <= 0 or required_hours <= 0:
-            continue
-        progress = ojt_hours / required_hours
-        if progress <= top_ojt_progress:
-            continue
-
-        volunteer_name = (
-            f"{profile.user.first_name or ''} {profile.user.last_name or ''}".strip()
-            or profile.user.username
-        )
-        if ojt_hours >= required_hours:
-            progress_label = f"{ojt_hours:.1f} of {required_hours:.1f} OJT hours · target reached"
-        else:
-            progress_label = f"{ojt_hours:.1f} of {required_hours:.1f} OJT hours · {progress * 100:.1f}% complete"
-        top_ojt_volunteer = {"name": volunteer_name, "meta": progress_label}
-        top_ojt_progress = progress
-
-    payment_methods = dict(Donation.PAYMENT_METHOD_CHOICES)
-    chart_payment_methods = (Donation.PAYMENT_GCASH, Donation.PAYMENT_BANK_TRANSFER)
-    distribution = {
-        "labels": [payment_methods[method] for method in chart_payment_methods],
-        "values": [donations.filter(payment_method=method).count() for method in chart_payment_methods],
-    }
-    series = {
-        "labels": labels,
-        "donations": [donations_per_bucket[label] for label in labels],
-        "volunteerHours": [round(volunteer_minutes_per_bucket[label] / 60, 1) for label in labels],
-        "operationalRecords": [
-            volunteer_records_per_bucket[label] + activities_per_bucket[label] + assistance_per_bucket[label]
-            for label in labels
-        ],
-        "activities": [activities_per_bucket[label] for label in labels],
-        "assistance": [assistance_per_bucket[label] for label in labels],
-        "kpis": {
-            "totalDonations": {
-                "value": donation_total,
-                "count": donations.count(),
-                "change": percent_change(donation_total, previous_donations.aggregate(total=Sum("amount"))["total"] or 0),
-            },
-            "volunteerHours": {
-                "value": round(volunteer_minutes / 60, 1),
-                "volunteers": volunteer_count,
-                "change": percent_change(volunteer_minutes, previous_volunteers.aggregate(total=Sum("duration_minutes"))["total"] or 0),
-            },
-            "completedActivities": {
-                "value": activity_count,
-                "change": percent_change(activity_count, previous_activities.count()),
-            },
-            "assistanceRecords": {
-                "value": assistance_count,
-                "change": percent_change(assistance_count, previous_assistance.count()),
-            },
-        },
-        "insights": {"topDonor": top_donor, "topOjtVolunteer": top_ojt_volunteer},
-    }
-
-    return {
-        "series": {range_key: series},
-        "distribution": distribution,
-        "records": records if record_limit is None else records[:record_limit],
-        "recordCount": len(records),
-        "accounts": {
-            "labels": [label for label, _count in account_role_rows],
-            "values": [count for _label, count in account_role_rows],
-        },
-        "campaigns": [
-            {"value": value, "label": value.strip() or "No campaign recorded"}
-            for value in campaign_options
-        ],
-    }
-
-
 @require_GET
 @login_required(login_url="signin")
 def reports_data_api(request):
     if not request.user.is_superuser:
-        return JsonResponse({"error": "Only administrators can access the analytics data."}, status=403)
+        return JsonResponse({"error": "Only administrators can access report data."}, status=403)
 
-    range_key = request.GET.get("range", "30d")
-    category = request.GET.get("category", "all")
-    campaign = request.GET.get("campaign", "")
-    payload = _reports_analytics_payload(range_key, category, campaign)
-    payload["categories"] = [
-        {"value": key, "label": label}
-        for key, label in _reports_category_metadata().items()
-    ]
+    report = request.GET.get("report", "overview")
+    if report != "overview" and report not in REPORTS:
+        return JsonResponse({"error": "Choose a valid report."}, status=404)
+    try:
+        payload = reports_payload(report, request.GET)
+    except ValueError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
     return JsonResponse(payload)
-
-
-def _analytics_export_sections(payload, range_key, category, campaign):
-    series = payload["series"][range_key]
-    period_labels = {"30d": "Last 30 days", "90d": "Last 90 days", "12m": "Last 12 months"}
-    category_label = _reports_category_metadata().get(category, "All record types")
-    filter_label = campaign if campaign and category in {"all", "donation"} else category_label
-    return period_labels[range_key], filter_label, [
-        ("Summary", ["Metric", "Value", "Notes"], [
-            ["Finalized donations", f"PHP {series['kpis']['totalDonations']['value']:,.2f}", f"{series['kpis']['totalDonations']['count']} records"],
-            ["Volunteer hours", f"{series['kpis']['volunteerHours']['value']:.1f}", f"{series['kpis']['volunteerHours']['volunteers']} volunteers with confirmed check-outs"],
-            ["Completed activities", series["kpis"]["completedActivities"]["value"], ""],
-            ["Beneficiary assistance", series["kpis"]["assistanceRecords"]["value"], "Dated assistance records"],
-        ]),
-        ("Active accounts by role", ["Account type", "Active accounts"], [
-            [label, value]
-            for label, value in zip(payload["accounts"]["labels"], payload["accounts"]["values"])
-        ]),
-        ("Trend", ["Period", "Donations (PHP)", "Managed service records"], [
-            [label, f"PHP {series['donations'][index]:,.2f}", series["operationalRecords"][index]]
-            for index, label in enumerate(series["labels"])
-        ]),
-        ("Payment methods", ["Method", "Finalized donations"], [
-            [label, value]
-            for label, value in zip(payload["distribution"]["labels"], payload["distribution"]["values"])
-        ]),
-        ("Filtered records", ["Date", "Record type", "Record", "Details", "Value"], [
-            [record["date"], record["category"], record["metric"], record["detail"], record["value"]]
-            for record in payload["records"]
-        ]),
-    ]
 
 
 @login_required(login_url="signin")
 @require_POST
 def reports_export(request):
     if not request.user.is_superuser:
-        return JsonResponse({"error": "Only administrators can export analytics reports."}, status=403)
+        return JsonResponse({"error": "Only administrators can export reports."}, status=403)
 
-    range_key = request.POST.get("range", "30d")
-    category = request.POST.get("category", "all")
-    campaign = request.POST.get("campaign", "")
+    report = request.POST.get("report", "")
     output_format = request.POST.get("format", "csv").lower()
-    if range_key not in {"30d", "90d", "12m"}:
-        return JsonResponse({"error": "Choose a valid reporting period."}, status=400)
-    if category not in {"all", "donation", "volunteer", "activity", "assistance"}:
-        return JsonResponse({"error": "Choose a valid record type."}, status=400)
+    if report not in REPORTS:
+        return JsonResponse({"error": "Choose a valid report."}, status=400)
     if output_format not in {"csv", "pdf"}:
         return JsonResponse({"error": "Choose CSV or PDF format."}, status=400)
 
-    if category not in {"all", "donation"}:
-        campaign = ""
-    payload = _reports_analytics_payload(range_key, category, campaign, record_limit=None)
-    period_label, filter_label, sections = _analytics_export_sections(payload, range_key, category, campaign)
-    filename = f"analytics_{range_key}_{timezone.localdate().isoformat()}.{output_format}"
+    try:
+        payload = reports_payload(report, request.POST, export_all=True)
+    except ValueError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    selected_filters = [
+        f"{key.replace('_', ' ').title()}: {value}"
+        for key, value in payload["filters"].items()
+        if value and value not in {"all", "30d", "1"}
+    ]
+    filter_label = "; ".join(selected_filters) or "No additional filters"
+    period_label = payload["period"]
+    sections = [
+        ("Summary", ["Metric", "Value", "Notes"], [
+            [item["label"], item["value"], item["note"]]
+            for item in payload["stats"]
+        ]),
+    ]
+    if report == "volunteer-hours":
+        sections.append((
+            "Volunteer hours by volunteer",
+            ["Volunteer", "Hours"],
+            list(zip(payload["distribution"]["labels"], payload["distribution"]["values"])),
+        ))
+    sections.append(("Records", payload["columns"], payload["rows"]))
+    filename = f"{report}_{timezone.localdate().isoformat()}.{output_format}"
 
     if output_format == "csv":
         buffer = io.StringIO(newline="")
         writer = csv.writer(buffer)
-        writer.writerow(["Analytics report", period_label])
-        writer.writerow(["Selected filters", filter_label])
+        writer.writerow([_csv_safe_value(payload["title"] + " report"), _csv_safe_value(period_label)])
+        writer.writerow(["Selected filters", _csv_safe_value(filter_label)])
         for section_title, headers, rows in sections:
             writer.writerow([section_title])
             writer.writerow(headers)
             writer.writerows([_csv_safe_value(value) for value in row] for row in rows)
         response = HttpResponse(buffer.getvalue().encode("utf-8-sig"), content_type="text/csv; charset=utf-8")
     else:
+        from django.contrib.staticfiles.finders import find
+
+        logo_path = find("media/Happyness Project.jpg")
+        if not logo_path:
+            raise FileNotFoundError("The organization logo could not be found in static files.")
+        settings_record = AdminSystemSettings.objects.filter(pk="global").only("settings").first()
+        saved_settings = settings_record.settings if settings_record and isinstance(settings_record.settings, dict) else {}
+        organization_name = str(saved_settings.get("system_name") or ADMIN_SYSTEM_SETTINGS_DEFAULTS["system_name"]).strip()
+        if report == "donations":
+            sections.append((
+                "Total amount",
+                ["Metric", "Amount", "Notes"],
+                [[
+                    "Financial donations",
+                    f"₱{payload['totals'].get('cash_amount', 0):,.2f}",
+                    "Completed donations only; in-kind gifts are excluded from the money total.",
+                ]],
+            ))
+        elif report == "product-sales":
+            sections.append((
+                "Total amount",
+                ["Metric", "Amount", "Notes"],
+                [[
+                    "Sales revenue",
+                    payload["totals"].get("revenue", "₱0.00"),
+                    "Completed product sales for the selected period and filters.",
+                ]],
+            ))
+        distribution = dict(payload["distribution"])
+        distribution_kind = distribution.pop("type", "doughnut")
+        if distribution_kind == "bar":
+            if report == "volunteer-hours":
+                distribution["labels"] = distribution["labels"][:10]
+                distribution["values"] = distribution["values"][:10]
+                distribution["horizontal"] = True
+                distribution["note"] = "Top 10 volunteers by confirmed hours; full list below"
+            distribution["datasets"] = [{
+                "label": "Hours",
+                "values": distribution["values"],
+            }]
+        charts = [
+            {
+                "kind": "line",
+                **payload["trend"],
+            },
+            {
+                "kind": distribution_kind,
+                **distribution,
+            },
+        ]
         response = HttpResponse(
-            _export_analytics_pdf(period_label, filter_label, sections),
+            _export_reports_pdf(
+                payload["title"] + " report",
+                period_label,
+                filter_label,
+                sections,
+                charts,
+                organization_name,
+                logo_path,
+            ),
             content_type="application/pdf",
         )
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
@@ -12406,8 +12276,23 @@ def reports(request):
     if not request.user.is_superuser:
         return redirect("user_dashboard")
 
+    overview = reports_payload("overview", request.GET)
     return render(request, "admin_dashboard/reports_admin.html", {
         "active_page": "reports",
+        "report_slug": "overview",
+        "overview_cards": overview["cards"],
+    })
+
+
+@login_required(login_url="signin")
+def reports_detail(request, report):
+    if not request.user.is_superuser:
+        return redirect("user_dashboard")
+    if report not in REPORTS:
+        raise Http404("Report not found.")
+    return render(request, "admin_dashboard/reports_admin.html", {
+        "active_page": "reports",
+        "report_slug": report,
     })
 
 
@@ -12439,43 +12324,343 @@ def _csv_safe_value(value):
     return value
 
 
-def _export_analytics_pdf(period_label, filter_label, sections):
+def _export_reports_pdf(report_title, period_label, filter_label, sections, charts, organization_name, logo_path):
     from xml.sax.saxutils import escape
 
     from reportlab.lib import colors
-    from reportlab.lib.enums import TA_CENTER
-    from reportlab.lib.pagesizes import landscape, letter
+    from reportlab.lib.pagesizes import letter
     from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import inch
-    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+    from reportlab.platypus import Flowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
     buffer = io.BytesIO()
-    page_size = landscape(letter)
+    page_size = letter
     document = SimpleDocTemplate(
         buffer,
         pagesize=page_size,
         leftMargin=0.35 * inch,
         rightMargin=0.35 * inch,
-        topMargin=0.45 * inch,
+        topMargin=0.9 * inch,
         bottomMargin=0.45 * inch,
     )
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle("AnalyticsTitle", parent=styles["Heading1"], fontSize=17, textColor=colors.HexColor("#14352d"), alignment=TA_CENTER, spaceAfter=5)
+    title_style = ParagraphStyle("AnalyticsTitle", parent=styles["Heading1"], fontSize=17, textColor=colors.HexColor("#14352d"), spaceAfter=5)
     metadata_style = ParagraphStyle("AnalyticsMetadata", parent=styles["BodyText"], fontSize=9, leading=12, textColor=colors.HexColor("#4b635a"))
     section_style = ParagraphStyle("AnalyticsSection", parent=styles["Heading2"], fontSize=11, leading=14, textColor=colors.HexColor("#14352d"), spaceBefore=8, spaceAfter=3)
     body_style = ParagraphStyle("AnalyticsBody", parent=styles["BodyText"], fontSize=8, leading=10)
     header_style = ParagraphStyle("AnalyticsHeader", parent=body_style, fontName="Helvetica-Bold", textColor=colors.HexColor("#14352d"))
+    palette = [
+        colors.HexColor("#16856b"),
+        colors.HexColor("#d18a27"),
+        colors.HexColor("#1482a5"),
+        colors.HexColor("#9461a8"),
+        colors.HexColor("#d05c56"),
+        colors.HexColor("#65a54e"),
+        colors.HexColor("#64748b"),
+    ]
 
     def pdf_text(value):
-        return escape(str(value if value is not None else "").replace("₱", "PHP "))
+        text = str(value if value is not None else "")
+        replacements = {"₱": "PHP ", "–": "-", "—": "-", "·": " | ", "…": "..."}
+        for source, replacement in replacements.items():
+            text = text.replace(source, replacement)
+        return escape(text)
+
+    def canvas_text(value):
+        return str(value if value is not None else "").encode("latin-1", "replace").decode("latin-1")
+
+    def compact_label(value, max_width, font_size=6.5):
+        text = canvas_text(value)
+        if stringWidth(text, "Helvetica", font_size) <= max_width:
+            return text
+        while text and stringWidth(text + "...", "Helvetica", font_size) > max_width:
+            text = text[:-1]
+        return text + "..." if text else ""
+
+    class ReportChart(Flowable):
+        def __init__(self, chart, width, height=2.45 * inch):
+            super().__init__()
+            self.chart = chart
+            self.width = width
+            self.height = height
+
+        def wrap(self, available_width, available_height):
+            self.width = available_width
+            return self.width, self.height
+
+        def draw(self):
+            chart = self.chart
+            canvas = self.canv
+            canvas.saveState()
+            canvas.setFillColor(colors.white)
+            canvas.setStrokeColor(colors.HexColor("#d7e7e0"))
+            canvas.roundRect(0, 0, self.width, self.height, 9, fill=1, stroke=1)
+            canvas.setFillColor(colors.HexColor("#14352d"))
+            canvas.setFont("Helvetica-Bold", 10)
+            canvas.drawString(11, self.height - 18, compact_label(chart["title"], self.width - 22, 10))
+            canvas.setFillColor(colors.HexColor("#64786f"))
+            canvas.setFont("Helvetica", 7.5)
+            canvas.drawString(11, self.height - 31, compact_label(chart.get("note", ""), self.width - 22, 7.5))
+            if chart["kind"] == "line":
+                self.draw_line_chart(chart)
+            elif chart["kind"] == "bar":
+                self.draw_bar_chart(chart)
+            else:
+                self.draw_doughnut_chart(chart)
+            canvas.restoreState()
+
+        def draw_line_chart(self, chart):
+            canvas = self.canv
+            labels = chart.get("labels", [])
+            values = [float(value or 0) for value in chart.get("values", [])]
+            plot_left, plot_right = 38, self.width - 13
+            plot_bottom, plot_top = 29, self.height - 48
+            plot_width = max(plot_right - plot_left, 1)
+            plot_height = max(plot_top - plot_bottom, 1)
+            maximum = max(values, default=0)
+            y_max = maximum if maximum > 0 else 1
+
+            canvas.setFont("Helvetica", 6.5)
+            canvas.setStrokeColor(colors.HexColor("#e7eeea"))
+            canvas.setLineWidth(0.5)
+            for tick in range(5):
+                fraction = tick / 4
+                y = plot_bottom + plot_height * fraction
+                canvas.line(plot_left, y, plot_right, y)
+                canvas.setFillColor(colors.HexColor("#718078"))
+                canvas.drawRightString(plot_left - 5, y - 2, f"{y_max * fraction:,.0f}")
+
+            if values:
+                points = [
+                    (
+                        plot_left + plot_width * index / max(len(values) - 1, 1),
+                        plot_bottom + plot_height * value / y_max,
+                    )
+                    for index, value in enumerate(values)
+                ]
+                area = canvas.beginPath()
+                area.moveTo(points[0][0], plot_bottom)
+                area.lineTo(*points[0])
+                for point in points[1:]:
+                    area.lineTo(*point)
+                area.lineTo(points[-1][0], plot_bottom)
+                area.close()
+                canvas.setFillColor(colors.HexColor("#dcefe8"))
+                canvas.drawPath(area, fill=1, stroke=0)
+                canvas.setStrokeColor(colors.HexColor("#16856b"))
+                canvas.setLineWidth(1.8)
+                line = canvas.beginPath()
+                line.moveTo(*points[0])
+                for point in points[1:]:
+                    line.lineTo(*point)
+                canvas.drawPath(line, fill=0, stroke=1)
+                canvas.setFillColor(colors.HexColor("#16856b"))
+                for x, y in points:
+                    canvas.circle(x, y, 2, fill=1, stroke=0)
+
+            if labels:
+                label_indices = sorted(set(
+                    round(index * (len(labels) - 1) / min(4, len(labels) - 1))
+                    for index in range(min(4, len(labels) - 1) + 1)
+                )) if len(labels) > 1 else [0]
+                canvas.setFillColor(colors.HexColor("#64786f"))
+                for index in label_indices:
+                    x = plot_left + plot_width * index / max(len(labels) - 1, 1)
+                    label = compact_label(labels[index], max(plot_width / max(len(label_indices), 1), 35))
+                    if index == 0:
+                        canvas.drawString(x, 15, label)
+                    elif index == len(labels) - 1:
+                        canvas.drawRightString(x, 15, label)
+                    else:
+                        canvas.drawCentredString(x, 15, label)
+
+        def draw_bar_chart(self, chart):
+            canvas = self.canv
+            labels = list(chart.get("labels", []))
+            datasets = chart.get("datasets", [])
+            values = [
+                max(float(value or 0), 0)
+                for dataset in datasets
+                for value in dataset.get("values", [])
+            ]
+            plot_left, plot_right = 28, self.width - 12
+            plot_bottom, plot_top = 39, self.height - 48
+            plot_width = max(plot_right - plot_left, 1)
+            plot_height = max(plot_top - plot_bottom, 1)
+            y_max = max(values, default=0) or 1
+
+            if chart.get("horizontal"):
+                label_width = min(78, self.width * 0.38)
+                plot_left = label_width
+                plot_width = max(self.width - label_width - 24, 1)
+                row_height = plot_height / max(len(labels), 1)
+                canvas.setFont("Helvetica", 5.8)
+                canvas.setStrokeColor(colors.HexColor("#e7eeea"))
+                canvas.setLineWidth(0.5)
+                for tick in range(5):
+                    fraction = tick / 4
+                    x = plot_left + plot_width * fraction
+                    canvas.line(x, plot_bottom, x, plot_top)
+                    canvas.setFillColor(colors.HexColor("#718078"))
+                    canvas.drawCentredString(x, plot_bottom - 9, f"{y_max * fraction:,.1f}")
+                for index, label in enumerate(labels):
+                    value = max(float(datasets[0]["values"][index] or 0), 0)
+                    center_y = plot_top - row_height * (index + 0.5)
+                    canvas.setFillColor(colors.HexColor("#64786f"))
+                    canvas.drawRightString(label_width - 5, center_y - 2, compact_label(label, label_width - 8, 5.8))
+                    canvas.setFillColor(palette[0])
+                    canvas.roundRect(
+                        plot_left,
+                        center_y - min(row_height * 0.28, 4),
+                        plot_width * value / y_max,
+                        min(row_height * 0.56, 8),
+                        2,
+                        fill=1,
+                        stroke=0,
+                    )
+                return
+
+            canvas.setFont("Helvetica", 6.5)
+            canvas.setStrokeColor(colors.HexColor("#e7eeea"))
+            canvas.setLineWidth(0.5)
+            for tick in range(5):
+                fraction = tick / 4
+                y = plot_bottom + plot_height * fraction
+                canvas.line(plot_left, y, plot_right, y)
+                canvas.setFillColor(colors.HexColor("#718078"))
+                canvas.drawRightString(plot_left - 4, y - 2, f"{y_max * fraction:,.0f}")
+
+            group_width = plot_width / max(len(labels), 1)
+            bar_width = group_width * 0.68 / max(len(datasets), 1)
+            for dataset_index, dataset in enumerate(datasets):
+                for index, value in enumerate(dataset.get("values", [])):
+                    if index >= len(labels):
+                        break
+                    bar_height = plot_height * max(float(value or 0), 0) / y_max
+                    x = plot_left + group_width * index + group_width * 0.16 + bar_width * dataset_index
+                    canvas.setFillColor(palette[dataset_index % len(palette)])
+                    canvas.rect(x, plot_bottom, bar_width, bar_height, fill=1, stroke=0)
+
+            if labels:
+                label_indices = sorted(set(
+                    round(index * (len(labels) - 1) / min(4, len(labels) - 1))
+                    for index in range(min(4, len(labels) - 1) + 1)
+                )) if len(labels) > 1 else [0]
+                canvas.setFillColor(colors.HexColor("#64786f"))
+                for index in label_indices:
+                    x = plot_left + group_width * (index + 0.5)
+                    label = compact_label(labels[index], max(group_width, 28), 5.5)
+                    canvas.drawCentredString(x, 15, label)
+
+            canvas.setFont("Helvetica", 6)
+            legend_x = 12
+            for index, dataset in enumerate(datasets):
+                x = legend_x + index * (self.width / max(len(datasets), 1))
+                canvas.setFillColor(palette[index % len(palette)])
+                canvas.rect(x, 27, 5, 5, fill=1, stroke=0)
+                canvas.setFillColor(colors.HexColor("#42574e"))
+                canvas.drawString(x + 8, 27, compact_label(dataset.get("label", ""), self.width / max(len(datasets), 1) - 10, 6))
+
+        def draw_doughnut_chart(self, chart):
+            canvas = self.canv
+            labels = list(chart.get("labels", []))
+            values = [max(float(value or 0), 0) for value in chart.get("values", [])]
+            entries = list(zip(labels, values))
+            if len(entries) > 5:
+                entries = entries[:4] + [("Other categories", sum(value for _label, value in entries[4:]))]
+            total = sum(value for _label, value in entries)
+            center_x = self.width / 2
+            center_y = self.height * 0.52
+            radius = min(self.width * 0.18, self.height * 0.24, 46)
+            if not entries or total <= 0:
+                canvas.setFillColor(colors.HexColor("#d1d5db"))
+                canvas.circle(center_x, center_y, radius, fill=1, stroke=0)
+            else:
+                start_angle = 90
+                for index, (_label, value) in enumerate(entries):
+                    if value <= 0:
+                        continue
+                    extent = 360 * value / total
+                    canvas.setFillColor(palette[index % len(palette)])
+                    canvas.wedge(
+                        center_x - radius,
+                        center_y - radius,
+                        center_x + radius,
+                        center_y + radius,
+                        start_angle,
+                        extent,
+                        fill=1,
+                        stroke=0,
+                    )
+                    start_angle += extent
+            canvas.setFillColor(colors.white)
+            canvas.circle(center_x, center_y, radius * 0.58, fill=1, stroke=0)
+
+            if total > 0:
+                legend_y = 23
+                legend_x = 12
+                canvas.setFont("Helvetica", 6.5)
+                canvas.setFillColor(colors.HexColor("#42574e"))
+                for index, (label, value) in enumerate(entries):
+                    x = legend_x + (index % 2) * (self.width - 24) / 2
+                    y = legend_y - (index // 2) * 10
+                    canvas.setFillColor(palette[index % len(palette)])
+                    canvas.circle(x + 3, y + 2, 3, fill=1, stroke=0)
+                    canvas.setFillColor(colors.HexColor("#42574e"))
+                    legend_text = f"{label} ({value:,.0f})"
+                    canvas.drawString(x + 9, y, compact_label(legend_text, (self.width - 42) / 2))
+
+    def draw_page_header(canvas, document):
+        canvas.saveState()
+        canvas.setFillColor(colors.HexColor("#14352d"))
+        canvas.setFont("Helvetica-Bold", 10)
+        logo_size = 0.48 * inch
+        canvas.drawImage(
+            logo_path,
+            document.leftMargin,
+            page_size[1] - 0.68 * inch,
+            width=logo_size,
+            height=logo_size,
+            preserveAspectRatio=True,
+            anchor="c",
+            mask="auto",
+        )
+        canvas.drawString(document.leftMargin + logo_size + 0.12 * inch, page_size[1] - 0.39 * inch, canvas_text(organization_name))
+        canvas.setFont("Helvetica", 7)
+        canvas.setFillColor(colors.HexColor("#64786f"))
+        canvas.drawString(document.leftMargin + logo_size + 0.12 * inch, page_size[1] - 0.55 * inch, "Community Management Reports")
+        canvas.setStrokeColor(colors.HexColor("#d7e7e0"))
+        canvas.line(document.leftMargin, page_size[1] - 0.75 * inch, page_size[0] - document.rightMargin, page_size[1] - 0.75 * inch)
+        canvas.setFont("Helvetica", 7)
+        canvas.drawRightString(page_size[0] - document.rightMargin, 0.23 * inch, f"Page {document.page}")
+        canvas.restoreState()
+
+    document.title = report_title
+    document.author = organization_name
 
     elements = [
-        Paragraph("Analytics report", title_style),
+        Paragraph(pdf_text(report_title), title_style),
         Paragraph(f"<b>Period:</b> {pdf_text(period_label)}", metadata_style),
         Paragraph(f"<b>Filters:</b> {pdf_text(filter_label)}", metadata_style),
-        Spacer(1, 0.08 * inch),
+        Spacer(1, 0.04 * inch),
     ]
     usable_width = page_size[0] - 0.7 * inch
+    elements.append(Paragraph("Visual overview", section_style))
+    for chart_index in range(0, len(charts), 2):
+        chart_panels = [
+            ReportChart(charts[chart_index], usable_width / 2),
+            ReportChart(charts[chart_index + 1], usable_width / 2) if chart_index + 1 < len(charts) else Spacer(1, 1),
+        ]
+        chart_row = Table([chart_panels], colWidths=[usable_width / 2, usable_width / 2], hAlign="LEFT")
+        chart_row.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+            ("TOPPADDING", (0, 0), (-1, -1), 3),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ]))
+        elements.append(chart_row)
     for section_title, headers, rows in sections:
         elements.append(Paragraph(escape(section_title), section_style))
         if not rows:
@@ -12507,7 +12692,7 @@ def _export_analytics_pdf(period_label, filter_label, sections):
             ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
         ]))
         elements.append(table)
-    document.build(elements)
+    document.build(elements, onFirstPage=draw_page_header, onLaterPages=draw_page_header)
     return buffer.getvalue()
 
 

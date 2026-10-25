@@ -318,6 +318,7 @@
         cursor: pointer;
         transition: background-color 160ms ease, border-color 160ms ease;
         flex: 0 0 auto;
+        text-decoration: none;
     }
 
     .pay-columns-btn:hover {
@@ -986,6 +987,7 @@
                 <select id="pay-table-method-filter" class="pay-method-filter" aria-label="Filter by payment method">
                     <option value="">All Methods</option>
                 </select>
+                <a href="{% url 'export_payments_pdf' %}" class="pay-columns-btn">Export PDF</a>
                 <button type="button" id="pay-columns-toggle" class="pay-columns-btn" aria-pressed="false">More Columns</button>
                 <button type="button" id="pay-show-more" class="pay-show-more-btn" aria-expanded="false">Show More</button>
             </div>

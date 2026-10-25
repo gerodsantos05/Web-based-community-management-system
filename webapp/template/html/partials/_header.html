@@ -21,6 +21,7 @@
                     {% elif request.resolver_match.url_name == 'donations' %}Donations
                     {% elif request.resolver_match.url_name == 'inventory' %}Inventory
                     {% elif request.resolver_match.url_name == 'reports' %}Reports
+                    {% elif request.resolver_match.url_name == 'reports_detail' %}Reports
                     {% elif request.resolver_match.url_name == 'settings' %}Settings
                     {% elif request.resolver_match.url_name == 'payment' %}Payments
                     {% elif request.resolver_match.url_name == 'admin_resource_library' %}Resource Library
@@ -36,6 +37,7 @@
                     {% elif request.resolver_match.url_name == 'donations' %}Track incoming contributions and statuses
                     {% elif request.resolver_match.url_name == 'inventory' %}Monitor stock and replenishment health
                     {% elif request.resolver_match.url_name == 'reports' %}Analyze activity and outcomes
+                    {% elif request.resolver_match.url_name == 'reports_detail' %}Analyze activity and outcomes
                     {% elif request.resolver_match.url_name == 'settings' %}Configure organization and system options
                     {% elif request.resolver_match.url_name == 'payment' %}Review transactions and settlements
                     {% elif request.resolver_match.url_name == 'admin_resource_library' %}Publish guides, files, and links for volunteers

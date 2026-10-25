@@ -234,6 +234,7 @@
         background: #f3fbf7;
         padding: 0.24rem 0.52rem;
         font-size: 0.67rem;
+        text-decoration: none;
     }
 
     .inv-grid {
@@ -865,8 +866,7 @@
                 <p id="inv-table-count" class="inv-sub" aria-live="polite">0 items</p>
             </div>
             <div class="inv-table-actions">
-                <button id="inv-export-csv" type="button" class="inv-chip">Export CSV</button>
-                <button id="inv-export-pdf" type="button" class="inv-chip">Export PDF</button>
+                <a id="inv-export-pdf" href="{% url 'inventory_export_pdf' %}" class="inv-chip">Export PDF</a>
                 <button id="inv-open-form" class="inv-btn" type="button"><i data-lucide="plus"></i> Add Item</button>
             </div>
         </header>
@@ -1625,48 +1625,6 @@
         }
     }
 
-    function exportCsv() {
-        var headers = ["sku", "item_name", "category", "quantity", "unit", "status", "reorder_level", "last_updated", "supplier"];
-        var rows = ITEMS.map(function (item) {
-            return [item.sku, item.name, item.category, item.quantity, item.unit, statusOf(item), item.reorderLevel, item.lastUpdated, item.supplier || ""];
-        });
-
-        var csv = [headers.join(",")].concat(rows.map(function (row) {
-            return row.map(function (value) { return '"' + String(value).replace(/"/g, '""') + '"'; }).join(",");
-        })).join("\n");
-
-        var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement("a");
-        a.href = url;
-        a.download = "inventory.csv";
-        a.click();
-        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-    }
-
-    function exportPdf() {
-        var win = window.open("", "_blank", "noopener,noreferrer,width=1000,height=800");
-        if (!win) {
-            showToast("Pop-up blocked. Enable pop-ups to export PDF.");
-            return;
-        }
-
-        var html = "<html><head><title>Inventory PDF</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#173a31}h1{margin:0 0 12px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #dbe8e2;padding:8px;text-align:left}th{background:#edf8f3}</style></head><body>"
-            + "<h1>Inventory Export</h1>"
-            + "<p>Total items: " + ITEMS.length + "</p>"
-            + "<table><thead><tr><th>SKU</th><th>Item</th><th>Category</th><th>Qty</th><th>Unit</th><th>Status</th><th>Reorder</th><th>Updated</th></tr></thead><tbody>"
-            + ITEMS.map(function (item) {
-                return "<tr><td>" + esc(item.sku) + "</td><td>" + esc(item.name) + "</td><td>" + esc(item.category) + "</td><td>" + esc(item.quantity) + "</td><td>" + esc(item.unit) + "</td><td>" + esc(statusOf(item)) + "</td><td>" + esc(item.reorderLevel) + "</td><td>" + esc(item.lastUpdated) + "</td></tr>";
-            }).join("")
-            + "</tbody></table></body></html>";
-
-        win.document.open();
-        win.document.write(html);
-        win.document.close();
-        win.focus();
-        setTimeout(function () { win.print(); }, 350);
-    }
-
     function renderCategoryFilter() {
         var select = document.getElementById("inv-category-filter");
         var categoryMap = {
@@ -1699,8 +1657,6 @@
 
     function bind() {
         document.getElementById("inv-open-form").addEventListener("click", function () { openForm(null); });
-        document.getElementById("inv-export-csv").addEventListener("click", exportCsv);
-        document.getElementById("inv-export-pdf").addEventListener("click", exportPdf);
 
         document.getElementById("inv-search").addEventListener("input", function (e) {
             state.filters.search = e.target.value.trim().toLowerCase();

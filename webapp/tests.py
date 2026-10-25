@@ -34,6 +34,7 @@ from .models import (
     CommunityPostLike,
     CommunityPostReport,
     Donation,
+    ItemPledge,
     InventoryItem,
     ProductInquiry,
     ProductReview,
@@ -965,36 +966,63 @@ class ReportsAnalyticsDataTests(TestCase):
         )
 
         self.client.force_login(admin)
-        response = self.client.get(reverse("reports_data_api"), {"range": "30d"})
-
-        self.assertEqual(response.status_code, 200)
-        payload = response.json()
-        series = payload["series"]["30d"]
-        self.assertEqual(series["kpis"]["totalDonations"]["value"], 4200)
-        self.assertEqual(series["kpis"]["volunteerHours"]["value"], 3.0)
-        self.assertEqual(series["kpis"]["completedActivities"]["value"], 1)
-        self.assertEqual(series["kpis"]["assistanceRecords"]["value"], 1)
-        self.assertIsNone(series["kpis"]["totalDonations"]["change"])
-        self.assertEqual(payload["accounts"]["labels"], ["Regular users", "Beneficiaries", "Volunteers"])
-        self.assertEqual(payload["accounts"]["values"], [1, 1, 2])
-        self.assertEqual(series["insights"]["topOjtVolunteer"]["name"], "Progress Volunteer")
-        self.assertIn("85.0% complete", series["insights"]["topOjtVolunteer"]["meta"])
-        self.assertEqual(payload["distribution"]["labels"], ["GCash", "Bank Transfer"])
-        self.assertEqual(payload["distribution"]["values"], [1, 0])
-        self.assertGreaterEqual(len(payload["records"]), 3)
-        self.assertIn("Food Drive", {item["label"] for item in payload["campaigns"]})
-        self.assertIn("assistance", {item["value"] for item in payload["categories"]})
-        self.assertTrue(all("program" not in record for record in payload["records"]))
-        donation_record = next(record for record in payload["records"] if record["metric"] == "Food Drive")
-        self.assertEqual(donation_record["value"], "₱3,500")
-
-        filtered_response = self.client.get(
-            reverse("reports_data_api"),
-            {"range": "30d", "category": "donation", "campaign": "Food Drive"},
+        donations_response = self.client.get(reverse("reports_data_api"), {
+            "report": "donations",
+            "range": "30d",
+        })
+        self.assertEqual(donations_response.status_code, 200)
+        donations = donations_response.json()
+        self.assertEqual(donations["totals"]["cash_amount"], 4200)
+        self.assertEqual(
+            donations["distribution"]["labels"],
+            ["Cash", "GCash", "Bank", "Other methods"],
         )
-        filtered = filtered_response.json()
-        self.assertEqual(filtered["series"]["30d"]["kpis"]["totalDonations"]["value"], 3500)
-        self.assertTrue(all(record["category"] == "donation" for record in filtered["records"]))
+        self.assertEqual(donations["distribution"]["values"], [0, 1, 0, 1])
+        self.assertIn("Food Drive", {item["label"] for item in donations["options"]["campaigns"]})
+        self.assertIn("Food Drive", [row[2] for row in donations["rows"]])
+        donation_record = next(row for row in donations["rows"] if row[2] == "Food Drive")
+        self.assertEqual(donation_record[4], "₱3,500")
+
+        filtered_response = self.client.get(reverse("reports_data_api"), {
+            "report": "donations",
+            "range": "30d",
+            "donation_type": "cash",
+            "campaign": "Food Drive",
+        })
+        self.assertEqual(filtered_response.json()["totals"]["cash_amount"], 3500)
+
+        volunteer_response = self.client.get(reverse("reports_data_api"), {
+            "report": "volunteer-hours",
+            "range": "30d",
+        })
+        volunteer_data = volunteer_response.json()
+        self.assertEqual(volunteer_data["totals"]["hours"], 3.0)
+        self.assertEqual(volunteer_data["totals"]["volunteers"], 1)
+        self.assertIn("85.0% complete", volunteer_data["totals"]["closest_ojt"]["meta"])
+
+        activity_response = self.client.get(reverse("reports_data_api"), {
+            "report": "activities",
+            "range": "30d",
+        })
+        self.assertEqual(activity_response.json()["totals"]["completed"], 1)
+        assistance_response = self.client.get(reverse("reports_data_api"), {
+            "report": "assistance",
+            "range": "30d",
+        })
+        self.assertEqual(assistance_response.json()["totals"]["count"], 1)
+
+        accounts_response = self.client.get(reverse("reports_data_api"), {"report": "accounts"})
+        accounts_data = accounts_response.json()
+        self.assertEqual(accounts_data["period"], "Not affected by the reporting period")
+        self.assertEqual(accounts_data["trend"]["title"], "Accounts by age group")
+        self.assertEqual(accounts_data["options"]["role_counts"][1]["label"], "Beneficiary")
+
+        all_records = self.client.get(reverse("reports_data_api"), {
+            "report": "all-records",
+            "range": "30d",
+        }).json()
+        self.assertGreaterEqual(all_records["row_count"], 4)
+        self.assertEqual(len(all_records["distribution"]["labels"]), 5)
 
 
 class AnalyticsReportExportTests(TestCase):
@@ -1029,12 +1057,12 @@ class AnalyticsReportExportTests(TestCase):
     def test_csv_export_uses_analytics_campaign_and_category_filters(self):
         response = self.client.post(
             reverse("reports_export"),
-            {"range": "30d", "category": "donation", "campaign": "Spring Appeal", "format": "csv"},
+            {"report": "donations", "range": "30d", "donation_type": "cash", "campaign": "Spring Appeal", "format": "csv"},
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "text/csv; charset=utf-8")
-        self.assertIn('attachment; filename="analytics_30d_', response["Content-Disposition"])
+        self.assertIn('attachment; filename="donations_', response["Content-Disposition"])
         content = response.content.decode("utf-8-sig")
         self.assertIn("Spring Appeal", content)
         self.assertIn("₱250", content)
@@ -1044,28 +1072,187 @@ class AnalyticsReportExportTests(TestCase):
     def test_pdf_export_returns_a_real_analytics_pdf(self):
         response = self.client.post(
             reverse("reports_export"),
-            {"range": "30d", "category": "all", "campaign": "", "format": "pdf"},
+            {"report": "all-records", "range": "30d", "record_type": "all", "format": "pdf"},
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/pdf")
         self.assertTrue(response.content.startswith(b"%PDF"))
 
-    def test_export_rejects_unsupported_analytics_period(self):
+    def test_export_rejects_custom_period_without_dates(self):
         response = self.client.post(
             reverse("reports_export"),
-            {"range": "custom", "category": "all", "format": "csv"},
+            {"report": "donations", "range": "custom", "format": "csv"},
         )
 
         self.assertEqual(response.status_code, 400)
-        self.assertIn("reporting period", response.json()["error"])
+        self.assertIn("both dates", response.json()["error"])
 
     def test_regular_user_cannot_export_analytics(self):
         user = User.objects.create_user(username="analytics-export-user", password="password123")
         self.client.force_login(user)
-        response = self.client.post(reverse("reports_export"), {"range": "30d", "format": "csv"})
+        response = self.client.post(reverse("reports_export"), {"report": "donations", "range": "30d", "format": "csv"})
 
         self.assertEqual(response.status_code, 403)
+
+
+class ReportsDetailPageTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username="reports-admin",
+            email="reports-admin@example.com",
+            password="test-password",
+        )
+        self.client.force_login(self.admin)
+
+    def _received_pledge(self, name, category, quantity, status=ItemPledge.STATUS_RECEIVED):
+        return ItemPledge.objects.create(
+            item_name=name,
+            category=category,
+            quantity=quantity,
+            condition=ItemPledge.CONDITION_NEW,
+            delivery_method=ItemPledge.DELIVERY_DROP_OFF,
+            donor_name="Report donor",
+            donor_phone="09170000000",
+            donor_email="report-donor@example.com",
+            status=status,
+        )
+
+    def test_overview_and_each_detail_route_render(self):
+        overview = self.client.get(reverse("reports"))
+        self.assertEqual(overview.status_code, 200)
+        self.assertContains(overview, "Cards show the last 30 days")
+
+        for report in (
+            "donations",
+            "volunteer-hours",
+            "activities",
+            "assistance",
+            "product-sales",
+            "accounts",
+            "all-records",
+        ):
+            response = self.client.get(reverse("reports_detail", kwargs={"report": report}))
+            self.assertEqual(response.status_code, 200, report)
+            self.assertContains(response, "Back to Reports")
+
+    def test_product_sales_are_ranked_from_completed_orders(self):
+        buyer = User.objects.create_user(username="reports-buyer", password="test-password")
+        ProductInquiry.objects.create(
+            user=buyer,
+            full_name="Buyer",
+            email="buyer@example.com",
+            phone="09170000001",
+            payment_method=ProductInquiry.PAYMENT_CARD,
+            order_items=[
+                {"name": "Tote Bag", "category": "Tote Bags", "quantity": 2, "unit_price": 100},
+                {"name": "Doormat", "category": "Doormats", "quantity": 1, "unit_price": 100},
+            ],
+            order_total=300,
+            status=ProductInquiry.STATUS_COMPLETED,
+            admin_notification="Report order",
+        )
+        ProductInquiry.objects.create(
+            user=buyer,
+            full_name="Buyer",
+            email="buyer@example.com",
+            phone="09170000001",
+            payment_method=ProductInquiry.PAYMENT_CARD,
+            order_items=[{"name": "Tote Bag", "category": "Tote Bags", "quantity": 3, "unit_price": 100}],
+            order_total=300,
+            status=ProductInquiry.STATUS_PENDING,
+            admin_notification="Report order",
+        )
+
+        response = self.client.get(reverse("reports_data_api"), {
+            "report": "product-sales",
+            "range": "30d",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["totals"]["quantity_sold"], 3)
+        self.assertEqual(payload["totals"]["products_sold"], 2)
+        self.assertEqual(payload["rows"][0][1:3], ["Tote Bag", "Tote Bags"])
+        self.assertEqual(payload["rows"][0][4], "2")
+        self.assertIn("Tote Bags", [option["value"] for option in payload["options"]["categories"]])
+
+    def test_donations_include_only_completed_cash_and_received_items(self):
+        Donation.objects.create(
+            donor_name="Cash donor",
+            campaign="General Donation",
+            amount=500,
+            payment_method=Donation.PAYMENT_CASH,
+            reference_number="RPT-CASH-01",
+            status=Donation.STATUS_COMPLETED,
+        )
+        self._received_pledge("Rice", ItemPledge.CATEGORY_FOOD, 20)
+        self._received_pledge("Pending rice", ItemPledge.CATEGORY_FOOD, 100, ItemPledge.STATUS_PLEDGED)
+
+        response = self.client.get(reverse("reports_data_api"), {
+            "report": "donations",
+            "range": "30d",
+            "donation_type": "in_kind",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["totals"]["cash_amount"], 0)
+        self.assertEqual(payload["totals"]["in_kind_count"], 1)
+        self.assertEqual(payload["totals"]["items_received"], 20)
+        self.assertEqual(payload["rows"][0][3], "Rice · Report donor")
+        self.assertNotIn("₱", payload["rows"][0][4])
+
+    def test_accounts_filters_age_and_gender_and_paginates(self):
+        today = timezone.localdate()
+        for index in range(12):
+            user = User.objects.create_user(
+                username=f"reports-member-{index}",
+                first_name=f"Member{index}",
+                password="test-password",
+            )
+            UserProfile.objects.create(
+                user=user,
+                account_role=UserProfile.ROLE_REGULAR,
+                gender="female" if index < 11 else "male",
+                birthdate=today.replace(year=today.year - 20),
+            )
+
+        first_page = self.client.get(reverse("reports_data_api"), {"report": "accounts"})
+        self.assertEqual(first_page.status_code, 200)
+        payload = first_page.json()
+        self.assertEqual(payload["row_count"], 12)
+        self.assertEqual(payload["page_size"], 10)
+        self.assertEqual(payload["pages"], 2)
+        self.assertEqual(len(payload["rows"]), 10)
+
+        filtered = self.client.get(reverse("reports_data_api"), {
+            "report": "accounts",
+            "gender": "male",
+            "age_group": "18_24",
+        }).json()
+        self.assertEqual(filtered["row_count"], 1)
+        self.assertEqual(filtered["totals"]["male"], 1)
+
+    def test_custom_range_validation_and_export_use_selected_report(self):
+        invalid = self.client.get(reverse("reports_data_api"), {
+            "report": "assistance",
+            "range": "custom",
+            "start": "2026-10-20",
+            "end": "2026-10-10",
+        })
+        self.assertEqual(invalid.status_code, 400)
+
+        response = self.client.post(reverse("reports_export"), {
+            "report": "product-sales",
+            "range": "custom",
+            "start": "2026-10-01",
+            "end": "2026-10-25",
+            "category": "Tote Bags",
+            "format": "csv",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("product-sales_", response["Content-Disposition"])
 
 
 class VolunteerAdminChatFlowTests(TestCase):
