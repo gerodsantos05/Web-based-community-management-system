@@ -1,7 +1,12 @@
+import logging
+import smtplib
+
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
+from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -9,6 +14,9 @@ from django.urls import reverse
 from .email_utils import attach_happyness_logo
 from .models import UserProfile
 from .two_factor import is_two_factor_confirmed, is_two_factor_enabled, start_two_factor_challenge
+
+
+logger = logging.getLogger(__name__)
 
 
 class RoleBasedAccountAdapter(DefaultAccountAdapter):
@@ -108,6 +116,19 @@ class RoleBasedSocialAccountAdapter(DefaultSocialAccountAdapter):
         return super().pre_social_login(request, sociallogin)
 
     def save_user(self, request, sociallogin, form=None):
+        social_user = getattr(sociallogin, "user", None)
+        user_was_not_saved = bool(
+            social_user
+            and (
+                not social_user.pk
+                or not User.objects.filter(pk=social_user.pk).exists()
+            )
+        )
+        is_google_signup = (
+            user_was_not_saved
+            and getattr(getattr(sociallogin, "account", None), "provider", None)
+            == "google"
+        )
         email_verified = self._has_verified_google_email(sociallogin)
         user = super().save_user(request, sociallogin, form)
         profile, _created = UserProfile.objects.get_or_create(user=user)
@@ -119,4 +140,45 @@ class RoleBasedSocialAccountAdapter(DefaultSocialAccountAdapter):
         user.save(update_fields=["is_active"])
         if not email_verified and user.email:
             request.session["pending_email_verification"] = user.email
+        elif is_google_signup and user.email:
+            self._send_google_welcome_email(user, request)
         return user
+
+    def _send_google_welcome_email(self, user, request):
+        context = {
+            "first_name": user.first_name or "there",
+            "user": user,
+        }
+        message = EmailMultiAlternatives(
+            subject="Welcome to Happyness Project!",
+            body=render_to_string(
+                "auth/google_welcome_email.txt",
+                context,
+                request=request,
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[user.email],
+        )
+        message.attach_alternative(
+            render_to_string(
+                "auth/google_welcome_email.html",
+                context,
+                request=request,
+            ),
+            "text/html",
+        )
+        attach_happyness_logo(message)
+        try:
+            sent_count = message.send(fail_silently=False)
+        except (OSError, smtplib.SMTPException):
+            logger.exception(
+                "Failed to send Google signup welcome email to user %s",
+                user.pk,
+            )
+            return
+
+        if sent_count != 1:
+            logger.warning(
+                "Google signup welcome email was not sent to user %s",
+                user.pk,
+            )

@@ -208,6 +208,7 @@ class AccountActivationTests(TestCase):
         profile = UserProfile.objects.get(user=user)
         self.assertTrue(user.is_active)
         self.assertFalse(profile.email_verification_pending)
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_google_verified_claim_activates_account_when_email_address_flag_is_missing(self):
         user = User.objects.create_user(
@@ -238,6 +239,7 @@ class AccountActivationTests(TestCase):
         user = User(
             username="google-sociallogin-user",
             email="google-sociallogin@example.com",
+            first_name="Gerod",
             is_active=False,
         )
         sociallogin = SocialLogin(
@@ -264,6 +266,25 @@ class AccountActivationTests(TestCase):
         self.assertTrue(user.is_active)
         self.assertTrue(
             EmailAddress.objects.get(user=user).verified,
+        )
+        self.assertEqual(len(mail.outbox), 1)
+        welcome_email = mail.outbox[0]
+        self.assertEqual(welcome_email.subject, "Welcome to Happyness Project!")
+        self.assertEqual(welcome_email.to, ["google-sociallogin@example.com"])
+        self.assertIn("Hi Gerod,", welcome_email.body)
+        self.assertEqual(len(welcome_email.alternatives), 1)
+        html_body, content_type = welcome_email.alternatives[0]
+        self.assertEqual(content_type, "text/html")
+        self.assertIn("HAPPYNESS PROJECT", html_body)
+        self.assertIn("Welcome to HappYness Project!", html_body)
+        self.assertIn("COMMUNITY / CARE / OPPORTUNITY", html_body)
+        self.assertIn("cid:happyness-project-logo", html_body)
+        self.assertTrue(
+            any(
+                getattr(attachment, "get", lambda *_args: None)("Content-ID")
+                == "<happyness-project-logo>"
+                for attachment in welcome_email.attachments
+            )
         )
 
     def test_google_login_recovers_pending_account_but_preserves_admin_deactivation(self):
@@ -332,6 +353,7 @@ class AccountActivationTests(TestCase):
         profile = UserProfile.objects.get(user=user)
         self.assertFalse(user.is_active)
         self.assertTrue(profile.email_verification_pending)
+        self.assertEqual(len(mail.outbox), 0)
         self.assertEqual(
             request.session["pending_email_verification"],
             "unverified-google@example.com",

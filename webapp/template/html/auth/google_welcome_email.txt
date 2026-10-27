@@ -1,0 +1,10 @@
+Hi {{ first_name }},
+
+Welcome to Happyness Project! Your account has been created successfully using your Google account.
+
+We’re glad you’re here. Happyness Project is a place to find community, care, and opportunities to support your well-being. You can sign in anytime using Google with this email address.
+
+We hope you feel at home here!
+
+Warmly,
+The Happyness Project Team

@@ -416,7 +416,13 @@ function initProductFilters() {
     const productsToolbar = document.querySelector(".products-toolbar");
     const productsEmpty = document.getElementById("productsEmpty");
 
-    if (!categoryButtons.length || !productCards.length) {
+    if (!categoryButtons.length) {
+        return;
+    }
+    if (!productCards.length) {
+        if (productsEmpty) {
+            productsEmpty.hidden = false;
+        }
         return;
     }
 
@@ -693,6 +699,7 @@ function initProductDetails() {
     let quantity = 1;
     let selectedCard = null;
     let selectedVariation = "";
+    let productPriceAvailable = true;
     let stockTotal = 0;
     let stockThreshold = 0;
     let stockRequestId = 0;
@@ -865,8 +872,13 @@ function initProductDetails() {
         outOfStockTag.hidden = !isOutOfStock;
         decreaseButton.disabled = isOutOfStock || quantity <= 1;
         increaseButton.disabled = isOutOfStock || quantity >= stockTotal;
-        continueButton.disabled = isOutOfStock;
-        continueButton.textContent = isOutOfStock ? "Out of stock" : "Continue";
+        continueButton.disabled = isOutOfStock || !productPriceAvailable;
+        continueButton.textContent = isOutOfStock
+            ? "Out of stock"
+            : (productPriceAvailable ? "Continue" : "Price unavailable");
+        if (!productPriceAvailable && !isOutOfStock) {
+            setStockMessage("The store price has not been set for this product yet.", true);
+        }
         updateTotal();
     }
 
@@ -1187,17 +1199,25 @@ function initProductDetails() {
         const cardDescription = card.dataset.description || "";
         const cardPrice = card.querySelector(".product-price");
 
-        if (!cardImage || !cardCategory || !cardTitle || !cardDescription || !cardPrice) {
+        if (!cardCategory || !cardTitle || !cardDescription || !cardPrice) {
             return;
         }
 
-        image.src = cardImage.src;
-        image.alt = cardImage.alt;
+        if (cardImage) {
+            image.src = cardImage.src;
+            image.alt = cardImage.alt;
+            image.hidden = false;
+        } else {
+            image.removeAttribute("src");
+            image.alt = cardTitle.textContent.trim();
+            image.hidden = true;
+        }
         category.textContent = cardCategory.textContent.trim();
         title.textContent = cardTitle.textContent.trim();
         description.textContent = cardDescription.trim();
         loadProductReviews(cardTitle.textContent.trim());
         unitPrice = Number.parseFloat(cardPrice.textContent.replace(/[^0-9.]/g, "")) || 0;
+        productPriceAvailable = card.dataset.priceAvailable !== "false";
         quantity = 1;
         selectedCard = card;
         stockTotal = 0;

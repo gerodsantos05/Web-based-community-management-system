@@ -100,6 +100,12 @@ def resource_library_upload_to(instance, filename):
 	return f"resource_library/{random_name}"
 
 
+def inventory_product_image_upload_to(instance, filename):
+	extension = os.path.splitext(filename)[1].lower()
+	random_name = f"{uuid.uuid4().hex}{extension}"
+	return f"inventory/products/{random_name}"
+
+
 def material_submission_upload_to(instance, filename):
 	extension = os.path.splitext(filename)[1].lower()
 	random_name = f"{uuid.uuid4().hex}{extension}"
@@ -1604,6 +1610,7 @@ class InventoryItem(models.Model):
 	low_stock_threshold = models.PositiveIntegerField(default=10)
 	price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 	description = models.TextField(blank=True)
+	image = models.ImageField(upload_to=inventory_product_image_upload_to, blank=True, null=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 

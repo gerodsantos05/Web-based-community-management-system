@@ -4002,10 +4002,26 @@ def products(request):
         )
         print("PRODUCT PAGE ROLE: request.user.role=", getattr(request.user, "role", None), "userprofile.account_role=", account_role)
 
+    store_products = list(
+        InventoryItem.objects
+        .filter(category=InventoryItem.CATEGORY_STORE_PRODUCT)
+        .order_by("-updated_at", "-id")
+    )
+    product_categories = {}
+    for item in store_products:
+        label = (item.sub_category or "").strip() or "Store Products"
+        category_slug = slugify(label) or "store-products"
+        product_categories.setdefault(category_slug, label)
+
     return render(request, "product.html", {
         "signin_form": SignInForm(),
         "signup_form": SignUpForm(),
         "is_regular_user": is_regular_user,
+        "store_products": store_products,
+        "product_categories": [
+            {"slug": slug, "label": label}
+            for slug, label in product_categories.items()
+        ],
     })
 
 
@@ -4438,14 +4454,30 @@ def submit_product_inquiry(request):
             return JsonResponse({"error": "Order details are invalid."}, status=400)
 
         name = str(item.get("name", "")).strip()
-        category = str(item.get("category", "")).strip()
         quantity = _parse_non_negative_int(item.get("quantity"), default=0)
-        if not name or not category or quantity <= 0:
+        if not name or quantity <= 0:
             return JsonResponse({"error": "Order details are invalid."}, status=400)
 
-        unit_price = PRODUCT_CATEGORY_PRICES.get(category)
+        inventory_item = (
+            InventoryItem.objects
+            .filter(
+                category=InventoryItem.CATEGORY_STORE_PRODUCT,
+                name__iexact=name,
+            )
+            .order_by("id")
+            .first()
+        )
+        if inventory_item is None:
+            return JsonResponse({"error": f"{name} is currently unavailable."}, status=409)
+
+        category = (inventory_item.sub_category or "").strip() or "Store Products"
+        unit_price = (
+            int(inventory_item.price.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+            if inventory_item.price is not None
+            else PRODUCT_CATEGORY_PRICES.get(str(item.get("category", "")).strip())
+        )
         if unit_price is None:
-            return JsonResponse({"error": f"Unsupported product category: {category}."}, status=400)
+            return JsonResponse({"error": f"A price has not been set for {name}."}, status=400)
 
         line_total = unit_price * quantity
         subtotal += line_total
@@ -11838,8 +11870,9 @@ def inventory(request):
         'status': item.status,
         'reorderLevel': item.low_stock_threshold,
         'lastUpdated': item.updated_at.strftime('%Y-%m-%d'),
-        'price': float(item.price) if item.price else 0,
+        'price': float(item.price) if item.price is not None else '',
         'description': item.description or '',
+        'image': item.image.url if item.image else '',
         'movementHistory': [],
         'updateLogs': [],
     } for item in items]
@@ -11865,15 +11898,71 @@ def inventory(request):
     })
 
 
+def _inventory_payload(request):
+    if request.content_type and request.content_type.startswith("multipart/form-data"):
+        return request.POST, request.FILES.get("image")
+
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except ValueError:
+        return None, None
+    return (payload, None) if isinstance(payload, dict) else (None, None)
+
+
+def _inventory_price(raw_price):
+    if raw_price is None or str(raw_price).strip() == "":
+        return None
+    try:
+        price = Decimal(str(raw_price))
+    except (InvalidOperation, TypeError, ValueError):
+        raise ValueError("Enter a valid product price.")
+    if not price.is_finite() or price < 0:
+        raise ValueError("Product price cannot be negative.")
+    if price > Decimal("99999999.99"):
+        raise ValueError("Product price is too large.")
+    if price != price.quantize(Decimal("0.01")):
+        raise ValueError("Product prices can have up to two decimal places.")
+    return price
+
+
+def _validate_inventory_image(uploaded_image):
+    if uploaded_image is None:
+        return None
+    if uploaded_image.size > 5 * 1024 * 1024:
+        return "Product images must be 5 MB or smaller."
+    content_type = str(getattr(uploaded_image, "content_type", "") or "").lower()
+    if not content_type.startswith("image/"):
+        return "Upload a valid image file."
+    extension_formats = {
+        ".jpg": {"JPEG"},
+        ".jpeg": {"JPEG"},
+        ".png": {"PNG"},
+        ".gif": {"GIF"},
+        ".webp": {"WEBP"},
+    }
+    extension = os.path.splitext(uploaded_image.name)[1].lower()
+    if extension not in extension_formats:
+        return "Upload a JPG, PNG, GIF, or WebP image."
+    try:
+        with Image.open(uploaded_image) as image:
+            if image.format not in extension_formats[extension]:
+                return "The image format does not match its file extension."
+            image.verify()
+    except (Image.DecompressionBombError, UnidentifiedImageError, OSError, ValueError):
+        return "Upload a valid image file."
+    finally:
+        uploaded_image.seek(0)
+    return None
+
+
 @login_required(login_url="signin")
 @require_POST
 def inventory_add(request):
     if not request.user.is_superuser:
         return JsonResponse({"error": "Unauthorized"}, status=403)
 
-    try:
-        payload = json.loads(request.body.decode("utf-8") or "{}")
-    except ValueError:
+    payload, uploaded_image = _inventory_payload(request)
+    if payload is None:
         return JsonResponse({"error": "Invalid JSON payload."}, status=400)
 
     name = str(payload.get("name", "")).strip()
@@ -11882,7 +11971,6 @@ def inventory_add(request):
     unit = str(payload.get("unit", "pcs")).strip()
     stock = _parse_non_negative_int(payload.get("stock"), default=0)
     low_stock_threshold = _parse_non_negative_int(payload.get("low_stock_threshold"), default=10)
-    price = payload.get("price")
     description = str(payload.get("description", "")).strip()
 
     if not name:
@@ -11891,11 +11979,16 @@ def inventory_add(request):
     if category not in dict(InventoryItem.CATEGORY_CHOICES):
         return JsonResponse({"error": "Invalid category."}, status=400)
 
-    if price is not None:
-        try:
-            price = float(price) if price else None
-        except (ValueError, TypeError):
-            price = None
+    try:
+        price = _inventory_price(payload.get("price"))
+    except ValueError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    if category == InventoryItem.CATEGORY_STORE_PRODUCT and price is None:
+        return JsonResponse({"error": "A price is required for store products."}, status=400)
+
+    image_error = _validate_inventory_image(uploaded_image)
+    if image_error:
+        return JsonResponse({"error": image_error}, status=400)
 
     item = InventoryItem.objects.create(
         name=name,
@@ -11906,6 +11999,7 @@ def inventory_add(request):
         low_stock_threshold=low_stock_threshold,
         price=price,
         description=description,
+        image=uploaded_image,
     )
 
     return JsonResponse({
@@ -11921,7 +12015,9 @@ def inventory_add(request):
             "status": item.status,
             "reorderLevel": item.low_stock_threshold,
             "lastUpdated": item.updated_at.strftime('%Y-%m-%d'),
-            "price": float(item.price) if item.price else 0,
+            "price": float(item.price) if item.price is not None else '',
+            "description": item.description,
+            "image": item.image.url if item.image else '',
         },
     }, status=201)
 
@@ -11934,9 +12030,8 @@ def inventory_edit(request, item_id):
 
     item = get_object_or_404(InventoryItem, pk=item_id)
 
-    try:
-        payload = json.loads(request.body.decode("utf-8") or "{}")
-    except ValueError:
+    payload, uploaded_image = _inventory_payload(request)
+    if payload is None:
         return JsonResponse({"error": "Invalid JSON payload."}, status=400)
 
     name = str(payload.get("name", "")).strip()
@@ -11944,12 +12039,25 @@ def inventory_edit(request, item_id):
     sub_category = str(payload.get("sub_category", "")).strip()
     unit = str(payload.get("unit", "")).strip()
     low_stock_threshold = _parse_non_negative_int(payload.get("low_stock_threshold"))
-    price = payload.get("price")
     description = str(payload.get("description", "")).strip()
+
+    if category and category not in dict(InventoryItem.CATEGORY_CHOICES):
+        return JsonResponse({"error": "Invalid category."}, status=400)
+    try:
+        price = _inventory_price(payload.get("price", item.price))
+    except ValueError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    next_category = category or item.category
+    if next_category == InventoryItem.CATEGORY_STORE_PRODUCT and price is None:
+        return JsonResponse({"error": "A price is required for store products."}, status=400)
+
+    image_error = _validate_inventory_image(uploaded_image)
+    if image_error:
+        return JsonResponse({"error": image_error}, status=400)
 
     if name:
         item.name = name
-    if category and category in dict(InventoryItem.CATEGORY_CHOICES):
+    if category:
         item.category = category
     if sub_category or sub_category == "":
         item.sub_category = sub_category or None
@@ -11957,13 +12065,13 @@ def inventory_edit(request, item_id):
         item.unit = unit
     if low_stock_threshold is not None:
         item.low_stock_threshold = low_stock_threshold
-    if price is not None:
-        try:
-            item.price = float(price) if price else None
-        except (ValueError, TypeError):
-            pass
+    if "price" in payload:
+        item.price = price
     if description or description == "":
         item.description = description
+
+    if uploaded_image:
+        item.image = uploaded_image
 
     item.save()
 
@@ -11980,7 +12088,9 @@ def inventory_edit(request, item_id):
             "status": item.status,
             "reorderLevel": item.low_stock_threshold,
             "lastUpdated": item.updated_at.strftime('%Y-%m-%d'),
-            "price": float(item.price) if item.price else 0,
+            "price": float(item.price) if item.price is not None else '',
+            "description": item.description,
+            "image": item.image.url if item.image else '',
         },
     })
 

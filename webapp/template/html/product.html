@@ -29,16 +29,31 @@
             <div class="container products-catalog-inner">
                 <div class="products-toolbar" aria-label="Product category filters">
                     <button class="products-filter-btn active" type="button" data-category-btn="all" aria-pressed="true">All</button>
-                    <button class="products-filter-btn" type="button" data-category-btn="doormats" aria-pressed="false">Doormats</button>
-                    <button class="products-filter-btn" type="button" data-category-btn="pot-holder-rags" aria-pressed="false">Pot Holder Rags</button>
-                        <button class="products-filter-btn" type="button" data-category-btn="tote-bags" aria-pressed="false">Tote Bags</button>
-                    <button class="products-filter-btn" type="button" data-category-btn="sweaters" aria-pressed="false">Sweaters</button>
-                    <button class="products-filter-btn" type="button" data-category-btn="t-shirts" aria-pressed="false">T-shirt</button>
-                    <button class="products-filter-btn" type="button" data-category-btn="homemade-candles" aria-pressed="false">Homemade Candles</button>
-                    <button class="products-filter-btn" type="button" data-category-btn="perfume" aria-pressed="false">Perfume</button>
+                    {% for category in product_categories %}
+                    <button class="products-filter-btn" type="button" data-category-btn="{{ category.slug }}" aria-pressed="false">{{ category.label }}</button>
+                    {% endfor %}
                 </div>
 
                 <div class="products-grid" id="productsGrid">
+                    {% for item in store_products %}
+                    {% with category_label=item.sub_category|default:"Store Products" %}
+                    <article class="product-card" data-category="{{ category_label|slugify }}" data-stock-name="{{ item.name }}" data-description="{{ item.description|default:'Handmade by our Happy Nanays.' }}" data-price-available="{% if item.price is not None %}true{% else %}false{% endif %}">
+                        <div class="product-media">
+                            {% if item.image %}
+                            <img src="{{ item.image.url }}" alt="{{ item.name }}">
+                            {% else %}
+                            <div class="product-image-placeholder" role="img" aria-label="No image uploaded for {{ item.name }}">Image coming soon</div>
+                            {% endif %}
+                        </div>
+                        <div class="product-content">
+                            <span class="product-category-badge">{{ category_label }}</span>
+                            <h3>{{ item.name }}</h3>
+                            <span class="product-price">{% if item.price is not None %}₱{{ item.price|floatformat:"-2" }}{% else %}Price on request{% endif %}</span>
+                        </div>
+                    </article>
+                    {% endwith %}
+                    {% endfor %}
+                    {% comment %}
                     <article class="product-card" data-category="doormats" data-stock-name="Handwoven Doormat" data-variations="Size|Small|Medium|Large" data-description="Beautiful handwoven doormat perfect for your home entrance">
                         <div class="product-media">
                             <img src="{% static 'media/hand woven doormat.jpg' %}" alt="Handwoven Doormat">
@@ -137,6 +152,7 @@
                             <span class="product-price">₱120</span>
                         </div>
                     </article>
+                    {% endcomment %}
                 </div>
 
                 <p class="products-empty" id="productsEmpty" hidden>No products found in this category yet.</p>

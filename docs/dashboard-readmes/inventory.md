@@ -17,3 +17,7 @@
 
 ### Implementation notes
 Prototype uses client-side filtering/sorting/pagination with embedded JSON below. Ready for backend API integration when endpoints become available.
+
+## Store product publishing
+
+Inventory records appear on the public Products page only while their category is **Store Products**. Admins can add or edit the product type, price, description, and image in the inventory modal; uploaded images are optional and limited to 5 MB. Products are grouped by their product type on the public page, and their displayed prices and order prices come from the inventory record.

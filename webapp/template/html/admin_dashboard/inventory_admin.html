@@ -1156,6 +1156,40 @@
     var detailContent = document.getElementById("inv-detail-content");
     var openMenuFor = null;
     var openMenuTrigger = null;
+    var inventoryForm = document.getElementById("inv-form");
+    var inventoryImageInput = document.getElementById("inv-item-image");
+    var imagePreviewWrap = document.getElementById("inv-image-preview-wrap");
+    var imagePreview = document.getElementById("inv-image-preview");
+    var imagePreviewLabel = document.getElementById("inv-image-preview-label");
+    var imagePreviewObjectUrl = null;
+
+    function clearImagePreview() {
+        if (imagePreviewObjectUrl) {
+            URL.revokeObjectURL(imagePreviewObjectUrl);
+            imagePreviewObjectUrl = null;
+        }
+        imagePreview.removeAttribute("src");
+        imagePreviewWrap.hidden = true;
+        imagePreviewLabel.textContent = "";
+    }
+
+    function showImagePreview(url, label, isObjectUrl) {
+        if (imagePreviewObjectUrl) {
+            URL.revokeObjectURL(imagePreviewObjectUrl);
+            imagePreviewObjectUrl = null;
+        }
+        imagePreview.src = url;
+        imagePreviewLabel.textContent = label;
+        imagePreviewWrap.hidden = false;
+        if (isObjectUrl) imagePreviewObjectUrl = url;
+    }
+
+    function updatePriceRequirement() {
+        var productPrice = document.getElementById("inv-item-price");
+        var isStoreProduct = document.getElementById("inv-item-category").value === "store_product";
+        productPrice.required = isStoreProduct;
+        productPrice.setAttribute("aria-required", String(isStoreProduct));
+    }
 
     function esc(value) {
         return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
@@ -1212,24 +1246,28 @@
         });
     }
 
+    function postFormData(url, data) {
+        return fetch(url, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken"),
+            },
+            body: data,
+        }).then(function (response) {
+            return response.json().then(function (json) {
+                if (!response.ok) {
+                    throw json.error || json.message || response.statusText || "Request failed.";
+                }
+                return json;
+            });
+        });
+    }
+
     function statusBadge(status) {
         if (status === "Out of Stock") return "inv-badge inv-status-out";
         if (status === "Low Stock") return "inv-badge inv-status-low";
         return "inv-badge inv-status-in";
     }
-
-    var PRODUCT_IMAGES = {
-        "handwoven doormat": "{% static 'media/hand woven doormat.jpg' %}",
-        "braided doormat": "{% static 'media/braided doormat.jpg' %}",
-        "pot holder rag": "{% static 'media/pot holder rag.png' %}",
-        "tote bag": "{% static 'media/tote bag.jpg' %}",
-        "champion of kindness bag": "{% static 'media/champion of kindness bag.png' %}",
-        "handknit sweater": "{% static 'media/handkit sweater.png' %}",
-        "happyness t-shirt": "{% static 'media/Happyness T-shirt.png' %}",
-        "homemade candle": "{% static 'media/Homemade Candle.jpg' %}",
-        "handcrafted perfume": "{% static 'media/Handcrafted Perfume.jpg' %}",
-        "hygiene kit": "{% static 'media/Handcrafted Perfume.jpg' %}"
-    };
 
     function formatCategory(value) {
         var normalized = String(value || "other").trim();
@@ -1239,12 +1277,8 @@
         });
     }
 
-    function productImageForItem(name) {
-        return PRODUCT_IMAGES[String(name || "").trim().toLowerCase()] || "";
-    }
-
     function itemThumbMarkup(item) {
-        var imageUrl = productImageForItem(item.name);
+        var imageUrl = item.image || "";
         var imageMarkup = imageUrl
             ? "<img src=\"" + esc(imageUrl) + "\" alt=\"\" onerror=\"this.hidden=true; this.nextElementSibling.hidden=false;\">"
             : "";
@@ -1474,14 +1508,21 @@
     }
 
     function openForm(item) {
+        inventoryForm.reset();
+        clearImagePreview();
         state.editingId = item ? item.id : null;
         document.getElementById("inv-form-title").textContent = item ? "Edit Item" : "Add Item";
         document.getElementById("inv-item-name").value = item ? item.name : "";
         document.getElementById("inv-item-category").value = item ? item.category : "";
+        document.getElementById("inv-item-sub-category").value = item ? (item.sub_category || "") : "";
+        document.getElementById("inv-item-price").value = item && item.price !== "" ? item.price : "";
         document.getElementById("inv-item-qty").value = item ? item.quantity : "";
         document.getElementById("inv-item-unit").value = item ? item.unit : "";
         document.getElementById("inv-item-reorder").value = item ? item.reorderLevel : "";
         document.getElementById("inv-item-supplier").value = item ? (item.supplier || "") : "";
+        document.getElementById("inv-item-description").value = item ? (item.description || "") : "";
+        if (item && item.image) showImagePreview(item.image, "Current product image", false);
+        updatePriceRequirement();
         backdrop.setAttribute("data-open", "true");
         formModal.setAttribute("data-open", "true");
     }
@@ -1592,6 +1633,9 @@
         deductModal.setAttribute("data-open", "false");
         deleteModal.setAttribute("data-open", "false");
         detailModal.setAttribute("data-open", "false");
+        inventoryForm.reset();
+        clearImagePreview();
+        state.editingId = null;
         actionModalItem = null;
     }
 
@@ -1734,33 +1778,52 @@
             }
         });
 
-        document.getElementById("inv-form").addEventListener("submit", function (e) {
+        document.getElementById("inv-item-category").addEventListener("change", updatePriceRequirement);
+        inventoryImageInput.addEventListener("change", function () {
+            var file = inventoryImageInput.files && inventoryImageInput.files[0];
+            if (!file) {
+                var existingItem = ITEMS.find(function (item) { return item.id === state.editingId; });
+                if (existingItem && existingItem.image) showImagePreview(existingItem.image, "Current product image", false);
+                else clearImagePreview();
+                return;
+            }
+            showImagePreview(URL.createObjectURL(file), file.name, true);
+        });
+
+        inventoryForm.addEventListener("submit", function (e) {
             e.preventDefault();
+            if (!inventoryForm.reportValidity()) return;
             var name = document.getElementById("inv-item-name").value.trim();
             var category = document.getElementById("inv-item-category").value.trim();
             var quantity = Number(document.getElementById("inv-item-qty").value || 0);
             var unit = document.getElementById("inv-item-unit").value.trim();
             var reorder = Number(document.getElementById("inv-item-reorder").value || 0);
+            var price = document.getElementById("inv-item-price").value;
 
             if (!name || !category || !unit) {
                 showToast("Fill required fields");
                 return;
             }
 
-            var payload = {
-                name: name,
-                category: category,
-                stock: quantity,
-                unit: unit,
-                low_stock_threshold: reorder,
-            };
+            var payload = new FormData();
+            payload.append("name", name);
+            payload.append("category", category);
+            payload.append("sub_category", document.getElementById("inv-item-sub-category").value.trim());
+            payload.append("stock", String(quantity));
+            payload.append("unit", unit);
+            payload.append("low_stock_threshold", String(reorder));
+            payload.append("price", price);
+            payload.append("description", document.getElementById("inv-item-description").value.trim());
+            if (inventoryImageInput.files && inventoryImageInput.files[0]) {
+                payload.append("image", inventoryImageInput.files[0]);
+            }
 
             var url = "/inventory/add/";
             if (state.editingId) {
                 url = "/inventory/" + state.editingId + "/edit/";
             }
 
-            postJson(url, payload)
+            postFormData(url, payload)
                 .then(function () {
                     location.reload();
                 })
