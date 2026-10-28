@@ -26,7 +26,12 @@ SECRET_KEY = 'django-insecure-xs6xn%5%=04n*t&a97n)oz!i5l(oc@ha$8t=3ol0&6em!jwk1a
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["happynessproject.pythonanywhere.com"]
+# Allow local development hosts as well as the deployed PythonAnywhere hostname.
+# Use the ALLOWED_HOSTS environment variable to override this in production if needed.
+ALLOWED_HOSTS = os.environ.get(
+    'ALLOWED_HOSTS',
+    'localhost,127.0.0.1,[::1],happynessproject.pythonanywhere.com',
+).split(',')
 
 
 # Application definition

@@ -414,11 +414,9 @@ function initProductFilters() {
     const categoryButtons = document.querySelectorAll("[data-category-btn]");
     const productCards = document.querySelectorAll(".product-card[data-category]");
     const productsToolbar = document.querySelector(".products-toolbar");
+    const searchInput = document.getElementById("productsSearch");
     const productsEmpty = document.getElementById("productsEmpty");
 
-    if (!categoryButtons.length) {
-        return;
-    }
     if (!productCards.length) {
         if (productsEmpty) {
             productsEmpty.hidden = false;
@@ -426,11 +424,21 @@ function initProductFilters() {
         return;
     }
 
-    function applyCategoryFilter(category) {
+    let selectedCategory = "all";
+
+    function applyProductFilters() {
+        const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : "";
         let visibleCount = 0;
 
         productCards.forEach(function (card) {
-            const matches = category === "all" || card.dataset.category === category;
+            const matchesCategory = selectedCategory === "all" || card.dataset.category === selectedCategory;
+            const searchableText = [
+                card.dataset.stockName || "",
+                card.dataset.description || "",
+                card.dataset.category || "",
+                card.textContent || "",
+            ].join(" ").toLowerCase();
+            const matches = matchesCategory && (!searchTerm || searchableText.includes(searchTerm));
             card.classList.toggle("is-hidden", !matches);
 
             if (matches) {
@@ -440,6 +448,11 @@ function initProductFilters() {
 
         if (productsEmpty) {
             productsEmpty.hidden = visibleCount > 0;
+            if (!visibleCount) {
+                productsEmpty.textContent = searchTerm
+                    ? "No products match your search in this category."
+                    : "No products found in this category yet.";
+            }
         }
     }
 
@@ -452,9 +465,13 @@ function initProductFilters() {
     }
 
     function handleFilterButton(button) {
-        const selectedCategory = button.dataset.categoryBtn || "all";
+        selectedCategory = button.dataset.categoryBtn || "";
         setActiveButton(button);
-        applyCategoryFilter(selectedCategory);
+        applyProductFilters();
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener("input", applyProductFilters);
     }
 
     if (productsToolbar) {
@@ -478,8 +495,12 @@ function initProductFilters() {
         });
     });
 
-    const initialActive = document.querySelector("[data-category-btn].active") || categoryButtons[0];
-    handleFilterButton(initialActive);
+    const initialActive = document.querySelector("[data-category-btn].active");
+    if (initialActive) {
+        handleFilterButton(initialActive);
+    } else {
+        applyProductFilters();
+    }
 }
 
 function initReceiptModal() {

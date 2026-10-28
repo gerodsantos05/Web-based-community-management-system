@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/index.css' %}?v=20261008-order-modal-motion">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}?v=20261028-product-search">
 </head>
 <body>
     {% include 'partials/_public_navbar.html' with nav_active='products' %}
@@ -27,11 +27,22 @@
 
         <section class="products-catalog" id="productsCatalog">
             <div class="container products-catalog-inner">
-                <div class="products-toolbar" aria-label="Product category filters">
-                    <button class="products-filter-btn active" type="button" data-category-btn="all" aria-pressed="true">All</button>
-                    {% for category in product_categories %}
-                    <button class="products-filter-btn" type="button" data-category-btn="{{ category.slug }}" aria-pressed="false">{{ category.label }}</button>
-                    {% endfor %}
+                <div class="products-toolbar-row">
+                    <div class="products-toolbar" aria-label="Product category filters">
+                        {% for category in product_categories %}
+                        {% if category.label != "Store Products" %}
+                        <button class="products-filter-btn" type="button" data-category-btn="{{ category.slug }}" aria-pressed="false">{{ category.label }}</button>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    <label class="products-search">
+                        <span class="sr-only">Search products</span>
+                        <input id="productsSearch" type="search" name="products-search" placeholder="Search products..." autocomplete="off">
+                        <svg class="products-search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <circle cx="11" cy="11" r="7"></circle>
+                            <path d="m16 16 4 4"></path>
+                        </svg>
+                    </label>
                 </div>
 
                 <div class="products-grid" id="productsGrid">
@@ -793,6 +804,6 @@
     <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="{% static 'js/index.js' %}?v=20261008-order-tabs"></script>
+    <script src="{% static 'js/index.js' %}?v=20261028-product-search"></script>
 </body>
 </html>
