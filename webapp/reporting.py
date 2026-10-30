@@ -58,7 +58,9 @@ def _date_range(filters):
             ).dates("time_out", "day").first(),
             Activity.objects.filter(status=Activity.STATUS_COMPLETED).dates("date", "day").first(),
             BeneficiaryAssistanceRecord.objects.dates("assistance_date", "day").first(),
-            ProductInquiry.objects.filter(status=ProductInquiry.STATUS_COMPLETED).dates("created_at", "day").first(),
+            ProductInquiry.objects.filter(
+                payment_status=ProductInquiry.PAYMENT_STATUS_PAID,
+            ).dates("created_at", "day").first(),
         ]
         return min((first for first in first_dates if first), default=today), today, "All time"
     if range_key == "7d":
@@ -579,8 +581,8 @@ def _build_assistance(filters, start, end, period_label, page, export_all):
     )
 
 
-def _completed_product_orders(start=None, end=None):
-    orders = ProductInquiry.objects.filter(status=ProductInquiry.STATUS_COMPLETED)
+def _paid_product_orders(start=None, end=None):
+    orders = ProductInquiry.objects.filter(payment_status=ProductInquiry.PAYMENT_STATUS_PAID)
     if start and end:
         orders = orders.filter(created_at__date__range=(start, end))
     return orders.order_by("-created_at", "-id")
@@ -609,11 +611,11 @@ def _build_product_sales(filters, start, end, period_label, page, export_all):
     selected_category = filters.get("category", "all")
     all_categories = sorted({
         category
-        for _order, _item, _name, category, _quantity, _price in _product_lines(_completed_product_orders())
+        for _order, _item, _name, category, _quantity, _price in _product_lines(_paid_product_orders())
     })
     if selected_category != "all" and selected_category not in all_categories:
         raise ValueError("Choose a valid product category.")
-    orders = _completed_product_orders(start, end)
+    orders = _paid_product_orders(start, end)
     product_totals = {}
     category_totals = {}
     trend_values = [0] * len(_buckets(start, end))
@@ -842,7 +844,7 @@ def _build_all_records(filters, start, end, period_label, page, export_all):
             records.append([row[0], entry_type, record, details, value])
     if record_type in {"all", "product_sale"}:
         for order, _item, name, category, quantity, price in _product_lines(
-            _completed_product_orders(start, end)
+            _paid_product_orders(start, end)
         ):
             records.append([
                 _format_date(timezone.localtime(order.created_at).date()),
@@ -932,7 +934,7 @@ def _overview():
     ).count()
     products = {}
     for _order, _item, name, category, quantity, _price in _product_lines(
-        _completed_product_orders(start, today)
+        _paid_product_orders(start, today)
     ):
         key = (name, category)
         products[key] = products.get(key, 0) + quantity

@@ -348,8 +348,6 @@
     .pay-table:not(.pay-columns-expanded) td:nth-child(3),
     .pay-table:not(.pay-columns-expanded) th:nth-child(7),
     .pay-table:not(.pay-columns-expanded) td:nth-child(7),
-    .pay-table:not(.pay-columns-expanded) th:nth-child(10),
-    .pay-table:not(.pay-columns-expanded) td:nth-child(10),
     .pay-table:not(.pay-columns-expanded) th:nth-child(11),
     .pay-table:not(.pay-columns-expanded) td:nth-child(11) {
         display: none;
@@ -981,8 +979,8 @@
                     <svg class="pay-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
                     <input type="search" id="pay-table-search" class="pay-search-input" placeholder="Search by order, customer, email..." aria-label="Search payments">
                 </div>
-                <select id="pay-table-status-filter" class="pay-status-filter" aria-label="Filter by payment status">
-                    <option value="">All Statuses</option>
+                <select id="pay-table-status-filter" class="pay-status-filter" aria-label="Filter by order or payment status">
+                    <option value="">All Order and Payment Statuses</option>
                 </select>
                 <select id="pay-table-method-filter" class="pay-method-filter" aria-label="Filter by payment method">
                     <option value="">All Methods</option>
@@ -1009,6 +1007,7 @@
                         <th>Total</th>
                         <th>Amount</th>
                         <th>Payment Method</th>
+                        <th>Order Status</th>
                         <th>Payment Status</th>
                         <th>Payment Date</th>
                         <th>Reference Number</th>
@@ -1103,11 +1102,14 @@
 </div>
 
 <div id="pay-toast" class="pay-toast" role="status" aria-live="polite" data-show="false"></div>
+{% include "partials/_order_receipt.html" %}
 {% endblock %}
 
 {% block extra_scripts %}
 {{ payments_json|json_script:"payments-data" }}
 {{ ratings_json|json_script:"ratings-data" }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="{% static 'js/order-receipt.js' %}?v=20261030-receipt-pdf"></script>
 <script>
 (function () {
     "use strict";
@@ -1258,8 +1260,8 @@
 
     function statusClass(status) {
         var normalized = String(status || "").replace(/_/g, " ");
-        if (normalized === "Verified") return "pay-badge pay-status-verified";
-        if (normalized === "Completed") return "pay-badge pay-status-completed";
+        if (normalized === "Verified" || normalized === "Confirmed") return "pay-badge pay-status-verified";
+        if (normalized === "Paid" || normalized === "Completed") return "pay-badge pay-status-completed";
         if (normalized === "Pending") return "pay-badge pay-status-pending";
         if (normalized === "In Delivery") return "pay-badge pay-status-in-delivery";
         if (normalized === "Refunded" || normalized === "Refund Requested" || normalized === "Return Requested") return "pay-badge pay-status-refunded";
@@ -1298,7 +1300,7 @@
     }
 
     function deliverySummaryText(payment) {
-        if (!payment || payment.status !== "In Delivery") return "";
+        if (!payment || payment.orderStatus !== "In Delivery") return "";
         var details = [];
         if (payment.delivery_window_start || payment.delivery_window_end) {
             var start = payment.delivery_window_start ? formatDisplayDate(payment.delivery_window_start) : "";
@@ -1311,29 +1313,16 @@
     }
 
     function deliveryStatusText(payment) {
-        return payment && payment.status === "In Delivery" ? "In Delivery" : (payment ? String(payment.status) : "");
-    }
-
-    function updateRowBadge(ref, newStatus) {
-        var trigger = document.querySelector('[data-open-actions="' + ref + '"]');
-        if (!trigger) return;
-        var row = trigger.closest('tr');
-        if (!row) return;
-        var badge = row.querySelector('.pay-badge');
-        if (!badge) return;
-        badge.className = statusClass(newStatus);
-        badge.textContent = newStatus;
+        return payment && payment.orderStatus === "In Delivery" ? "In Delivery" : (payment ? String(payment.orderStatus) : "");
     }
 
     function updateSummaryCards() {
-        // Exact status strings produced by inq.status.title() in payments_json:
-        // "Pending", "Verified", "Completed", "Failed", "Refunded", "Refund Requested", "Return Requested", "Cancelled"
-        var confirmedStatuses = { "Verified": true, "Completed": true };
-        var riskStatuses      = { "Failed": true, "Refunded": true, "Refund Requested": true, "Return Requested": true, "Cancelled": true };
-
-        var completed = PAYMENTS.filter(function (p) { return confirmedStatuses[p.status]; });
-        var pending   = PAYMENTS.filter(function (p) { return p.status === "Pending"; });
-        var risk      = PAYMENTS.filter(function (p) { return riskStatuses[p.status]; });
+        var completed = PAYMENTS.filter(function (p) { return p.paymentStatus === "Paid"; });
+        var pending   = PAYMENTS.filter(function (p) { return p.paymentStatus === "Pending"; });
+        var risk      = PAYMENTS.filter(function (p) {
+            return p.paymentStatus === "Failed" || p.paymentStatus === "Refunded"
+                || p.orderStatus === "Refund Requested" || p.orderStatus === "Return Requested";
+        });
         var revenue   = completed.reduce(function (sum, p) { return sum + p.amount; }, 0);
 
         document.getElementById("pay-kpi-revenue").textContent   = money(revenue);
@@ -1341,10 +1330,6 @@
         document.getElementById("pay-kpi-pending").textContent   = String(pending.length);
         document.getElementById("pay-kpi-risk").textContent      = String(risk.length);
 
-        // Debug: log unique status values present in PAYMENTS
-        var seen = {};
-        PAYMENTS.forEach(function (p) { seen[p.status] = true; });
-        console.log("[updateSummaryCards] unique statuses in PAYMENTS:", Object.keys(seen));
     }
 
     function toast(msg) {
@@ -1364,7 +1349,9 @@
                 || p.orderId.toLowerCase().indexOf(searchTerm) >= 0
                 || p.customer.toLowerCase().indexOf(searchTerm) >= 0
                 || p.email.toLowerCase().indexOf(searchTerm) >= 0;
-            var matchesStatus = !statusValue || p.status === statusValue;
+            var matchesStatus = !statusValue
+                || (statusValue.indexOf("order:") === 0 && p.orderStatus === statusValue.slice(6))
+                || (statusValue.indexOf("payment:") === 0 && p.paymentStatus === statusValue.slice(8));
             var matchesMethod = !methodValue || p.method === methodValue;
             return matchesSearch && matchesStatus && matchesMethod;
         });
@@ -1382,7 +1369,8 @@
                 + "<td class=\"font-semibold\">" + peso(p.amount) + "</td>"
                 + "<td class=\"font-semibold\">" + money(p.amount) + "</td>"
                 + "<td><span class=\"pay-method\">" + esc(methodLabel(p.method)) + "</span></td>"
-                + "<td><span class=\"" + statusClass(p.status) + "\" title=\"" + esc(deliverySummaryText(p)) + "\" data-delivery-ref=\"" + esc(p.reference) + "\">" + esc(deliveryStatusText(p)) + "</span></td>"
+                + "<td><span class=\"" + statusClass(p.orderStatus) + "\" title=\"" + esc(deliverySummaryText(p)) + "\" data-status-type=\"order\" data-delivery-ref=\"" + esc(p.reference) + "\">" + esc(p.orderStatus) + "</span></td>"
+                + "<td><span class=\"" + statusClass(p.paymentStatus) + "\" data-status-type=\"payment\">" + esc(p.paymentStatus) + "</span></td>"
                 + "<td>" + esc(p.paymentDate) + "</td>"
                 + "<td>" + esc(p.reference) + "</td>"
                 + "<td><button type=\"button\" class=\"pay-row-action-btn\" data-open-actions=\"" + esc(p.reference) + "\" aria-expanded=\"false\" aria-label=\"Open payment actions\" title=\"Actions\"><span class=\"pay-ellipsis\" aria-hidden=\"true\"></span></button></td>"
@@ -1450,16 +1438,20 @@
     }
 
     function populateTableFilters() {
-        var statuses = [];
+        var orderStatuses = [];
+        var paymentStatuses = [];
         var methods = [];
         PAYMENTS.forEach(function (p) {
-            if (statuses.indexOf(p.status) === -1) statuses.push(p.status);
+            if (orderStatuses.indexOf(p.orderStatus) === -1) orderStatuses.push(p.orderStatus);
+            if (paymentStatuses.indexOf(p.paymentStatus) === -1) paymentStatuses.push(p.paymentStatus);
             if (methods.indexOf(p.method) === -1) methods.push(p.method);
         });
-        statuses.sort();
+        orderStatuses.sort();
+        paymentStatuses.sort();
         methods.sort();
-        tableStatusFilter.innerHTML = "<option value=\"\">All Statuses</option>"
-            + statuses.map(function (status) { return "<option value=\"" + esc(status) + "\">" + esc(status) + "</option>"; }).join("");
+        tableStatusFilter.innerHTML = "<option value=\"\">All Order and Payment Statuses</option>"
+            + orderStatuses.map(function (status) { return "<option value=\"order:" + esc(status) + "\">Order: " + esc(status) + "</option>"; }).join("")
+            + paymentStatuses.map(function (status) { return "<option value=\"payment:" + esc(status) + "\">Payment: " + esc(status) + "</option>"; }).join("");
         tableMethodFilter.innerHTML = "<option value=\"\">All Methods</option>"
             + methods.map(function (method) { return "<option value=\"" + esc(method) + "\">" + esc(methodLabel(method)) + "</option>"; }).join("");
     }
@@ -1481,7 +1473,7 @@
             if (!dateKey) return;
             if (!dateTotals[dateKey]) dateTotals[dateKey] = { revenue: 0, count: 0 };
             dateTotals[dateKey].count += 1;
-            if (p.status === "Verified" || p.status === "Completed") {
+            if (p.paymentStatus === "Paid") {
                 dateTotals[dateKey].revenue += Number(p.amount || 0);
             }
             var paymentDate = new Date(dateKey + "T00:00:00");
@@ -1551,44 +1543,31 @@
 
     function openMenu(reference, trigger) {
         var p = PAYMENTS.find(function (x) { return x.reference === reference; });
-        var actionsByStatus = {
-            "Pending": [
-                ["paid", "Mark as Paid"],
-                ["failed", "Mark as Failed"],
-                ["detail", "View Payment Details"],
-                ["delete", "Delete"]
-            ],
-            "Paid": [
-                ["in-delivery", "Mark as In Delivery"],
-                ["refund", "Refund Payment"],
-                ["receipt", "Download Receipt"],
-                ["detail", "View Payment Details"]
-            ],
-            "Verified": [
-                ["in-delivery", "Mark as In Delivery"],
-                ["refund", "Refund Payment"],
-                ["receipt", "Download Receipt"],
-                ["detail", "View Payment Details"]
-            ],
-            "In Delivery": [
-                ["receipt", "Download Receipt"],
-                ["detail", "View Payment Details"]
-            ],
-            "Completed": [
-                ["receipt", "Download Receipt"],
-                ["refund", "Refund Payment"],
-                ["detail", "View Payment Details"]
-            ],
-            "Failed": [
-                ["detail", "View Payment Details"],
-                ["delete", "Delete"]
-            ],
-            "Refunded": [
-                ["detail", "View Payment Details"],
-                ["receipt", "Download Receipt"]
-            ]
-        };
-        var items = actionsByStatus[p ? p.status : ""] || [["detail", "View Payment Details"]];
+        var items = [["detail", "View Payment Details"]];
+        if (p) {
+            if (p.orderStatus === "Pending") {
+                items.unshift(["confirm", "Confirm Order"]);
+                items.push(["delete", "Delete"]);
+            } else if (p.orderStatus === "Confirmed" || p.orderStatus === "Verified") {
+                items.unshift(["in-delivery", "Mark as In Delivery"], ["completed", "Mark as Completed"]);
+            } else if (p.orderStatus === "In Delivery") {
+                items.unshift(["completed", "Mark as Completed"]);
+            }
+
+            if (p.paymentStatus === "Pending" || p.paymentStatus === "Failed") {
+                items.unshift(["paid", "Mark as Paid"]);
+                if (p.paymentStatus === "Pending") items.push(["failed", "Mark as Failed"]);
+            }
+            if (p.paymentStatus === "Paid") {
+                items.unshift(["refund", p.orderStatus === "Refund Requested" || p.orderStatus === "Return Requested" ? "Approve Refund" : "Refund Payment"]);
+            }
+            if (p.orderStatus === "Refund Requested" || p.orderStatus === "Return Requested") {
+                items.unshift(["reject-refund", "Decline Request"]);
+            }
+            if (p.paymentStatus === "Paid" || p.paymentStatus === "Refunded") {
+                items.push(["receipt", "Download Receipt"]);
+            }
+        }
         menu.innerHTML = items.map(function (item) {
             var itemClass = item[0] === "delete" ? " pay-menu-item-danger" : "";
             return "<button type=\"button\" class=\"pay-menu-item" + itemClass + "\" data-action=\"" + item[0] + "\" data-ref=\"" + esc(reference) + "\">" + item[1] + "</button>";
@@ -1644,7 +1623,7 @@
 
     function openDetail(payment) {
         detailTitle.textContent = "Payment Details";
-        detailSub.textContent = payment.orderId + " • " + payment.reference + " • " + payment.status;
+        detailSub.textContent = payment.orderId + " • " + payment.reference;
         var receiptHtml = payment.screenshot
             ? "<button type=\"button\" class=\"pay-receipt-btn\" data-lightbox-src=\"" + esc(payment.screenshot) + "\">View Receipt</button>"
             : "<p class=\"pay-receipt-none\">No receipt uploaded</p>";
@@ -1673,7 +1652,7 @@
             + "<li>Country: " + esc(payment.delivery_country || "Philippines") + "</li>"
             + deliveryItems
             + "</ul></section>"
-            + "<section class=\"pay-block\"><h4>Reference</h4><ul><li>Order ID: " + esc(payment.orderId) + "</li><li>Reference: " + esc(payment.reference) + "</li><li>Status: " + esc(payment.status) + "</li></ul></section>"
+            + "<section class=\"pay-block\"><h4>Order and Payment Status</h4><ul><li>Order status: " + esc(payment.orderStatus) + "</li><li>Payment status: " + esc(payment.paymentStatus) + "</li><li>Return/refund request: " + esc(payment.returnReason || "None") + "</li><li>Reference: " + esc(payment.reference) + "</li></ul></section>"
             + "<section class=\"pay-block\"><h4>Logs</h4><ul>" + payment.logs.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul></section>";
 
         backdrop.setAttribute("data-open", "true");
@@ -1769,6 +1748,27 @@
         });
     }
 
+    function postPaymentAction(payment, path, successMessage, onSuccess) {
+        fetch(path, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF_TOKEN },
+        }).then(function (res) {
+            return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+        }).then(function (result) {
+            if (!result.ok) {
+                toast(result.data.error || 'Action failed');
+                return;
+            }
+            onSuccess(result.data);
+            renderAll();
+            updateSummaryCards();
+            renderCharts();
+            toast(successMessage);
+        }).catch(function () {
+            toast('Action failed');
+        });
+    }
+
     function actionOnPayment(action, ref) {
         var payment = PAYMENTS.find(function (p) { return p.reference === ref; });
         if (!payment) return;
@@ -1793,84 +1793,77 @@
             return;
         }
 
+        if (action === "confirm") {
+            postPaymentAction(payment, '/payment/' + payment.id + '/verify/', 'Order confirmed', function (data) {
+                payment.orderStatus = data.order_status || 'Confirmed';
+                payment.paymentStatus = data.payment_status || payment.paymentStatus;
+            });
+            return;
+        }
+
+        if (action === "completed") {
+            postPaymentAction(payment, '/payment/' + payment.id + '/mark-completed/', 'Order marked as completed', function (data) {
+                payment.orderStatus = data.order_status || 'Completed';
+                payment.paymentStatus = data.payment_status || payment.paymentStatus;
+            });
+            return;
+        }
+
         if (action === "paid") {
-            fetch('/payment/' + payment.id + '/mark-paid/', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': CSRF_TOKEN },
-            }).then(function (res) {
-                return res.json().then(function (data) { return { ok: res.ok, data: data }; });
-            }).then(function (result) {
-                if (result.ok) {
-                    payment.status = result.data.status || 'Completed';
-                    updateRowBadge(ref, payment.status);
-                    updateSummaryCards();
-                    renderCharts();
-                    toast('Payment marked as paid');
-                } else {
-                    toast(result.data.error || 'Action failed');
-                }
-            }).catch(function () { toast('Action failed'); });
+            postPaymentAction(payment, '/payment/' + payment.id + '/mark-paid/', 'Payment marked as paid', function (data) {
+                payment.orderStatus = data.order_status || payment.orderStatus;
+                payment.paymentStatus = data.payment_status || 'Paid';
+            });
             return;
         }
 
         if (action === "failed") {
-            fetch('/payment/' + payment.id + '/mark-failed/', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': CSRF_TOKEN },
-            }).then(function (res) {
-                return res.json().then(function (data) { return { ok: res.ok, data: data }; });
-            }).then(function (result) {
-                if (result.ok) {
-                    payment.status = result.data.status || 'Failed';
-                    updateRowBadge(ref, payment.status);
-                    updateSummaryCards();
-                    renderCharts();
-                    toast('Payment marked as failed');
-                } else {
-                    toast(result.data.error || 'Action failed');
-                }
-            }).catch(function () { toast('Action failed'); });
+            postPaymentAction(payment, '/payment/' + payment.id + '/mark-failed/', 'Payment marked as failed', function (data) {
+                payment.orderStatus = data.order_status || payment.orderStatus;
+                payment.paymentStatus = data.payment_status || 'Failed';
+            });
             return;
         }
 
         if (action === "refund") {
-            fetch('/payment/' + payment.id + '/refund/', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': CSRF_TOKEN },
-            }).then(function (res) {
-                return res.json().then(function (data) { return { ok: res.ok, data: data }; });
-            }).then(function (result) {
-                if (result.ok) {
-                    payment.status = result.data.status || 'Refunded';
-                    updateRowBadge(ref, payment.status);
-                    updateSummaryCards();
-                    renderCharts();
-                    toast('Payment refunded');
-                } else {
-                    toast(result.data.error || 'Action failed');
-                }
-            }).catch(function () { toast('Action failed'); });
+            postPaymentAction(payment, '/payment/' + payment.id + '/refund/', 'Payment refunded', function (data) {
+                payment.orderStatus = data.order_status || 'Refunded';
+                payment.paymentStatus = data.payment_status || 'Refunded';
+            });
+            return;
+        }
+
+        if (action === "reject-refund") {
+            postPaymentAction(payment, '/payment/' + payment.id + '/reject-refund/', 'Refund request declined', function (data) {
+                payment.orderStatus = data.order_status || 'Completed';
+                payment.paymentStatus = data.payment_status || payment.paymentStatus;
+            });
             return;
         }
 
         if (action === "receipt") {
-            var receipt = [
-                "Receipt",
-                "Order: " + payment.orderId,
-                "Customer: " + payment.customer,
-                "Amount: " + money(payment.amount),
-                "Method: " + payment.method,
-                "Status: " + payment.status,
-                "Reference: " + payment.reference
-            ].join("\n");
-            var blob = new Blob([receipt], { type: "text/plain;charset=utf-8;" });
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement("a");
-            a.href = url;
-            a.download = payment.reference + "-receipt.txt";
-            a.click();
-            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-            toast("Receipt downloaded");
+            if (typeof window.downloadOrderReceipt !== "function") {
+                toast("Receipt download is unavailable");
+                return;
+            }
+            window.downloadOrderReceipt({
+                id: payment.id,
+                order_number: payment.orderId,
+                date: payment.paymentDate,
+                customer_name: payment.customer,
+                payment_method: payment.method,
+                payment_status: payment.paymentStatus,
+                status_label: payment.orderStatus,
+                total: payment.amount,
+                subtotal: payment.subtotal,
+                items: orderItemsFor(payment),
+                refund_processed_at: payment.refundProcessedAt
+            }).then(function () {
+                toast("Receipt PDF downloaded");
+            }).catch(function (error) {
+                toast(error.message || "Receipt download failed");
+            });
+            return;
         }
 
         renderAll();
@@ -2005,13 +1998,14 @@
 
                 var payment = PAYMENTS.find(function (p) { return p.id === pendingInDeliveryPayment.id; });
                 if (payment) {
-                    payment.status = result.data.status || 'In Delivery';
+                    payment.orderStatus = result.data.order_status || 'In Delivery';
+                    payment.paymentStatus = result.data.payment_status || payment.paymentStatus;
                     payment.in_delivery_at = result.data.in_delivery_at || payment.in_delivery_at || null;
                     payment.delivery_window_start = result.data.delivery_window_start || payment.delivery_window_start || null;
                     payment.delivery_window_end = result.data.delivery_window_end || payment.delivery_window_end || null;
                 }
 
-                updateRowBadge(pendingInDeliveryPayment.reference, payment ? payment.status : 'In Delivery');
+                renderAll();
                 updateSummaryCards();
                 renderCharts();
                 closeDeliveryModal();

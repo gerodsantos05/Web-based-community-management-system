@@ -117,7 +117,7 @@
         </div>
         <div class="order-tracker-list" id="orderTrackerList">
             {% for order in product_tracker_orders %}
-            <article class="order-tracker-card {% if order.status == 'completed' %}order-tracker-card--review{% endif %}" data-order-card-id="{{ order.id }}">
+            <article class="order-tracker-card {% if order.status == 'completed' or order.status == 'refund_requested' or order.status == 'return_requested' %}order-tracker-card--review{% endif %}" data-order-card-id="{{ order.id }}">
                 {% if order.status == 'pending' or order.status == 'verified' %}<input class="order-tracker-checkbox" type="checkbox" data-order-id="{{ order.id }}" aria-label="Select {{ order.name }} for cancellation">{% else %}<span class="order-tracker-checkbox-spacer" aria-hidden="true"></span>{% endif %}
                 <img src="{{ order.image }}" alt="{{ order.name }}">
                 <div class="order-tracker-card-body">
@@ -125,32 +125,58 @@
                     {% if order.variation %}<span>{{ order.variation }}</span>{% endif %}
                     <span>{{ order.quantity }} unit{% if order.quantity != 1 %}s{% endif %} · ₱{{ order.total }}</span>
                     <time datetime="{{ order.date|date:'c' }}">{{ order.date|date:'M d, Y' }}</time>
+                    {% if order.status == 'pending' and order.payment_status == 'failed' %}
+                    <span class="order-tracker-payment-issue" role="status">Payment failed. This order is still pending; cancel it or contact support for help.</span>
+                    {% endif %}
                     {% if order.status == 'in_delivery' and order.delivery_window_text %}
                     <span class="order-tracker-delivery-window">{{ order.delivery_window_text }}</span>
                     {% endif %}
                 </div>
-                {% if order.status == 'completed' %}
+                {% if order.status == 'completed' or order.status == 'refund_requested' or order.status == 'return_requested' %}
                 <div class="order-tracker-review-column">
+                    <div class="order-tracker-card-actions">
+                        <span class="order-tracker-status status-{{ order.status }}">{{ order.status_label }}</span>
+                        {% if order.payment_status_label != order.status_label %}<span class="order-tracker-payment-status">{{ order.payment_status_label }}</span>{% endif %}
+                        {% if order.payment_status == 'paid' or order.payment_status == 'refunded' %}<button class="order-tracker-receipt" type="button" data-receipt-order-id="{{ order.id }}" aria-label="Download receipt for {{ order.name }}"><i data-lucide="receipt-text"></i><span>Receipt</span></button>{% endif %}
+                        {% if order.status == 'completed' %}<button class="order-tracker-return" type="button" data-return-order-id="{{ order.id }}">Request refund</button>{% endif %}
+                    </div>
                     <div class="order-tracker-review-inline" data-review-order-id="{{ order.id }}">
-                        <div class="order-tracker-review-stars" aria-label="Rate {{ order.name }}" role="radiogroup" data-rating="{{ order.review_rating|default:0 }}" data-reviewed="{{ order.reviewed|yesno:'true,false' }}">
-                            {% for rating in "12345" %}
-                            <button type="button" class="order-tracker-review-star{% if order.review_rating >= forloop.counter %} is-active{% endif %}" data-value="{{ forloop.counter }}" aria-label="{{ forloop.counter }} star{% if forloop.counter != 1 %}s{% endif %}" aria-pressed="{% if order.review_rating == forloop.counter %}true{% else %}false{% endif %}"{% if order.reviewed %} disabled{% endif %}>★</button>
-                            {% endfor %}
+                        <div class="order-tracker-review-fields">
+                            <div class="order-tracker-review-stars" aria-label="Rate {{ order.name }}" role="radiogroup" data-rating="{{ order.review_rating|default:0 }}" data-reviewed="{{ order.reviewed|yesno:'true,false' }}">
+                                {% for rating in "12345" %}
+                                <button type="button" class="order-tracker-review-star{% if order.review_rating >= forloop.counter %} is-active{% endif %}" data-value="{{ forloop.counter }}" aria-label="{{ forloop.counter }} star{% if forloop.counter != 1 %}s{% endif %}" aria-pressed="{% if order.review_rating == forloop.counter %}true{% else %}false{% endif %}"{% if order.reviewed %} disabled{% endif %}>★</button>
+                                {% endfor %}
+                            </div>
+                            <textarea class="order-tracker-review-comment" rows="2" maxlength="2000" placeholder="Optional message"{% if order.reviewed %} hidden{% endif %}></textarea>
+                            <button type="button" class="order-tracker-review-send"{% if order.reviewed %} hidden{% else %} disabled{% endif %}>Send</button>
+                            <p class="order-tracker-review-thanks" role="status"{% if not order.reviewed %} hidden{% endif %}>Thank you for your review</p>
+                            <p class="order-tracker-review-error" role="alert" hidden></p>
                         </div>
-                        <textarea class="order-tracker-review-comment" rows="2" maxlength="2000" placeholder="Optional message"{% if order.reviewed %} hidden{% endif %}></textarea>
-                        <button type="button" class="order-tracker-review-send"{% if order.reviewed %} hidden{% else %} disabled{% endif %}>Send</button>
-                        <p class="order-tracker-review-thanks" role="status"{% if not order.reviewed %} hidden{% endif %}>Thank you for your review</p>
-                        <p class="order-tracker-review-error" role="alert" hidden></p>
+                        {% if order.status == 'completed' %}
+                        <form class="order-tracker-refund-inline" data-refund-order-id="{{ order.id }}" hidden>
+                            <label for="orderRefundReason-{{ order.id }}">Reason for refund</label>
+                            <textarea id="orderRefundReason-{{ order.id }}" class="order-tracker-refund-reason" name="reason" rows="3" maxlength="2000" required placeholder="Describe the issue with your order"></textarea>
+                            <p class="order-tracker-refund-error" role="alert" hidden></p>
+                            <div class="order-tracker-refund-actions">
+                                <button type="button" class="order-tracker-refund-cancel" data-refund-cancel>Cancel</button>
+                                <button type="submit" class="order-tracker-refund-submit">Submit request</button>
+                            </div>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
                 {% elif order.status == 'pending' or order.status == 'verified' %}
                 <div class="order-tracker-card-actions">
                     <span class="order-tracker-status status-{{ order.status }}" title="{{ order.status_tooltip|default:'' }}">{{ order.status_label }}</span>
+                    {% if order.payment_status_label != order.status_label %}<span class="order-tracker-payment-status">{{ order.payment_status_label }}</span>{% endif %}
+                    {% if order.payment_status == 'paid' or order.payment_status == 'refunded' %}<button class="order-tracker-receipt" type="button" data-receipt-order-id="{{ order.id }}" aria-label="Download receipt for {{ order.name }}"><i data-lucide="receipt-text"></i><span>Receipt</span></button>{% endif %}
                     <button class="order-tracker-cancel" type="button" data-cancel-order-id="{{ order.id }}">Cancel</button>
                 </div>
                 {% else %}
                 <div class="order-tracker-card-actions">
                     <span class="order-tracker-status status-{{ order.status }}" title="{{ order.status_tooltip|default:'' }}">{{ order.status_label }}</span>
+                    {% if order.payment_status_label != order.status_label %}<span class="order-tracker-payment-status">{{ order.payment_status_label }}</span>{% endif %}
+                    {% if order.payment_status == 'paid' or order.payment_status == 'refunded' %}<button class="order-tracker-receipt" type="button" data-receipt-order-id="{{ order.id }}" aria-label="Download receipt for {{ order.name }}"><i data-lucide="receipt-text"></i><span>Receipt</span></button>{% endif %}
                 </div>
                 {% endif %}
             </article>
@@ -170,42 +196,5 @@
         </div>
     </section>
 </div>
-<div class="receipt-overlay" id="orderReceiptModal" aria-hidden="true" hidden>
-    <section class="receipt-modal" role="dialog" aria-modal="true" aria-labelledby="receiptTitle">
-        <div class="receipt-paper" id="orderReceiptPaper">
-            <header class="receipt-header">
-                <div>
-                    <strong>HappYness Project</strong>
-                    <p class="receipt-location">Bacoor City, Cavite</p>
-                    <h2 id="receiptTitle">Order Receipt</h2>
-                </div>
-            </header>
-            <div class="receipt-meta">
-                <div><span>Order Number</span><strong id="receiptOrderNumber"></strong></div>
-                <div><span>Order Date</span><strong id="receiptOrderDate"></strong></div>
-                <div><span>Placed By</span><strong id="receiptCustomerName"></strong></div>
-            </div>
-            <div class="receipt-items" id="receiptItems"></div>
-            <div class="receipt-totals">
-                <div class="receipt-breakdown-row"><span>Subtotal</span><strong id="receiptSubtotal"></strong></div>
-                <div class="receipt-breakdown-row"><span>Shipping fee</span><strong id="receiptDeliveryFee">₱50</strong></div>
-                <div class="receipt-breakdown-row"><span>VAT (12%)</span><strong id="receiptVat"></strong></div>
-                <div class="receipt-total"><span>Total</span><strong id="receiptTotal"></strong></div>
-            </div>
-            <div class="receipt-meta receipt-payment-meta">
-                <div><span>Payment Method</span><strong id="receiptPaymentMethod"></strong></div>
-                <div><span>Payment Status</span><strong id="receiptPaymentStatus"></strong></div>
-            </div>
-            <p class="receipt-thanks">Thank you for supporting HappYness Project.</p>
-            <div class="receipt-barcode" aria-hidden="true">
-                <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-            </div>
-            <p class="receipt-footer-line">happynessproject.org · Made with purpose</p>
-        </div>
-        <div class="receipt-actions">
-            <button class="receipt-print-button" id="printOrderReceipt" type="button"><i data-lucide="download"></i> Download Receipt</button>
-            <button class="receipt-close-button" id="closeOrderReceipt" type="button">Close</button>
-        </div>
-    </section>
-</div>
+{% include 'partials/_order_receipt.html' %}
 {% endif %}

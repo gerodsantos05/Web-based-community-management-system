@@ -503,132 +503,6 @@ function initProductFilters() {
     }
 }
 
-function initReceiptModal() {
-    const overlay = document.getElementById("orderReceiptModal");
-    const closeButton = document.getElementById("closeOrderReceipt");
-    const printButton = document.getElementById("printOrderReceipt");
-    const items = document.getElementById("receiptItems");
-    const receiptPaper = document.getElementById("orderReceiptPaper");
-
-    if (!overlay || !closeButton || !printButton || !items || !receiptPaper) {
-        return;
-    }
-
-    function closeReceipt() {
-        overlay.hidden = true;
-        overlay.setAttribute("aria-hidden", "true");
-        document.body.classList.remove("modal-open", "receipt-printing");
-    }
-
-    function downloadReceipt(orderNumber) {
-        if (typeof window.html2pdf !== "function") {
-            window.alert("Receipt download is temporarily unavailable. Please try again.");
-            return;
-        }
-
-        const paperWidth = Math.ceil(receiptPaper.getBoundingClientRect().width);
-        const paperHeight = Math.ceil(receiptPaper.getBoundingClientRect().height);
-        const safeOrderNumber = String(orderNumber || "receipt").replace(/[^a-z0-9_-]/gi, "-");
-        const options = {
-            margin: 0,
-            filename: `Receipt-${safeOrderNumber}.pdf`,
-            image: { type: "jpeg", quality: 0.98 },
-            html2canvas: {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: "#ffffff",
-                width: paperWidth,
-                height: paperHeight,
-                scrollX: 0,
-                scrollY: 0,
-            },
-            jsPDF: {
-                unit: "px",
-                format: [paperWidth, paperHeight],
-                orientation: "portrait",
-                hotfixes: ["px_scaling"],
-            },
-            pagebreak: { mode: ["avoid-all"] },
-        };
-
-        printButton.disabled = true;
-        const originalLabel = printButton.lastChild;
-        if (originalLabel) {
-            originalLabel.textContent = " Downloading...";
-        }
-        window.html2pdf()
-            .set(options)
-            .from(receiptPaper)
-            .save()
-            .finally(function () {
-                printButton.disabled = false;
-                if (originalLabel) {
-                    originalLabel.textContent = " Download Receipt";
-                }
-            });
-    }
-
-    window.openOrderReceipt = function (order) {
-        if (!order) {
-            return;
-        }
-
-        const formatCurrency = function (amount) {
-            return "₱" + Number(amount || 0).toLocaleString("en-PH", { maximumFractionDigits: 0 });
-        };
-        document.getElementById("receiptOrderNumber").textContent = order.order_number || `ORD-${order.id}`;
-        document.getElementById("receiptOrderDate").textContent = order.date || "-";
-        document.getElementById("receiptCustomerName").textContent = order.customer_name || "Guest";
-        document.getElementById("receiptPaymentMethod").textContent = order.payment_method || "-";
-        document.getElementById("receiptPaymentStatus").textContent = order.payment_status || order.status_label || "Pending";
-        const receiptSubtotal = Number(order.total || 0);
-        const receiptShipping = 50;
-        const receiptVat = receiptSubtotal * 0.12;
-        const receiptGrandTotal = receiptSubtotal + receiptShipping + receiptVat;
-        document.getElementById("receiptSubtotal").textContent = formatCurrency(receiptSubtotal);
-        document.getElementById("receiptDeliveryFee").textContent = formatCurrency(receiptShipping);
-        document.getElementById("receiptVat").textContent = formatCurrency(receiptVat);
-        document.getElementById("receiptTotal").textContent = formatCurrency(receiptGrandTotal);
-        items.replaceChildren();
-        (order.items || []).forEach(function (item) {
-            const row = document.createElement("div");
-            row.className = "receipt-item";
-            const detail = document.createElement("div");
-            const name = document.createElement("strong");
-            name.textContent = item.name || "Product";
-            detail.appendChild(name);
-            if (item.variation) {
-                const variation = document.createElement("span");
-                variation.textContent = item.variation;
-                detail.appendChild(variation);
-            }
-            const quantity = document.createElement("span");
-            quantity.textContent = `Qty ${item.quantity || 0}`;
-            const lineTotal = document.createElement("strong");
-            lineTotal.textContent = formatCurrency(item.line_total);
-            row.append(detail, quantity, lineTotal);
-            items.appendChild(row);
-        });
-
-        overlay.hidden = false;
-        overlay.setAttribute("aria-hidden", "false");
-        document.body.classList.add("modal-open");
-        closeButton.focus();
-    };
-
-    window.downloadOrderReceipt = downloadReceipt;
-
-    closeButton.addEventListener("click", closeReceipt);
-    overlay.addEventListener("click", function (event) {
-        if (event.target === overlay) {
-            closeReceipt();
-        }
-    });
-    printButton.addEventListener("click", function () {
-        downloadReceipt(document.getElementById("receiptOrderNumber").textContent);
-    });
-}
-
 function initProductDetails() {
     const modal = document.getElementById("productDetailModal");
     const closeButton = document.getElementById("closeProductDetailModal");
@@ -1539,7 +1413,6 @@ function initOrderTracker() {
     const cancelKeep = document.getElementById("orderCancelKeep");
     const cancelConfirm = document.getElementById("orderCancelConfirm");
     const cancelMessage = document.getElementById("orderCancelMessage");
-
     if (!button || !overlay || !closeButton || !selectButton || !deleteButton || !searchInput || !badge || !list || !cancelOverlay || !cancelKeep || !cancelConfirm || !cancelMessage) {
         return;
     }
@@ -1692,34 +1565,53 @@ function initOrderTracker() {
                 ? `<button class="order-tracker-cancel" type="button" data-cancel-order-id="${escapeHtml(order.id)}">Cancel</button>`
                 : "";
             const returnAction = order.status === "completed"
-                ? `<button class="order-tracker-return" type="button" data-return-order-id="${escapeHtml(order.id)}">Request return</button>`
+                ? `<button class="order-tracker-return" type="button" data-return-order-id="${escapeHtml(order.id)}">Request refund</button>`
                 : "";
             const checkbox = order.status === "pending" || order.status === "verified"
                 ? `<input class="order-tracker-checkbox" type="checkbox" data-order-id="${escapeHtml(order.id)}" aria-label="Select ${escapeHtml(order.name)} for cancellation"${selectedOrderIds.has(order.id) ? " checked" : ""}>`
                 : '<span class="order-tracker-checkbox-spacer" aria-hidden="true"></span>';
-            const receipt = order.status === "completed"
+            const receipt = ["paid", "refunded"].includes(String(order.payment_status || "").toLowerCase())
                 ? `<button class="order-tracker-receipt" type="button" data-receipt-order-id="${escapeHtml(order.id)}" aria-label="Print receipt for ${escapeHtml(order.name)}"><i data-lucide="receipt-text"></i><span>Receipt</span></button>`
                 : "";
             const statusClass = order.status === "in_delivery" ? "status-in_delivery" : `status-${escapeHtml(order.status)}`;
+            const paymentStatusLabel = order.payment_status_label || order.payment_status || "Pending";
+            const paymentStatusMarkup = paymentStatusLabel === order.status_label
+                ? ""
+                : `<span class="order-tracker-payment-status">${escapeHtml(paymentStatusLabel)}</span>`;
             const deliveryWindow = formatDeliveryWindow(order);
             const deliveryMarkup = deliveryWindow ? `<span class="order-tracker-delivery-window">${escapeHtml(deliveryWindow)}</span>` : "";
-            const reviewAction = order.status === "completed"
+            const paymentIssue = order.status === "pending" && String(order.payment_status || "").toLowerCase() === "failed"
+                ? '<span class="order-tracker-payment-issue" role="status">Payment failed. This order is still pending; cancel it or contact support for help.</span>'
+                : "";
+            const canReview = ["completed", "refund_requested", "return_requested"].includes(order.status);
+            const reviewAction = canReview
                 ? `<div class="order-tracker-review-inline" data-review-order-id="${escapeHtml(order.id)}">
-                    <div class="order-tracker-review-stars" role="radiogroup" aria-label="Rate ${escapeHtml(order.name)}" data-rating="${Number(order.review_rating) || 0}" data-reviewed="${order.reviewed ? "true" : "false"}">
-                        ${[1, 2, 3, 4, 5].map(function (rating) { return `<button type="button" class="order-tracker-review-star${Number(order.review_rating) >= rating ? " is-active" : ""}" data-value="${rating}" aria-label="${rating} star${rating === 1 ? "" : "s"}" aria-pressed="${Number(order.review_rating) === rating}"${order.reviewed ? " disabled" : ""}>★</button>`; }).join("")}
+                    <div class="order-tracker-review-fields">
+                        <div class="order-tracker-review-stars" role="radiogroup" aria-label="Rate ${escapeHtml(order.name)}" data-rating="${Number(order.review_rating) || 0}" data-reviewed="${order.reviewed ? "true" : "false"}">
+                            ${[1, 2, 3, 4, 5].map(function (rating) { return `<button type="button" class="order-tracker-review-star${Number(order.review_rating) >= rating ? " is-active" : ""}" data-value="${rating}" aria-label="${rating} star${rating === 1 ? "" : "s"}" aria-pressed="${Number(order.review_rating) === rating}"${order.reviewed ? " disabled" : ""}>★</button>`; }).join("")}
+                        </div>
+                        <textarea class="order-tracker-review-comment" rows="2" maxlength="2000" placeholder="Optional message"${order.reviewed ? " hidden" : ""}></textarea>
+                        <button type="button" class="order-tracker-review-send"${order.reviewed ? " hidden" : " disabled"}>Send</button>
+                        <p class="order-tracker-review-thanks" role="status"${order.reviewed ? "" : " hidden"}>Thank you for your review</p>
+                        <p class="order-tracker-review-error" role="alert" hidden></p>
                     </div>
-                    <textarea class="order-tracker-review-comment" rows="2" maxlength="2000" placeholder="Optional message"${order.reviewed ? " hidden" : ""}></textarea>
-                    <button type="button" class="order-tracker-review-send"${order.reviewed ? " hidden" : " disabled"}>Send</button>
-                    <p class="order-tracker-review-thanks" role="status"${order.reviewed ? "" : " hidden"}>Thank you for your review</p>
-                    <p class="order-tracker-review-error" role="alert" hidden></p>
+                    ${order.status === "completed" ? `<form class="order-tracker-refund-inline" data-refund-order-id="${escapeHtml(order.id)}" hidden>
+                        <label for="orderRefundReason-${escapeHtml(order.id)}">Reason for refund</label>
+                        <textarea id="orderRefundReason-${escapeHtml(order.id)}" class="order-tracker-refund-reason" name="reason" rows="3" maxlength="2000" required placeholder="Describe the issue with your order"></textarea>
+                        <p class="order-tracker-refund-error" role="alert" hidden></p>
+                        <div class="order-tracker-refund-actions">
+                            <button type="button" class="order-tracker-refund-cancel" data-refund-cancel>Cancel</button>
+                            <button type="submit" class="order-tracker-refund-submit">Submit request</button>
+                        </div>
+                    </form>` : ""}
                 </div>`
                 : "";
             const showReviewTabActions = currentStatusFilter !== "reviews";
             const actionMarkup = showReviewTabActions
-                ? `<div class="order-tracker-card-actions"><span class="order-tracker-status ${statusClass}">${escapeHtml(order.status_label)}</span>${receipt}${returnAction}${cancel}</div>`
+                ? `<div class="order-tracker-card-actions"><span class="order-tracker-status ${statusClass}">${escapeHtml(order.status_label)}</span>${paymentStatusMarkup}${receipt}${returnAction}${cancel}</div>`
                 : "";
-            const reviewColumnMarkup = order.status === "completed"
-                ? `<div class="order-tracker-review-column">${reviewAction}</div>`
+            const reviewColumnMarkup = canReview
+                ? `<div class="order-tracker-review-column"><div class="order-tracker-card-actions"><span class="order-tracker-status ${statusClass}">${escapeHtml(order.status_label)}</span>${paymentStatusMarkup}${receipt}${returnAction}</div>${reviewAction}</div>`
                 : "";
             return `<article class="order-tracker-card order-tracker-card--review" data-order-card-id="${escapeHtml(order.id)}">
                 ${checkbox}
@@ -1730,6 +1622,7 @@ function initOrderTracker() {
                     <span>${escapeHtml(order.quantity)} ${unitLabel} · ₱${escapeHtml(order.total)}</span>
                     <time>${escapeHtml(order.date)}</time>
                     ${deliveryMarkup}
+                    ${paymentIssue}
                 </div>
                 ${reviewColumnMarkup || actionMarkup}
             </article>`;
@@ -1887,6 +1780,38 @@ function initOrderTracker() {
         updateSelectionState();
     });
     list.addEventListener("click", function (event) {
+        const refundCancelButton = event.target.closest("[data-refund-cancel]");
+        if (refundCancelButton) {
+            const refundForm = refundCancelButton.closest(".order-tracker-refund-inline");
+            const reviewColumn = refundCancelButton.closest(".order-tracker-review-column");
+            const reviewFields = reviewColumn?.querySelector(".order-tracker-review-fields");
+            const refundButton = reviewColumn?.querySelector("[data-return-order-id]");
+            if (refundForm && reviewFields) {
+                refundForm.reset();
+                refundForm.querySelector(".order-tracker-refund-error").hidden = true;
+                refundForm.querySelector(".order-tracker-refund-submit").disabled = false;
+                refundForm.querySelector(".order-tracker-refund-submit").textContent = "Submit request";
+                refundForm.hidden = true;
+                reviewFields.hidden = false;
+                if (refundButton) refundButton.hidden = false;
+            }
+            return;
+        }
+
+        const returnButton = event.target.closest("[data-return-order-id]");
+        if (returnButton) {
+            const reviewColumn = returnButton.closest(".order-tracker-review-column");
+            const refundForm = reviewColumn?.querySelector(".order-tracker-refund-inline");
+            const reviewFields = reviewColumn?.querySelector(".order-tracker-review-fields");
+            if (refundForm && reviewFields) {
+                reviewFields.hidden = true;
+                refundForm.hidden = false;
+                returnButton.hidden = true;
+                refundForm.querySelector(".order-tracker-refund-reason").focus();
+            }
+            return;
+        }
+
         const starButton = event.target.closest(".order-tracker-review-star");
         if (starButton) {
             const reviewGroup = starButton.closest(".order-tracker-review-stars");
@@ -1898,14 +1823,14 @@ function initOrderTracker() {
                 button.classList.toggle("is-active", rating <= value);
                 button.setAttribute("aria-pressed", String(rating === value));
             });
-            const sendButton = reviewGroup.closest(".order-tracker-review-inline").querySelector(".order-tracker-review-send");
+            const sendButton = reviewGroup.closest(".order-tracker-review-fields").querySelector(".order-tracker-review-send");
             if (sendButton) sendButton.disabled = false;
             return;
         }
 
         const sendButton = event.target.closest(".order-tracker-review-send");
         if (!sendButton || sendButton.disabled) return;
-        const reviewForm = sendButton.closest(".order-tracker-review-inline");
+        const reviewForm = sendButton.closest(".order-tracker-review-fields");
         const reviewGroup = reviewForm.querySelector(".order-tracker-review-stars");
         const rating = Number(reviewGroup?.dataset.rating || 0);
         if (!rating) return;
@@ -1946,6 +1871,48 @@ function initOrderTracker() {
                 sendButton.disabled = false;
             });
     });
+    list.addEventListener("submit", function (event) {
+        const refundForm = event.target.closest(".order-tracker-refund-inline");
+        if (!refundForm) return;
+        event.preventDefault();
+
+        const reason = refundForm.querySelector(".order-tracker-refund-reason").value.trim();
+        const errorMessage = refundForm.querySelector(".order-tracker-refund-error");
+        const submitButton = refundForm.querySelector(".order-tracker-refund-submit");
+        if (!reason) {
+            errorMessage.textContent = "Please enter a reason before submitting your refund request.";
+            errorMessage.hidden = false;
+            refundForm.querySelector(".order-tracker-refund-reason").focus();
+            return;
+        }
+
+        const csrfField = document.querySelector("[name=csrfmiddlewaretoken]");
+        const csrfCookie = document.cookie.split(";").map(function (part) { return part.trim(); }).find(function (part) { return part.startsWith("csrftoken="); });
+        const csrfToken = csrfField?.value || (csrfCookie ? decodeURIComponent(csrfCookie.split("=").slice(1).join("=")) : "");
+        submitButton.disabled = true;
+        submitButton.textContent = "Submitting...";
+        errorMessage.hidden = true;
+        fetch("/products/orders/" + encodeURIComponent(refundForm.dataset.refundOrderId) + "/return/", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken,
+                "X-Requested-With": "XMLHttpRequest",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            },
+            body: new URLSearchParams({ request_type: "refund", reason: reason }).toString(),
+        })
+            .then(parseJsonResponse)
+            .then(function () {
+                currentStatusFilter = "returns";
+                refreshOrders();
+            })
+            .catch(function (error) {
+                errorMessage.textContent = error.message || "Unable to submit your refund request. Please try again.";
+                errorMessage.hidden = false;
+                submitButton.disabled = false;
+                submitButton.textContent = "Submit request";
+            });
+    });
     overlay.addEventListener("click", function (event) {
         if (event.target.classList.contains("order-tracker-checkbox")) {
             return;
@@ -1953,30 +1920,6 @@ function initOrderTracker() {
         const cancelButton = event.target.closest("[data-cancel-order-id]");
         if (cancelButton) {
             openCancelPrompt([cancelButton.dataset.cancelOrderId], cancelButton.closest(".order-tracker-card"));
-            return;
-        }
-        const returnButton = event.target.closest("[data-return-order-id]");
-        if (returnButton) {
-            const orderId = returnButton.dataset.returnOrderId;
-            const csrfField = document.querySelector("[name=csrfmiddlewaretoken]");
-            const csrfCookie = document.cookie.split(";").map(function (part) { return part.trim(); }).find(function (part) { return part.startsWith("csrftoken="); });
-            const csrfToken = csrfField?.value || (csrfCookie ? decodeURIComponent(csrfCookie.split("=").slice(1).join("=")) : "");
-            fetch("/products/orders/" + orderId + "/return/", {
-                method: "POST",
-                headers: {
-                    "X-CSRFToken": csrfToken,
-                    "X-Requested-With": "XMLHttpRequest",
-                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                },
-                body: "request_type=refund&reason=Customer+requested+refund"
-            })
-                .then(parseJsonResponse)
-                .then(function () {
-                    refreshOrders();
-                })
-                .catch(function (error) {
-                    window.alert(error.message || "Unable to submit a return request.");
-                });
             return;
         }
         const receiptButton = event.target.closest("[data-receipt-order-id]");
@@ -3934,7 +3877,6 @@ function initProductInquiryModal() {
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
         initProductFilters();
-        initReceiptModal();
         initProductDetails();
         initOrderTracker();
         initContactHub();
@@ -3946,7 +3888,6 @@ if (document.readyState === "loading") {
     });
 } else {
     initProductFilters();
-    initReceiptModal();
     initProductDetails();
     initOrderTracker();
     initContactHub();

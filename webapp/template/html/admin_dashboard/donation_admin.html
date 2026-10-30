@@ -1114,11 +1114,11 @@
 
         <article class="don-card don-kpi">
             <div class="don-kpi-head">
-                <p class="don-kpi-label">Item Units Pledged</p>
-                <span class="don-kpi-icon" aria-hidden="true"><i data-lucide="package-check"></i></span>
+                <p class="don-kpi-label">Confirmed Cash Donations</p>
+                <span class="don-kpi-icon" aria-hidden="true"><i data-lucide="badge-check"></i></span>
             </div>
-            <p class="don-kpi-value" data-kpi-value="true" data-no-animate="true">{{ item_units_pledged }}</p>
-            <p class="don-kpi-meta">Across {{ item_pledge_count }} item pledge{{ item_pledge_count|pluralize }}</p>
+            <p id="don-kpi-cash-confirmed" class="don-kpi-value" data-kpi-value="true" data-no-animate="true">P {{ completed_amount|floatformat:0 }}</p>
+            <p class="don-kpi-meta">Verified and marked complete</p>
         </article>
 
         <article class="don-card don-kpi">

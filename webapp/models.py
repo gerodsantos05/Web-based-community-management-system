@@ -1250,7 +1250,7 @@ class ProductInquiry(models.Model):
 	STATUS_CANCELLED = "cancelled"
 	STATUS_CHOICES = (
 		(STATUS_PENDING, "Pending"),
-		(STATUS_VERIFIED, "Verified"),
+		(STATUS_VERIFIED, "Confirmed"),
 		(STATUS_IN_DELIVERY, "In Delivery"),
 		(STATUS_COMPLETED, "Completed"),
 		(STATUS_RETURN_REQUESTED, "Return Requested"),
@@ -1259,6 +1259,17 @@ class ProductInquiry(models.Model):
 		(STATUS_FAILED, "Failed"),
 		(STATUS_REFUNDED, "Refunded"),
 		(STATUS_CANCELLED, "Cancelled"),
+	)
+
+	PAYMENT_STATUS_PENDING = "pending"
+	PAYMENT_STATUS_PAID = "paid"
+	PAYMENT_STATUS_FAILED = "failed"
+	PAYMENT_STATUS_REFUNDED = "refunded"
+	PAYMENT_STATUS_CHOICES = (
+		(PAYMENT_STATUS_PENDING, "Pending"),
+		(PAYMENT_STATUS_PAID, "Paid"),
+		(PAYMENT_STATUS_FAILED, "Failed"),
+		(PAYMENT_STATUS_REFUNDED, "Refunded"),
 	)
 
 	user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, related_name="product_inquiries")
@@ -1272,6 +1283,11 @@ class ProductInquiry(models.Model):
 	order_items = models.JSONField(default=list)
 	order_total = models.PositiveIntegerField(default=0)
 	status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+	payment_status = models.CharField(
+		max_length=20,
+		choices=PAYMENT_STATUS_CHOICES,
+		default=PAYMENT_STATUS_PENDING,
+	)
 	in_delivery_at = models.DateTimeField(null=True, blank=True)
 	expected_delivery_date = models.DateField(null=True, blank=True)
 	delivery_window_start = models.DateTimeField(null=True, blank=True)

@@ -294,6 +294,7 @@ class ReportsPageTests(TestCase):
             ],
             order_total=600,
             status=ProductInquiry.STATUS_COMPLETED,
+            payment_status=ProductInquiry.PAYMENT_STATUS_PAID,
         )
         ProductInquiry.objects.create(
             **common,
@@ -325,6 +326,7 @@ class ReportsPageTests(TestCase):
             order_items=[{"name": "Tote Bag", "category": "Tote Bags", "quantity": 2, "unit_price": 100}],
             order_total=200,
             status=ProductInquiry.STATUS_COMPLETED,
+            payment_status=ProductInquiry.PAYMENT_STATUS_PAID,
             admin_notification="Test report order",
         )
         payload = self.client.get(reverse("reports_data_api"), {

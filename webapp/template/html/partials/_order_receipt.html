@@ -1,0 +1,44 @@
+{% load static %}
+<div class="receipt-overlay" id="orderReceiptModal" aria-hidden="true" hidden>
+    <section class="receipt-modal" role="dialog" aria-modal="true" aria-labelledby="receiptTitle">
+        <div class="receipt-paper" id="orderReceiptPaper">
+            <header class="receipt-header">
+                <div class="receipt-brand">
+                    <img src="{% static 'media/Happyness Project.jpg' %}" alt="" class="receipt-brand-logo">
+                    <div class="receipt-brand-copy">
+                        <strong>HappYness Project</strong>
+                        <p class="receipt-location">Bacoor City, Cavite</p>
+                        <h2 id="receiptTitle">Order Receipt</h2>
+                    </div>
+                </div>
+            </header>
+            <div class="receipt-meta">
+                <div><span>Order Number</span><strong id="receiptOrderNumber"></strong></div>
+                <div><span>Order Date</span><strong id="receiptOrderDate"></strong></div>
+                <div><span>Placed By</span><strong id="receiptCustomerName"></strong></div>
+            </div>
+            <div class="receipt-items" id="receiptItems"></div>
+            <div class="receipt-totals">
+                <div class="receipt-breakdown-row"><span>Subtotal</span><strong id="receiptSubtotal"></strong></div>
+                <div class="receipt-breakdown-row"><span>Shipping fee</span><strong id="receiptDeliveryFee"></strong></div>
+                <div class="receipt-breakdown-row"><span>VAT (12%)</span><strong id="receiptVat"></strong></div>
+                <div class="receipt-total"><span>Total</span><strong id="receiptTotal"></strong></div>
+            </div>
+            <div class="receipt-meta receipt-payment-meta">
+                <div><span>Payment Method</span><strong id="receiptPaymentMethod"></strong></div>
+                <div><span>Order Status</span><strong id="receiptOrderStatus"></strong></div>
+                <div><span>Payment Status</span><strong id="receiptPaymentStatus"></strong></div>
+            </div>
+            <p class="receipt-outcome" id="receiptOutcome" hidden></p>
+            <p class="receipt-thanks">Thank you for supporting HappYness Project.</p>
+            <div class="receipt-barcode" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <p class="receipt-footer-line">happynessproject.org · Made with purpose</p>
+        </div>
+        <div class="receipt-actions">
+            <button class="receipt-print-button" id="printOrderReceipt" type="button"><i data-lucide="download"></i> Download Receipt</button>
+            <button class="receipt-close-button" id="closeOrderReceipt" type="button">Close</button>
+        </div>
+    </section>
+</div>

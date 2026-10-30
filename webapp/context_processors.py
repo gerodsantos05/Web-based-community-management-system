@@ -116,6 +116,8 @@ def dashboard_profile_context(request):
         ProductInquiry.STATUS_FAILED: "Cancelled",
         ProductInquiry.STATUS_REFUNDED: "Refunded",
     }
+    payment_method_labels = dict(ProductInquiry.PAYMENT_METHOD_CHOICES)
+    payment_status_labels = dict(ProductInquiry.PAYMENT_STATUS_CHOICES)
 
     def delivery_status_tooltip(order):
         if order.status != ProductInquiry.STATUS_IN_DELIVERY:
@@ -146,6 +148,16 @@ def dashboard_profile_context(request):
         status_label = delivery_status_label(order)
         delivery_window_start = order.delivery_window_start.isoformat() if order.delivery_window_start else ""
         delivery_window_end = order.delivery_window_end.isoformat() if order.delivery_window_end else ""
+        receipt_items = []
+        for receipt_item in order.order_items or []:
+            quantity = int(receipt_item.get("quantity", 1) or 1)
+            unit_price = int(receipt_item.get("unit_price", 0) or 0)
+            receipt_items.append({
+                "name": str(receipt_item.get("name", "Product")).strip(),
+                "variation": str(receipt_item.get("variation", "")).strip(),
+                "quantity": quantity,
+                "line_total": int(receipt_item.get("line_total", unit_price * quantity) or 0),
+            })
         delivery_window_text = ""
         if order.status == ProductInquiry.STATUS_IN_DELIVERY:
             if order.delivery_window_start and order.delivery_window_end:
@@ -160,6 +172,7 @@ def dashboard_profile_context(request):
                 delivery_window_text = f"Expected delivery: {end}"
         orders.append({
             "id": str(order.id),
+            "order_number": f"ORD-{order.id:04d}",
             "name": product_name,
             "image": product_image_map.get(product_name, "/static/media/hand woven doormat.jpg"),
             "variation": variation,
@@ -168,9 +181,14 @@ def dashboard_profile_context(request):
             "review_message": review.message if review else "",
             "quantity": item.get("quantity", 1),
             "total": order.order_total,
+            "items": receipt_items,
             "date": order.created_at,
+            "payment_method": payment_method_labels.get(order.payment_method, order.payment_method),
             "status": order.status,
             "status_label": status_label,
+            "payment_status": order.payment_status,
+            "payment_status_label": payment_status_labels.get(order.payment_status, "Pending"),
+            "refund_processed_at": order.refund_processed_at.isoformat() if order.refund_processed_at else "",
             "status_tooltip": delivery_status_tooltip(order),
             "delivery_window_start": delivery_window_start,
             "delivery_window_end": delivery_window_end,
@@ -196,6 +214,7 @@ def dashboard_profile_context(request):
             if order["status"] not in {
                 ProductInquiry.STATUS_COMPLETED,
                 ProductInquiry.STATUS_CANCELLED,
+                ProductInquiry.STATUS_FAILED,
                 ProductInquiry.STATUS_REFUNDED,
                 ProductInquiry.STATUS_RETURNED,
             }

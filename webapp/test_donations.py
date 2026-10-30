@@ -236,6 +236,16 @@ class DonationFunnelTests(TestCase):
             donor_phone="09171234567",
             donor_email="donor@example.com",
         )
+        Donation.objects.create(
+            amount=1800,
+            payment_method=Donation.PAYMENT_CASH,
+            status=Donation.STATUS_COMPLETED,
+        )
+        Donation.objects.create(
+            amount=700,
+            payment_method=Donation.PAYMENT_CASH,
+            status=Donation.STATUS_PENDING,
+        )
         admin = User.objects.create_superuser(
             username="item-pledge-admin",
             email="item-pledge-admin@example.com",
@@ -246,13 +256,16 @@ class DonationFunnelTests(TestCase):
         dashboard = self.client.get(reverse("donations"))
         self.assertContains(dashboard, "Item / In-kind Pledges")
         self.assertContains(dashboard, "Cash Donations")
-        self.assertContains(dashboard, "Item Units Pledged")
+        self.assertContains(dashboard, "Confirmed Cash Donations")
         self.assertContains(dashboard, "Cash Awaiting Verification")
         self.assertContains(dashboard, "Pledges Awaiting Receipt")
         self.assertContains(dashboard, "Item Pledges Over Time")
         self.assertContains(dashboard, "Item Units by Category")
-        self.assertContains(dashboard, "Across 1 item pledge")
-        self.assertContains(dashboard, ">2</p>", html=False)
+        self.assertContains(dashboard, "Verified and marked complete")
+        self.assertContains(dashboard, 'id="don-kpi-cash-confirmed"')
+        self.assertRegex(dashboard.content.decode(), r"P\s*1,?800")
+        self.assertEqual(dashboard.context["completed_amount"], 1800)
+        self.assertContains(dashboard, '<td class="don-pledge-quantity">2</td>', html=True)
         self.assertContains(dashboard, '"donorName": "Pledge Donor"', html=False)
         self.assertContains(dashboard, '"notes": "Keep the items dry."', html=False)
         self.assertEqual(dashboard.content.decode().count('class="don-card don-kpi"'), 4)

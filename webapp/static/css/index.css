@@ -3105,6 +3105,27 @@ body.modal-open {
     border-bottom: 1px dashed #d7d9d5;
 }
 
+.receipt-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.9rem;
+    text-align: left;
+}
+
+.receipt-brand-logo {
+    display: block;
+    width: 3.5rem;
+    height: 3.5rem;
+    flex: 0 0 3.5rem;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.receipt-brand-copy {
+    min-width: 0;
+}
+
 .receipt-header strong {
     display: block;
     color: #1d2421;
@@ -3112,6 +3133,10 @@ body.modal-open {
     font-size: 1.45rem;
     font-weight: 500;
     letter-spacing: 0.01em;
+}
+
+.receipt-header .receipt-brand-copy > strong {
+    text-align: left;
 }
 
 .receipt-header h2 {
@@ -3128,6 +3153,11 @@ body.modal-open {
     color: #737a74;
     font-size: 0.72rem;
     letter-spacing: 0.02em;
+}
+
+.receipt-brand-copy .receipt-location,
+.receipt-brand-copy h2 {
+    text-align: left;
 }
 
 .receipt-meta {
@@ -3244,6 +3274,35 @@ body.modal-open {
     font-size: 0.92rem;
     line-height: 1.65;
     text-align: center;
+}
+
+.receipt-outcome {
+    margin: 1rem 0 0;
+    border: 1px solid #0f766e;
+    border-radius: 8px;
+    background: #ecfdf5;
+    color: #0f766e;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    padding: 0.65rem 0.75rem;
+    text-align: center;
+}
+
+.receipt-outcome[hidden] {
+    display: none !important;
+}
+
+.receipt-outcome[data-kind="refunded"] {
+    border-color: #b91c1c;
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.receipt-outcome[data-kind="cancelled"] {
+    border-color: #b45309;
+    background: #fffbeb;
+    color: #92400e;
 }
 
 .receipt-barcode {
@@ -3575,7 +3634,7 @@ body.modal-open {
 .order-tracker-modal {
     display: flex;
     flex-direction: column;
-    width: min(100%, 680px);
+    width: min(100%, 900px);
     height: min(78vh, 620px);
     max-height: min(78vh, 620px);
     overflow: hidden;
@@ -3849,11 +3908,15 @@ body.modal-open {
 }
 
 .order-tracker-card-actions {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: flex-end;
+    justify-self: end;
+    flex-wrap: wrap;
     gap: 0.45rem;
-    min-width: max-content;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .order-tracker-card.is-search-hidden {
@@ -3899,6 +3962,15 @@ body.modal-open {
     cursor: pointer;
 }
 
+.order-tracker-payment-status {
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.28rem 0.5rem;
+}
+
 .order-tracker-review {
     border: 1px solid #d8d6ff;
     border-radius: 999px;
@@ -3918,14 +3990,34 @@ body.modal-open {
 }
 
 .order-tracker-review-column {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
+    display: grid;
+    align-content: center;
+    justify-items: stretch;
+    gap: 0.55rem;
     min-width: 0;
+    width: 100%;
     padding-right: 0.15rem;
 }
 
+.order-tracker-review-column .order-tracker-card-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    min-width: 0;
+    width: 100%;
+}
+
 .order-tracker-review-inline {
+    display: grid;
+    gap: 0.45rem;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.order-tracker-review-fields {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -3964,7 +4056,11 @@ body.modal-open {
 }
 
 .order-tracker-review-comment {
+    box-sizing: border-box;
+    display: block;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     min-height: 44px;
     resize: none;
     border: 1px solid #d7dfe9;
@@ -4011,6 +4107,84 @@ body.modal-open {
 .order-tracker-review-thanks { color: #0f766e; }
 .order-tracker-review-error { color: #b42318; }
 
+.order-tracker-review-fields[hidden],
+.order-tracker-refund-inline[hidden] {
+    display: none !important;
+}
+
+.order-tracker-refund-inline {
+    display: grid;
+    gap: 0.4rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.order-tracker-refund-inline label {
+    color: #374151;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.order-tracker-refund-reason {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: 76px;
+    resize: vertical;
+    border: 1px solid #d7dfe9;
+    border-radius: 10px;
+    background: #fff;
+    color: #0f172a;
+    font: inherit;
+    font-size: 0.74rem;
+    padding: 0.55rem 0.7rem;
+}
+
+.order-tracker-refund-reason:focus {
+    outline: 2px solid rgba(15, 118, 110, 0.14);
+    border-color: #0f766e;
+}
+
+.order-tracker-refund-error {
+    margin: 0;
+    color: #b42318;
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+
+.order-tracker-refund-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.order-tracker-refund-actions button {
+    border-radius: 8px;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.35rem 0.65rem;
+    cursor: pointer;
+}
+
+.order-tracker-refund-cancel {
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #374151;
+}
+
+.order-tracker-refund-submit {
+    border: 1px solid #0f766e;
+    background: #0f766e;
+    color: #ffffff;
+}
+
+.order-tracker-refund-submit:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
 .order-tracker-receipt svg,
 .receipt-actions svg,
 .product-detail-print-receipt svg {
@@ -4049,6 +4223,14 @@ body.modal-open {
     font-weight: 700;
 }
 
+.order-tracker-payment-issue {
+    max-width: 22rem;
+    color: #b42318 !important;
+    font-size: 0.72rem !important;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
 .order-tracker-status {
     border-radius: 999px;
     padding: 0.3rem 0.55rem;
@@ -4080,20 +4262,49 @@ body.modal-open {
     }
 
     .order-tracker-header {
-        flex-wrap: wrap;
-        align-items: flex-start;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        align-items: center;
         padding: 0.9rem 0.9rem 0.8rem;
+        gap: 0.65rem 0.5rem;
     }
 
     .order-tracker-title-row {
-        flex: 1 1 100%;
-        justify-content: space-between;
+        display: contents;
+    }
+
+    .order-tracker-header h2 {
+        grid-row: 1;
+        grid-column: 1 / 3;
+    }
+
+    .order-tracker-close {
+        grid-row: 1;
+        grid-column: 3;
+        justify-self: end;
     }
 
     .order-tracker-search {
+        grid-row: 2;
+        grid-column: 1;
         width: 100%;
         max-width: none;
         min-width: 0;
+        box-sizing: border-box;
+    }
+
+    .order-tracker-select {
+        grid-row: 2;
+        grid-column: 2;
+        justify-self: end;
+        white-space: nowrap;
+    }
+
+    .order-tracker-delete {
+        grid-row: 2;
+        grid-column: 3;
+        justify-self: end;
+        white-space: nowrap;
     }
 
     .order-tracker-header h2 {
@@ -4118,21 +4329,37 @@ body.modal-open {
     .order-tracker-card {
         width: 100%;
         box-sizing: border-box;
-        grid-template-columns: 46px minmax(0, 1fr) auto;
+        grid-template-columns: 46px minmax(0, 1fr);
         gap: 0.7rem;
         padding: 0.7rem;
     }
 
     .order-tracker-overlay.is-selecting .order-tracker-card {
-        grid-template-columns: 18px 46px minmax(0, 1fr) auto;
+        grid-template-columns: 18px 46px minmax(0, 1fr);
+    }
+
+    .order-tracker-overlay.is-selecting .order-tracker-card img {
+        grid-column: 2;
+    }
+
+    .order-tracker-overlay.is-selecting .order-tracker-card-body {
+        grid-column: 3;
+    }
+
+    .order-tracker-card > .order-tracker-checkbox-spacer {
+        display: none;
     }
 
     .order-tracker-card img {
         width: 46px;
         height: 46px;
+        grid-column: 1;
+        grid-row: 1;
     }
 
     .order-tracker-card-body {
+        grid-column: 2;
+        grid-row: 1;
         min-width: 0;
     }
 
@@ -4146,7 +4373,7 @@ body.modal-open {
     }
 
     .order-tracker-review-column {
-        grid-column: 2;
+        grid-column: 1 / -1;
         justify-content: stretch;
         padding-right: 0;
         width: 100%;
@@ -4170,7 +4397,7 @@ body.modal-open {
     }
 
     .order-tracker-card-actions {
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
         justify-content: flex-start;
         min-width: 0;
     }
@@ -4183,6 +4410,12 @@ body.modal-open {
 
     .receipt-paper {
         padding: 1.25rem;
+    }
+
+    .receipt-brand-logo {
+        width: 2.8rem;
+        height: 2.8rem;
+        flex-basis: 2.8rem;
     }
 
     .receipt-meta {
@@ -4208,11 +4441,11 @@ body.modal-open {
     }
 
     .order-tracker-card-actions {
-        grid-column: 2;
+        grid-column: 1 / -1;
     }
 
     .order-tracker-overlay.is-selecting .order-tracker-card-actions {
-        grid-column: 3;
+        grid-column: 1 / -1;
     }
 }
 

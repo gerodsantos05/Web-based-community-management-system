@@ -4090,6 +4090,7 @@ def product_order_tracker(request):
         "Handcrafted Perfume": "/static/media/Handcrafted Perfume.jpg",
     }
     payment_labels = dict(ProductInquiry.PAYMENT_METHOD_CHOICES)
+    payment_status_labels = dict(ProductInquiry.PAYMENT_STATUS_CHOICES)
     orders = []
     for order in ProductInquiry.objects.filter(user=request.user).prefetch_related("product_reviews").order_by("-created_at", "-id"):
         item = (order.order_items or [{}])[0]
@@ -4132,7 +4133,9 @@ def product_order_tracker(request):
             "date": order.created_at.strftime("%b %d, %Y"),
             "items": receipt_items,
             "payment_method": payment_labels.get(order.payment_method, order.payment_method),
-            "payment_status": status_labels.get(order.status, "Pending"),
+            "payment_status": payment_status_labels.get(order.payment_status, "Pending"),
+            "payment_status_label": payment_status_labels.get(order.payment_status, "Pending"),
+            "refund_processed_at": timezone.localtime(order.refund_processed_at).strftime("%b %d, %Y") if order.refund_processed_at else "",
             "customer_name": order.full_name or "Guest",
             "status": order.status,
             "status_label": status_labels.get(order.status, "Pending"),
@@ -4142,7 +4145,10 @@ def product_order_tracker(request):
         })
     return JsonResponse({
         "orders": orders,
-        "active_count": sum(order["status"] not in {"completed", "cancelled"} for order in orders),
+        "active_count": sum(
+            order["status"] not in {"completed", "cancelled", "failed", "refunded", "returned"}
+            for order in orders
+        ),
     })
 
 
@@ -4180,7 +4186,11 @@ def product_reviews(request):
 @require_POST
 def submit_product_review(request, order_id):
     order = get_object_or_404(ProductInquiry, id=order_id, user=request.user)
-    if order.status != ProductInquiry.STATUS_COMPLETED:
+    if order.status not in {
+        ProductInquiry.STATUS_COMPLETED,
+        ProductInquiry.STATUS_RETURN_REQUESTED,
+        ProductInquiry.STATUS_REFUND_REQUESTED,
+    }:
         return JsonResponse({"error": "Only completed orders can be reviewed."}, status=400)
 
     item = (order.order_items or [{}])[0]
@@ -4225,18 +4235,25 @@ def cancel_product_order(request, order_id):
 @require_POST
 def request_product_order_return(request, order_id):
     order = get_object_or_404(ProductInquiry, id=order_id, user=request.user)
-    if order.status not in {ProductInquiry.STATUS_COMPLETED, ProductInquiry.STATUS_RETURN_REQUESTED, ProductInquiry.STATUS_REFUND_REQUESTED}:
+    if order.status != ProductInquiry.STATUS_COMPLETED:
         return JsonResponse({"error": "This order is not eligible for a return or refund request."}, status=400)
 
     request_type = (request.POST.get("request_type") or "refund").strip().lower()
-    reason = (request.POST.get("reason") or "Customer requested a return/refund").strip()
+    if request_type not in {"return", "refund"}:
+        return JsonResponse({"error": "Choose a valid return or refund request type."}, status=400)
+
+    reason = (request.POST.get("reason") or "").strip()
+    if not reason:
+        return JsonResponse({"error": "Please provide a reason for your return or refund request."}, status=400)
+    if len(reason) > 2000:
+        return JsonResponse({"error": "Your reason must be 2,000 characters or fewer."}, status=400)
 
     if request_type == "return":
         order.status = ProductInquiry.STATUS_RETURN_REQUESTED
     else:
         order.status = ProductInquiry.STATUS_REFUND_REQUESTED
 
-    order.return_reason = reason or "Customer requested a return/refund"
+    order.return_reason = reason
     order.return_requested_at = timezone.now()
     order.save(update_fields=["status", "return_reason", "return_requested_at", "updated_at"])
 
@@ -4288,6 +4305,12 @@ def _build_product_inquiry_admin_notification(full_name, email, phone, country_c
 def _build_order_confirmation_email_html(inquiry):
     order_id = f"ORD-{inquiry.id:04d}"
     reference = f"PI-{inquiry.id:05d}"
+    payment_method_label = inquiry.get_payment_method_display()
+    payment_confirmation_text = (
+        "Your payment has been received and verified."
+        if inquiry.payment_status == ProductInquiry.PAYMENT_STATUS_PAID
+        else "Your order is confirmed. Payment is still pending."
+    )
 
     item_rows = ""
     for item in (inquiry.order_items or []):
@@ -4326,7 +4349,7 @@ def _build_order_confirmation_email_html(inquiry):
               <h2 style="color:#0F6E56;margin:0 0 6px;font-size:21px;font-weight:700;">Your order has been confirmed! &#x1F389;</h2>
               <p style="color:#374151;margin:0 0 22px;font-size:15px;line-height:1.6;">Hi {inquiry.full_name},</p>
               <p style="color:#374151;margin:0 0 28px;font-size:15px;line-height:1.7;">
-                Great news! We have received your payment and your order has been verified.
+                Great news! {payment_confirmation_text}
               </p>
 
               <!-- Order meta -->
@@ -4342,7 +4365,7 @@ def _build_order_confirmation_email_html(inquiry):
                   </td>
                   <td style="padding:14px 16px;vertical-align:top;">
                     <span style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px;">Payment Method</span>
-                    <strong style="color:#111827;font-size:14px;">Cash on Delivery</strong>
+                    <strong style="color:#111827;font-size:14px;">{payment_method_label}</strong>
                   </td>
                 </tr>
               </table>
@@ -4602,7 +4625,9 @@ def submit_product_inquiry(request):
             ],
             "total": inquiry.order_total,
             "payment_method": dict(ProductInquiry.PAYMENT_METHOD_CHOICES).get(inquiry.payment_method, inquiry.payment_method),
-            "payment_status": response_status_labels.get(inquiry.status, "Pending"),
+            "payment_status": dict(ProductInquiry.PAYMENT_STATUS_CHOICES).get(inquiry.payment_status, "Pending"),
+            "status": inquiry.status,
+            "status_label": response_status_labels.get(inquiry.status, "Pending"),
             "customer_name": inquiry.full_name or "Guest",
         },
     }, status=201)
@@ -11532,7 +11557,7 @@ def payment(request):
     method_labels = dict(ProductInquiry.PAYMENT_METHOD_CHOICES)
     admin_status_labels = {
         ProductInquiry.STATUS_PENDING: "Pending",
-        ProductInquiry.STATUS_VERIFIED: "Verified",
+        ProductInquiry.STATUS_VERIFIED: "Confirmed",
         ProductInquiry.STATUS_IN_DELIVERY: "In Delivery",
         ProductInquiry.STATUS_COMPLETED: "Completed",
         ProductInquiry.STATUS_RETURN_REQUESTED: "Return Requested",
@@ -11551,10 +11576,18 @@ def payment(request):
         'phone': inq.phone,
         'amount': inq.order_total,
         'method': method_labels.get(inq.payment_method, inq.payment_method),
-        'status': admin_status_labels.get(inq.status, inq.status.title()),
+        'orderStatus': admin_status_labels.get(inq.status, inq.status.title()),
+        'paymentStatus': inq.get_payment_status_display(),
+        'returnReason': inq.return_reason,
+        'refundProcessedAt': timezone.localtime(inq.refund_processed_at).strftime('%b %d, %Y') if inq.refund_processed_at else '',
         'paymentDate': inq.created_at.strftime('%Y-%m-%d'),
         'reference': f"PI-{inq.id:05d}",
         'orderItems': inq.order_items,
+        'subtotal': sum(
+            int(item.get('line_total', int(item.get('unit_price', 0) or 0) * int(item.get('quantity', 1) or 1)) or 0)
+            for item in (inq.order_items or [])
+            if isinstance(item, dict)
+        ),
         'screenshot': inq.payment_screenshot.url if inq.payment_screenshot else '',
         'in_delivery_at': inq.in_delivery_at.isoformat() if inq.in_delivery_at else '',
         'delivery_window_start': inq.delivery_window_start.isoformat() if inq.delivery_window_start else '',
@@ -11592,19 +11625,20 @@ def payment(request):
             } for review in reviews],
         })
 
-    _confirmed_statuses = [ProductInquiry.STATUS_VERIFIED, ProductInquiry.STATUS_COMPLETED]
-    _risk_statuses = [
-        ProductInquiry.STATUS_FAILED,
-        ProductInquiry.STATUS_REFUNDED,
-        ProductInquiry.STATUS_CANCELLED,
-        ProductInquiry.STATUS_RETURN_REQUESTED,
-        ProductInquiry.STATUS_REFUND_REQUESTED,
-        ProductInquiry.STATUS_RETURNED,
-    ]
-    confirmed_count = inquiries.filter(status__in=_confirmed_statuses).count()
-    pending_count = inquiries.filter(status=ProductInquiry.STATUS_PENDING).count()
-    risk_count = inquiries.filter(status__in=_risk_statuses).count()
-    total_revenue = inquiries.filter(status__in=_confirmed_statuses).aggregate(Sum('order_total'))['order_total__sum'] or 0
+    confirmed_count = inquiries.filter(payment_status=ProductInquiry.PAYMENT_STATUS_PAID).count()
+    pending_count = inquiries.filter(payment_status=ProductInquiry.PAYMENT_STATUS_PENDING).count()
+    risk_count = inquiries.filter(
+        Q(payment_status__in=[
+            ProductInquiry.PAYMENT_STATUS_FAILED,
+            ProductInquiry.PAYMENT_STATUS_REFUNDED,
+        ]) | Q(status__in=[
+            ProductInquiry.STATUS_RETURN_REQUESTED,
+            ProductInquiry.STATUS_REFUND_REQUESTED,
+        ])
+    ).count()
+    total_revenue = inquiries.filter(
+        payment_status=ProductInquiry.PAYMENT_STATUS_PAID,
+    ).aggregate(Sum('order_total'))['order_total__sum'] or 0
 
     return render(request, "admin_dashboard/payment_admin.html", {
         "active_page": "payment",
@@ -11625,11 +11659,11 @@ def export_payments_pdf(request):
     inquiries = list(ProductInquiry.objects.all().order_by("-created_at", "-id"))
     method_labels = dict(ProductInquiry.PAYMENT_METHOD_CHOICES)
     status_labels = dict(ProductInquiry.STATUS_CHOICES)
-    processed_statuses = {
-        ProductInquiry.STATUS_VERIFIED,
-        ProductInquiry.STATUS_COMPLETED,
-    }
-    processed = [inquiry for inquiry in inquiries if inquiry.status in processed_statuses]
+    payment_status_labels = dict(ProductInquiry.PAYMENT_STATUS_CHOICES)
+    processed = [
+        inquiry for inquiry in inquiries
+        if inquiry.payment_status == ProductInquiry.PAYMENT_STATUS_PAID
+    ]
     today = timezone.localdate()
     month_keys = []
     for offset in range(5, -1, -1):
@@ -11661,32 +11695,33 @@ def export_payments_pdf(request):
             f"PHP {inquiry.order_total:,.2f}",
             method_labels.get(inquiry.payment_method, inquiry.payment_method),
             status_labels.get(inquiry.status, inquiry.status.replace("_", " ").title()),
+            payment_status_labels.get(inquiry.payment_status, inquiry.payment_status.title()),
         ])
 
     total_revenue = sum(inquiry.order_total for inquiry in processed)
     sections = [
         ("Summary", ["Metric", "Value", "Notes"], [
             ["Transactions", len(inquiries), "All statuses"],
-            ["Processed payments", len(processed), "Verified or completed"],
-            ["Gross processed amount", f"PHP {total_revenue:,.2f}", "Verified or completed payments only"],
+            ["Paid payments", len(processed), "Payment status is paid"],
+            ["Gross processed amount", f"PHP {total_revenue:,.2f}", "Paid payments only"],
         ]),
-        ("Payment transactions", ["Date", "Order ID", "Customer", "Products", "Amount", "Method", "Status"], transaction_rows),
+        ("Payment transactions", ["Date", "Order ID", "Customer", "Products", "Amount", "Method", "Order status", "Payment status"], transaction_rows),
         ("Total amount", ["Metric", "Amount", "Notes"], [
-            ["Gross processed amount", f"PHP {total_revenue:,.2f}", "Verified and completed payments; excludes pending, failed, refunded, and cancelled transactions."],
+            ["Gross processed amount", f"PHP {total_revenue:,.2f}", "Paid transactions only; excludes pending, failed, and refunded transactions."],
         ]),
     ]
     charts = [
         {
             "kind": "line",
             "title": "Processed payments over time",
-            "note": "Verified and completed amounts; last six months",
+            "note": "Paid amounts; last six months",
             "labels": month_labels,
             "values": [monthly_revenue[key] for key in month_keys],
         },
         {
             "kind": "doughnut",
             "title": "Processed payments by method",
-            "note": "Verified and completed transaction count",
+            "note": "Paid transaction count",
             "labels": list(method_counts),
             "values": list(method_counts.values()),
         },
@@ -11696,7 +11731,7 @@ def export_payments_pdf(request):
         _export_reports_pdf(
             "Payments Operations Report",
             "All time",
-            "All payment statuses; processed total includes verified and completed payments",
+            "All payment statuses; processed total includes paid transactions",
             sections,
             charts,
             organization_name,
@@ -11715,15 +11750,25 @@ def payment_verify(request, inquiry_id):
         return JsonResponse({'error': 'Forbidden'}, status=403)
     inquiry = get_object_or_404(ProductInquiry, id=inquiry_id)
     inquiry.status = ProductInquiry.STATUS_VERIFIED
-    inquiry.save(update_fields=['status', 'updated_at'])
+    update_fields = ['status', 'updated_at']
+    if inquiry.payment_method != ProductInquiry.PAYMENT_COD:
+        inquiry.payment_status = ProductInquiry.PAYMENT_STATUS_PAID
+        update_fields.append('payment_status')
+    inquiry.save(update_fields=update_fields)
 
     try:
         from django.conf import settings as _conf
         html_body = _build_order_confirmation_email_html(inquiry)
+        payment_note = (
+            "Payment has been received and verified."
+            if inquiry.payment_status == ProductInquiry.PAYMENT_STATUS_PAID
+            else "Payment is still pending and will be collected on delivery."
+        )
         plain_body = (
             f"Hi {inquiry.full_name},\n\n"
             f"Your order (ORD-{inquiry.id:04d} / PI-{inquiry.id:05d}) has been confirmed!\n\n"
-            f"Payment Method: Cash on Delivery\n"
+            f"Payment Method: {inquiry.get_payment_method_display()}\n"
+            f"{payment_note}\n"
             f"Order Total: PHP {inquiry.order_total:,}\n\n"
             "Thank you for supporting Happy Nanays! Your order is now being prepared.\n\n"
             "— HappYness Project"
@@ -11739,7 +11784,12 @@ def payment_verify(request, inquiry_id):
     except Exception as exc:
         print(f"[payment_verify] Email send failed for inquiry {inquiry_id}: {exc}")
 
-    return JsonResponse({'ok': True, 'status': 'Verified'})
+    return JsonResponse({
+        'ok': True,
+        'status': 'Confirmed',
+        'order_status': 'Confirmed',
+        'payment_status': inquiry.get_payment_status_display(),
+    })
 
 
 @login_required(login_url="signin")
@@ -11787,6 +11837,8 @@ def payment_mark_in_delivery(request, inquiry_id):
     return JsonResponse({
         'ok': True,
         'status': 'In Delivery',
+        'order_status': 'In Delivery',
+        'payment_status': inquiry.get_payment_status_display(),
         'in_delivery_at': inquiry.in_delivery_at.isoformat() if inquiry.in_delivery_at else None,
         'delivery_window_start': inquiry.delivery_window_start.isoformat() if inquiry.delivery_window_start else None,
         'delivery_window_end': inquiry.delivery_window_end.isoformat() if inquiry.delivery_window_end else None,
@@ -11799,9 +11851,32 @@ def payment_mark_paid(request, inquiry_id):
     if not request.user.is_superuser:
         return JsonResponse({'error': 'Forbidden'}, status=403)
     inquiry = get_object_or_404(ProductInquiry, id=inquiry_id)
+    inquiry.payment_status = ProductInquiry.PAYMENT_STATUS_PAID
+    inquiry.save(update_fields=['payment_status', 'updated_at'])
+    return JsonResponse({
+        'ok': True,
+        'status': inquiry.get_payment_status_display(),
+        'order_status': inquiry.get_status_display(),
+        'payment_status': inquiry.get_payment_status_display(),
+    })
+
+
+@login_required(login_url="signin")
+@require_POST
+def payment_mark_completed(request, inquiry_id):
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    inquiry = get_object_or_404(ProductInquiry, id=inquiry_id)
+    if inquiry.status not in {ProductInquiry.STATUS_VERIFIED, ProductInquiry.STATUS_IN_DELIVERY}:
+        return JsonResponse({'error': 'Only confirmed or in-delivery orders can be completed.'}, status=400)
     inquiry.status = ProductInquiry.STATUS_COMPLETED
     inquiry.save(update_fields=['status', 'updated_at'])
-    return JsonResponse({'ok': True, 'status': 'Completed'})
+    return JsonResponse({
+        'ok': True,
+        'status': 'Completed',
+        'order_status': 'Completed',
+        'payment_status': inquiry.get_payment_status_display(),
+    })
 
 
 @login_required(login_url="signin")
@@ -11810,9 +11885,14 @@ def payment_mark_failed(request, inquiry_id):
     if not request.user.is_superuser:
         return JsonResponse({'error': 'Forbidden'}, status=403)
     inquiry = get_object_or_404(ProductInquiry, id=inquiry_id)
-    inquiry.status = ProductInquiry.STATUS_FAILED
-    inquiry.save(update_fields=['status', 'updated_at'])
-    return JsonResponse({'ok': True, 'status': 'Failed'})
+    inquiry.payment_status = ProductInquiry.PAYMENT_STATUS_FAILED
+    inquiry.save(update_fields=['payment_status', 'updated_at'])
+    return JsonResponse({
+        'ok': True,
+        'status': inquiry.get_payment_status_display(),
+        'order_status': inquiry.get_status_display(),
+        'payment_status': inquiry.get_payment_status_display(),
+    })
 
 
 @login_required(login_url="signin")
@@ -11822,10 +11902,41 @@ def payment_refund(request, inquiry_id):
         return JsonResponse({'error': 'Forbidden'}, status=403)
 
     inquiry = get_object_or_404(ProductInquiry, id=inquiry_id)
+    if inquiry.payment_status != ProductInquiry.PAYMENT_STATUS_PAID:
+        return JsonResponse({'error': 'Only paid orders can be refunded.'}, status=400)
     inquiry.status = ProductInquiry.STATUS_REFUNDED
+    inquiry.payment_status = ProductInquiry.PAYMENT_STATUS_REFUNDED
     inquiry.refund_processed_at = timezone.now()
-    inquiry.save(update_fields=['status', 'refund_processed_at', 'updated_at'])
-    return JsonResponse({'ok': True, 'status': 'Refunded'})
+    inquiry.save(update_fields=['status', 'payment_status', 'refund_processed_at', 'updated_at'])
+    return JsonResponse({
+        'ok': True,
+        'status': 'Refunded',
+        'order_status': 'Refunded',
+        'payment_status': 'Refunded',
+    })
+
+
+@login_required(login_url="signin")
+@require_POST
+def payment_reject_refund_request(request, inquiry_id):
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+
+    inquiry = get_object_or_404(ProductInquiry, id=inquiry_id)
+    if inquiry.status not in {
+        ProductInquiry.STATUS_RETURN_REQUESTED,
+        ProductInquiry.STATUS_REFUND_REQUESTED,
+    }:
+        return JsonResponse({'error': 'This order has no pending return or refund request.'}, status=400)
+
+    inquiry.status = ProductInquiry.STATUS_COMPLETED
+    inquiry.save(update_fields=['status', 'updated_at'])
+    return JsonResponse({
+        'ok': True,
+        'status': 'Completed',
+        'order_status': 'Completed',
+        'payment_status': inquiry.get_payment_status_display(),
+    })
 
 
 @login_required(login_url="signin")
